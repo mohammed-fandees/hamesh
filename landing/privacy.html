@@ -1,0 +1,619 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>سياسة الخصوصية — هامش · Hamesh Privacy Policy</title>
+    <meta
+      name="description"
+      content="Hamesh privacy policy: notes are stored locally on your device only. No account, no server, no network requests, no tracking."
+    />
+    <link rel="canonical" href="https://hamesh.fandees.tech/privacy.html" />
+    <meta name="theme-color" content="#f7f3ec" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#16140f" media="(prefers-color-scheme: dark)" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="هامش — Hamesh · Privacy Policy" />
+    <meta
+      property="og:description"
+      content="Notes are stored locally on your device only. No account, no server, no network requests."
+    />
+    <meta property="og:image" content="./assets/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cg fill='none' stroke='%23B5502F' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='M10 5V27'/%3E%3Cpath d='M10 14H20'/%3E%3Cpath d='M20 10.5V17.5'/%3E%3C/g%3E%3C/svg%3E"
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --ink: #1e1b18;
+        --ink-60: rgba(30, 27, 24, 0.62);
+        --ink-40: rgba(30, 27, 24, 0.42);
+        --paper: #f7f3ec;
+        --paper-dim: #efe7d8;
+        --surface: #ffffff;
+        --accent: #b5502f;
+        --accent-strong: #8f3e22;
+        --accent-tint: #f1dccc;
+        --border: rgba(30, 27, 24, 0.14);
+        --success: #4b6b4e;
+        --sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        --arabic: 'IBM Plex Sans Arabic', 'IBM Plex Sans', 'Segoe UI', Tahoma, sans-serif;
+        --serif: 'IBM Plex Serif', Georgia, 'Times New Roman', serif;
+        --radius-lg: 10px;
+        --radius-md: 6px;
+        --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.16);
+        --maxw: 760px;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --ink: #f3ede3;
+          --ink-60: rgba(243, 237, 227, 0.64);
+          --ink-40: rgba(243, 237, 227, 0.46);
+          --paper: #16140f;
+          --paper-dim: #211e18;
+          --surface: #262219;
+          --accent: #e08b5c;
+          --accent-strong: #f0a578;
+          --accent-tint: rgba(224, 139, 92, 0.16);
+          --border: rgba(243, 237, 227, 0.16);
+          --success: #8fb894;
+          --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.4);
+          --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.5);
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: var(--sans);
+        line-height: 1.65;
+        -webkit-font-smoothing: antialiased;
+      }
+      html[dir='rtl'] body {
+        font-family: var(--arabic);
+      }
+      .wrap {
+        max-width: var(--maxw);
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+      a {
+        color: var(--accent-strong);
+      }
+      :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+        border-radius: 3px;
+      }
+      .mark {
+        flex: none;
+        color: var(--accent);
+      }
+
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: color-mix(in srgb, var(--paper) 90%, transparent);
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid var(--border);
+      }
+      .nav {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        height: 64px;
+        max-width: 1080px;
+      }
+      .lockup {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        color: inherit;
+      }
+      .lockup .ar {
+        font-family: var(--arabic);
+        font-weight: 600;
+        font-size: 20px;
+      }
+      .lockup .sep {
+        width: 1px;
+        height: 18px;
+        background: var(--border);
+      }
+      .lockup .en {
+        font-family: var(--serif);
+        font-style: italic;
+        font-size: 15px;
+        color: var(--ink-60);
+      }
+      .nav .spacer {
+        margin-inline-start: auto;
+      }
+      .toggle {
+        font-family: var(--sans);
+        font-size: 13px;
+        font-weight: 500;
+        padding: 7px 12px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: transparent;
+        color: var(--ink);
+        cursor: pointer;
+      }
+      .toggle:hover {
+        background: var(--paper-dim);
+      }
+
+      main {
+        padding: 56px 0 100px;
+      }
+      .kicker {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin: 0 0 16px;
+      }
+      h1 {
+        font-family: var(--serif);
+        font-weight: 500;
+        font-size: clamp(32px, 5vw, 46px);
+        line-height: 1.1;
+        margin: 0 0 10px;
+      }
+      html[dir='rtl'] h1 {
+        font-family: var(--arabic);
+        font-weight: 600;
+      }
+      .updated {
+        color: var(--ink-40);
+        font-size: 13px;
+        margin: 0 0 40px;
+      }
+      h2 {
+        font-size: 19px;
+        font-weight: 600;
+        margin: 44px 0 14px;
+      }
+      p,
+      li {
+        font-size: 15.5px;
+        line-height: 1.75;
+        color: var(--ink-60);
+      }
+      strong {
+        color: var(--ink);
+      }
+      ul,
+      ol {
+        padding-inline-start: 22px;
+        margin: 12px 0;
+      }
+      li {
+        margin: 8px 0;
+      }
+      code {
+        font-family: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+        font-size: 0.92em;
+        background: var(--paper-dim);
+        padding: 1px 5px;
+        border-radius: 4px;
+      }
+
+      .summary-card {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 24px;
+        margin: 8px 0 8px;
+        box-shadow: var(--shadow-md);
+      }
+      .summary-card .mark {
+        margin-top: 2px;
+      }
+      .summary-card p {
+        margin: 0;
+        color: var(--ink);
+        font-size: 15.5px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 16px 0;
+        font-size: 14px;
+      }
+      th,
+      td {
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+      }
+      html[dir='rtl'] th,
+      html[dir='rtl'] td {
+        text-align: right;
+      }
+      html[dir='ltr'] th,
+      html[dir='ltr'] td {
+        text-align: left;
+      }
+      th {
+        color: var(--ink-40);
+        font-weight: 600;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      footer {
+        border-top: 1px solid var(--border);
+        padding: 40px 0;
+        color: var(--ink-40);
+        font-size: 13px;
+      }
+      .foot {
+        max-width: 1080px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .foot .spacer {
+        margin-inline-start: auto;
+      }
+      .foot a {
+        color: var(--ink-40);
+      }
+      .foot a:hover {
+        color: var(--ink);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="wrap nav">
+        <a class="lockup" href="./index.html" aria-label="Hamesh هامش">
+          <svg class="mark" width="20" height="20" viewBox="0 0 32 32" aria-hidden="true">
+            <g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+              <path d="M10 5V27" />
+              <path d="M10 14H20" />
+              <path d="M20 10.5V17.5" />
+            </g>
+          </svg>
+          <span class="ar">هامش</span>
+          <span class="sep"></span>
+          <span class="en">Hamesh</span>
+        </a>
+        <span class="spacer"></span>
+        <button
+          class="toggle"
+          id="langToggle"
+          type="button"
+          aria-pressed="false"
+          aria-label="Switch to English"
+        >
+          EN
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <div class="wrap">
+        <p class="kicker" data-ar="القانونية" data-en="Legal">القانونية</p>
+        <h1 data-ar="سياسة الخصوصية" data-en="Privacy Policy">سياسة الخصوصية</h1>
+        <p
+          class="updated"
+          data-ar="آخر تحديث: [يُحدَّد عند النشر] · تنطبق على هامش الإصدار 0.1.0 وما بعده بنفس سلوك التعامل مع البيانات."
+          data-en="Last updated: [set at publish time] · Applies to Hamesh v0.1.0 and later versions with the same data-handling behavior."
+        >
+          آخر تحديث: [يُحدَّد عند النشر] · تنطبق على هامش الإصدار 0.1.0 وما بعده بنفس سلوك التعامل
+          مع البيانات.
+        </p>
+
+        <div class="summary-card">
+          <svg class="mark" width="24" height="24" viewBox="0 0 32 32" aria-hidden="true">
+            <g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+              <path d="M10 5V27" />
+              <path d="M10 14H20" />
+              <path d="M20 10.5V17.5" />
+            </g>
+          </svg>
+          <p
+            data-ar="باختصار: يحفظ هامش ملاحظاتك محليًا على جهازك بالكامل. لا يوجد خادم، ولا حساب، ولا أي طلب شبكة، ولا تحليلات أو إعلانات أو تتبّع من أي نوع."
+            data-en="In short: Hamesh stores your notes entirely on your own device. There is no server, no account, no network requests, and no analytics, advertising, or tracking of any kind."
+          >
+            باختصار: يحفظ هامش ملاحظاتك محليًا على جهازك بالكامل. لا يوجد خادم، ولا حساب، ولا أي طلب
+            شبكة، ولا تحليلات أو إعلانات أو تتبّع من أي نوع.
+          </p>
+        </div>
+
+        <h2 data-ar="ماذا يفعل هامش" data-en="What Hamesh does">ماذا يفعل هامش</h2>
+        <p
+          data-ar="يتيح لك هامش إرفاق ملاحظة نصية قصيرة بعنصر محدد في صفحة ويب — فقرة أو عنوان أو زر. عند عودتك إلى تلك الصفحة، يعرض هامش علامة صغيرة بجانب ذلك العنصر لإعادة فتح الملاحظة أو تعديلها أو حذفها."
+          data-en="Hamesh lets you attach a short text note to a specific element on a web page — a paragraph, heading, or button. When you return to that page, Hamesh shows a small marker next to that element so you can reopen, edit, or delete the note."
+        >
+          يتيح لك هامش إرفاق ملاحظة نصية قصيرة بعنصر محدد في صفحة ويب — فقرة أو عنوان أو زر. عند
+          عودتك إلى تلك الصفحة، يعرض هامش علامة صغيرة بجانب ذلك العنصر لإعادة فتح الملاحظة أو
+          تعديلها أو حذفها.
+        </p>
+
+        <h2 data-ar="ما المعلومات التي يصل إليها هامش" data-en="What information Hamesh accesses">
+          ما المعلومات التي يصل إليها هامش
+        </h2>
+        <p
+          data-ar="عند تفعيلك هامش صراحة (أيقونة شريط الأدوات أو Alt+H) والنقر على عنصر لإضافة ملاحظة، يقرأ هامش اسم وسم ذلك العنصر، وid، وaria-label، وأصناف CSS، وسمات href/src/alt/role، وحتى 200 حرف من نصه الظاهر، وموضعه على الشاشة — تُستخدم فقط لإيجاد العنصر نفسه لاحقًا. لا يقرأ هامش بقية الصفحة، أو عناصر أخرى، أو محتوى حقول النماذج أو كلمات المرور."
+          data-en="When you explicitly activate Hamesh (toolbar icon or Alt+H) and click an element to annotate, Hamesh reads that element's tag name, id, aria-label, CSS classes, href/src/alt/role attributes, and up to 200 characters of its visible text, plus its on-screen position — used only to find the same element again later. Hamesh does not read the rest of the page, other elements, or the contents of form or password fields."
+        >
+          عند تفعيلك هامش صراحة (أيقونة شريط الأدوات أو Alt+H) والنقر على عنصر لإضافة ملاحظة، يقرأ
+          هامش اسم وسم ذلك العنصر، وid، وaria-label، وأصناف CSS، وسمات href/src/alt/role، وحتى 200
+          حرف من نصه الظاهر، وموضعه على الشاشة — تُستخدم فقط لإيجاد العنصر نفسه لاحقًا. لا يقرأ هامش
+          بقية الصفحة، أو عناصر أخرى، أو محتوى حقول النماذج أو كلمات المرور.
+        </p>
+        <p
+          data-ar="في كل صفحة تزورها، يحسب هامش نسخة موحّدة من رابط تلك الصفحة للبحث عن الملاحظات التي حفظتها سابقًا لها. يحدث هذا بالكامل على جهازك مقابل ملاحظاتك المخزّنة محليًا فقط — لا يسجّل هامش أو ينقل سجل تصفّحك."
+          data-en="On every page you visit, Hamesh computes a normalized version of that page's URL to look up notes you previously saved for it. This happens entirely on your device against your own locally stored notes — Hamesh does not record, log, or transmit your browsing history."
+        >
+          في كل صفحة تزورها، يحسب هامش نسخة موحّدة من رابط تلك الصفحة للبحث عن الملاحظات التي حفظتها
+          سابقًا لها. يحدث هذا بالكامل على جهازك مقابل ملاحظاتك المخزّنة محليًا فقط — لا يسجّل هامش
+          أو ينقل سجل تصفّحك.
+        </p>
+
+        <h2 data-ar="ما المعلومات التي يخزّنها هامش" data-en="What information Hamesh stores">
+          ما المعلومات التي يخزّنها هامش
+        </h2>
+        <ul>
+          <li data-ar="النص الذي تكتبه في الملاحظة." data-en="The text you type into a note.">
+            النص الذي تكتبه في الملاحظة.
+          </li>
+          <li
+            data-ar="معلومات العنصر الموضحة أعلاه (تُستخدم لإعادة إيجاد العنصر)."
+            data-en="The element information described above (used to re-find the element)."
+          >
+            معلومات العنصر الموضحة أعلاه (تُستخدم لإعادة إيجاد العنصر).
+          </li>
+          <li
+            data-ar="رابط الصفحة الموحّد، لتجميع الملاحظات حسب الصفحة."
+            data-en="The page's normalized URL, so notes can be grouped by page."
+          >
+            رابط الصفحة الموحّد، لتجميع الملاحظات حسب الصفحة.
+          </li>
+          <li
+            data-ar="طوابع زمنية (الإنشاء/التعديل) لكل ملاحظة."
+            data-en="Timestamps (created/updated) for each note."
+          >
+            طوابع زمنية (الإنشاء/التعديل) لكل ملاحظة.
+          </li>
+        </ul>
+        <p
+          data-ar="كل ذلك يُخزَّن باستخدام تخزين المتصفح المحلي الخاص بالإضافات (chrome.storage.local). يبقى على جهازك."
+          data-en="All of this is stored using your browser's built-in local extension storage (chrome.storage.local). It stays on your device."
+        >
+          كل ذلك يُخزَّن باستخدام تخزين المتصفح المحلي الخاص بالإضافات
+          (<code>chrome.storage.local</code>). يبقى على جهازك.
+        </p>
+
+        <h2 data-ar="ما لا يفعله هامش" data-en="What Hamesh does NOT do">ما لا يفعله هامش</h2>
+        <ul>
+          <li data-ar="لا يوجد خادم خلفي من أي نوع." data-en="No backend server of any kind.">
+            لا يوجد خادم خلفي من أي نوع.
+          </li>
+          <li
+            data-ar="لا نقل عبر الشبكة — لا تحليلات، ولا تقارير أعطال، ولا تتبّع، ولا إعلانات، ولا طلبات API خارجية."
+            data-en="No network transmission — no analytics, crash reporting, telemetry, ads, or third-party API calls."
+          >
+            لا نقل عبر الشبكة — لا تحليلات، ولا تقارير أعطال، ولا تتبّع، ولا إعلانات، ولا طلبات API
+            خارجية.
+          </li>
+          <li
+            data-ar="لا حساب، ولا تسجيل دخول، ولا مصادقة."
+            data-en="No account, login, or authentication."
+          >
+            لا حساب، ولا تسجيل دخول، ولا مصادقة.
+          </li>
+          <li
+            data-ar="لا قراءة لكلمات المرور أو قيم حقول النماذج الأخرى."
+            data-en="No reading of passwords or other form input values."
+          >
+            لا قراءة لكلمات المرور أو قيم حقول النماذج الأخرى.
+          </li>
+          <li
+            data-ar="لا جمع أو استنتاج للموقع الجغرافي."
+            data-en="No location collection or inference."
+          >
+            لا جمع أو استنتاج للموقع الجغرافي.
+          </li>
+          <li data-ar="لا تتبّع لسجل التصفّح." data-en="No browsing-history tracking.">
+            لا تتبّع لسجل التصفّح.
+          </li>
+          <li
+            data-ar="لا بيع أو تأجير أو مشاركة لبياناتك — فهي لا تغادر جهازك إطلاقًا."
+            data-en="No selling, renting, or sharing of your data — it never leaves your device."
+          >
+            لا بيع أو تأجير أو مشاركة لبياناتك — فهي لا تغادر جهازك إطلاقًا.
+          </li>
+          <li
+            data-ar="لا إعلانات، ولا تخصيص، ولا تنميط من أي نوع."
+            data-en="No advertising, personalization, or profiling."
+          >
+            لا إعلانات، ولا تخصيص، ولا تنميط من أي نوع.
+          </li>
+        </ul>
+
+        <h2 data-ar="أين تعيش بياناتك، وإلى متى" data-en="Where your data lives, and for how long">
+          أين تعيش بياناتك، وإلى متى
+        </h2>
+        <p
+          data-ar="تعيش ملاحظاتك في chrome.storage.local، معزولة عن صفحات الويب والإضافات الأخرى. تبقى محفوظة حتى تحذف ملاحظة عبر هامش، أو تحذف الإضافة وتمسح بياناتها المخزّنة، أو تمسح بيانات ملف تعريف المتصفح. لا يوفّر هامش أي آلية مدمجة للتصدير أو النقل — فهو مصمَّم ليبقى محليًا."
+          data-en="Your notes live in chrome.storage.local, isolated from web pages and other extensions. They are retained until you delete a note in Hamesh, uninstall the extension and clear its stored data, or clear your browser profile data. Hamesh provides no built-in export or transmission mechanism — it is designed to stay local."
+        >
+          تعيش ملاحظاتك في <code>chrome.storage.local</code>، معزولة عن صفحات الويب والإضافات
+          الأخرى. تبقى محفوظة حتى تحذف ملاحظة عبر هامش، أو تحذف الإضافة وتمسح بياناتها المخزّنة، أو
+          تمسح بيانات ملف تعريف المتصفح. لا يوفّر هامش أي آلية مدمجة للتصدير أو النقل — فهو مصمَّم
+          ليبقى محليًا.
+        </p>
+
+        <h2 data-ar="خصوصية الأطفال" data-en="Children's privacy">خصوصية الأطفال</h2>
+        <p
+          data-ar="لا يجمع هامش عن قصد أي معلومات شخصية من أي شخص، بمن فيهم الأطفال، لأنه لا يجمع معلومات شخصية من أي مستخدم أصلًا — كل البيانات هي نص ملاحظات كتبه المستخدم وبيانات وصفية لعناصر الصفحة، مخزّنة محليًا."
+          data-en="Hamesh does not knowingly collect personal information from anyone, including children, because it does not collect personal information from any user in the first place — all data is user-authored note text and page-element metadata, stored locally."
+        >
+          لا يجمع هامش عن قصد أي معلومات شخصية من أي شخص، بمن فيهم الأطفال، لأنه لا يجمع معلومات
+          شخصية من أي مستخدم أصلًا — كل البيانات هي نص ملاحظات كتبه المستخدم وبيانات وصفية لعناصر
+          الصفحة، مخزّنة محليًا.
+        </p>
+
+        <h2
+          data-ar="الأذونات التي تطلبها الإضافة، ولماذا"
+          data-en="Permissions this extension requests, and why"
+        >
+          الأذونات التي تطلبها الإضافة، ولماذا
+        </h2>
+        <table>
+          <thead>
+            <tr>
+              <th data-ar="الإذن" data-en="Permission">الإذن</th>
+              <th data-ar="السبب" data-en="Why">السبب</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>storage</code></td>
+              <td
+                data-ar="لحفظ ملاحظاتك محليًا لتبقى بعد إغلاق المتصفح."
+                data-en="To save your notes locally so they persist across browser sessions."
+              >
+                لحفظ ملاحظاتك محليًا لتبقى بعد إغلاق المتصفح.
+              </td>
+            </tr>
+            <tr>
+              <td><code>activeTab</code></td>
+              <td
+                data-ar="لتحديد التبويب الذي تعرضه عند تفعيل هامش من شريط الأدوات أو الاختصار."
+                data-en="To identify the tab you're currently viewing when you invoke Hamesh from the toolbar or keyboard shortcut."
+              >
+                لتحديد التبويب الذي تعرضه عند تفعيل هامش من شريط الأدوات أو الاختصار.
+              </td>
+            </tr>
+            <tr>
+              <td data-ar="العمل على جميع المواقع" data-en="Running on all websites">
+                العمل على جميع المواقع
+              </td>
+              <td
+                data-ar="لاستعادة الملاحظات المحفوظة تلقائيًا عند عودتك إلى الصفحة، دون إعادة تفعيل هامش يدويًا في كل مرة."
+                data-en="So previously-saved notes can be automatically restored when you return to a page, without you having to manually re-activate Hamesh on every visit."
+              >
+                لاستعادة الملاحظات المحفوظة تلقائيًا عند عودتك إلى الصفحة، دون إعادة تفعيل هامش
+                يدويًا في كل مرة.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 data-ar="الأمان" data-en="Security">الأمان</h2>
+        <p
+          data-ar="بما أن هامش لا ينقل بيانات، فلا يوجد نقل بيانات يحتاج إلى تأمين. تُحمى البيانات المخزَّنة عبر آلية عزل تخزين المتصفح الخاصة بالإضافات."
+          data-en="Because Hamesh does not transmit data, there is no data-in-transit to secure. Data at rest is protected by your browser's own extension storage sandboxing."
+        >
+          بما أن هامش لا ينقل بيانات، فلا يوجد نقل بيانات يحتاج إلى تأمين. تُحمى البيانات المخزَّنة
+          عبر آلية عزل تخزين المتصفح الخاصة بالإضافات.
+        </p>
+
+        <h2 data-ar="التغييرات على هذه السياسة" data-en="Changes to this policy">
+          التغييرات على هذه السياسة
+        </h2>
+        <p
+          data-ar="إذا تغيّر تعامل هامش مع البيانات في إصدار مستقبلي، ستُحدَّث هذه السياسة أولًا، وسيُشرح التغيير بوضوح، وسيُنشر التحديث بتاريخ «آخر تحديث» جديد أعلاه. لن نوسّع جمع البيانات بصمت دون تحديث هذا المستند."
+          data-en="If Hamesh's data handling changes in a future version, this policy will be updated first, the change will be clearly described, and the update will ship with a new 'Last updated' date above. We will not silently expand data collection without updating this document."
+        >
+          إذا تغيّر تعامل هامش مع البيانات في إصدار مستقبلي، ستُحدَّث هذه السياسة أولًا، وسيُشرح
+          التغيير بوضوح، وسيُنشر التحديث بتاريخ «آخر تحديث» جديد أعلاه. لن نوسّع جمع البيانات بصمت
+          دون تحديث هذا المستند.
+        </p>
+
+        <h2 data-ar="التواصل" data-en="Contact">التواصل</h2>
+        <p
+          data-ar="يمكن طرح الأسئلة حول هذه السياسة عبر GitHub Issues:"
+          data-en="Questions about this policy can be raised via GitHub Issues:"
+        >
+          يمكن طرح الأسئلة حول هذه السياسة عبر GitHub Issues:
+        </p>
+        <p>
+          <a href="https://github.com/mohammed-fandees/hamesh/issues"
+            >github.com/mohammed-fandees/hamesh/issues</a
+          >
+        </p>
+      </div>
+    </main>
+
+    <footer>
+      <div class="wrap foot">
+        <svg class="mark" width="18" height="18" viewBox="0 0 32 32" aria-hidden="true">
+          <g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+            <path d="M10 5V27" />
+            <path d="M10 14H20" />
+            <path d="M20 10.5V17.5" />
+          </g>
+        </svg>
+        <span>هامش — Hamesh</span>
+        <span class="spacer"></span>
+        <a href="./index.html" data-ar="الرئيسية" data-en="Home">الرئيسية</a>
+      </div>
+    </footer>
+
+    <script>
+      (function () {
+        var html = document.documentElement;
+        var toggle = document.getElementById('langToggle');
+        var nodes = document.querySelectorAll('[data-ar]');
+
+        function apply(lang) {
+          var isAr = lang === 'ar';
+          html.lang = lang;
+          html.dir = isAr ? 'rtl' : 'ltr';
+          nodes.forEach(function (el) {
+            var val = el.getAttribute(isAr ? 'data-ar' : 'data-en');
+            if (val !== null) el.textContent = val;
+          });
+          toggle.textContent = isAr ? 'EN' : 'ع';
+          toggle.setAttribute('aria-pressed', String(!isAr));
+          toggle.setAttribute('aria-label', isAr ? 'Switch to English' : 'التبديل إلى العربية');
+          try {
+            localStorage.setItem('hamesh-lang', lang);
+          } catch (e) {}
+        }
+
+        var saved = null;
+        try {
+          saved = localStorage.getItem('hamesh-lang');
+        } catch (e) {}
+        if (saved === 'en') apply('en');
+
+        toggle.addEventListener('click', function () {
+          apply(html.lang === 'ar' ? 'en' : 'ar');
+        });
+      })();
+    </script>
+  </body>
+</html>
