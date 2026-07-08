@@ -54,7 +54,30 @@ async function launch(): Promise<BrowserContext> {
   });
 }
 
+// The content script runs in an isolated JS world: a `CustomEvent` dispatched
+// on `window` there still reaches listeners in the page's main world (which
+// `page.evaluate` operates in), but a plain property assignment would not —
+// each world has its own global object. `addInitScript` runs before any
+// script on the page, including the content script (which only wires up
+// `hamesh:activate` after React's effects flush on `document_idle`), so this
+// listener can never miss the readiness event no matter how early it fires.
+async function installReadinessHook(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    (window as Window & { __hameshReadyPromise?: Promise<void> }).__hameshReadyPromise =
+      new Promise<void>((resolve) => {
+        window.addEventListener('hamesh:ready', () => resolve(), { once: true });
+      });
+  });
+}
+
+async function waitForHameshReady(page: Page): Promise<void> {
+  await page.evaluate(
+    () => (window as Window & { __hameshReadyPromise?: Promise<void> }).__hameshReadyPromise,
+  );
+}
+
 async function activateAndSelect(page: Page, testId: string): Promise<void> {
+  await waitForHameshReady(page);
   await page.evaluate(() => window.dispatchEvent(new CustomEvent('hamesh:activate')));
   await expect(page.locator('.hm-capture')).toBeVisible();
   const box = await page.locator(`[data-testid="${testId}"]`).boundingBox();
@@ -88,6 +111,7 @@ test.describe('Hamesh core flows', () => {
 
   test('E2E 1 — create, see marker, reload, restore, open, verify content', async () => {
     const page = await context.newPage();
+    await installReadinessHook(page);
     await page.goto(server.url);
     await expect(page.locator('[data-testid="page-title"]')).toHaveText('Hamesh Test Page');
 
@@ -107,6 +131,7 @@ test.describe('Hamesh core flows', () => {
 
   test('E2E 2 — create, edit, persist edit, delete, verify removal', async () => {
     const page = await context.newPage();
+    await installReadinessHook(page);
     await page.goto(server.url);
 
     await createNote(page, 'para-one', 'Original note content.');
@@ -138,6 +163,7 @@ test.describe('Hamesh core flows', () => {
 
   test('E2E 3 — SPA navigation changes page identity and re-evaluates markers', async () => {
     const page = await context.newPage();
+    await installReadinessHook(page);
     await page.goto(server.url);
 
     await createNote(page, 'article-heading', 'A note on the first virtual page.');

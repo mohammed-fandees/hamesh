@@ -47,6 +47,14 @@ export default defineContentScript({
             dir,
             registerActivate: (fn: () => void) => {
               activate = fn;
+              // Signals that the activation hook below is now wired up. React
+              // mounts and wires `activate` via a `useEffect`, which fires a
+              // tick after the shadow root attaches — dispatching
+              // `hamesh:activate` before this point is silently dropped.
+              // `dispatchEvent` crosses the content-script isolated-world
+              // boundary for listeners (unlike a plain property assignment,
+              // which would only be visible inside this isolated world).
+              window.dispatchEvent(new CustomEvent('hamesh:ready'));
             },
           }),
         );
