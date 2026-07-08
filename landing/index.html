@@ -1,0 +1,1012 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>هامش — Hamesh · اترك السياق حيث ينتمي</title>
+    <meta
+      name="description"
+      content="Hamesh is a margin for the web — attach a note to the exact sentence, line of code, or paragraph that matters, and find it there when you return. Local-first, no account."
+    />
+    <link rel="canonical" href="https://hamesh.app/" />
+    <meta name="theme-color" content="#f7f3ec" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#16140f" media="(prefers-color-scheme: dark)" />
+
+    <!-- Social -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="هامش — Hamesh" />
+    <meta
+      property="og:description"
+      content="Leave context where it belongs. A quiet annotation layer for the web."
+    />
+    <meta property="og:image" content="./assets/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="هامش — Hamesh" />
+    <meta
+      name="twitter:description"
+      content="Leave context where it belongs. A quiet annotation layer for the web."
+    />
+    <meta name="twitter:image" content="./assets/og.png" />
+
+    <!-- Favicon: the margin mark, inline so there is no extra request -->
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cg fill='none' stroke='%23B5502F' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='M10 5V27'/%3E%3Cpath d='M10 14H20'/%3E%3Cpath d='M20 10.5V17.5'/%3E%3C/g%3E%3C/svg%3E"
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --ink: #1e1b18;
+        --ink-60: rgba(30, 27, 24, 0.62);
+        --ink-40: rgba(30, 27, 24, 0.42);
+        --paper: #f7f3ec;
+        --paper-dim: #efe7d8;
+        --surface: #ffffff;
+        --accent: #b5502f;
+        --accent-strong: #8f3e22;
+        --accent-tint: #f1dccc;
+        --border: rgba(30, 27, 24, 0.14);
+        --success: #4b6b4e;
+        --sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        --arabic: 'IBM Plex Sans Arabic', 'IBM Plex Sans', 'Segoe UI', Tahoma, sans-serif;
+        --serif: 'IBM Plex Serif', Georgia, 'Times New Roman', serif;
+        --radius-lg: 10px;
+        --radius-md: 6px;
+        --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.16);
+        --maxw: 1080px;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --ink: #f3ede3;
+          --ink-60: rgba(243, 237, 227, 0.64);
+          --ink-40: rgba(243, 237, 227, 0.46);
+          --paper: #16140f;
+          --paper-dim: #211e18;
+          --surface: #262219;
+          --accent: #e08b5c;
+          --accent-strong: #f0a578;
+          --accent-tint: rgba(224, 139, 92, 0.16);
+          --border: rgba(243, 237, 227, 0.16);
+          --success: #8fb894;
+          --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.4);
+          --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.5);
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-padding-top: 84px;
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        html {
+          scroll-behavior: smooth;
+        }
+      }
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: var(--sans);
+        line-height: 1.65;
+        -webkit-font-smoothing: antialiased;
+      }
+      html[dir='rtl'] body {
+        font-family: var(--arabic);
+      }
+      .wrap {
+        max-width: var(--maxw);
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+      a {
+        color: var(--accent-strong);
+      }
+      :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+        border-radius: 3px;
+      }
+      .mark {
+        flex: none;
+        color: var(--accent);
+      }
+
+      /* ---- Header ---- */
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: color-mix(in srgb, var(--paper) 90%, transparent);
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid var(--border);
+      }
+      .nav {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        height: 64px;
+      }
+      .lockup {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .lockup .ar {
+        font-family: var(--arabic);
+        font-weight: 600;
+        font-size: 20px;
+      }
+      .lockup .sep {
+        width: 1px;
+        height: 18px;
+        background: var(--border);
+      }
+      .lockup .en {
+        font-family: var(--serif);
+        font-style: italic;
+        font-size: 15px;
+        color: var(--ink-60);
+      }
+      .nav .spacer {
+        margin-inline-start: auto;
+      }
+      .toggle {
+        font-family: var(--sans);
+        font-size: 13px;
+        font-weight: 500;
+        padding: 7px 12px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: transparent;
+        color: var(--ink);
+        cursor: pointer;
+      }
+      .toggle:hover {
+        background: var(--paper-dim);
+      }
+
+      /* ---- Buttons ---- */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font: inherit;
+        font-weight: 500;
+        font-size: 15px;
+        padding: 11px 20px;
+        border-radius: var(--radius-md);
+        border: 1px solid transparent;
+        cursor: pointer;
+        text-decoration: none;
+      }
+      .btn-primary {
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+      }
+      .btn-primary:hover {
+        background: var(--accent-strong);
+        border-color: var(--accent-strong);
+      }
+      .btn-ghost {
+        color: var(--ink);
+        border-color: var(--border);
+        background: var(--surface);
+      }
+      .btn-ghost:hover {
+        background: var(--paper-dim);
+      }
+
+      /* ---- Sections ---- */
+      section {
+        padding: 84px 0;
+        border-top: 1px solid var(--border);
+      }
+      .kicker {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin: 0 0 18px;
+      }
+      h1 {
+        font-family: var(--serif);
+        font-weight: 500;
+        font-size: clamp(38px, 6vw, 66px);
+        line-height: 1.06;
+        letter-spacing: -0.01em;
+        margin: 0 0 22px;
+      }
+      html[dir='rtl'] h1 {
+        font-family: var(--arabic);
+        font-weight: 600;
+        letter-spacing: 0;
+      }
+      h2 {
+        font-family: var(--serif);
+        font-style: italic;
+        font-weight: 500;
+        font-size: clamp(26px, 3.4vw, 38px);
+        margin: 0 0 20px;
+      }
+      html[dir='rtl'] h2 {
+        font-family: var(--arabic);
+        font-style: normal;
+        font-weight: 600;
+      }
+      .lede {
+        font-size: clamp(17px, 2vw, 21px);
+        line-height: 1.7;
+        color: var(--ink-60);
+        max-width: 60ch;
+        margin: 0 0 16px;
+      }
+
+      /* ---- Hero ---- */
+      .hero {
+        padding-top: 72px;
+      }
+      .hero-grid {
+        display: grid;
+        grid-template-columns: 1.05fr 0.95fr;
+        gap: 56px;
+        align-items: center;
+      }
+      .hero-cta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 30px;
+      }
+      .hero-note {
+        margin-top: 22px;
+        font-size: 13px;
+        color: var(--ink-40);
+      }
+
+      /* ---- Product mock (shared with hero + experience) ---- */
+      .mock {
+        position: relative;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        box-shadow: var(--shadow-lg);
+        overflow: hidden;
+      }
+      .mock-chrome {
+        display: flex;
+        gap: 6px;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--border);
+      }
+      .mock-chrome i {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--border);
+      }
+      .mock-body {
+        position: relative;
+        padding: 30px 26px 40px;
+      }
+      .mock-body p {
+        font-family: var(--serif);
+        font-size: 15px;
+        line-height: 1.75;
+        color: var(--ink);
+        margin: 0;
+        max-width: 42ch;
+      }
+      html[dir='rtl'] .mock-body p {
+        font-family: var(--arabic);
+      }
+      .sel {
+        position: relative;
+        display: inline;
+        box-shadow:
+          0 0 0 1.5px var(--accent),
+          0 0 0 4.5px var(--accent-tint);
+        border-radius: 3px;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        margin-top: 20px;
+        background: var(--ink);
+        color: var(--paper);
+        font-size: 12px;
+        font-weight: 500;
+        padding: 7px 12px;
+        border-radius: 7px;
+        box-shadow: var(--shadow-md);
+      }
+      .pill .mark {
+        color: var(--accent);
+      }
+
+      /* Composer / note card inside mocks */
+      .card {
+        position: relative;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-lg);
+        padding: 16px;
+        max-width: 300px;
+      }
+      .card .connector {
+        position: absolute;
+        top: -10px;
+        inset-inline-start: 18px;
+        width: 1px;
+        height: 10px;
+        background: var(--accent);
+      }
+      .card .lbl {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 10.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--ink-40);
+        margin-bottom: 8px;
+      }
+      .card .lbl .mark {
+        color: var(--accent);
+      }
+      .card .txt {
+        font-family: var(--serif);
+        font-size: 14.5px;
+        line-height: 1.6;
+        color: var(--ink);
+      }
+      html[dir='rtl'] .card .txt {
+        font-family: var(--arabic);
+      }
+      .card .btns {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 14px;
+      }
+      .mini {
+        font-size: 12px;
+        font-weight: 500;
+        padding: 6px 12px;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border);
+      }
+      .mini.primary {
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+      }
+      .marker {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 28px;
+        color: var(--accent-strong);
+        vertical-align: middle;
+      }
+
+      /* ---- Grids of cards ---- */
+      .steps,
+      .who,
+      .gallery {
+        display: grid;
+        gap: 18px;
+        margin-top: 36px;
+      }
+      .steps {
+        grid-template-columns: repeat(3, 1fr);
+      }
+      .who {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .gallery {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .tile {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 24px;
+      }
+      .tile .n {
+        font-family: var(--serif);
+        font-style: italic;
+        color: var(--accent);
+        font-size: 22px;
+      }
+      .tile h3 {
+        font-size: 17px;
+        margin: 10px 0 8px;
+      }
+      .tile p {
+        margin: 0;
+        color: var(--ink-60);
+        font-size: 14.5px;
+      }
+      .gallery figure {
+        margin: 0;
+      }
+      .gallery figcaption {
+        margin-top: 12px;
+        font-size: 13px;
+        color: var(--ink-40);
+      }
+      .gallery .stage {
+        background: var(--paper-dim);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 28px 24px;
+        min-height: 150px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      /* ---- Privacy ---- */
+      .privacy-card {
+        display: flex;
+        gap: 18px;
+        align-items: flex-start;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 28px;
+        max-width: 760px;
+      }
+      .privacy-card .mark {
+        color: var(--accent);
+        margin-top: 2px;
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--success);
+        margin-top: 12px;
+      }
+      .badge .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--success);
+      }
+
+      /* ---- Install ---- */
+      pre {
+        background: var(--ink);
+        color: var(--paper);
+        font-family: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+        font-size: 13.5px;
+        line-height: 1.7;
+        padding: 18px 20px;
+        border-radius: var(--radius-lg);
+        overflow-x: auto;
+        max-width: 560px;
+        direction: ltr;
+        text-align: left;
+      }
+      .steps-list {
+        margin: 20px 0 0;
+        padding-inline-start: 20px;
+        color: var(--ink-60);
+        max-width: 60ch;
+      }
+      .steps-list li {
+        margin: 8px 0;
+      }
+
+      /* ---- Footer ---- */
+      footer {
+        border-top: 1px solid var(--border);
+        padding: 40px 0;
+        color: var(--ink-40);
+        font-size: 13px;
+      }
+      .foot {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .foot .spacer {
+        margin-inline-start: auto;
+      }
+
+      /* ---- Responsive ---- */
+      @media (max-width: 820px) {
+        .hero-grid {
+          grid-template-columns: 1fr;
+          gap: 40px;
+        }
+        .steps {
+          grid-template-columns: 1fr;
+        }
+        .who,
+        .gallery {
+          grid-template-columns: 1fr;
+        }
+        section {
+          padding: 64px 0;
+        }
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <a
+      href="#main"
+      class="btn btn-ghost"
+      style="position: absolute; inset-inline-start: -9999px"
+      onfocus="
+        this.style.insetInlineStart = '16px';
+        this.style.top = '10px';
+        this.style.position = 'fixed';
+        this.style.zIndex = '20';
+      "
+      data-ar="تخطَّ إلى المحتوى"
+      data-en="Skip to content"
+      >تخطَّ إلى المحتوى</a
+    >
+
+    <header>
+      <div class="wrap nav">
+        <span class="lockup" aria-label="Hamesh هامش">
+          <svg class="mark" width="22" height="22" viewBox="0 0 32 32" aria-hidden="true">
+            <g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+              <path d="M10 5V27" />
+              <path d="M10 14H20" />
+              <path d="M20 10.5V17.5" />
+            </g>
+          </svg>
+          <span class="ar">هامش</span>
+          <span class="sep"></span>
+          <span class="en">Hamesh</span>
+        </span>
+        <span class="spacer"></span>
+        <button
+          class="toggle"
+          id="langToggle"
+          type="button"
+          aria-pressed="false"
+          aria-label="Switch to English"
+        >
+          EN
+        </button>
+      </div>
+    </header>
+
+    <main id="main">
+      <!-- Hero -->
+      <section class="hero" style="border-top: none">
+        <div class="wrap hero-grid">
+          <div>
+            <p class="kicker" data-ar="طبقة تعليقات للويب" data-en="A contextual layer for the web">
+              طبقة تعليقات للويب
+            </p>
+            <h1 data-ar="اترك السياق حيث ينتمي." data-en="Leave context where it belongs.">
+              اترك السياق حيث ينتمي.
+            </h1>
+            <p
+              class="lede"
+              data-ar="هامش يمنح الويب هامشًا — علّق فكرة على الجملة أو سطر الشيفرة أو الفقرة بالتحديد، ثم غادر وعُد لتجدها في مكانها تمامًا."
+              data-en="Hamesh gives the web a margin. Pin a thought to the exact sentence, line of code, or paragraph — then leave, and find it waiting right where you left it."
+            >
+              هامش يمنح الويب هامشًا — علّق فكرة على الجملة أو سطر الشيفرة أو الفقرة بالتحديد، ثم
+              غادر وعُد لتجدها في مكانها تمامًا.
+            </p>
+            <div class="hero-cta">
+              <a class="btn btn-primary" href="#install" data-ar="جرّب هامش" data-en="Get Hamesh"
+                >جرّب هامش</a
+              >
+              <a class="btn btn-ghost" href="#how" data-ar="كيف يعمل" data-en="How it works"
+                >كيف يعمل</a
+              >
+            </div>
+            <p
+              class="hero-note"
+              data-ar="محلي بالكامل · بلا حساب · بلا مزامنة"
+              data-en="Fully local · no account · no sync"
+            >
+              محلي بالكامل · بلا حساب · بلا مزامنة
+            </p>
+          </div>
+
+          <!-- Hero visual: real product UI recreated -->
+          <div class="mock" aria-hidden="true">
+            <div class="mock-chrome"><i></i><i></i><i></i></div>
+            <div class="mock-body">
+              <p>
+                Encoding is the process by which
+                <span class="sel">perceived information</span> is converted into a construct that
+                can be stored and later retrieved from long-term memory.
+              </p>
+              <div class="card" style="margin-top: 26px">
+                <span class="connector"></span>
+                <span class="lbl">
+                  <svg class="mark" width="11" height="11" viewBox="0 0 32 32">
+                    <g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round">
+                      <path d="M10 5V27" />
+                      <path d="M10 14H20" />
+                      <path d="M20 10.5V17.5" />
+                    </g>
+                  </svg>
+                  <span data-ar="ملاحظة" data-en="Note">ملاحظة</span>
+                </span>
+                <div
+                  class="txt"
+                  data-ar="راجع هذا قبل مراجعة التصميم — منحنى الاستبقاء ينطبق على تسرّب المستخدمين."
+                  data-en="Revisit before the design review — the retention curve maps to our drop-off."
+                >
+                  راجع هذا قبل مراجعة التصميم — منحنى الاستبقاء ينطبق على تسرّب المستخدمين.
+                </div>
+                <div class="btns">
+                  <span class="mini" data-ar="إلغاء" data-en="Cancel">إلغاء</span>
+                  <span class="mini primary" data-ar="حفظ" data-en="Save">حفظ</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Problem -->
+      <section id="problem">
+        <div class="wrap">
+          <p class="kicker" data-ar="المشكلة" data-en="The problem">المشكلة</p>
+          <h2 data-ar="الويب بلا هوامش." data-en="The web has no margins.">الويب بلا هوامش.</h2>
+          <p
+            class="lede"
+            data-ar="نحفظ رابطًا فنفقد سبب أهميته. ننسخ جملة إلى تطبيق ملاحظات، مجرّدة من الصفحة التي عاشت فيها. تنجرف الفكرة بعيدًا عن سياقها."
+            data-en="We save a link and lose why it mattered. We copy a sentence into a notes app, stripped of the page it lived on. The thought drifts away from its context."
+          >
+            نحفظ رابطًا فنفقد سبب أهميته. ننسخ جملة إلى تطبيق ملاحظات، مجرّدة من الصفحة التي عاشت
+            فيها. تنجرف الفكرة بعيدًا عن سياقها.
+          </p>
+          <p
+            class="lede"
+            data-ar="للكتب والمخطوطات هوامش — مساحة هادئة بجوار النص لسؤال أو تصحيح أو رابط. أزال الويب تلك المساحة. يعيدها هامش."
+            data-en="Books and manuscripts have margins — a quiet strip beside the text for a question, a correction, a link. The web removed it. Hamesh brings it back."
+          >
+            للكتب والمخطوطات هوامش — مساحة هادئة بجوار النص لسؤال أو تصحيح أو رابط. أزال الويب تلك
+            المساحة. يعيدها هامش.
+          </p>
+        </div>
+      </section>
+
+      <!-- How it works -->
+      <section id="how">
+        <div class="wrap">
+          <p class="kicker" data-ar="كيف يعمل" data-en="How it works">كيف يعمل</p>
+          <h2 data-ar="ثلاث حركات." data-en="Three moves.">ثلاث حركات.</h2>
+          <div class="steps">
+            <div class="tile">
+              <div class="n">01</div>
+              <h3 data-ar="اختر" data-en="Select">اختر</h3>
+              <p
+                data-ar="فعّل هامش ومرّر فوق الصفحة؛ يُبرز العنصر الذي يهمّك بدقّة."
+                data-en="Activate Hamesh and hover; it precisely highlights the element that matters."
+              >
+                فعّل هامش ومرّر فوق الصفحة؛ يُبرز العنصر الذي يهمّك بدقّة.
+              </p>
+            </div>
+            <div class="tile">
+              <div class="n">02</div>
+              <h3 data-ar="اكتب" data-en="Write">اكتب</h3>
+              <p
+                data-ar="اكتب ملاحظة قصيرة في بطاقة صغيرة ملتصقة بمكانها — لا نافذة تقطع الصفحة."
+                data-en="Write a short note in a small card attached in place — no modal, no page dim."
+              >
+                اكتب ملاحظة قصيرة في بطاقة صغيرة ملتصقة بمكانها — لا نافذة تقطع الصفحة.
+              </p>
+            </div>
+            <div class="tile">
+              <div class="n">03</div>
+              <h3 data-ar="عُد" data-en="Return">عُد</h3>
+              <p
+                data-ar="تبقى علامة صغيرة في الهامش. عُد في أي وقت لتفتح الفكرة في سياقها."
+                data-en="A small mark stays in the margin. Come back anytime to open the thought in context."
+              >
+                تبقى علامة صغيرة في الهامش. عُد في أي وقت لتفتح الفكرة في سياقها.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Product experience -->
+      <section id="experience">
+        <div class="wrap">
+          <p class="kicker" data-ar="التجربة" data-en="The experience">التجربة</p>
+          <h2 data-ar="واجهة واحدة، بلغتين." data-en="One interface, two scripts.">
+            واجهة واحدة، بلغتين.
+          </h2>
+          <div class="gallery">
+            <figure>
+              <div class="stage" aria-hidden="true">
+                <p style="font-family: var(--serif); margin: 0; font-size: 15px">
+                  <span class="sel">The Architecture of Memory</span>
+                </p>
+              </div>
+              <figcaption data-ar="وضع الاختيار" data-en="Selection mode">وضع الاختيار</figcaption>
+            </figure>
+            <figure>
+              <div class="stage" aria-hidden="true">
+                <div class="card" style="box-shadow: var(--shadow-md)">
+                  <span class="lbl">
+                    <svg class="mark" width="11" height="11" viewBox="0 0 32 32">
+                      <g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round">
+                        <path d="M10 5V27" />
+                        <path d="M10 14H20" />
+                        <path d="M20 10.5V17.5" />
+                      </g>
+                    </svg>
+                    <span data-ar="ملاحظة" data-en="Note">ملاحظة</span>
+                  </span>
+                  <div
+                    class="txt"
+                    data-ar="فكرة موجزة، في مكانها."
+                    data-en="A brief thought, in place."
+                  >
+                    فكرة موجزة، في مكانها.
+                  </div>
+                </div>
+              </div>
+              <figcaption data-ar="بطاقة الكتابة" data-en="Composer">بطاقة الكتابة</figcaption>
+            </figure>
+            <figure>
+              <div class="stage" aria-hidden="true">
+                <span class="marker">
+                  <svg width="16" height="20" viewBox="0 0 32 32">
+                    <g fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round">
+                      <path d="M10 5V27" />
+                      <path d="M10 14H20" />
+                      <path d="M20 10.5V17.5" />
+                    </g>
+                  </svg>
+                </span>
+                <p
+                  style="
+                    font-family: var(--serif);
+                    margin: 0;
+                    font-size: 15px;
+                    color: var(--ink-60);
+                  "
+                >
+                  <span data-ar="علامة هادئة في الهامش" data-en="A quiet mark in the margin"
+                    >علامة هادئة في الهامش</span
+                  >
+                </p>
+              </div>
+              <figcaption data-ar="العلامة" data-en="Marker">العلامة</figcaption>
+            </figure>
+            <figure>
+              <div class="stage" aria-hidden="true">
+                <div class="card" style="box-shadow: var(--shadow-md)">
+                  <div
+                    class="txt"
+                    data-ar="عادت الملاحظة في سياقها تمامًا."
+                    data-en="The note, restored in context."
+                  >
+                    عادت الملاحظة في سياقها تمامًا.
+                  </div>
+                  <div
+                    style="margin-top: 10px; font-size: 11px; color: var(--ink-40)"
+                    data-ar="عُدّلت قبل ساعتين"
+                    data-en="Edited 2h ago"
+                  >
+                    عُدّلت قبل ساعتين
+                  </div>
+                </div>
+              </div>
+              <figcaption data-ar="الملاحظة المستعادة" data-en="Restored note">
+                الملاحظة المستعادة
+              </figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <!-- Who it's for -->
+      <section id="who">
+        <div class="wrap">
+          <p class="kicker" data-ar="لِمن" data-en="Who it's for">لِمن</p>
+          <h2
+            data-ar="لمن يفكّر بجوار ما يقرأ."
+            data-en="For anyone who thinks beside what they read."
+          >
+            لمن يفكّر بجوار ما يقرأ.
+          </h2>
+          <div class="who">
+            <div class="tile">
+              <h3 data-ar="المصممون والمطوّرون" data-en="Designers & developers">
+                المصممون والمطوّرون
+              </h3>
+              <p
+                data-ar="علّق ملاحظة على مكوّن أو قيمة تصميم أو سطر في التوثيق."
+                data-en="Pin feedback to a component, a design token, or a line in the docs."
+              >
+                علّق ملاحظة على مكوّن أو قيمة تصميم أو سطر في التوثيق.
+              </p>
+            </div>
+            <div class="tile">
+              <h3 data-ar="الباحثون" data-en="Researchers">الباحثون</h3>
+              <p
+                data-ar="علّق على المصادر حيث تعيش الحجّة فعلًا."
+                data-en="Annotate sources where the argument actually lives."
+              >
+                علّق على المصادر حيث تعيش الحجّة فعلًا.
+              </p>
+            </div>
+            <div class="tile">
+              <h3 data-ar="العاملون بالمعرفة" data-en="Knowledge workers">العاملون بالمعرفة</h3>
+              <p
+                data-ar="احتفظ بالـ«لماذا» بجوار الـ«ماذا» عبر ما تقرأه كل يوم."
+                data-en="Keep the why beside the what, across everything you read."
+              >
+                احتفظ بالـ«لماذا» بجوار الـ«ماذا» عبر ما تقرأه كل يوم.
+              </p>
+            </div>
+            <div class="tile">
+              <h3 data-ar="الطلاب والمتعلّمون" data-en="Students & learners">الطلاب والمتعلّمون</h3>
+              <p
+                data-ar="اترك لنفسك أثرًا من الانتباه لتعود إليه لاحقًا."
+                data-en="Leave yourself a trail of attention to return to later."
+              >
+                اترك لنفسك أثرًا من الانتباه لتعود إليه لاحقًا.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Privacy -->
+      <section id="privacy">
+        <div class="wrap">
+          <p class="kicker" data-ar="الخصوصية" data-en="Privacy">الخصوصية</p>
+          <h2 data-ar="ملاحظاتك لك." data-en="Your notes are yours.">ملاحظاتك لك.</h2>
+          <div class="privacy-card">
+            <svg class="mark" width="26" height="26" viewBox="0 0 32 32" aria-hidden="true">
+              <g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+                <path d="M10 5V27" />
+                <path d="M10 14H20" />
+                <path d="M20 10.5V17.5" />
+              </g>
+            </svg>
+            <div>
+              <p
+                style="margin: 0; font-size: 16px; line-height: 1.7"
+                data-ar="تُحفظ كل ملاحظة محليًا في متصفحك فقط. لا حساب، لا خادم، لا مزامنة، ولا طلبات شبكة من أي نوع. هذه نسخة أولى محلية بالكامل."
+                data-en="Every note is saved locally in your browser — nothing else. No account, no server, no sync, and no network requests of any kind. This MVP is fully local."
+              >
+                تُحفظ كل ملاحظة محليًا في متصفحك فقط. لا حساب، لا خادم، لا مزامنة، ولا طلبات شبكة من
+                أي نوع. هذه نسخة أولى محلية بالكامل.
+              </p>
+              <span class="badge">
+                <span class="dot"></span>
+                <span data-ar="محلي أولًا · Manifest V3" data-en="Local-first · Manifest V3"
+                  >محلي أولًا · Manifest V3</span
+                >
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Install -->
+      <section id="install">
+        <div class="wrap">
+          <p class="kicker" data-ar="ابدأ" data-en="Get started">ابدأ</p>
+          <h2 data-ar="حمّله وابدأ التعليق." data-en="Install it and start annotating.">
+            حمّله وابدأ التعليق.
+          </h2>
+          <p
+            class="lede"
+            data-ar="هامش ليس على متجر كروم بعد. ابنِه من المصدر وحمّله كإضافة غير محزومة:"
+            data-en="Hamesh isn't on the Chrome Web Store yet. Build it from source and load the unpacked extension:"
+          >
+            هامش ليس على متجر كروم بعد. ابنِه من المصدر وحمّله كإضافة غير محزومة:
+          </p>
+          <pre><code>pnpm install
+pnpm build
+# → .output/chrome-mv3/</code></pre>
+          <ol class="steps-list">
+            <li
+              data-ar="افتح chrome://extensions وفعّل «وضع المطوّر»."
+              data-en="Open chrome://extensions and enable Developer mode."
+            >
+              افتح chrome://extensions وفعّل «وضع المطوّر».
+            </li>
+            <li
+              data-ar="اختر «تحميل غير محزوم» وحدّد مجلد ‎.output/chrome-mv3‎."
+              data-en="Choose “Load unpacked” and select the .output/chrome-mv3 folder."
+            >
+              اختر «تحميل غير محزوم» وحدّد مجلد ‎.output/chrome-mv3‎.
+            </li>
+            <li
+              data-ar="على أي صفحة، انقر أيقونة هامش أو اضغط Alt+H، ثم اختر عنصرًا واكتب."
+              data-en="On any page, click the Hamesh icon or press Alt+H, then pick an element and write."
+            >
+              على أي صفحة، انقر أيقونة هامش أو اضغط Alt+H، ثم اختر عنصرًا واكتب.
+            </li>
+          </ol>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="wrap foot">
+        <svg class="mark" width="18" height="18" viewBox="0 0 32 32" aria-hidden="true">
+          <g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+            <path d="M10 5V27" />
+            <path d="M10 14H20" />
+            <path d="M20 10.5V17.5" />
+          </g>
+        </svg>
+        <span>هامش — Hamesh</span>
+        <span class="spacer"></span>
+        <span data-ar="طبقة تعليقات هادئة للويب." data-en="A quiet annotation layer for the web."
+          >طبقة تعليقات هادئة للويب.</span
+        >
+      </div>
+    </footer>
+
+    <script>
+      (function () {
+        var html = document.documentElement;
+        var toggle = document.getElementById('langToggle');
+        var nodes = document.querySelectorAll('[data-ar]');
+
+        function apply(lang) {
+          var isAr = lang === 'ar';
+          html.lang = lang;
+          html.dir = isAr ? 'rtl' : 'ltr';
+          nodes.forEach(function (el) {
+            var val = el.getAttribute(isAr ? 'data-ar' : 'data-en');
+            if (val !== null) el.textContent = val;
+          });
+          toggle.textContent = isAr ? 'EN' : 'ع';
+          toggle.setAttribute('aria-pressed', String(!isAr));
+          toggle.setAttribute('aria-label', isAr ? 'Switch to English' : 'التبديل إلى العربية');
+          try {
+            localStorage.setItem('hamesh-lang', lang);
+          } catch (e) {}
+        }
+
+        var saved = null;
+        try {
+          saved = localStorage.getItem('hamesh-lang');
+        } catch (e) {}
+        if (saved === 'en') apply('en');
+
+        toggle.addEventListener('click', function () {
+          apply(html.lang === 'ar' ? 'en' : 'ar');
+        });
+      })();
+    </script>
+  </body>
+</html>
