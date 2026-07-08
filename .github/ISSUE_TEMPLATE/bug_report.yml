@@ -1,0 +1,64 @@
+name: Bug report
+description: Something in Hamesh isn't working as expected.
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. **Do not paste private note contents, credentials,
+        or confidential page data.** Redact anything sensitive before submitting.
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Exact steps that trigger the problem.
+      placeholder: |
+        1. Open a page
+        2. Press Alt+H
+        3. Select an element and save a note
+        4. Reload
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: Include any console errors (with sensitive data removed).
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser & version
+      placeholder: e.g. Chrome 129 on Windows 11
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Hamesh version
+      placeholder: e.g. 0.1.0 (see chrome://extensions)
+    validations:
+      required: true
+  - type: dropdown
+    id: page-type
+    attributes:
+      label: Page type (only if safe to share)
+      options:
+        - Static article / docs
+        - Single-page app (SPA)
+        - Page with sticky/fixed header
+        - Other / prefer not to say
+    validations:
+      required: false
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: Optional. Redact any private content first.

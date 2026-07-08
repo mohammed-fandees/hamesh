@@ -1,0 +1,80 @@
+name: Release
+
+# Cut a release by pushing a semver tag (vMAJOR.MINOR.PATCH), or run manually.
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to release (e.g. v0.1.0)'
+        required: true
+
+# Default: read-only. The publish job elevates to contents: write.
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify quality gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm format:check
+      - run: pnpm test
+
+  release:
+    name: Build package & publish release
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # only this job needs to create the release
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build production extension package
+        run: pnpm zip
+
+      - name: Resolve tag, artifact & notes
+        id: meta
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          VERSION="${TAG#v}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          ZIP=$(ls .output/*-chrome.zip | head -n1)
+          echo "zip=$ZIP" >> "$GITHUB_OUTPUT"
+          sha256sum "$ZIP" > "$ZIP.sha256"
+          echo "sha256=$ZIP.sha256" >> "$GITHUB_OUTPUT"
+          # Extract just this version's section from the changelog.
+          awk -v ver="$VERSION" '
+            /^## \[/ { if (p) exit }
+            index($0, "## [" ver "]") == 1 { p=1 }
+            p { print }
+          ' CHANGELOG.md > notes.md
+          if [ ! -s notes.md ]; then echo "Release $TAG" > notes.md; fi
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.meta.outputs.tag }}" \
+            "${{ steps.meta.outputs.zip }}" \
+            "${{ steps.meta.outputs.sha256 }}" \
+            --title "${{ steps.meta.outputs.tag }}" \
+            --notes-file notes.md \
+            --verify-tag
