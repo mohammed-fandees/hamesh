@@ -926,15 +926,29 @@
           </h2>
           <p
             class="lede"
-            data-ar="هامش ليس على متجر كروم بعد. ابنِه من المصدر وحمّله كإضافة غير محزومة:"
-            data-en="Hamesh isn't on the Chrome Web Store yet. Build it from source and load the unpacked extension:"
+            data-ar="هامش ليس على متجر كروم بعد. نزّل أحدث إصدار من GitHub وحمّله كإضافة غير محزومة:"
+            data-en="Hamesh isn't on the Chrome Web Store yet. Download the latest release from GitHub and load it as an unpacked extension:"
           >
-            هامش ليس على متجر كروم بعد. ابنِه من المصدر وحمّله كإضافة غير محزومة:
+            هامش ليس على متجر كروم بعد. نزّل أحدث إصدار من GitHub وحمّله كإضافة غير محزومة:
           </p>
-          <pre><code>pnpm install
-pnpm build
-# → .output/chrome-mv3/</code></pre>
+          <p style="margin: 24px 0">
+            <a
+              class="btn btn-primary"
+              href="https://github.com/mohammed-fandees/hamesh/releases/latest"
+              target="_blank"
+              rel="noopener"
+              data-ar="تنزيل أحدث إصدار ↗"
+              data-en="Download the latest release ↗"
+              >تنزيل أحدث إصدار ↗</a
+            >
+          </p>
           <ol class="steps-list">
+            <li
+              data-ar="من صفحة الإصدار، نزّل ملف hamesh-…-chrome.zip ثم فُكّ ضغطه."
+              data-en="On the release page, download hamesh-…-chrome.zip and unzip it."
+            >
+              من صفحة الإصدار، نزّل ملف hamesh-…-chrome.zip ثم فُكّ ضغطه.
+            </li>
             <li
               data-ar="افتح chrome://extensions وفعّل «وضع المطوّر»."
               data-en="Open chrome://extensions and enable Developer mode."
@@ -942,10 +956,10 @@ pnpm build
               افتح chrome://extensions وفعّل «وضع المطوّر».
             </li>
             <li
-              data-ar="اختر «تحميل غير محزوم» وحدّد مجلد ‎.output/chrome-mv3‎."
-              data-en="Choose “Load unpacked” and select the .output/chrome-mv3 folder."
+              data-ar="اختر «تحميل غير محزوم» وحدّد المجلد الذي فككت ضغطه."
+              data-en="Choose “Load unpacked” and select the unzipped folder."
             >
-              اختر «تحميل غير محزوم» وحدّد مجلد ‎.output/chrome-mv3‎.
+              اختر «تحميل غير محزوم» وحدّد المجلد الذي فككت ضغطه.
             </li>
             <li
               data-ar="على أي صفحة، انقر أيقونة هامش أو اضغط Alt+H، ثم اختر عنصرًا واكتب."
@@ -954,6 +968,13 @@ pnpm build
               على أي صفحة، انقر أيقونة هامش أو اضغط Alt+H، ثم اختر عنصرًا واكتب.
             </li>
           </ol>
+          <p
+            class="hero-note"
+            data-ar="مطوِّر؟ يمكنك أيضًا البناء من المصدر: pnpm install ثم pnpm build."
+            data-en="Developer? You can also build from source: pnpm install then pnpm build."
+          >
+            مطوِّر؟ يمكنك أيضًا البناء من المصدر: pnpm install ثم pnpm build.
+          </p>
         </div>
       </section>
     </main>
