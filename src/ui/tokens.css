@@ -1,0 +1,528 @@
+/*
+ * Hamesh design tokens + component styles.
+ *
+ * Source of truth: the approved "Hamesh Brand Identity" design system.
+ * This stylesheet is injected into Hamesh's isolated Shadow DOM root and the
+ * popup, so class names are namespaced `hm-` and all values come from tokens.
+ *
+ * Fonts: IBM Plex (Sans / Sans Arabic / Serif / Mono) with robust system
+ * fallbacks. Production should self-host the Plex subset (see docs); this build
+ * relies on the fallback stack rather than a live Google Fonts request, which
+ * the extension CSP would block anyway.
+ */
+
+:host,
+.hm-scope {
+  /* Neutrals — light theme (default) */
+  --hm-ink: #1e1b18;
+  --hm-ink-60: rgba(30, 27, 24, 0.62);
+  --hm-ink-40: rgba(30, 27, 24, 0.42);
+  --hm-ink-20: rgba(30, 27, 24, 0.18);
+  --hm-ink-10: rgba(30, 27, 24, 0.08);
+  --hm-paper: #f7f3ec;
+  --hm-paper-dim: #efe7d8;
+  --hm-surface: #ffffff;
+
+  /* The mark — muted clay */
+  --hm-accent: #b5502f;
+  --hm-accent-strong: #8f3e22;
+  --hm-accent-tint: #f1dccc;
+  --hm-border: rgba(30, 27, 24, 0.14);
+
+  /* Semantic */
+  --hm-info: #2b4257;
+  --hm-success: #4b6b4e;
+  --hm-warning: #a67c3d;
+  --hm-danger: #8c2f27;
+
+  /* Type */
+  --hm-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --hm-arabic: 'IBM Plex Sans Arabic', 'IBM Plex Sans', 'Segoe UI', Tahoma, sans-serif;
+  --hm-serif: 'IBM Plex Serif', Georgia, 'Times New Roman', serif;
+  --hm-mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Code', Consolas, monospace;
+
+  /* Spacing */
+  --hm-space-1: 4px;
+  --hm-space-2: 8px;
+  --hm-space-3: 12px;
+  --hm-space-4: 16px;
+  --hm-space-5: 24px;
+  --hm-space-6: 32px;
+
+  /* Radius */
+  --hm-radius-sm: 3px;
+  --hm-radius-md: 6px;
+  --hm-radius-lg: 10px;
+  --hm-radius-pill: 999px;
+
+  /* Shadow */
+  --hm-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
+  --hm-shadow-md: 0 6px 20px rgba(0, 0, 0, 0.14);
+  --hm-shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.2);
+
+  /* Motion */
+  --hm-dur-fast: 120ms;
+  --hm-dur-base: 200ms;
+  --hm-dur-slow: 320ms;
+  --hm-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --hm-ease-settle: cubic-bezier(0.34, 1.15, 0.64, 1);
+
+  /* Z-index — top of the 32-bit range so cards/overlay out-rank markers and
+     any host stacking context. The shadow host itself is at the 32-bit max. */
+  --hm-z-marker: 2147483644;
+  --hm-z-overlay: 2147483645;
+  --hm-z-composer: 2147483646;
+  --hm-z-toast: 2147483647;
+}
+
+/* Dark theme — applied when host background is dark or via prefers-color-scheme */
+:host([data-hm-theme='dark']),
+.hm-scope[data-hm-theme='dark'] {
+  --hm-ink: #f3ede3;
+  --hm-ink-60: rgba(243, 237, 227, 0.62);
+  --hm-ink-40: rgba(243, 237, 227, 0.45);
+  --hm-ink-20: rgba(243, 237, 227, 0.2);
+  --hm-ink-10: rgba(243, 237, 227, 0.09);
+  --hm-paper: #16140f;
+  --hm-paper-dim: #211e18;
+  --hm-surface: #262219;
+  --hm-accent: #e08b5c;
+  --hm-accent-strong: #f0a578;
+  --hm-accent-tint: rgba(224, 139, 92, 0.16);
+  --hm-border: rgba(243, 237, 227, 0.16);
+  --hm-info: #7fa0be;
+  --hm-success: #8fb894;
+  --hm-warning: #d4a85e;
+  --hm-danger: #e07a6e;
+}
+
+/* Enforce host stacking above any host-page element. This rule is injected
+   after WXT's `:host{all:initial !important}` reset, so at equal specificity it
+   wins by source order (which an outer inline style cannot, per CSS Scoping).
+   Inert in the popup, where there is no shadow host. */
+:host {
+  position: relative !important;
+  z-index: 2147483647 !important;
+}
+
+/* ---- Base scope ---- */
+.hm-scope {
+  font-family: var(--hm-sans);
+  color: var(--hm-ink);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+.hm-scope *,
+.hm-scope *::before,
+.hm-scope *::after {
+  box-sizing: border-box;
+}
+.hm-scope [dir='rtl'],
+.hm-scope[dir='rtl'] {
+  font-family: var(--hm-arabic);
+}
+
+/* ---- The mark ---- */
+.hm-mark {
+  flex: none;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* ---- Selection mode ---- */
+.hm-capture {
+  position: fixed;
+  inset: 0;
+  z-index: var(--hm-z-overlay);
+  cursor: crosshair;
+  background: transparent;
+  pointer-events: auto;
+}
+.hm-hover-outline {
+  position: fixed;
+  z-index: var(--hm-z-overlay);
+  pointer-events: none;
+  border: 1.5px solid var(--hm-accent);
+  border-radius: var(--hm-radius-sm);
+  box-shadow: 0 0 0 3px var(--hm-accent-tint);
+  transition:
+    top var(--hm-dur-fast) var(--hm-ease-out),
+    left var(--hm-dur-fast) var(--hm-ease-out),
+    width var(--hm-dur-fast) var(--hm-ease-out),
+    height var(--hm-dur-fast) var(--hm-ease-out);
+}
+.hm-hint {
+  position: fixed;
+  z-index: var(--hm-z-toast);
+  pointer-events: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hm-space-2);
+  padding: 7px 12px;
+  border-radius: 7px;
+  background: var(--hm-ink);
+  color: var(--hm-paper);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: var(--hm-shadow-md);
+}
+.hm-hint .hm-mark {
+  color: var(--hm-accent);
+}
+
+/* Positioned wrapper for composer/viewer — above markers and overlay. */
+.hm-floating {
+  position: fixed;
+  z-index: var(--hm-z-composer);
+  pointer-events: auto;
+}
+
+/* ---- Card (composer / viewer / popup) ---- */
+.hm-card {
+  position: relative;
+  width: 300px;
+  max-width: calc(100vw - 24px);
+  background: var(--hm-surface);
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-lg);
+  box-shadow: var(--hm-shadow-lg);
+  padding: var(--hm-space-4);
+  font-size: 14px;
+  animation: hm-card-in var(--hm-dur-base) var(--hm-ease-settle);
+}
+@keyframes hm-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.hm-connector {
+  position: absolute;
+  top: -10px;
+  inset-inline-start: 18px;
+  width: 1px;
+  height: 10px;
+  background: var(--hm-accent);
+}
+.hm-connector[data-unavailable='true'] {
+  background: repeating-linear-gradient(180deg, var(--hm-ink-20) 0 4px, transparent 4px 8px);
+}
+.hm-card-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: var(--hm-space-2);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--hm-ink-40);
+}
+.hm-card-label .hm-mark {
+  color: var(--hm-accent);
+}
+
+.hm-textarea {
+  display: block;
+  width: 100%;
+  min-height: 92px;
+  resize: vertical;
+  padding: var(--hm-space-2);
+  font-family: var(--hm-serif);
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--hm-ink);
+  background: var(--hm-paper);
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-md);
+  transition: border-color var(--hm-dur-fast) var(--hm-ease-out);
+}
+.hm-scope[dir='rtl'] .hm-textarea,
+.hm-textarea[dir='rtl'] {
+  font-family: var(--hm-arabic);
+}
+.hm-textarea::placeholder {
+  color: var(--hm-ink-40);
+}
+.hm-textarea:focus-visible,
+.hm-textarea:focus {
+  outline: none;
+  border-color: var(--hm-accent);
+  box-shadow: 0 0 0 3px var(--hm-accent-tint);
+}
+
+.hm-note-body {
+  margin: 0;
+  font-family: var(--hm-serif);
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--hm-ink);
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+.hm-scope[dir='rtl'] .hm-note-body,
+.hm-note-body[dir='rtl'] {
+  font-family: var(--hm-arabic);
+}
+
+.hm-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--hm-space-2);
+  margin-top: var(--hm-space-3);
+}
+.hm-row--between {
+  justify-content: space-between;
+}
+
+.hm-meta {
+  font-size: 11px;
+  color: var(--hm-ink-40);
+}
+
+/* ---- Buttons ---- */
+.hm-btn {
+  font-family: var(--hm-sans);
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1;
+  padding: 8px 12px;
+  border-radius: var(--hm-radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition:
+    background var(--hm-dur-fast) var(--hm-ease-out),
+    color var(--hm-dur-fast) var(--hm-ease-out),
+    border-color var(--hm-dur-fast) var(--hm-ease-out);
+}
+.hm-btn:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--hm-surface),
+    0 0 0 4px var(--hm-accent);
+}
+.hm-btn-primary {
+  background: var(--hm-accent);
+  color: #fff;
+  border-color: var(--hm-accent);
+}
+.hm-btn-primary:hover {
+  background: var(--hm-accent-strong);
+  border-color: var(--hm-accent-strong);
+}
+.hm-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.hm-btn-ghost {
+  background: transparent;
+  color: var(--hm-ink-60);
+  border-color: var(--hm-border);
+}
+.hm-btn-ghost:hover {
+  background: var(--hm-paper-dim);
+  color: var(--hm-ink);
+}
+.hm-btn-danger {
+  background: var(--hm-danger);
+  color: #fff;
+  border-color: var(--hm-danger);
+}
+.hm-btn-danger:hover {
+  filter: brightness(1.08);
+}
+
+/* Icon-style ghost action (Edit / Delete in viewer) */
+.hm-link {
+  font-family: var(--hm-sans);
+  font-size: 12px;
+  font-weight: 500;
+  background: none;
+  border: none;
+  padding: 2px 2px;
+  cursor: pointer;
+  color: var(--hm-ink-60);
+  border-radius: var(--hm-radius-sm);
+}
+.hm-link:hover {
+  color: var(--hm-ink);
+}
+.hm-link--danger {
+  color: var(--hm-danger);
+}
+.hm-link:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--hm-accent);
+}
+
+.hm-close {
+  position: absolute;
+  top: 8px;
+  inset-inline-end: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: var(--hm-radius-sm);
+  cursor: pointer;
+  color: var(--hm-ink-40);
+}
+.hm-close:hover {
+  background: var(--hm-paper-dim);
+  color: var(--hm-ink);
+}
+.hm-close:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--hm-accent);
+}
+
+/* ---- Feedback ---- */
+.hm-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: var(--hm-space-2);
+  font-size: 11.5px;
+  color: var(--hm-danger);
+}
+.hm-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  margin-bottom: var(--hm-space-2);
+}
+.hm-status .hm-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex: none;
+}
+.hm-status--warning {
+  color: var(--hm-warning);
+}
+.hm-status--warning .hm-dot {
+  background: var(--hm-warning);
+}
+.hm-status--success {
+  color: var(--hm-success);
+}
+.hm-status--success .hm-dot {
+  background: var(--hm-success);
+}
+
+/* ---- Marker ---- */
+.hm-marker {
+  position: fixed;
+  z-index: var(--hm-z-marker);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  /* Opaque chip + hairline + shadow so the mark stays legible on ANY host
+     background, never a transparent glyph lost over busy content. */
+  background: var(--hm-surface);
+  box-shadow:
+    0 0 0 1px var(--hm-border),
+    var(--hm-shadow-sm);
+  border-radius: var(--hm-radius-md);
+  cursor: pointer;
+  color: var(--hm-accent-strong);
+  transition:
+    background var(--hm-dur-fast) var(--hm-ease-out),
+    transform var(--hm-dur-fast) var(--hm-ease-out),
+    box-shadow var(--hm-dur-fast) var(--hm-ease-out);
+}
+.hm-marker .hm-mark {
+  color: currentColor;
+}
+.hm-marker:hover {
+  background: var(--hm-accent-tint);
+}
+.hm-marker:active {
+  background: var(--hm-accent);
+  color: var(--hm-paper);
+  transform: scale(0.94);
+}
+.hm-marker:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--hm-accent),
+    0 0 0 4px var(--hm-accent-tint);
+}
+.hm-marker__badge {
+  position: absolute;
+  top: -2px;
+  inset-inline-end: -2px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  border-radius: var(--hm-radius-pill);
+  background: var(--hm-accent);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 14px;
+  text-align: center;
+}
+
+/* ---- Popup ---- */
+.hm-popup {
+  width: 300px;
+  padding: var(--hm-space-5);
+  background: var(--hm-surface);
+  color: var(--hm-ink);
+}
+.hm-popup__head {
+  display: flex;
+  align-items: center;
+  gap: var(--hm-space-2);
+}
+.hm-popup__brand {
+  font-weight: 600;
+  font-size: 13.5px;
+}
+.hm-popup__brand-ar {
+  font-family: var(--hm-arabic);
+  font-weight: 600;
+  font-size: 15px;
+}
+.hm-popup__shortcut {
+  margin-inline-start: auto;
+  font-size: 11px;
+  color: var(--hm-ink-40);
+  font-family: var(--hm-mono);
+}
+.hm-popup__count {
+  margin-top: var(--hm-space-4);
+  font-size: 26px;
+  font-weight: 600;
+}
+.hm-popup__count span {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--hm-ink-40);
+}
+
+/* ---- Reduced motion ---- */
+@media (prefers-reduced-motion: reduce) {
+  .hm-scope *,
+  .hm-hover-outline,
+  .hm-card,
+  .hm-marker {
+    animation: none !important;
+    transition: none !important;
+  }
+}

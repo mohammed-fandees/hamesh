@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Hamesh Test Page</title>
+    <style>
+      body {
+        font-family: Georgia, serif;
+        max-width: 640px;
+        margin: 40px auto;
+        padding: 0 24px;
+        color: #1a1a1a;
+        line-height: 1.7;
+      }
+      h1 {
+        font-size: 32px;
+      }
+      p {
+        margin: 18px 0;
+      }
+      .spacer {
+        height: 400px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1 data-testid="page-title">Hamesh Test Page</h1>
+    </header>
+    <main>
+      <article id="first-article">
+        <h2 data-testid="article-heading">The Architecture of Memory</h2>
+        <p class="content" data-testid="para-one">
+          Encoding is the process by which perceived information is converted into a construct that
+          can be stored and later retrieved from long-term memory.
+        </p>
+        <button id="action-btn" aria-label="Primary action">Click</button>
+      </article>
+      <div class="spacer"></div>
+      <article>
+        <h2>Article Two</h2>
+        <p class="content" data-testid="para-two">This is the second article paragraph.</p>
+      </article>
+    </main>
+    <footer>
+      <p>Footer content</p>
+    </footer>
+  </body>
+</html>
