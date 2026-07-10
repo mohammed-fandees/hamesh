@@ -1,6 +1,6 @@
 {
   "name": "hamesh",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "Contextual notes for the web — leave thoughts attached to the pages and elements they belong to.",
