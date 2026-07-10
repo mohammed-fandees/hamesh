@@ -32,5 +32,8 @@ The version is the single source of truth in `package.json` and must match
 The release artifact is `hamesh-<version>-chrome.zip` — the packaged Chrome
 MV3 extension produced by WXT (`pnpm zip`). It contains only built files
 (manifest, scripts, styles, icons) — no source, tests, or configuration. It is
-suitable for manual "Load unpacked" (after extracting) and for Chrome Web Store
-submission. Hamesh is **not** currently published on the Chrome Web Store.
+suitable for manual "Load unpacked" (after extracting) and is also the basis
+for Chrome Web Store submissions. Hamesh is published on the
+[Chrome Web Store](https://chromewebstore.google.com/detail/hamesh-%E2%80%94-%D9%87%D8%A7%D9%85%D8%B4/giajamkkehcoienhhlcfgcckahjjbgnc);
+bump the store listing separately after cutting a GitHub release (see
+`docs/chrome-web-store/`).

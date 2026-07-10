@@ -6,6 +6,47 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-07-10
+
+Settings for Hamesh: a Settings screen in the popup with functional
+language and appearance preferences, delivered incrementally across three
+PRs.
+
+### Added
+
+- **Settings screen** in the popup, reachable from a new gear button next to
+  the brand header, with a polished RTL-aware horizontal slide transition
+  (respects `prefers-reduced-motion`, manages focus on navigation, closes on
+  Escape).
+- **Language preference:** choose English or Arabic from Settings. Persists
+  across sessions and applies live — no reload — to the popup and every
+  already-open tab, via `chrome.storage.onChanged`. Users with no saved
+  preference keep today's behavior (follow the browser's UI language).
+- **Appearance preference:** Match website (default — the original adaptive
+  light/dark behavior, unchanged), Light, or Dark. A forced choice overrides
+  the host page across every Hamesh-owned surface (popup, markers,
+  composer, viewer); the host page itself is never modified. Persists and
+  applies live across every open tab, same mechanism as language.
+- Hamesh is now available on the **Chrome Web Store**; the landing page's
+  install CTA links there (manual GitHub-release install is still available
+  as a secondary option for developers).
+
+### Changed
+
+- `detectHostTheme` now also walks down single-child DOM chains to find a
+  background set on a nested app-shell wrapper element (common in
+  SPA-built sites whose `<body>`/`<html>` stay transparent), and — while
+  "Match website" is active — reacts live to a host page's own dark-mode
+  toggle or an asynchronously loaded theme, instead of only detecting once
+  at load.
+
+### Fixed
+
+- The popup could render narrower than its intended width under Chrome's
+  own popup auto-sizing, which can measure the document before the bundled
+  stylesheet has applied. The width is now pinned explicitly through every
+  layer, including an inline style present on the very first paint.
+
 ## [0.1.0] — 2026-07-08
 
 First functional MVP of the Hamesh browser extension (Chrome, Manifest V3).
@@ -42,5 +83,6 @@ First functional MVP of the Hamesh browser extension (Chrome, Manifest V3).
   analytics, telemetry, or network requests. Least-privilege permissions
   (`storage`, `activeTab`); no input/password values are ever read or stored.
 
-[Unreleased]: https://github.com/mohammed-fandees/hamesh/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/mohammed-fandees/hamesh/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/mohammed-fandees/hamesh/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/mohammed-fandees/hamesh/releases/tag/v0.1.0
