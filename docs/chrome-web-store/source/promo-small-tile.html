@@ -1,0 +1,86 @@
+<!--
+  Chrome Web Store small promotional tile source, rendered at exactly 440x280
+  by scripts/generate-promo-assets.mjs. Uses the approved brand tokens.
+-->
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@500;600&family=IBM+Plex+Sans+Arabic:wght@600&family=IBM+Plex+Serif:ital,wght@0,500;1,500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      html,
+      body {
+        margin: 0;
+        width: 440px;
+        height: 280px;
+        overflow: hidden;
+      }
+      body {
+        background: #f7f3ec;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'IBM Plex Sans', sans-serif;
+      }
+      .stage {
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        padding: 0 36px;
+      }
+      .mark {
+        flex: none;
+        color: #b5502f;
+      }
+      .word {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .ar {
+        font-family: 'IBM Plex Sans Arabic', sans-serif;
+        font-weight: 600;
+        font-size: 46px;
+        color: #1e1b18;
+        line-height: 1;
+      }
+      .en {
+        font-family: 'IBM Plex Serif', serif;
+        font-style: italic;
+        font-weight: 500;
+        font-size: 20px;
+        color: rgba(30, 27, 24, 0.62);
+        margin-top: 4px;
+      }
+      .tag {
+        font-size: 13px;
+        font-weight: 500;
+        color: rgba(30, 27, 24, 0.5);
+        margin-top: 10px;
+        max-width: 260px;
+        line-height: 1.4;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="stage">
+      <svg class="mark" width="64" height="64" viewBox="0 0 32 32" fill="none">
+        <g stroke="currentColor" stroke-width="3" stroke-linecap="round">
+          <path d="M10 5V27" />
+          <path d="M10 14H20" />
+          <path d="M20 10.5V17.5" />
+        </g>
+      </svg>
+      <div class="word">
+        <span class="ar">هامش</span>
+        <span class="en">Hamesh</span>
+        <span class="tag">Leave context where it belongs.</span>
+      </div>
+    </div>
+  </body>
+</html>

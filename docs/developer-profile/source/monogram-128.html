@@ -1,0 +1,58 @@
+<!--
+  Personal developer/publisher monogram for the Chrome Web Store developer
+  profile (mohammedfandees / fandees.tech) — distinct from Hamesh's own brand
+  system, since this represents the developer account, not the product.
+  Rendered at exactly 128x128 by scripts/generate-developer-icon.mjs.
+-->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      html,
+      body {
+        margin: 0;
+        width: 128px;
+        height: 128px;
+        overflow: hidden;
+      }
+      body {
+        background: #17181c;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .mono {
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 600;
+        font-size: 52px;
+        letter-spacing: -0.02em;
+        color: #f4f2ee;
+        line-height: 1;
+        display: flex;
+        align-items: baseline;
+      }
+      .mono .f {
+        color: #d97a4d;
+      }
+      .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #d97a4d;
+        margin-inline-start: 3px;
+        margin-bottom: 6px;
+        align-self: flex-end;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="mono">M<span class="f">F</span><span class="dot"></span></div>
+  </body>
+</html>
