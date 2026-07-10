@@ -5,9 +5,10 @@ import { createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import type { HameshMessage } from '@/messaging/types';
 import { createNotesRepository } from '@/storage/notes-repository';
+import { createPreferencesRepository } from '@/storage/preferences-repository';
 import { generatePageKey } from '@/domain/page-key';
 import { HameshApp } from '@/content/HameshApp';
-import { getStrings, resolveLang, dirForLang } from '@/ui/i18n';
+import { resolveLang } from '@/ui/i18n';
 import '@/ui/tokens.css';
 
 export default defineContentScript({
@@ -16,9 +17,12 @@ export default defineContentScript({
   cssInjectionMode: 'ui',
   async main(ctx) {
     const repo = createNotesRepository();
-    const lang = resolveLang(browser.i18n?.getUILanguage?.());
-    const strings = getStrings(lang);
-    const dir = dirForLang(lang);
+    const prefsRepo = createPreferencesRepository();
+    // Resolved once, synchronously, from the browser's UI language — the
+    // initial paint before the (async) stored preference loads, and exactly
+    // today's behavior for users who never open Settings. HameshApp takes it
+    // from here and stays subscribed to preference changes.
+    const initialLang = resolveLang(browser.i18n?.getUILanguage?.());
 
     // Exposed by the React app so the toolbar/shortcut can start selection mode.
     let activate: (() => void) | null = null;
@@ -42,9 +46,8 @@ export default defineContentScript({
         root.render(
           createElement(HameshApp, {
             repo,
-            lang,
-            strings,
-            dir,
+            prefsRepo,
+            initialLang,
             registerActivate: (fn: () => void) => {
               activate = fn;
               // Signals that the activation hook below is now wired up. React
