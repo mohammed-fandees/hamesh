@@ -1,0 +1,61 @@
+# Privacy Practices — Dashboard Answer Sheet
+
+Every answer below is traced to a specific code path in the `v0.1.0` build (commit-verified against `.output/chrome-mv3/manifest.json` and the full `src/` tree), not inferred from product intent. Where the Chrome Web Store dashboard's exact checkbox wording could not be independently confirmed from public documentation (see `README.md`'s requirements table for sourcing), the category name used here follows the publicly documented set; **verify the live checkbox label matches before submitting** (flagged below).
+
+## Data usage disclosure — "What user data does your extension collect?"
+
+The dashboard presents a checklist of data categories. For each, the recommended selection is **unchecked (not collected)** unless noted otherwise.
+
+| Category                            | Collected?                                              | Code evidence                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ----------------------------------- | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Personally identifiable information | **No**                                                  | No code path reads or stores name, email, phone, address, government ID, etc. Note content is free text the user types, but Hamesh does not parse, classify, or extract PII from it — it is stored as an opaque string (`src/domain/note.ts: Note.content: string`).                                                                                                                                           |
+| Health information                  | **No**                                                  | No API, field, or integration exists for health data.                                                                                                                                                                                                                                                                                                                                                          |
+| Financial and payment information   | **No**                                                  | No payment code exists anywhere in `src/`; there is no purchase/subscription flow.                                                                                                                                                                                                                                                                                                                             |
+| Authentication information          | **No**                                                  | No login, password, token, or credential handling exists. `src/domain/anchor.ts:collectAnchorSignals()` reads element _attributes_ (id, aria-label, class, href, src, alt, role, data-*) — verified it never reads `<input>` `.value`, so password field contents are never captured even incidentally.                                                                                                        |
+| Personal communications             | **No**                                                  | No email/chat/SMS access; the extension does not read message content from any page (it treats all pages identically — an inbox page's message body is just "page content" and is only touched if the user explicitly selects that exact element to annotate, which is user-directed content selection, not communications interception).                                                                      |
+| Location                            | **No**                                                  | No `navigator.geolocation` call, no IP-based lookup, no `geolocation` permission requested.                                                                                                                                                                                                                                                                                                                    |
+| Web history                         | **No**                                                  | The content script reads the _current_ page's own URL (`location.href`, via `generatePageKey()`) only to key its own stored notes for that page — verified in `src/domain/page-key.ts` and `src/content/HameshApp.tsx`. It does not read browser history (`chrome.history` is not a requested permission and is never imported), does not log visited URLs anywhere, and does not aggregate URLs across pages. |
+| User activity                       | **No**                                                  | No click-stream logging, no keystroke logging beyond the note textarea's own React state (never transmitted or persisted outside the note object itself), no analytics events of any kind.                                                                                                                                                                                                                     |
+| Website content                     | **Yes — but locally processed and locally stored only** | On explicit user action (clicking an element in selection mode), `buildElementAnchor()` reads that one element's tag name, id, aria-label, class, href/src/alt/role, a text snippet (≤200 chars), and its on-screen position — see "Website content" detail below.                                                                                                                                             |
+
+### Website content — detail (the one "Yes")
+
+- **What is read:** attributes and a short text snippet of **the single DOM element the user clicks while in selection mode** (`src/domain/anchor.ts:collectAnchorSignals`). Nothing is read from the rest of the page, and nothing is read passively — this only happens on an explicit user click during an explicit "add note" activation.
+- **What is NOT read:** full page HTML, other elements, form/input values, password fields, cookies, or any page data outside the one selected element.
+- **Where it goes:** written to `chrome.storage.local` only (`src/storage/notes-repository.ts`). Grep of the entire `src/` tree confirms zero `fetch`/`XMLHttpRequest`/`WebSocket`/`sendBeacon` calls exist — there is no code path capable of transmitting this data anywhere.
+- **Retention:** indefinite, user-controlled — the user can delete any note via the extension UI (`NoteViewer` delete flow), or clear all extension data via Chrome's own extension data management.
+- **Purpose:** solely to re-locate the same element later so the note can be visually restored next to it (`src/domain/anchor-resolution.ts:resolveAnchor`).
+
+## Certification checkboxes ("I certify that...")
+
+Per `developer.chrome.com/docs/webstore/program-policies/user-data-faq` (Limited Use requirements), the dashboard requires certifying:
+
+| Certification                                                                            | Can Hamesh truthfully certify? | Evidence                                                                                                                                            |
+| ---------------------------------------------------------------------------------------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Data use is limited to the extension's single, disclosed purpose                         | **Yes**                        | The only data touched (one element's attributes/text) is used solely to build and later resolve the note's anchor — same purpose, no secondary use. |
+| Data is not sold to third parties                                                        | **Yes**                        | There is no third party in the architecture at all — no network calls exist.                                                                        |
+| Data is not used or transferred for purposes unrelated to the extension's single purpose | **Yes**                        | No analytics, no ads, no unrelated feature reuses the collected element data.                                                                       |
+| Data is not used or transferred to determine creditworthiness or for lending purposes    | **Yes**                        | Not applicable; confirmed by absence of any such logic.                                                                                             |
+
+## Remote code
+
+- **Question:** "Does your extension use remote code (e.g., loaded from a remote server rather than packaged with the extension)?"
+- **Answer: No.**
+- **Evidence:** `pnpm build` output contains only locally-bundled JS/CSS (`content.js`, `background.js`, `popup` chunk) produced by Vite from `src/`. No `<script src="https://…">`, no `eval`/`new Function` on remote strings, no dynamic `import()` of a remote URL anywhere in `src/`. Google Fonts references exist **only in `landing/index.html`** (the marketing site, not the extension package) and are not present in the extension's own manifest, CSP, or bundled code — confirmed the extension ships self-contained CSS (`src/ui/tokens.css`) with system-font fallbacks, not a live Google Fonts request.
+
+## Privacy Policy URL field
+
+- **Requirement:** Chrome Web Store requires a privacy policy URL whenever an extension handles any user data (including local-only processing) — confirmed via `developer.chrome.com/docs/webstore/program-policies/user-data-faq`.
+- **Applies to Hamesh:** Yes, because it processes website content (the selected element) and stores user-authored note text, even though both stay device-local.
+- **Prepared document:** `docs/chrome-web-store/PRIVACY_POLICY.md` (plain-text reference), publicly rendered bilingually (Arabic/English, same design system and language toggle as the landing page) at `landing/privacy.html`, linked from the landing page's Privacy section and footer.
+- **Manual action required:** once the landing page is deployed, confirm the live URL (expected `https://hamesh.fandees.tech/privacy.html`) actually resolves, then paste that exact URL into the dashboard field. See `SUBMISSION_GUIDE.md` for exact placement.
+
+## Secure handling (data-in-transit encryption requirement)
+
+- **Requirement:** if an extension transmits user data, it must use a secure connection (HTTPS/WSS).
+- **Applies to Hamesh:** Not applicable — no data transmission of any kind occurs (verified by the network-call grep above). This should be stated plainly in the dashboard/reviewer notes rather than answered as if a transmission channel exists.
+
+## Uncertain items requiring owner review before submission
+
+1. **Exact live checkbox wording** in the "What user data does your extension collect" list may differ slightly from the category names used above (public docs describe the categories but not always the exact current UI copy). **Action:** open the dashboard's Privacy practices tab and match each category by meaning, not by exact string, before checking/unchecking.
+2. **`activeTab` permission** is currently declared but appears unused in `v0.1.0` (see `PERMISSION_JUSTIFICATIONS.md`). If the owner removes it before submission, this file's "Website content" and permission-related answers remain valid, but `PERMISSION_JUSTIFICATIONS.md` and the generated manifest snapshot must be refreshed first.

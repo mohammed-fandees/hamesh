@@ -1,0 +1,126 @@
+<!--
+  Recording-only copy of docs/chrome-web-store/source/demo-page.html.
+
+  Same real article content and the same data-demo hooks, so tooling/launch-
+  video/record.mjs can point at either interchangeably for interaction logic.
+  Kept as a SEPARATE file (not a shared edit) because the CWS fixture is also
+  used by scripts/capture-store-screenshots.mjs — tuning layout for a vertical
+  9:16 video recording must not silently change already-approved store
+  screenshots.
+
+  Layout difference from the CWS fixture: content is vertically centered in
+  the viewport (the CWS fixture is top-anchored, fine for a static screenshot
+  but leaves dead space below in a tall video frame), and record.mjs uses a
+  narrower recording viewport than the delivery resolution so Hamesh's real,
+  fixed-pixel-sized Shadow DOM UI (e.g. `.hm-card` is a flat 300px) naturally
+  occupies more of the frame — see that file's header for the full reasoning.
+-->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>The Architecture of Memory</title>
+    <style>
+      html,
+      body {
+        height: 100%;
+        /* This fixture is a fixed single-viewport composition for recording —
+           it never needs to scroll. Some Windows/Chromium configurations
+           reserve scrollbar gutter space even with zero overflow; hide it
+           explicitly so no scrollbar ever appears on camera. */
+        overflow: hidden;
+        scrollbar-width: none;
+      }
+      html::-webkit-scrollbar,
+      body::-webkit-scrollbar {
+        display: none;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        background: #fbfaf7;
+        color: #1a1a1a;
+        font-family: Georgia, 'Times New Roman', serif;
+      }
+      .wrap {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 40px 44px;
+      }
+      .kicker {
+        font-family: -apple-system, 'Segoe UI', sans-serif;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #8a8478;
+        margin: 0 0 18px;
+      }
+      h1 {
+        font-size: 40px;
+        line-height: 1.15;
+        margin: 0 0 28px;
+        color: #14110d;
+      }
+      p {
+        font-size: 18px;
+        line-height: 1.8;
+        margin: 0 0 24px;
+        color: #2b2822;
+      }
+      h2 {
+        font-size: 24px;
+        margin: 48px 0 16px;
+        color: #14110d;
+      }
+      .byline {
+        font-family: -apple-system, 'Segoe UI', sans-serif;
+        font-size: 13px;
+        color: #8a8478;
+        margin: -8px 0 40px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <p class="kicker">Cognitive Science</p>
+      <h1 data-demo="title">The Architecture of Memory</h1>
+      <p class="byline">12 min read</p>
+      <p data-demo="p1">
+        Encoding is the process by which perceived information is converted into a construct that
+        can be stored, later reconstructed, and retrieved from long-term memory. It is the first of
+        three stages memory researchers describe — encoding, storage, and retrieval — and arguably
+        the one most within a learner's conscious control.
+      </p>
+      <p data-demo="p2">
+        The retrieval-practice effect, sometimes called the testing effect, shows that actively
+        recalling information strengthens memory far more effectively than passively re-reading the
+        same material. Students who quiz themselves outperform students who simply reread their
+        notes, even when the rereading group spends more total time studying.
+      </p>
+      <h2>Why context matters</h2>
+      <p data-demo="p3">
+        A thought rarely arrives in isolation. It is usually a reaction to something specific — a
+        sentence, an argument, a number that doesn't add up. Stripped of that anchor, the thought
+        drifts. Reconnecting a note to the exact passage that produced it turns out to matter more
+        than the note's content alone.
+      </p>
+      <button
+        data-demo="btn"
+        style="
+          font-family: -apple-system, 'Segoe UI', sans-serif;
+          font-size: 14px;
+          padding: 10px 18px;
+          border-radius: 6px;
+          border: 1px solid #d8d2c4;
+          background: #fff;
+          cursor: pointer;
+        "
+      >
+        Read the full study
+      </button>
+    </div>
+  </body>
+</html>

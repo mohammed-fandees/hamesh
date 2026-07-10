@@ -44,3 +44,6 @@ desktop.ini
 # Local scratch / debug files
 *.local
 hm-*.mjs
+
+# Generated recording artifacts (large binaries — never commit video output)
+artifacts/

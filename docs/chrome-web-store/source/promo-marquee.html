@@ -1,0 +1,231 @@
+<!--
+  Chrome Web Store marquee promotional image source, rendered at exactly
+  1400x560 by scripts/generate-promo-assets.mjs. Uses the approved brand
+  tokens and a small recreation of the real composer UI (not fabricated Chrome
+  chrome — just the extension's own card, same as the landing page hero mock).
+-->
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@600&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      html,
+      body {
+        margin: 0;
+        width: 1400px;
+        height: 560px;
+        overflow: hidden;
+      }
+      body {
+        background: #f7f3ec;
+        display: flex;
+        align-items: center;
+        font-family: 'IBM Plex Sans', sans-serif;
+      }
+      .wrap {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        padding: 0 90px;
+        box-sizing: border-box;
+      }
+      .left {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .lockup {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .mark {
+        flex: none;
+        color: #b5502f;
+      }
+      .ar {
+        font-family: 'IBM Plex Sans Arabic', sans-serif;
+        font-weight: 600;
+        font-size: 64px;
+        color: #1e1b18;
+        line-height: 1;
+      }
+      .en {
+        font-family: 'IBM Plex Serif', serif;
+        font-style: italic;
+        font-weight: 500;
+        font-size: 26px;
+        color: rgba(30, 27, 24, 0.62);
+      }
+      h1 {
+        font-family: 'IBM Plex Serif', serif;
+        font-weight: 500;
+        font-size: 42px;
+        line-height: 1.15;
+        color: #14110d;
+        margin: 18px 0 0;
+        max-width: 480px;
+      }
+      .tag {
+        font-size: 16px;
+        color: rgba(30, 27, 24, 0.55);
+        max-width: 420px;
+        line-height: 1.5;
+        margin: 0;
+      }
+
+      /* Product mock, matching the landing page hero style */
+      .mock {
+        width: 460px;
+        background: #fff;
+        border: 1px solid rgba(30, 27, 24, 0.14);
+        border-radius: 16px;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.14);
+        overflow: hidden;
+      }
+      .mock-chrome {
+        display: flex;
+        gap: 7px;
+        padding: 14px 16px;
+        border-bottom: 1px solid rgba(30, 27, 24, 0.1);
+      }
+      .mock-chrome i {
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: rgba(30, 27, 24, 0.14);
+      }
+      .mock-body {
+        position: relative;
+        padding: 30px 28px 44px;
+      }
+      .mock-body p {
+        font-family: 'IBM Plex Serif', serif;
+        font-size: 16px;
+        line-height: 1.75;
+        color: #1e1b18;
+        margin: 0;
+      }
+      .sel {
+        box-shadow:
+          0 0 0 1.5px #b5502f,
+          0 0 0 4.5px #f1dccc;
+        border-radius: 3px;
+      }
+      .card {
+        position: relative;
+        margin-top: 28px;
+        background: #fff;
+        border: 1px solid rgba(30, 27, 24, 0.14);
+        border-radius: 10px;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.16);
+        padding: 18px;
+        max-width: 320px;
+      }
+      .card .connector {
+        position: absolute;
+        top: -10px;
+        left: 20px;
+        width: 1px;
+        height: 10px;
+        background: #b5502f;
+      }
+      .card .lbl {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: rgba(30, 27, 24, 0.42);
+        margin-bottom: 10px;
+      }
+      .card .lbl svg {
+        color: #b5502f;
+      }
+      .card .txt {
+        font-family: 'IBM Plex Serif', serif;
+        font-size: 15px;
+        line-height: 1.6;
+        color: #1e1b18;
+      }
+      .btns {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 16px;
+      }
+      .mini {
+        font-size: 13px;
+        font-weight: 500;
+        padding: 7px 14px;
+        border-radius: 6px;
+        border: 1px solid rgba(30, 27, 24, 0.14);
+      }
+      .mini.primary {
+        background: #b5502f;
+        color: #fff;
+        border-color: #b5502f;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="left">
+        <div class="lockup">
+          <svg class="mark" width="56" height="56" viewBox="0 0 32 32" fill="none">
+            <g stroke="currentColor" stroke-width="3" stroke-linecap="round">
+              <path d="M10 5V27" />
+              <path d="M10 14H20" />
+              <path d="M20 10.5V17.5" />
+            </g>
+          </svg>
+          <div>
+            <div class="ar">هامش</div>
+            <div class="en">Hamesh</div>
+          </div>
+        </div>
+        <h1>Leave context where it belongs.</h1>
+        <p class="tag">
+          Attach a note to any element on a page. Find it restored there when you return.
+        </p>
+      </div>
+
+      <div class="mock">
+        <div class="mock-chrome"><i></i><i></i><i></i></div>
+        <div class="mock-body">
+          <p>
+            Encoding is the process by which
+            <span class="sel">perceived information</span> is converted into a construct that can be
+            stored and later retrieved.
+          </p>
+          <div class="card">
+            <span class="connector"></span>
+            <span class="lbl">
+              <svg width="12" height="12" viewBox="0 0 32 32" fill="none">
+                <g stroke="currentColor" stroke-width="4" stroke-linecap="round">
+                  <path d="M10 5V27" />
+                  <path d="M10 14H20" />
+                  <path d="M20 10.5V17.5" />
+                </g>
+              </svg>
+              Note
+            </span>
+            <div class="txt">Revisit before the design review — this maps to our drop-off.</div>
+            <div class="btns">
+              <span class="mini">Cancel</span>
+              <span class="mini primary">Save</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
