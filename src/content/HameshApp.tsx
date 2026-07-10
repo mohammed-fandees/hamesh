@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { NotesRepository } from '@/storage/notes-repository';
+import type { PreferencesRepository } from '@/storage/preferences-repository';
 import type { Note, ElementAnchor } from '@/domain/note';
 import { buildElementAnchor } from '@/domain/anchor';
 import { resolveAnchor, ResolutionQuality } from '@/domain/anchor-resolution';
@@ -12,7 +13,7 @@ import { Composer } from '@/ui/Composer';
 import { NoteViewer } from '@/ui/NoteViewer';
 import { Marker } from '@/ui/Marker';
 import { SelectionHint } from '@/ui/SelectionHint';
-import type { Lang, Strings } from '@/ui/i18n';
+import { getStrings, dirForLang, type Lang, type Strings } from '@/ui/i18n';
 
 interface Resolved {
   note: Note;
@@ -22,9 +23,11 @@ interface Resolved {
 
 interface HameshAppProps {
   repo: NotesRepository;
-  lang: Lang;
-  strings: Strings;
-  dir: 'rtl' | 'ltr';
+  prefsRepo: PreferencesRepository;
+  /** The language to render before the stored preference (if any) has
+   *  loaded — already resolved from the browser's UI language, so this is
+   *  exactly today's behavior for users with no saved choice. */
+  initialLang: Lang;
   /** Imperatively toggles selection mode; wired to the content-script controller. */
   registerActivate: (fn: () => void) => void;
 }
@@ -60,7 +63,28 @@ function useViewportFrame(active: boolean): number {
   return frame;
 }
 
-export function HameshApp({ repo, lang, strings, dir, registerActivate }: HameshAppProps) {
+export function HameshApp({ repo, prefsRepo, initialLang, registerActivate }: HameshAppProps) {
+  const [lang, setLang] = useState<Lang>(initialLang);
+  const strings = getStrings(lang);
+  const dir = dirForLang(lang);
+
+  // Load the stored language preference (if any) and stay subscribed for
+  // changes made elsewhere — the popup's Settings screen, or another tab.
+  // `storage.watch` is backed by `chrome.storage.onChanged`, which already
+  // broadcasts to every extension context, so no custom messaging is needed.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const prefs = await prefsRepo.get();
+      if (!cancelled) setLang(prefs.language ?? initialLang);
+    })();
+    const unwatch = prefsRepo.watch((prefs) => setLang(prefs.language ?? initialLang));
+    return () => {
+      cancelled = true;
+      unwatch();
+    };
+  }, [prefsRepo, initialLang]);
+
   const [theme, setTheme] = useState<HostTheme>(() => detectHostTheme());
   const [pageKey, setPageKey] = useState(() => generatePageKey(location.href));
   const [notes, setNotes] = useState<Note[]>([]);

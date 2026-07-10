@@ -2,5 +2,11 @@ html,
 body {
   margin: 0;
   padding: 0;
+  /* Explicit, not just inherited from .hm-popup's own width — Chrome's popup
+     auto-sizing measures the document itself, and leaving this ambiguous let
+     the nested overflow:hidden slide track (see .hm-popup__track) throw the
+     measurement off in the real toolbar popup (not reproducible in a normal
+     tab, where body just fills the tab's viewport regardless). */
+  width: 300px;
   background: var(--hm-surface, #ffffff);
 }

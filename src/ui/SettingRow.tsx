@@ -1,12 +1,12 @@
+import type { ReactNode } from 'react';
+
 interface SettingRowProps {
   label: string;
-  value: string;
+  value: ReactNode;
 }
 
 /**
- * A single settings entry: a label and its current value, read-only for now.
- * Phase 2/3 swap the value slot for an interactive control without touching
- * the surrounding layout.
+ * A single settings entry: a label and its current value or control.
  */
 export function SettingRow({ label, value }: SettingRowProps) {
   return (

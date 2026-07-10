@@ -65,7 +65,14 @@ source of truth and one Shadow DOM root:
   follows scroll). Outside-click (via `composedPath`) and Escape close them.
 - **Theme** — `detectHostTheme` samples the host background luminance to pick
   Hamesh's light or dark palette; the mark colours are always Hamesh's own.
-- **Direction/locale** — resolved once from the extension UI language.
+- **Direction/locale** — `lang` is state, seeded from the browser's UI
+  language (`initialLang` prop, resolved synchronously in `content.ts` before
+  React even mounts — today's exact behavior for anyone who hasn't opened
+  Settings) and then loaded from / subscribed to `PreferencesRepository`. A
+  language chosen in the popup's Settings screen reaches every open tab
+  immediately via `storage.watch` (backed by `chrome.storage.onChanged`,
+  which already broadcasts across all extension contexts) — no runtime
+  messaging needed. `strings`/`dir` are derived from `lang` on every render.
 
 Pointer-events discipline: the shadow container is `pointer-events: none`; only
 the capture overlay, markers, and cards opt back in, so Hamesh never blocks the
@@ -89,6 +96,15 @@ for resolved notes.
   partially-written storage never throws.
 - No external APIs, no network, no sync. A future backend can implement the same
   interface.
+- **Preferences** (`src/storage/preferences-repository.ts`) follow the same
+  pattern at a single key, `hamesh:preferences` → `Preferences`
+  (`src/domain/preferences.ts`: `{ schemaVersion, language }`). `language`
+  defaults to `null` ("no explicit choice — follow the browser's UI
+  language"), so existing installs with nothing stored keep today's behavior
+  unchanged. `parsePreferences` defensively falls back to the default for
+  missing, malformed, or unrecognized values, same as notes. This is also
+  where Phase 3's `appearance` field will live — one preferences object, not
+  a parallel storage mechanism.
 
 ## Anchoring strategy
 

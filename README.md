@@ -30,8 +30,8 @@ edited, and deleted. No accounts, no cloud, no sync, no AI. See
 
 ```
 src/
-├── domain/       # Pure logic: Note, page-key, anchor build + resolution, validation
-├── storage/      # NotesRepository over chrome.storage.local
+├── domain/       # Pure logic: Note, page-key, anchor build + resolution, validation, preferences
+├── storage/      # NotesRepository + PreferencesRepository over chrome.storage.local
 ├── content/      # HameshApp (React orchestrator), theme detection, navigation, positioning
 ├── ui/           # React components + design tokens (Composer, NoteViewer, Marker, …)
 ├── messaging/    # Runtime message types
@@ -78,8 +78,10 @@ locally with `pnpm test:e2e`.
 
 ## Localization & direction
 
-UI chrome and layout direction follow the extension's locale (`ar` → RTL Arabic,
-otherwise LTR English), independent of the host page. Note _content_ uses
+UI chrome and layout direction follow the extension's locale by default
+(`ar` → RTL Arabic, otherwise LTR English), independent of the host page —
+or an explicit language chosen from the popup's **Settings** screen, which
+persists and applies live across every open tab. Note _content_ uses
 `dir="auto"`, so mixed Arabic/English text lays out correctly either way.
 
 ## Known MVP limitations

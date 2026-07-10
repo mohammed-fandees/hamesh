@@ -2,15 +2,15 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { browser } from 'wxt/browser';
 import { MarginMark } from '@/ui/MarginMark';
 import { SettingsView } from '@/ui/SettingsView';
-import { getStrings, resolveLang, dirForLang } from '@/ui/i18n';
+import { getStrings, resolveLang, dirForLang, type Lang } from '@/ui/i18n';
+import { createPreferencesRepository } from '@/storage/preferences-repository';
 import type { PageStateResponse } from '@/messaging/types';
 import '@/ui/tokens.css';
 
-const lang = resolveLang(browser.i18n?.getUILanguage?.());
-const strings = getStrings(lang);
-const dir = dirForLang(lang);
+const initialLang = resolveLang(browser.i18n?.getUILanguage?.());
 const prefersDark =
   typeof matchMedia !== 'undefined' && matchMedia('(prefers-color-scheme: dark)').matches;
+const prefsRepo = createPreferencesRepository();
 
 type View = 'home' | 'settings';
 
@@ -18,8 +18,28 @@ export function App() {
   const [count, setCount] = useState<number | null>(null);
   const [active, setActive] = useState(false);
   const [view, setView] = useState<View>('home');
+  const [lang, setLang] = useState<Lang>(initialLang);
   const settingsBtnRef = useRef<HTMLButtonElement>(null);
   const skipFocusRef = useRef(true);
+
+  const strings = getStrings(lang);
+  const dir = dirForLang(lang);
+
+  // Load the stored language preference (if any) and stay subscribed —
+  // `storage.watch` picks up changes made in the content script's own copy
+  // of Settings, or another open popup, without extra messaging.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const prefs = await prefsRepo.get();
+      if (!cancelled) setLang(prefs.language ?? initialLang);
+    })();
+    const unwatch = prefsRepo.watch((prefs) => setLang(prefs.language ?? initialLang));
+    return () => {
+      cancelled = true;
+      unwatch();
+    };
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -38,6 +58,11 @@ export function App() {
       }
     })();
   }, []);
+
+  function handleLanguageChange(next: Lang) {
+    setLang(next); // immediate feedback; persisted below, and re-confirmed by watch()
+    void prefsRepo.setLanguage(next);
+  }
 
   async function handleAdd() {
     const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
@@ -165,6 +190,7 @@ export function App() {
               dir={dir}
               active={view === 'settings'}
               onBack={() => setView('home')}
+              onLanguageChange={handleLanguageChange}
             />
           </div>
         </div>
