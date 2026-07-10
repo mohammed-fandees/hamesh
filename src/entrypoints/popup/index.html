@@ -4,6 +4,25 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Hamesh</title>
+    <!--
+      Chrome auto-sizes the extension popup window from the document's
+      layout, and that first measurement can happen before the bundled
+      stylesheet (loaded via an async <link>, injected by the build) has
+      applied — so a width defined only there isn't guaranteed to be in
+      effect yet. This inline style is parsed synchronously with the rest of
+      <head>, before any network request, so the correct width is always
+      present for that very first measurement. App.css / tokens.css also set
+      this (redundant, not conflicting) for the normal case where the
+      stylesheet does load in time.
+    -->
+    <style>
+      html,
+      body {
+        width: 300px;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

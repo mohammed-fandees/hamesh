@@ -8,6 +8,7 @@ import { generatePageKey } from '@/domain/page-key';
 import { getDeepestEligibleElement } from '@/utils/dom';
 import { onNavigationChange } from '@/content/navigation';
 import { detectHostTheme, type HostTheme } from '@/content/theme';
+import type { AppearanceMode } from '@/domain/preferences';
 import { useFloating, type AnchorRect } from '@/content/useFloating';
 import { Composer } from '@/ui/Composer';
 import { NoteViewer } from '@/ui/NoteViewer';
@@ -65,27 +66,68 @@ function useViewportFrame(active: boolean): number {
 
 export function HameshApp({ repo, prefsRepo, initialLang, registerActivate }: HameshAppProps) {
   const [lang, setLang] = useState<Lang>(initialLang);
+  const [appearance, setAppearance] = useState<AppearanceMode>('match-website');
   const strings = getStrings(lang);
   const dir = dirForLang(lang);
 
-  // Load the stored language preference (if any) and stay subscribed for
-  // changes made elsewhere — the popup's Settings screen, or another tab.
-  // `storage.watch` is backed by `chrome.storage.onChanged`, which already
-  // broadcasts to every extension context, so no custom messaging is needed.
+  // Load stored preferences (if any) and stay subscribed for changes made
+  // elsewhere — the popup's Settings screen, or another tab. `storage.watch`
+  // is backed by `chrome.storage.onChanged`, which already broadcasts to
+  // every extension context, so no custom messaging is needed.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const prefs = await prefsRepo.get();
-      if (!cancelled) setLang(prefs.language ?? initialLang);
+      if (!cancelled) {
+        setLang(prefs.language ?? initialLang);
+        setAppearance(prefs.appearance);
+      }
     })();
-    const unwatch = prefsRepo.watch((prefs) => setLang(prefs.language ?? initialLang));
+    const unwatch = prefsRepo.watch((prefs) => {
+      setLang(prefs.language ?? initialLang);
+      setAppearance(prefs.appearance);
+    });
     return () => {
       cancelled = true;
       unwatch();
     };
   }, [prefsRepo, initialLang]);
 
-  const [theme, setTheme] = useState<HostTheme>(() => detectHostTheme());
+  // `hostTheme` is always kept up to date regardless of `appearance`, so
+  // switching back to "Match website" is instant rather than needing a
+  // fresh detection pass.
+  const [hostTheme, setHostTheme] = useState<HostTheme>(() => detectHostTheme());
+  const theme: HostTheme =
+    appearance === 'light' ? 'light' : appearance === 'dark' ? 'dark' : hostTheme;
+
+  // Re-detect on host-side theme changes while "Match website" is active:
+  // a class/style change on <html>/<body> (dark-mode toggles, theme CSS that
+  // loads asynchronously) or an OS-level scheme change (for pages that key
+  // off prefers-color-scheme with no explicit background of their own).
+  // Scoped to attribute changes only — cheap, and doesn't fire on ordinary
+  // content mutations (that's the separate anchor-resolution observer below).
+  useEffect(() => {
+    if (appearance !== 'match-website') return;
+    let timer = 0;
+    const recheck = () => {
+      clearTimeout(timer);
+      timer = window.setTimeout(() => setHostTheme(detectHostTheme()), 200);
+    };
+    const observer = new MutationObserver(recheck);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class', 'style'],
+    });
+    observer.observe(document.body, { attributes: true, attributeFilter: ['class', 'style'] });
+    const media = window.matchMedia?.('(prefers-color-scheme: dark)');
+    media?.addEventListener('change', recheck);
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+      media?.removeEventListener('change', recheck);
+    };
+  }, [appearance]);
+
   const [pageKey, setPageKey] = useState(() => generatePageKey(location.href));
   const [notes, setNotes] = useState<Note[]>([]);
   const [resolved, setResolved] = useState<Resolved[]>([]);
@@ -168,7 +210,7 @@ export function HameshApp({ repo, prefsRepo, initialLang, registerActivate }: Ha
         }
         return key;
       });
-      setTheme(detectHostTheme());
+      setHostTheme(detectHostTheme());
       loadNotes();
     });
   }, [loadNotes]);

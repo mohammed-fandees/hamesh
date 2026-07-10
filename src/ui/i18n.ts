@@ -36,6 +36,8 @@ export interface Strings {
   settingsMatchWebsite: string;
   settingsLanguageEnglish: string;
   settingsLanguageArabic: string;
+  settingsAppearanceLight: string;
+  settingsAppearanceDark: string;
 }
 
 const en: Strings = {
@@ -66,6 +68,8 @@ const en: Strings = {
   settingsMatchWebsite: 'Match website',
   settingsLanguageEnglish: 'English',
   settingsLanguageArabic: 'Arabic',
+  settingsAppearanceLight: 'Light',
+  settingsAppearanceDark: 'Dark',
 };
 
 const ar: Strings = {
@@ -96,6 +100,8 @@ const ar: Strings = {
   settingsMatchWebsite: 'مطابقة الموقع',
   settingsLanguageEnglish: 'الإنجليزية',
   settingsLanguageArabic: 'العربية',
+  settingsAppearanceLight: 'فاتح',
+  settingsAppearanceDark: 'داكن',
 };
 
 export function resolveLang(uiLanguage?: string): Lang {
