@@ -4,10 +4,14 @@ import { MarginMark } from '@/ui/MarginMark';
 import { SettingsView } from '@/ui/SettingsView';
 import { getStrings, resolveLang, dirForLang, type Lang } from '@/ui/i18n';
 import { createPreferencesRepository } from '@/storage/preferences-repository';
+import type { AppearanceMode } from '@/domain/preferences';
 import type { PageStateResponse } from '@/messaging/types';
 import '@/ui/tokens.css';
 
 const initialLang = resolveLang(browser.i18n?.getUILanguage?.());
+// The popup has no host webpage of its own to detect — the OS-level scheme
+// is the closest analog to "Match website" for Hamesh's own chrome, and
+// matches what the popup already did before Appearance existed.
 const prefersDark =
   typeof matchMedia !== 'undefined' && matchMedia('(prefers-color-scheme: dark)').matches;
 const prefsRepo = createPreferencesRepository();
@@ -19,22 +23,37 @@ export function App() {
   const [active, setActive] = useState(false);
   const [view, setView] = useState<View>('home');
   const [lang, setLang] = useState<Lang>(initialLang);
+  const [appearance, setAppearance] = useState<AppearanceMode>('match-website');
   const settingsBtnRef = useRef<HTMLButtonElement>(null);
   const skipFocusRef = useRef(true);
 
   const strings = getStrings(lang);
   const dir = dirForLang(lang);
+  const theme =
+    appearance === 'light'
+      ? 'light'
+      : appearance === 'dark'
+        ? 'dark'
+        : prefersDark
+          ? 'dark'
+          : 'light';
 
-  // Load the stored language preference (if any) and stay subscribed —
-  // `storage.watch` picks up changes made in the content script's own copy
-  // of Settings, or another open popup, without extra messaging.
+  // Load stored preferences (if any) and stay subscribed — `storage.watch`
+  // picks up changes made in the content script's own copy of Settings, or
+  // another open popup, without extra messaging.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const prefs = await prefsRepo.get();
-      if (!cancelled) setLang(prefs.language ?? initialLang);
+      if (!cancelled) {
+        setLang(prefs.language ?? initialLang);
+        setAppearance(prefs.appearance);
+      }
     })();
-    const unwatch = prefsRepo.watch((prefs) => setLang(prefs.language ?? initialLang));
+    const unwatch = prefsRepo.watch((prefs) => {
+      setLang(prefs.language ?? initialLang);
+      setAppearance(prefs.appearance);
+    });
     return () => {
       cancelled = true;
       unwatch();
@@ -62,6 +81,11 @@ export function App() {
   function handleLanguageChange(next: Lang) {
     setLang(next); // immediate feedback; persisted below, and re-confirmed by watch()
     void prefsRepo.setLanguage(next);
+  }
+
+  function handleAppearanceChange(next: AppearanceMode) {
+    setAppearance(next); // immediate feedback; persisted below, and re-confirmed by watch()
+    void prefsRepo.setAppearance(next);
   }
 
   async function handleAdd() {
@@ -110,7 +134,7 @@ export function App() {
   };
 
   return (
-    <div className="hm-scope hm-popup" dir={dir} data-hm-theme={prefersDark ? 'dark' : 'light'}>
+    <div className="hm-scope hm-popup" dir={dir} data-hm-theme={theme}>
       <div className="hm-popup__viewport">
         <div className="hm-popup__track" style={trackStyle}>
           <div className="hm-popup__pane" aria-hidden={view !== 'home'} inert={view !== 'home'}>
@@ -188,9 +212,11 @@ export function App() {
               strings={strings}
               lang={lang}
               dir={dir}
+              appearance={appearance}
               active={view === 'settings'}
               onBack={() => setView('home')}
               onLanguageChange={handleLanguageChange}
+              onAppearanceChange={handleAppearanceChange}
             />
           </div>
         </div>

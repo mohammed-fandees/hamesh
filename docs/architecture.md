@@ -44,8 +44,22 @@ scroll container, so a plain `.focus()` on the off-screen pane would
 auto-scroll it out of sync with the transform). The reduced-motion override
 in `tokens.css` (`.hm-scope * { transition: none !important }`) already
 covers the track, since the transition lives in the CSS class, not inline
-style. Settings is currently read-only (Language/Appearance rows show
-today's fixed values); Phase 2/3 make them interactive.
+style.
+
+Language and Appearance are both live segmented controls
+(`SegmentedControl<T>` in `SettingsView.tsx`, backed by native
+`<input type="radio">` — grouped Tab stop and arrow-key switching are then
+just native radio-group behavior, not custom JS). Language shows text
+options (two languages fit easily); Appearance shows small icon options
+(sun/moon/half-circle) instead of text — three full labels (in either
+language) wouldn't stay compact in a 252px-wide row, whereas 14px icons do,
+each still carrying its accessible name via the wrapping `<label>`'s
+`aria-label`. The popup has no host webpage of its own, so "Match website"
+resolves to the OS `prefers-color-scheme` there (`prefersDark`, unchanged
+from before Appearance existed) rather than anything tab-specific —
+deliberately not querying the active tab's detected theme from the popup,
+to avoid adding cross-context messaging for a surface that's only open for a
+few seconds at a time.
 
 ## The content-side React app (`src/content/HameshApp.tsx`)
 
@@ -63,20 +77,63 @@ source of truth and one Shadow DOM root:
 - **Composer / Viewer** — floating cards positioned by `useFloating` (prefers
   below the anchor, flips above near the bottom edge, clamps into the viewport,
   follows scroll). Outside-click (via `composedPath`) and Escape close them.
-- **Theme** — `detectHostTheme` samples the host background luminance to pick
-  Hamesh's light or dark palette; the mark colours are always Hamesh's own.
+- **Theme** — `hostTheme` state holds what `detectHostTheme` (see below)
+  currently detects on the page; the rendered `theme` is
+  `appearance === 'match-website' ? hostTheme : appearance` (`appearance` is
+  loaded from / subscribed to `PreferencesRepository`, same as `lang`).
+  `hostTheme` is always kept current regardless of `appearance`, so
+  switching back to "Match website" is instant. The mark colours are always
+  Hamesh's own regardless of theme.
 - **Direction/locale** — `lang` is state, seeded from the browser's UI
   language (`initialLang` prop, resolved synchronously in `content.ts` before
   React even mounts — today's exact behavior for anyone who hasn't opened
   Settings) and then loaded from / subscribed to `PreferencesRepository`. A
-  language chosen in the popup's Settings screen reaches every open tab
-  immediately via `storage.watch` (backed by `chrome.storage.onChanged`,
-  which already broadcasts across all extension contexts) — no runtime
-  messaging needed. `strings`/`dir` are derived from `lang` on every render.
+  language or appearance choice made in the popup's Settings screen reaches
+  every open tab immediately via `storage.watch` (backed by
+  `chrome.storage.onChanged`, which already broadcasts across all extension
+  contexts) — no runtime messaging needed. `strings`/`dir` are derived from
+  `lang` on every render.
 
 Pointer-events discipline: the shadow container is `pointer-events: none`; only
 the capture overlay, markers, and cards opt back in, so Hamesh never blocks the
 host page when idle.
+
+## Theme detection (`src/content/theme.ts`)
+
+`detectHostTheme` is a pragmatic, deterministic DOM heuristic — not a
+computer-vision pass — that only Match Website mode consults (Light/Dark
+skip it entirely):
+
+1. Walk up from `<body>` through `parentElement` (→ `<html>`) for the first
+   opaque `background-color`; use its luminance. Handles the common case,
+   including a transparent `<body>` deferring to `<html>`.
+2. If nothing opaque was found, walk _down_ from `<body>` through
+   single-child chains (the common `body > #root > .app-shell > …` SPA
+   shape) for up to 12 levels, sampling each for a background. This is what
+   catches nested app shells that leave `body`/`html` transparent and put
+   the real background on a wrapper div — deliberately bounded and
+   deterministic (no `elementFromPoint`/viewport dependency, so it doesn't
+   change with scroll position and stays unit-testable). It stops at the
+   first branching point (an element with more than one child) rather than
+   guessing which branch matters.
+3. Still nothing → fall back to `prefers-color-scheme`; still nothing →
+   default light.
+
+By design, step 1 wins over a more deeply-nested surface: a dark page shell
+with a lighter reading card inside still reads as "dark" — Hamesh matches
+the page's overall chrome, not a specific element's local background. This
+was true before Phase 3 too; the down-walk (step 2) is the actual behavior
+change, added because nested app shells are common enough to be worth the
+bounded extra walk.
+
+**Staying current while a tab is open:** a `MutationObserver` (active only
+in Match Website mode) watches `class`/`style` attribute changes on
+`<html>`/`<body>` — the two places a page's own dark-mode toggle or an
+async-loaded theme typically lands — debounced 200ms, plus a
+`prefers-color-scheme` `change` listener for pages that key off the OS
+setting with no explicit background of their own. This is separate from
+(and much narrower than) the existing anchor-resolution `MutationObserver`
+below, which watches the whole subtree for content changes.
 
 ## Data flow
 
@@ -98,13 +155,15 @@ for resolved notes.
   interface.
 - **Preferences** (`src/storage/preferences-repository.ts`) follow the same
   pattern at a single key, `hamesh:preferences` → `Preferences`
-  (`src/domain/preferences.ts`: `{ schemaVersion, language }`). `language`
+  (`src/domain/preferences.ts`: `{ schemaVersion, language, appearance }`) —
+  one object, not a parallel storage mechanism per setting. `language`
   defaults to `null` ("no explicit choice — follow the browser's UI
-  language"), so existing installs with nothing stored keep today's behavior
-  unchanged. `parsePreferences` defensively falls back to the default for
-  missing, malformed, or unrecognized values, same as notes. This is also
-  where Phase 3's `appearance` field will live — one preferences object, not
-  a parallel storage mechanism.
+  language"); `appearance` defaults to `'match-website'` (today's only prior
+  behavior). Both mean existing installs with nothing stored — including
+  ones that only ever saved a Phase 2 `{ schemaVersion, language }` object,
+  with no `appearance` field at all — see no behavior change.
+  `parsePreferences` defensively falls back to the default for missing,
+  malformed, or unrecognized values in either field, same as notes.
 
 ## Anchoring strategy
 

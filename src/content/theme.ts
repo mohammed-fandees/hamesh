@@ -15,18 +15,42 @@ export function parseColorLuminance(color: string): number | null {
   return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
 }
 
+function backgroundLuminance(el: Element): number | null {
+  return parseColorLuminance(getComputedStyle(el).backgroundColor);
+}
+
 export function detectHostTheme(): HostTheme {
   try {
-    let el: Element | null = document.body;
-    while (el) {
-      const bg = getComputedStyle(el).backgroundColor;
-      const lum = parseColorLuminance(bg);
-      if (lum !== null) {
-        return lum < 0.4 ? 'dark' : 'light';
-      }
-      el = el.parentElement;
+    // 1) Walk up from <body> — the common case: an opaque background set on
+    //    body or html.
+    let lum: number | null = null;
+    for (let el: Element | null = document.body; el; el = el.parentElement) {
+      lum = backgroundLuminance(el);
+      if (lum !== null) break;
     }
-    // No opaque background found; fall back to the OS preference.
+
+    // 2) Nested app shells (React/Vue/etc. root divs) often leave body/html
+    //    transparent and put the real background a few levels down. Walk
+    //    down through single-child chains from <body> — the common
+    //    body > #root > .app-shell > ... shape — sampling each for a
+    //    background. Deterministic (no viewport/scroll dependency, unlike
+    //    a hit-test at some arbitrary point) and bounded, so it stays cheap
+    //    and doesn't wander into unrelated branching content.
+    if (lum === null) {
+      let el: Element | null = document.body;
+      for (let depth = 0; el && el.children.length === 1 && depth < 12; depth++) {
+        el = el.children[0];
+        lum = backgroundLuminance(el);
+        if (lum !== null) break;
+      }
+    }
+
+    if (lum !== null) return lum < 0.4 ? 'dark' : 'light';
+
+    // No opaque background found anywhere in the chain; fall back to the OS
+    // preference. (Note: this intentionally reflects the *page's* overall
+    // chrome, not a specific content card — a dark page shell with a white
+    // reading card still reads as "dark" here, same as before this change.)
     if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) return 'dark';
   } catch {
     /* defensive: never break the host page over theming */

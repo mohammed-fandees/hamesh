@@ -61,7 +61,7 @@ describe('popup Settings navigation', () => {
     cleanup();
   });
 
-  it('opens Settings from the gear button: Language is a live control, Appearance is still read-only', async () => {
+  it('opens Settings from the gear button: Language and Appearance are both live controls', async () => {
     const App = await importApp();
     render(<App />);
 
@@ -73,7 +73,10 @@ describe('popup Settings navigation', () => {
     expect(screen.getByRole('radio', { name: 'English' })).toBeChecked();
     expect(screen.getByRole('radio', { name: 'Arabic' })).not.toBeChecked();
     expect(screen.getByText('Appearance')).toBeInTheDocument();
-    expect(screen.getByText('Match website')).toBeInTheDocument();
+    // Match Website is the default.
+    expect(screen.getByRole('radio', { name: 'Match website' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Light' })).not.toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Dark' })).not.toBeChecked();
   });
 
   it('selecting a language updates the UI immediately and persists it to storage', async () => {
@@ -112,6 +115,59 @@ describe('popup Settings navigation', () => {
 
     expect(await screen.findByText('Hamesh')).toBeInTheDocument();
     expect(document.querySelector('.hm-popup')).toHaveAttribute('dir', 'ltr');
+  });
+
+  it('Match Website is the default appearance and renders light in this OS/test environment', async () => {
+    const App = await importApp();
+    render(<App />);
+    await screen.findByText('Hamesh');
+    expect(document.querySelector('.hm-popup')).toHaveAttribute('data-hm-theme', 'light');
+  });
+
+  it('selecting an appearance updates the popup theme immediately and persists it to storage', async () => {
+    const App = await importApp();
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Settings' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Dark' }));
+
+    expect(document.querySelector('.hm-popup')).toHaveAttribute('data-hm-theme', 'dark');
+    await waitFor(() =>
+      expect(fakeStorage.api.setItem).toHaveBeenCalledWith(
+        'local:hamesh:preferences',
+        expect.objectContaining({ appearance: 'dark' }),
+      ),
+    );
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Light' }));
+    expect(document.querySelector('.hm-popup')).toHaveAttribute('data-hm-theme', 'light');
+
+    // Back to Match Website restores the OS/default-derived value.
+    fireEvent.click(screen.getByRole('radio', { name: 'Match website' }));
+    expect(document.querySelector('.hm-popup')).toHaveAttribute('data-hm-theme', 'light');
+  });
+
+  it('restores a previously saved appearance preference on reopen (remount)', async () => {
+    fakeStorage.store.set('local:hamesh:preferences', {
+      schemaVersion: 1,
+      language: null,
+      appearance: 'dark',
+    });
+    const App = await importApp();
+    render(<App />);
+
+    await screen.findByText('Hamesh');
+    expect(document.querySelector('.hm-popup')).toHaveAttribute('data-hm-theme', 'dark');
+  });
+
+  it('falls back to Match Website for a malformed or unknown stored appearance value', async () => {
+    fakeStorage.store.set('local:hamesh:preferences', { appearance: 'auto' });
+    const App = await importApp();
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Settings' }));
+    expect(await screen.findByRole('radio', { name: 'Match website' })).toBeChecked();
+    expect(document.querySelector('.hm-popup')).toHaveAttribute('data-hm-theme', 'light');
   });
 
   it('uses real <button> elements for the settings trigger and back action (native keyboard operability)', async () => {

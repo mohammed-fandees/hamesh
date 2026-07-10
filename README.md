@@ -84,6 +84,18 @@ or an explicit language chosen from the popup's **Settings** screen, which
 persists and applies live across every open tab. Note _content_ uses
 `dir="auto"`, so mixed Arabic/English text lays out correctly either way.
 
+## Appearance
+
+Hamesh's own UI (popup, markers, composer, viewer) has three appearance
+modes, chosen from **Settings**: **Match website** (default — adaptively
+picks light/dark from the host page's background, same behavior Hamesh has
+always had), **Light**, and **Dark**. A forced choice always wins regardless
+of the host page; the host page itself is never modified, and Hamesh's
+styling stays isolated in its own Shadow DOM root either way. Like language,
+the choice persists and applies live across every open tab. See
+[docs/architecture.md](docs/architecture.md#theme-detection-srccontentthemets)
+for the detection algorithm.
+
 ## Known MVP limitations
 
 - Local only — no cloud sync, no cross-device replication, no export/import.

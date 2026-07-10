@@ -29,13 +29,22 @@ describe('PreferencesRepository', () => {
     mockStore.watchers.clear();
   });
 
-  it('defaults to no explicit language when nothing is stored', async () => {
-    expect(await repo.get()).toEqual({ schemaVersion: 1, language: null });
+  it('defaults to no explicit language and Match Website appearance when nothing is stored', async () => {
+    expect(await repo.get()).toEqual({
+      schemaVersion: 1,
+      language: null,
+      appearance: 'match-website',
+    });
   });
 
   it('persists a chosen language and returns it from get()', async () => {
     await repo.setLanguage('ar');
-    expect(await repo.get()).toEqual({ schemaVersion: 1, language: 'ar' });
+    expect((await repo.get()).language).toBe('ar');
+  });
+
+  it('persists a chosen appearance and returns it from get()', async () => {
+    await repo.setAppearance('dark');
+    expect((await repo.get()).appearance).toBe('dark');
   });
 
   it('persists under a single, stable storage key', async () => {
@@ -46,12 +55,25 @@ describe('PreferencesRepository', () => {
   it('overwrites a previous choice rather than accumulating state', async () => {
     await repo.setLanguage('ar');
     await repo.setLanguage('en');
-    expect(await repo.get()).toEqual({ schemaVersion: 1, language: 'en' });
+    expect((await repo.get()).language).toBe('en');
+  });
+
+  it('setting appearance does not clobber a previously set language, and vice versa', async () => {
+    await repo.setLanguage('ar');
+    await repo.setAppearance('dark');
+    expect(await repo.get()).toEqual({ schemaVersion: 1, language: 'ar', appearance: 'dark' });
+
+    await repo.setLanguage('en');
+    expect(await repo.get()).toEqual({ schemaVersion: 1, language: 'en', appearance: 'dark' });
   });
 
   it('recovers from a malformed stored value instead of throwing', async () => {
     mockStore.store.set('local:hamesh:preferences', 'not-an-object');
-    await expect(repo.get()).resolves.toEqual({ schemaVersion: 1, language: null });
+    await expect(repo.get()).resolves.toEqual({
+      schemaVersion: 1,
+      language: null,
+      appearance: 'match-website',
+    });
   });
 
   it('notifies watchers when the preference changes — including changes made by another caller (cross-context)', async () => {
