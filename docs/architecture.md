@@ -26,8 +26,26 @@ No DOM, no storage, no note logic.
 ### 3. Popup (`src/entrypoints/popup/`)
 
 A small "doorway, not a dashboard": brand mark, count of notes on the current
-page, an **Add a note** button (sends `ENABLE_SELECTION` to the tab), and an
-active/unavailable status. Uses the same design tokens.
+page, an **Add a note** button (sends `ENABLE_SELECTION` to the tab), an
+active/unavailable status, and a **Settings** entry point. Uses the same
+design tokens.
+
+`App.tsx` holds two panes — Home and Settings (`src/ui/SettingsView.tsx`) —
+inside a `.hm-popup__track` that always renders both (so the CSS transform
+slide has something to animate between) and clips through an
+`overflow:hidden` `.hm-popup__viewport`. Navigation direction mirrors for
+RTL: the track's `translateX` sign flips with `dir`, and the back chevron
+(`SettingsView`) flips the same way `MarginMark`/`Marker` already do. The
+inactive pane is marked `inert` + `aria-hidden` so it's unreachable by
+keyboard/AT while off-screen; focus moves to the Settings heading on entry
+and back to the trigger button on return (both via `focus({ preventScroll:
+true })` — the viewport's `overflow:hidden` still makes it a programmatic
+scroll container, so a plain `.focus()` on the off-screen pane would
+auto-scroll it out of sync with the transform). The reduced-motion override
+in `tokens.css` (`.hm-scope * { transition: none !important }`) already
+covers the track, since the transition lives in the CSS class, not inline
+style. Settings is currently read-only (Language/Appearance rows show
+today's fixed values); Phase 2/3 make them interactive.
 
 ## The content-side React app (`src/content/HameshApp.tsx`)
 
