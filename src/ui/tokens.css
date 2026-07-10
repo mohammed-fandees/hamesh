@@ -478,12 +478,56 @@
   text-align: center;
 }
 
+/* ---- Icon buttons (settings trigger, back navigation) ---- */
+.hm-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: var(--hm-radius-sm);
+  cursor: pointer;
+  color: var(--hm-ink-60);
+  transition:
+    background var(--hm-dur-fast) var(--hm-ease-out),
+    color var(--hm-dur-fast) var(--hm-ease-out);
+}
+.hm-icon-btn:hover {
+  background: var(--hm-paper-dim);
+  color: var(--hm-ink);
+}
+.hm-icon-btn:active {
+  transform: scale(0.94);
+}
+.hm-icon-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--hm-accent);
+}
+
 /* ---- Popup ---- */
 .hm-popup {
   width: 300px;
-  padding: var(--hm-space-5);
   background: var(--hm-surface);
   color: var(--hm-ink);
+}
+.hm-popup__viewport {
+  overflow: hidden;
+  position: relative;
+}
+.hm-popup__track {
+  display: flex;
+  width: 200%;
+  transition: transform var(--hm-dur-slow) var(--hm-ease-out);
+}
+.hm-popup__pane {
+  flex: 0 0 50%;
+  min-width: 0;
+  padding: var(--hm-space-5);
+  box-sizing: border-box;
 }
 .hm-popup__head {
   display: flex;
@@ -514,6 +558,45 @@
   font-size: 13px;
   font-weight: 500;
   color: var(--hm-ink-40);
+}
+
+/* ---- Settings ---- */
+.hm-settings__header {
+  display: flex;
+  align-items: center;
+  gap: var(--hm-space-2);
+}
+.hm-settings__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.hm-settings__title:focus-visible {
+  outline: none;
+}
+.hm-settings__body {
+  margin-top: var(--hm-space-4);
+  display: flex;
+  flex-direction: column;
+}
+.hm-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--hm-space-3);
+  padding: var(--hm-space-3) 0;
+  border-bottom: 1px solid var(--hm-border);
+  font-size: 13px;
+}
+.hm-setting-row:last-child {
+  border-bottom: none;
+}
+.hm-setting-row__label {
+  font-weight: 500;
+}
+.hm-setting-row__value {
+  color: var(--hm-ink-40);
+  font-size: 12.5px;
 }
 
 /* ---- Reduced motion ---- */

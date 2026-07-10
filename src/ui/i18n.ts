@@ -29,6 +29,13 @@ export interface Strings {
   notesOnPage: (n: number) => string;
   activeOnPage: string;
   brand: string;
+  settings: string;
+  settingsBack: string;
+  settingsLanguage: string;
+  settingsAppearance: string;
+  settingsMatchWebsite: string;
+  settingsLanguageEnglish: string;
+  settingsLanguageArabic: string;
 }
 
 const en: Strings = {
@@ -52,6 +59,13 @@ const en: Strings = {
   notesOnPage: (n) => (n === 1 ? 'note on this page' : 'notes on this page'),
   activeOnPage: 'Active on this page',
   brand: 'Hamesh',
+  settings: 'Settings',
+  settingsBack: 'Back',
+  settingsLanguage: 'Language',
+  settingsAppearance: 'Appearance',
+  settingsMatchWebsite: 'Match website',
+  settingsLanguageEnglish: 'English',
+  settingsLanguageArabic: 'Arabic',
 };
 
 const ar: Strings = {
@@ -75,6 +89,13 @@ const ar: Strings = {
   notesOnPage: () => 'ملاحظات على هذه الصفحة',
   activeOnPage: 'نشِط على هذه الصفحة',
   brand: 'هامش',
+  settings: 'الإعدادات',
+  settingsBack: 'رجوع',
+  settingsLanguage: 'اللغة',
+  settingsAppearance: 'المظهر',
+  settingsMatchWebsite: 'مطابقة الموقع',
+  settingsLanguageEnglish: 'الإنجليزية',
+  settingsLanguageArabic: 'العربية',
 };
 
 export function resolveLang(uiLanguage?: string): Lang {
