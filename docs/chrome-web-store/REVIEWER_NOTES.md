@@ -4,7 +4,7 @@ Paste into the dashboard's reviewer notes / "notes for the reviewer" field (exac
 
 ## What the extension does
 
-Hamesh lets a user attach a short text note to a specific element on any web page. The note is saved locally and automatically restored (as a small marker next to that element) when the user revisits the page.
+Hamesh lets a user attach a short text note to a specific element on any web page. The note is saved locally and automatically restored (as a small marker next to that element) when the user revisits the page. A **Settings** screen (toolbar popup → the settings button next to the brand mark) lets the user choose an interface language (English/Arabic) and an appearance mode (match website / light / dark) — both are local UI preferences, stored the same way as notes, with no account or network involved.
 
 ## No login, no account, no test credentials needed
 
@@ -55,5 +55,5 @@ All data created during testing (notes, element references) is stored only in `c
 
 ## Known limitations (not bugs)
 
-- No cloud sync; notes are local to one browser profile on one device by design (see `docs/PROMPT.md` and `README.md` for the documented v0.1.0 scope).
+- No cloud sync; notes are local to one browser profile on one device by design (see `docs/PROMPT.md` and `README.md` for the documented MVP scope).
 - Text-snippet matching used for marker restoration is exact, not fuzzy — if a page's content changes substantially, a note may fall back to an approximate position rather than disappearing.

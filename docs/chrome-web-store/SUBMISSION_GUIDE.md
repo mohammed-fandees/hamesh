@@ -4,13 +4,15 @@ Follow this in order. Every value below is ready to copy/paste from the referenc
 
 Before starting, re-run the release audit if any code has changed since this package was prepared: `pnpm check && pnpm zip` (see `RELEASE_CHECKLIST.md`).
 
+> **Refreshed 2026-07-11 for v0.2.0.** This guide was originally written before Hamesh's first submission, when the item didn't exist yet. **Hamesh is now live on the Chrome Web Store** (see `README.md`'s corrected "Final status", and `landing/index.html`'s install link) — so "0. Package upload" below is now an **update to the existing item**, not a new-item creation flow. The rest of the steps (Store Listing tab, Privacy practices tab, Distribution tab, reviewer notes) still apply the same way to an update as to the original submission.
+
 ---
 
 ## 0. Package upload
 
-**Dashboard section:** "Items" → "New item" (or select the existing draft item)
+**Dashboard section:** "Items" → select the existing, already-published Hamesh item → "Package" tab → upload a new package version.
 
-**Upload:** `.output/hamesh-0.1.0-chrome.zip` (run `pnpm zip` first if it doesn't exist — see `RELEASE_CHECKLIST.md` for its exact contents and checksum).
+**Upload:** `.output/hamesh-0.2.0-chrome.zip` (run `pnpm zip` first if it doesn't exist — see `RELEASE_CHECKLIST.md` for its exact contents and checksum).
 
 ---
 
@@ -132,7 +134,7 @@ Check all four certification boxes — `PRIVACY_PRACTICES.md` → "Certification
 
 ### Visibility
 
-**Recommended: Private** (or "Unlisted," depending on what the dashboard currently calls it) until the owner has reviewed the live listing end-to-end, then switch to **Public**. This task does not change this setting — it's listed here as the next manual step after everything else is verified.
+**No longer applicable as a first-submission gate** — Hamesh's listing is already Public. This section is kept for reference in case a future item (e.g. a separate browser's listing) needs the original first-submission pattern: Private/Unlisted until reviewed end-to-end, then switch to Public.
 
 ### Regions
 
@@ -161,6 +163,6 @@ Run through this final check:
 - [ ] All five screenshots uploaded in order.
 - [ ] Single purpose statement, permission justifications, and data-usage checkboxes all pasted from the files above (not paraphrased from memory).
 - [ ] Reviewer notes pasted.
-- [ ] Visibility set to Private/Unlisted for a first internal review pass before going Public.
+- [ ] ~~Visibility set to Private/Unlisted for a first internal review pass before going Public~~ — not applicable; the item is already Public.
 
 This task's scope ends here — the owner performs the actual submission.
