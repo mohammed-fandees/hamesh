@@ -6,6 +6,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Foundation for automated Chrome Web Store release submission: architecture decision record,
+  API research, a validated `docs/chrome-web-store/listing.yaml` source of truth for store
+  listing copy, and unit-tested release-validation tooling (`pnpm release:validate`). No
+  workflow automates uploads or submissions yet — see `docs/releases/CHROME_WEB_STORE_AUTOMATION.md`.
+
 ## [0.2.0] — 2026-07-10
 
 Settings for Hamesh: a Settings screen in the popup with functional
