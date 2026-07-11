@@ -1,6 +1,8 @@
 # Store Listing Copy
 
-Ready to copy/paste. Every field is checked against what `v0.1.0` actually does (see `PRIVACY_PRACTICES.md` for the code-level evidence). Character counts computed programmatically, not by hand.
+Ready to copy/paste. Every field is checked against what `v0.2.0` actually does (see `PRIVACY_PRACTICES.md` for the code-level evidence). Character counts computed programmatically, not by hand.
+
+> **Refreshed 2026-07-11 for v0.2.0.** The only content change: the detailed description's hardcoded "CURRENT SCOPE (v0.1.0)" paragraph (EN/AR) was removed rather than bumped to "v0.2.0", since a version number baked into permanent marketing copy goes stale on every release — the surrounding copy already describes current behavior accurately without naming a version. The rest of this file's copy is otherwise unchanged and has **not** been rewritten to describe v0.2.0's new Settings screen (language/appearance preferences); adding that is a product/marketing content decision left to the owner, not made silently here.
 
 ---
 
@@ -79,17 +81,12 @@ extension storage. There is no account, no backend server, and no network
 requests of any kind — nothing is transmitted, analyzed, or shared. See our
 privacy policy for full details.
 
-CURRENT SCOPE (v0.1.0)
-This is a focused first release: plain-text notes, one device, no cloud
-sync yet. It supports both English and Arabic interfaces with right-to-left
-layout. Hamesh is not yet available for other browsers.
-
 Hamesh is not a bookmarking tool, not a sticky-note app, and not a
 generic writing assistant — it is a quiet layer for thinking in context,
 exactly where that thought belongs.
 ```
 
-Approximate length: ~1,480 characters (well within typical detailed-description tolerances; no official hard cap was found in current documentation — see `README.md` sourcing notes. If a cap is enforced live in the dashboard, trim the "WHO IT'S FOR" section first, as it's the least load-bearing for review purposes).
+Approximate length: ~1,250 characters (well within typical detailed-description tolerances; no official hard cap was found in current documentation — see `README.md` sourcing notes. If a cap is enforced live in the dashboard, trim the "WHO IT'S FOR" section first, as it's the least load-bearing for review purposes).
 
 ### Arabic
 
@@ -121,11 +118,6 @@ Approximate length: ~1,480 characters (well within typical detailed-description 
 يحفظ هامش كل ملاحظة محليًا على جهازك باستخدام تخزين المتصفح الخاص
 بالإضافات. لا يوجد حساب، ولا خادم خلفي، ولا أي طلبات شبكة من أي نوع — لا
 شيء يُرسل أو يُحلَّل أو يُشارَك. راجع سياسة الخصوصية للتفاصيل الكاملة.
-
-النطاق الحالي (الإصدار 0.1.0)
-هذا إصدار أول مركّز: ملاحظات نصية بسيطة، جهاز واحد، وبدون مزامنة سحابية
-بعد. يدعم واجهتي اللغة العربية والإنجليزية مع تخطيط من اليمين إلى اليسار.
-هامش غير متوفر بعد على متصفحات أخرى.
 
 هامش ليس تطبيق إشارات مرجعية، وليس تطبيق ملاحظات لاصقة، وليس مساعد كتابة
 عامًا — إنه طبقة هادئة للتفكير في السياق، تمامًا حيث تنتمي الفكرة.

@@ -3,7 +3,9 @@
 **Last updated:** [OWNER: insert publish date]
 **Applies to:** Hamesh browser extension, version 0.1.0 and later versions with the same data-handling behavior described below.
 
-> **Canonical, publicly hosted version:** `landing/privacy.html` — a bilingual (Arabic/English, matching the landing page's design system and language toggle) rendering of this exact policy, deployed alongside the landing page. Once the landing site is live, its public URL (e.g. `https://hamesh.fandees.tech/privacy.html`) is what goes in the Chrome Web Store dashboard's "Privacy policy URL" field — see `SUBMISSION_GUIDE.md`. This Markdown file is the same content kept as a plain-text reference inside the repo; if the two ever diverge, `landing/privacy.html` is source of truth for what's actually public.
+> **Refreshed 2026-07-11:** re-verified against the `v0.2.0` codebase, including the Settings screen (language/appearance preferences) added since this was first written — see the new bullet under "What information Hamesh stores" below. Data-handling behavior is otherwise unchanged from `v0.1.0`, so the "version 0.1.0 and later" wording above still holds and doesn't need a version bump. The landing site is now confirmed live — see the corrected URL immediately below (the previous `hamesh.fandees.tech` guess in this file was actually correct; a separate, unrelated bug had the landing page's own `<link rel="canonical">` pointing at a different, dead domain — see `landing/index.html`).
+
+> **Canonical, publicly hosted version:** `landing/privacy.html` — a bilingual (Arabic/English, matching the landing page's design system and language toggle) rendering of this exact policy, deployed alongside the landing page at **`https://hamesh.fandees.tech/privacy.html`** (confirmed live), which is what goes in the Chrome Web Store dashboard's "Privacy policy URL" field — see `SUBMISSION_GUIDE.md`. This Markdown file is the same content kept as a plain-text reference inside the repo; if the two ever diverge, `landing/privacy.html` is source of truth for what's actually public.
 
 This policy describes exactly what the Hamesh browser extension ("Hamesh," "the extension," "we") does and does not do with your data. It is written to match the extension's actual, current implementation — not aspirational or planned behavior.
 
@@ -32,6 +34,7 @@ On every page you visit, Hamesh also computes a normalized version of that page'
 - **The element information described above** (used to re-find the element).
 - **The page's normalized URL**, so notes can be grouped by page.
 - **Timestamps** (created/updated) for each note.
+- **Your Settings choices** (interface language and appearance/theme, if you set them from the Settings screen) — not personal information, just your own configuration of how Hamesh looks and reads.
 
 All of this is stored using your browser's built-in local extension storage (`chrome.storage.local`). It stays on your device.
 

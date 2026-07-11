@@ -1,6 +1,8 @@
 # Hamesh — Chrome Web Store Submission Package
 
-This directory contains a complete, **unpublished** submission package for Hamesh v0.1.0. Nothing here has been uploaded, submitted, or published — see `SUBMISSION_GUIDE.md` for what the owner does manually.
+This directory contains Hamesh's Chrome Web Store submission package, kept in sync with the codebase — see `SUBMISSION_GUIDE.md` for what the owner does manually with it.
+
+> **Status as of 2026-07-11: Hamesh is live on the Chrome Web Store.** This package was originally written before the first submission (against `v0.1.0`) and is now refreshed for `v0.2.0`. The framing below has been corrected accordingly — package upload, in particular, is now an update to the existing item, not a new-item submission (see `SUBMISSION_GUIDE.md` §0). Everything else about the package's purpose (a reviewed, version-controlled record of exactly what's submitted) is unchanged.
 
 ## Package index
 
@@ -58,11 +60,11 @@ Chrome Web Store requirements change over time, so nothing below was taken from 
 | Privacy practices (data usage/certifications) | Ready                                        | `PRIVACY_PRACTICES.md`                                     | Match live checkbox wording by meaning                                                                                                      |
 | Privacy policy                                | Ready, needs hosting confirmation            | `PRIVACY_POLICY.md`, `landing/privacy.html`                | **Owner action:** deploy the landing page (if not already) and confirm `/privacy.html` resolves publicly; paste that URL into the dashboard |
 | Reviewer notes                                | Ready                                        | `REVIEWER_NOTES.md`                                        | Paste into dashboard                                                                                                                        |
-| Release package                               | Ready                                        | `.output/hamesh-0.1.0-chrome.zip` (rebuild via `pnpm zip`) | Upload                                                                                                                                      |
+| Release package                               | Ready                                        | `.output/hamesh-0.2.0-chrome.zip` (rebuild via `pnpm zip`) | Upload as an update to the existing item                                                                                                    |
 | Release audit                                 | Ready                                        | `RELEASE_CHECKLIST.md`                                     | None — clean                                                                                                                                |
 
-**No Critical or High blockers remain.** The one open item is a judgment call, not a defect: whether to remove the currently-unused `activeTab` permission before submitting (see `PERMISSION_JUSTIFICATIONS.md`). Everything else is submission-ready pending the owner's manual dashboard actions listed above.
+**No Critical or High blockers remain.** The one open item is a judgment call, not a defect: whether to remove the currently-unused `activeTab` permission before submitting (see `PERMISSION_JUSTIFICATIONS.md`) — still open across both releases so far. Everything else is submission-ready pending the owner's manual dashboard actions listed above.
 
 ## What this package does NOT do
 
-Per the task scope: nothing in this repository has uploaded, published, or submitted the extension; changed Chrome Web Store Developer Dashboard settings; created or requested Chrome Web Store credentials; or modified the production release for marketing purposes. All product code changes (if any become necessary, e.g. removing `activeTab`) are left to the owner's discretion and a normal reviewed PR.
+Per this refresh's scope: nothing in this repository (or this refresh pass) has uploaded, submitted, or changed anything in the Chrome Web Store Developer Dashboard, created or requested Chrome Web Store credentials, or modified the production release for marketing purposes. (Separately, and outside any automation, the owner has already manually submitted and published Hamesh to the Chrome Web Store using an earlier version of this package — see the status note at the top of this file. Automating the upload/submission steps themselves is tracked in `docs/releases/` once that work lands.) All product code changes (if any become necessary, e.g. removing `activeTab`) are left to the owner's discretion and a normal reviewed PR.

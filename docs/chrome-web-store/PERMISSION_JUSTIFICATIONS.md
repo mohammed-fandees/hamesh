@@ -1,6 +1,8 @@
 # Permission Justifications
 
-Audited against the actual **generated production manifest** (`pnpm build` → `.output/chrome-mv3/manifest.json`, version 0.1.0), not just `wxt.config.ts`. Every declared permission and host-access surface is listed below with its exact code usage. Nothing is assumed.
+Audited against the actual **generated production manifest** (`pnpm build` → `.output/chrome-mv3/manifest.json`, version 0.2.0), not just `wxt.config.ts`. Every declared permission and host-access surface is listed below with its exact code usage. Nothing is assumed.
+
+> **Refreshed 2026-07-11 for v0.2.0** (previously audited against v0.1.0). The manifest's `permissions` array is byte-for-byte unchanged between the two versions — confirmed by diff, not assumed — so every finding below was re-verified against the current code rather than copied forward, and none of the conclusions changed. The one addition is a note on the `storage` permission covering the new Settings/preferences code path.
 
 ## Generated manifest (verbatim, permission-relevant excerpt)
 
@@ -27,21 +29,21 @@ No `host_permissions`, no `optional_permissions`, no `externally_connectable`, n
 ## `storage`
 
 - **Declared:** `wxt.config.ts` → `manifest.permissions`.
-- **Used at:** `src/storage/notes-repository.ts` — every method (`getForPage`, `create`, `update`, `delete`, `getAll`) calls WXT's `storage.getItem`/`setItem`/`snapshot` against the `local:` area only. No other file touches `chrome.storage`.
-- **Why required:** This is the extension's entire persistence layer. Without it, notes could not survive a page reload — which is the core feature.
+- **Used at:** `src/storage/notes-repository.ts` — every method (`getForPage`, `create`, `update`, `delete`, `getAll`) calls WXT's `storage.getItem`/`setItem`/`snapshot` against the `local:` area only. **New in v0.2.0:** `src/storage/preferences-repository.ts` also uses `storage.getItem`/`setItem`/`watch` (same `local:` area, a separate key `local:hamesh:preferences`) to persist the Settings screen's language and appearance choices. No other file touches `chrome.storage`.
+- **Why required:** This is the extension's entire persistence layer — both user notes and UI preferences. Without it, neither notes nor Settings choices could survive a page reload or browser restart.
 - **Narrower alternative considered:** None exists; `storage` is already Chrome's narrowest storage permission (as opposed to requesting `unlimitedStorage`, which is _not_ requested).
 - **Reviewer-facing justification (final text):**
-  > Hamesh saves user-created notes locally using `chrome.storage.local` so they persist across page reloads and browser restarts. This is the only persistence mechanism in the extension.
+  > Hamesh saves user-created notes and Settings preferences (language, appearance) locally using `chrome.storage.local` so they persist across page reloads and browser restarts. This is the only persistence mechanism in the extension.
 
 ## `activeTab`
 
 - **Declared:** `wxt.config.ts` → `manifest.permissions`.
 - **Used at:** _(finding — see below)_. `browser.tabs.query({ active: true, currentWindow: true })` in `src/entrypoints/background.ts` and `src/entrypoints/popup/App.tsx`, followed by `browser.tabs.sendMessage(tab.id, …)`.
 - **Audit finding:** `tabs.query({ active, currentWindow })` returns tab `id`/`index`/etc. without any permission; only the tab's **`url`** field is gated. Grepping `src/entrypoints/background.ts` and `src/entrypoints/popup/` confirms **`tab.url` is never read** — only `tab.id` is used, to address `tabs.sendMessage`. The content script is _already_ persistently injected on `<all_urls>` via `content_scripts.matches`, so `activeTab` grants no additional script-injection capability the extension doesn't already have.
-- **Conclusion: `activeTab` appears to be an unused permission in the current implementation.** It was likely carried over from an earlier design where the popup injected a script on demand (`scripting.executeScript`) instead of messaging an always-on content script.
-- **Recommendation (not applied — see restriction below):** Remove `activeTab` from `wxt.config.ts` in a follow-up PR and re-verify `pnpm build` + `pnpm test:e2e` still pass. This is a genuine permission-surface reduction that Chrome Web Store reviewers favor, and it removes a justification field reviewers might otherwise question.
-- **Per this task's scope, no code was changed** — permission architecture changes belong in a reviewed product PR, not a store-submission-prep pass, and doing so silently while writing store copy risks describing a manifest that doesn't match what's actually shipped in `v0.1.0`. The justification text below covers the _current_ v0.1.0 manifest so the submission is accurate as of the artifact being uploaded.
-- **Reviewer-facing justification (final text, matches current v0.1.0 build):**
+- **Conclusion: `activeTab` appears to be an unused permission in the current implementation.** It was likely carried over from an earlier design where the popup injected a script on demand (`scripting.executeScript`) instead of messaging an always-on content script. **Re-checked for v0.2.0** (the Settings screen didn't change this code path — `src/entrypoints/background.ts` and `src/entrypoints/popup/App.tsx` still only read `tab.id`, never `tab.url`): the finding is unchanged.
+- **Recommendation (not applied — see restriction below):** Remove `activeTab` from `wxt.config.ts` in a follow-up PR and re-verify `pnpm build` + `pnpm test:e2e` still pass. This is a genuine permission-surface reduction that Chrome Web Store reviewers favor, and it removes a justification field reviewers might otherwise question. **Still open as of v0.2.0** — this recommendation was made during the v0.1.0 audit and has not been acted on across two releases since.
+- **Per this task's scope, no code was changed** — permission architecture changes belong in a reviewed product PR, not a store-submission-prep pass, and doing so silently while writing store copy risks describing a manifest that doesn't match what's actually shipped. The justification text below covers the _current_ v0.2.0 manifest so the submission is accurate as of the artifact being uploaded.
+- **Reviewer-facing justification (final text, matches current v0.2.0 build):**
   > Hamesh's background service worker and popup query the currently active tab (by id only, no URL access) to relay a "start note" message to that tab's content script when the user clicks the toolbar icon, opens the popup, or presses the keyboard shortcut. No page content or tab URL is read via this permission.
 - **If the owner removes `activeTab` before submission:** update this file, `wxt.config.ts`, `PRIVACY.md`, and re-run `pnpm build`/`pnpm zip` before uploading, and update `RELEASE_CHECKLIST.md`'s manifest snapshot.
 
@@ -72,7 +74,7 @@ This is not a `permissions` entry but is the broadest access surface in the mani
 
 ## Summary table for the dashboard
 
-| Permission                                  | Keep as-is for v0.1.0 submission | Justification field text                       |
+| Permission                                  | Keep as-is for v0.2.0 submission | Justification field text                       |
 | ------------------------------------------- | -------------------------------- | ---------------------------------------------- |
 | `storage`                                   | Yes                              | See "storage" section above                    |
 | `activeTab`                                 | Yes (flagged for future removal) | See "activeTab" section above                  |
