@@ -27,6 +27,13 @@ The version is the single source of truth in `package.json` and must match
    You can also run it manually via **Actions → Release → Run workflow** and
    supplying an existing tag.
 
+6. Publishing that GitHub Release also triggers the Chrome Web Store automation pipeline
+   (`docs/releases/CHROME_WEB_STORE_AUTOMATION.md`) — it validates, packages, and uploads the
+   build to the Chrome Web Store and stops for owner approval before submitting for Google
+   review. As of this writing that pipeline is still landing incrementally (see the ADR in
+   `docs/releases/adr/`); until it's fully in place, the store listing is still updated manually
+   per `docs/chrome-web-store/SUBMISSION_GUIDE.md`.
+
 ## The artifact
 
 The release artifact is `hamesh-<version>-chrome.zip` — the packaged Chrome

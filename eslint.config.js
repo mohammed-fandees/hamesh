@@ -7,7 +7,7 @@ export default [
     ignores: ['.output/**', '.wxt/**', 'node_modules/**'],
   },
   {
-    files: ['src/**/*.ts', 'src/**/*.tsx', 'tests/**/*.ts', 'e2e/**/*.ts'],
+    files: ['src/**/*.ts', 'src/**/*.tsx', 'tests/**/*.ts', 'e2e/**/*.ts', 'tooling/**/*.ts'],
     languageOptions: {
       parser: tsParser,
       parserOptions: {

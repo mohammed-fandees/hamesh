@@ -1,0 +1,109 @@
+# Canonical, version-controlled source of truth for Chrome Web Store listing metadata.
+#
+# Why this file exists: Chrome Web Store API v2 has no endpoint to read or write any of
+# these fields (docs/releases/RESEARCH.md §2) — every field here is Developer-Dashboard-only,
+# permanently, until Google adds write support. This file cannot be "synced" to the store.
+# What it IS used for: a single validated source these strings are authored/reviewed in,
+# and a diff-only approval report (repo vs. previous repo release) before the owner approves
+# submission. See docs/releases/adr/0001-release-architecture.md §4.
+#
+# Editing this file is a normal, reviewed code change — same PR process as anything else in
+# the repo. It is validated by tooling/release/metadata-schema.ts (pnpm release:validate).
+# After editing, the corresponding manual dashboard fields must be updated by hand
+# (docs/chrome-web-store/SUBMISSION_GUIDE.md) — nothing reads this file automatically yet.
+
+productName: 'Hamesh — Contextual Notes'
+
+category: 'Productivity'
+
+# Optional. Leave blank (empty string) rather than a URL that doesn't resolve.
+homepageUrl: 'https://hamesh.app'
+
+# Optional. Where users should go for help/bug reports.
+supportUrl: 'https://github.com/mohammed-fandees/hamesh/issues'
+
+# Required whenever the extension handles any user data, even local-only (it does).
+privacyPolicyUrl: 'https://hamesh.app/privacy.html'
+
+# Informational only — not validated, not sent anywhere by this repo's tooling. Useful for a
+# human (or a future PR's API calls) to know which Chrome Web Store item this listing is for.
+# publishers/{publisherId}/items/{chromeWebStoreItemId} once PR3 wires up the API calls.
+chromeWebStoreItemId: 'giajamkkehcoienhhlcfgcckahjjbgnc'
+
+locales:
+  en:
+    shortDescription: >-
+      Attach a note to any element on a page. Find it restored there when you return.
+      Local-only, no account.
+
+    detailedDescription: |
+      Hamesh gives the web a margin.
+
+      Books and manuscripts have margins — a quiet space beside the text where a
+      reader leaves a note, a question, a connection to something else. Hamesh
+      brings that back to the web.
+
+      HOW IT WORKS
+      1. Activate Hamesh from the toolbar icon or the Alt+H shortcut.
+      2. Click the exact element on the page you want to annotate — a paragraph,
+         a heading, a button, a line of code.
+      3. Write a short note. It saves instantly.
+      4. A small marker stays next to that element. Click it anytime to reopen,
+         edit, or delete the note.
+      5. Leave the page, come back later (even after reloading or restarting your
+         browser) — your note is restored right where you left it.
+
+      WHO IT'S FOR
+      - Designers and developers annotating a component, a design detail, or a
+        line in the documentation.
+      - Researchers marking exactly where an argument or a source lives.
+      - Knowledge workers keeping the "why" next to the "what," across everything
+        they read.
+      - Students and lifelong learners leaving a trail of attention to return to.
+
+      PRIVACY
+      Hamesh stores every note locally on your device using your browser's own
+      extension storage. There is no account, no backend server, and no network
+      requests of any kind — nothing is transmitted, analyzed, or shared. See our
+      privacy policy for full details.
+
+      Hamesh is not a bookmarking tool, not a sticky-note app, and not a
+      generic writing assistant — it is a quiet layer for thinking in context,
+      exactly where that thought belongs.
+
+  ar:
+    shortDescription: >-
+      علّق ملاحظة على أي عنصر في صفحة ويب، وستجدها في مكانها عند عودتك. محلي
+      بالكامل، بلا حساب.
+
+    detailedDescription: |
+      هامش يمنح الويب هامشًا.
+
+      للكتب والمخطوطات هوامش — مساحة هادئة بجانب النص يترك فيها القارئ ملاحظة، أو
+      سؤالًا، أو رابطًا بفكرة أخرى. هامش يعيد ذلك إلى الويب.
+
+      كيف يعمل
+      1. فعّل هامش من أيقونة شريط الأدوات أو اختصار Alt+H.
+      2. انقر على العنصر المحدد في الصفحة الذي تريد التعليق عليه — فقرة، عنوان،
+         زر، أو سطر شيفرة.
+      3. اكتب ملاحظة قصيرة. تُحفظ فورًا.
+      4. تبقى علامة صغيرة بجانب ذلك العنصر. انقرها في أي وقت لإعادة فتح الملاحظة
+         أو تعديلها أو حذفها.
+      5. غادر الصفحة، وعد لاحقًا (حتى بعد إعادة تحميل الصفحة أو إعادة تشغيل
+         المتصفح) — ستجد ملاحظتك في مكانها تمامًا.
+
+      لِمن هذا التطبيق
+      - المصممون والمطوّرون الذين يعلّقون على مكوّن أو تفصيلة تصميم أو سطر في
+        التوثيق.
+      - الباحثون الذين يحدّدون بدقة مكان حجة أو مصدر.
+      - العاملون في المعرفة الذين يريدون الاحتفاظ بـ"لماذا" بجانب "ماذا" في كل ما
+        يقرؤونه.
+      - الطلاب والمتعلّمون الذين يتركون أثرًا من انتباههم للعودة إليه.
+
+      الخصوصية
+      يحفظ هامش كل ملاحظة محليًا على جهازك باستخدام تخزين المتصفح الخاص
+      بالإضافات. لا يوجد حساب، ولا خادم خلفي، ولا أي طلبات شبكة من أي نوع — لا
+      شيء يُرسل أو يُحلَّل أو يُشارَك. راجع سياسة الخصوصية للتفاصيل الكاملة.
+
+      هامش ليس تطبيق إشارات مرجعية، وليس تطبيق ملاحظات لاصقة، وليس مساعد كتابة
+      عامًا — إنه طبقة هادئة للتفكير في السياق، تمامًا حيث تنتمي الفكرة.

@@ -124,6 +124,7 @@ tag, which builds and publishes the packaged extension via GitHub Actions. See
 
 - [docs/architecture.md](docs/architecture.md) — runtime contexts, data flow, anchoring, SPA, testing.
 - [docs/RELEASING.md](docs/RELEASING.md) — versioning and release process.
+- [docs/releases/CHROME_WEB_STORE_AUTOMATION.md](docs/releases/CHROME_WEB_STORE_AUTOMATION.md) — Chrome Web Store submission automation architecture and setup.
 - [docs/PROMPT.md](docs/PROMPT.md) — original MVP engineering specification.
 - [CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md) · [PRIVACY.md](PRIVACY.md)
 
