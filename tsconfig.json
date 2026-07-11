@@ -19,6 +19,7 @@
     "src/**/*.d.ts",
     "tests/**/*.ts",
     "e2e/**/*.ts",
+    "tooling/**/*.ts",
     ".wxt/wxt.d.ts"
   ]
 }
