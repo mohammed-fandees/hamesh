@@ -157,7 +157,7 @@ export function App() {
   useEffect(() => {
     const activeRef =
       view === 'home' ? homePaneRef : view === 'browse' ? browsePaneRef : settingsPaneRef;
-      
+
     if (!activeRef.current) return;
 
     const observer = new ResizeObserver((entries) => {
@@ -193,12 +193,21 @@ export function App() {
 
   return (
     <div className="hm-scope hm-popup" dir={dir} data-hm-theme={theme}>
-      <div 
-        className="hm-popup__viewport" 
-        style={paneHeight ? { height: paneHeight, transition: 'height 200ms cubic-bezier(0.16, 1, 0.3, 1)' } : undefined}
+      <div
+        className="hm-popup__viewport"
+        style={
+          paneHeight
+            ? { height: paneHeight, transition: 'height 200ms cubic-bezier(0.16, 1, 0.3, 1)' }
+            : undefined
+        }
       >
         <div className="hm-popup__track" style={trackStyle}>
-          <div ref={homePaneRef} className="hm-popup__pane" aria-hidden={view !== 'home'} inert={view !== 'home'}>
+          <div
+            ref={homePaneRef}
+            className="hm-popup__pane"
+            aria-hidden={view !== 'home'}
+            inert={view !== 'home'}
+          >
             <div className="hm-popup__head">
               <MarginMark size={16} strokeWidth={3.5} style={{ color: 'var(--hm-accent)' }} />
               {lang === 'ar' ? (

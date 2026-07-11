@@ -1,0 +1,3 @@
+3abcfc4ee8a1802082127b2c83401b6bbee6297cf51672c34a5d8cc87e7d106c  hamesh-0.2.0-chrome.zip
+f9db02841c3db6de66531f07e4816b4fca647904afcc8b2d525dda5bcc0f1549  hamesh-0.2.0-firefox.zip
+be905866f1910d6c4f8cce14f0b30756a7dfd38eabd7680e0fbbb2f86ed6b0cf  hamesh-0.2.0-sources.zip

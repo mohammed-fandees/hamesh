@@ -61,7 +61,7 @@ jobs:
             TAG="v${VERSION}-build${{ github.run_number }}"
           fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          
+
           ZIP=$(ls .output/*-chrome.zip | head -n1)
           echo "zip=$ZIP" >> "$GITHUB_OUTPUT"
           sha256sum "$ZIP" > "$ZIP.sha256"

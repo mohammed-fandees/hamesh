@@ -55,10 +55,7 @@ export function getWebsiteKey(note: Pick<Note, 'originalUrl' | 'pageKey'>): stri
 }
 
 export function groupNotesByWebsite(notes: Note[]): WebsiteNoteGroup[] {
-  const websites = new Map<
-    string,
-    WebsiteNoteGroup & { pageMap: Map<string, PageNoteGroup> }
-  >();
+  const websites = new Map<string, WebsiteNoteGroup & { pageMap: Map<string, PageNoteGroup> }>();
 
   for (const note of notes) {
     const websiteKey = getWebsiteKey(note);

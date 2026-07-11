@@ -45,9 +45,19 @@ export function NotesBrowser({ notes, strings, lang, active, onBack }: NotesBrow
   }, []);
 
   return (
-    <div className="hm-notes-browser" role="region" aria-label={strings.notesBrowser} onClick={handleLinkClick}>
+    <div
+      className="hm-notes-browser"
+      role="region"
+      aria-label={strings.notesBrowser}
+      onClick={handleLinkClick}
+    >
       <div className="hm-settings__header">
-        <button type="button" className="hm-icon-btn" aria-label={strings.settingsBack} onClick={onBack}>
+        <button
+          type="button"
+          className="hm-icon-btn"
+          aria-label={strings.settingsBack}
+          onClick={onBack}
+        >
           <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
             <path
               d="M10 3 L5 8 L10 13"
@@ -115,7 +125,11 @@ export function NotesBrowser({ notes, strings, lang, active, onBack }: NotesBrow
                       <article key={page.pageKey} className="hm-notes-browser__page">
                         <div className="hm-notes-browser__page-head">
                           <h4 className="hm-notes-browser__page-title" dir="auto">
-                            <a href={page.pageKey} className="hm-link-url" style={{ color: 'inherit', textDecoration: 'none' }}>
+                            <a
+                              href={page.pageKey}
+                              className="hm-link-url"
+                              style={{ color: 'inherit', textDecoration: 'none' }}
+                            >
                               {page.pageLabel}
                             </a>
                           </h4>
@@ -130,7 +144,9 @@ export function NotesBrowser({ notes, strings, lang, active, onBack }: NotesBrow
                         <ul className="hm-notes-browser__notes" aria-label={page.pageLabel}>
                           {page.notes.map((note) => (
                             <li key={note.id} className="hm-notes-browser__note" dir="auto">
-                              <span className="hm-notes-browser__note-body">{linkify(note.content)}</span>
+                              <span className="hm-notes-browser__note-body">
+                                {linkify(note.content)}
+                              </span>
                               <span className="hm-notes-browser__note-meta">
                                 {strings.editedAgo(relativeTime(note.updatedAt, lang))}
                               </span>
