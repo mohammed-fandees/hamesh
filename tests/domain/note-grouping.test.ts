@@ -40,9 +40,9 @@ describe('getWebsiteKey', () => {
   });
 
   it('handles URL with port', () => {
-    expect(
-      getWebsiteKey({ originalUrl: 'https://example.com:8080/page', pageKey: 'p' }),
-    ).toBe('https://example.com:8080');
+    expect(getWebsiteKey({ originalUrl: 'https://example.com:8080/page', pageKey: 'p' })).toBe(
+      'https://example.com:8080',
+    );
   });
 });
 
@@ -52,7 +52,9 @@ describe('groupNotesByWebsite', () => {
   });
 
   it('groups a single note into one website with one page', () => {
-    const notes = [makeNote({ pageKey: 'https://example.com/page', originalUrl: 'https://example.com/page' })];
+    const notes = [
+      makeNote({ pageKey: 'https://example.com/page', originalUrl: 'https://example.com/page' }),
+    ];
     const groups = groupNotesByWebsite(notes);
     expect(groups).toHaveLength(1);
     expect(groups[0].websiteLabel).toBe('example.com');
@@ -94,8 +96,18 @@ describe('groupNotesByWebsite', () => {
 
   it('tracks latestUpdatedAt at website and page level', () => {
     const notes = [
-      makeNote({ id: '1', pageKey: 'https://example.com/a', originalUrl: 'https://example.com/a', updatedAt: '2024-01-01T00:00:00.000Z' }),
-      makeNote({ id: '2', pageKey: 'https://example.com/a', originalUrl: 'https://example.com/a', updatedAt: '2024-06-01T00:00:00.000Z' }),
+      makeNote({
+        id: '1',
+        pageKey: 'https://example.com/a',
+        originalUrl: 'https://example.com/a',
+        updatedAt: '2024-01-01T00:00:00.000Z',
+      }),
+      makeNote({
+        id: '2',
+        pageKey: 'https://example.com/a',
+        originalUrl: 'https://example.com/a',
+        updatedAt: '2024-06-01T00:00:00.000Z',
+      }),
     ];
     const groups = groupNotesByWebsite(notes);
     expect(groups[0].latestUpdatedAt).toBe('2024-06-01T00:00:00.000Z');
@@ -104,8 +116,18 @@ describe('groupNotesByWebsite', () => {
 
   it('sorts websites by latestUpdatedAt descending', () => {
     const notes = [
-      makeNote({ id: '1', pageKey: 'https://old.com/page', originalUrl: 'https://old.com/page', updatedAt: '2024-01-01T00:00:00.000Z' }),
-      makeNote({ id: '2', pageKey: 'https://new.com/page', originalUrl: 'https://new.com/page', updatedAt: '2024-06-01T00:00:00.000Z' }),
+      makeNote({
+        id: '1',
+        pageKey: 'https://old.com/page',
+        originalUrl: 'https://old.com/page',
+        updatedAt: '2024-01-01T00:00:00.000Z',
+      }),
+      makeNote({
+        id: '2',
+        pageKey: 'https://new.com/page',
+        originalUrl: 'https://new.com/page',
+        updatedAt: '2024-06-01T00:00:00.000Z',
+      }),
     ];
     const groups = groupNotesByWebsite(notes);
     expect(groups[0].websiteLabel).toBe('new.com');
@@ -114,8 +136,18 @@ describe('groupNotesByWebsite', () => {
 
   it('sorts notes within a page by updatedAt descending', () => {
     const notes = [
-      makeNote({ id: '1', pageKey: 'https://example.com/page', originalUrl: 'https://example.com/page', updatedAt: '2024-01-01T00:00:00.000Z' }),
-      makeNote({ id: '2', pageKey: 'https://example.com/page', originalUrl: 'https://example.com/page', updatedAt: '2024-06-01T00:00:00.000Z' }),
+      makeNote({
+        id: '1',
+        pageKey: 'https://example.com/page',
+        originalUrl: 'https://example.com/page',
+        updatedAt: '2024-01-01T00:00:00.000Z',
+      }),
+      makeNote({
+        id: '2',
+        pageKey: 'https://example.com/page',
+        originalUrl: 'https://example.com/page',
+        updatedAt: '2024-06-01T00:00:00.000Z',
+      }),
     ];
     const groups = groupNotesByWebsite(notes);
     expect(groups[0].pages[0].notes[0].id).toBe('2');
@@ -124,8 +156,18 @@ describe('groupNotesByWebsite', () => {
 
   it('tie-breaks by label comparison alphabetically', () => {
     const notes = [
-      makeNote({ id: '1', pageKey: 'https://z.com/page', originalUrl: 'https://z.com/page', updatedAt: '2024-01-01T00:00:00.000Z' }),
-      makeNote({ id: '2', pageKey: 'https://a.com/page', originalUrl: 'https://a.com/page', updatedAt: '2024-01-01T00:00:00.000Z' }),
+      makeNote({
+        id: '1',
+        pageKey: 'https://z.com/page',
+        originalUrl: 'https://z.com/page',
+        updatedAt: '2024-01-01T00:00:00.000Z',
+      }),
+      makeNote({
+        id: '2',
+        pageKey: 'https://a.com/page',
+        originalUrl: 'https://a.com/page',
+        updatedAt: '2024-01-01T00:00:00.000Z',
+      }),
     ];
     const groups = groupNotesByWebsite(notes);
     expect(groups[0].websiteLabel).toBe('a.com');

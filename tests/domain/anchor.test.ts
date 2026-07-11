@@ -159,8 +159,15 @@ describe('buildElementAnchor', () => {
     document.body.innerHTML = '<div id="test" class="hero"><p>Hello</p></div>';
     const p = document.querySelector('p')!;
     p.getBoundingClientRect = () => ({
-      top: 100, left: 50, right: 250, bottom: 130, width: 200, height: 30,
-      x: 50, y: 100, toJSON: () => {},
+      top: 100,
+      left: 50,
+      right: 250,
+      bottom: 130,
+      width: 200,
+      height: 30,
+      x: 50,
+      y: 100,
+      toJSON: () => {},
     });
     Object.defineProperty(window, 'scrollX', { value: 0, writable: true });
     Object.defineProperty(window, 'scrollY', { value: 0, writable: true });
@@ -175,8 +182,15 @@ describe('buildElementAnchor', () => {
     document.body.innerHTML = '<p>Hi</p>';
     const p = document.querySelector('p')!;
     p.getBoundingClientRect = () => ({
-      top: 50, left: 30, right: 130, bottom: 70, width: 100, height: 20,
-      x: 30, y: 50, toJSON: () => {},
+      top: 50,
+      left: 30,
+      right: 130,
+      bottom: 70,
+      width: 100,
+      height: 20,
+      x: 30,
+      y: 50,
+      toJSON: () => {},
     });
     Object.defineProperty(window, 'scrollX', { value: 10, writable: true });
     Object.defineProperty(window, 'scrollY', { value: 20, writable: true });

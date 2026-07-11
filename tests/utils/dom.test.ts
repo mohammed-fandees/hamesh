@@ -94,8 +94,15 @@ describe('getElementPosition', () => {
   it('returns all six properties from rect', () => {
     const el = document.createElement('div');
     el.getBoundingClientRect = () => ({
-      top: 10, left: 20, right: 120, bottom: 60, width: 100, height: 50,
-      x: 20, y: 10, toJSON: () => {},
+      top: 10,
+      left: 20,
+      right: 120,
+      bottom: 60,
+      width: 100,
+      height: 50,
+      x: 20,
+      y: 10,
+      toJSON: () => {},
     });
     const pos = getElementPosition(el);
     expect(pos).toEqual({ top: 10, left: 20, right: 120, bottom: 60, width: 100, height: 50 });

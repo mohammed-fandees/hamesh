@@ -5,13 +5,7 @@ const URL_RE = /https?:\/\/[^\s<>'")\]]+|www\.[^\s<>'")\]]+\.[^\s<>'")\]]+/g;
 function wrapUrl(url: string, key: number): ReactNode {
   const href = url.startsWith('www.') ? `https://${url}` : url;
   return (
-    <a
-      key={key}
-      className="hm-link-url"
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-    >
+    <a key={key} className="hm-link-url" href={href} target="_blank" rel="noopener noreferrer">
       {url}
     </a>
   );

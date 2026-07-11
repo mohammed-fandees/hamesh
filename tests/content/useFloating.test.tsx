@@ -9,8 +9,16 @@ function makeRect(overrides: Partial<AnchorRect> = {}): AnchorRect {
 
 describe('useFloating', () => {
   beforeEach(() => {
-    Object.defineProperty(window, 'innerWidth', { value: 1200, writable: true, configurable: true });
-    Object.defineProperty(window, 'innerHeight', { value: 800, writable: true, configurable: true });
+    Object.defineProperty(window, 'innerWidth', {
+      value: 1200,
+      writable: true,
+      configurable: true,
+    });
+    Object.defineProperty(window, 'innerHeight', {
+      value: 800,
+      writable: true,
+      configurable: true,
+    });
     Object.defineProperty(window, 'scrollX', { value: 0, writable: true, configurable: true });
     Object.defineProperty(window, 'scrollY', { value: 0, writable: true, configurable: true });
   });
