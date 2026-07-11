@@ -160,14 +160,16 @@ export function App() {
 
     if (!activeRef.current) return;
 
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        setPaneHeight(entry.target.scrollHeight);
-      }
-    });
+    if (typeof ResizeObserver !== 'undefined') {
+      const observer = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          setPaneHeight(entry.target.scrollHeight);
+        }
+      });
 
-    observer.observe(activeRef.current);
-    return () => observer.disconnect();
+      observer.observe(activeRef.current);
+      return () => observer.disconnect();
+    }
   }, [view]);
   // convention used throughout Hamesh's content-script UI (selection mode,
   // composer, viewer).
