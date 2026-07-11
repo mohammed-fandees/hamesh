@@ -17,13 +17,13 @@ productName: 'Hamesh — Contextual Notes'
 category: 'Productivity'
 
 # Optional. Leave blank (empty string) rather than a URL that doesn't resolve.
-homepageUrl: 'https://hamesh.app'
+homepageUrl: 'https://hamesh.fandees.tech'
 
 # Optional. Where users should go for help/bug reports.
 supportUrl: 'https://github.com/mohammed-fandees/hamesh/issues'
 
 # Required whenever the extension handles any user data, even local-only (it does).
-privacyPolicyUrl: 'https://hamesh.app/privacy.html'
+privacyPolicyUrl: 'https://hamesh.fandees.tech/privacy.html'
 
 # Informational only — not validated, not sent anywhere by this repo's tooling. Useful for a
 # human (or a future PR's API calls) to know which Chrome Web Store item this listing is for.

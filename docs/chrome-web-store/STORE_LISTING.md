@@ -7,21 +7,23 @@
 > for why a structured file exists alongside this prose doc, and why none of it can be synced to the Chrome Web
 > Store automatically.
 >
-> **Two corrections made while migrating this content (2026-07-10), documented here rather than applied
-> silently:**
+> **Corrections made while migrating this content, documented here rather than applied silently:**
 >
-> 1. The previous version of this file, and the rest of `docs/chrome-web-store/`, was written and audited
->    against **v0.1.0**. The product is now **v0.2.0** (Settings screen, language/appearance preferences — see
->    `CHANGELOG.md`) and, per the landing page's install link, already has a **live** Chrome Web Store listing.
->    `listing.yaml`'s copy is otherwise unchanged from what was written for v0.1.0 — it has **not** been rewritten
->    for v0.2.0's feature set. That's a product/marketing content decision for the owner, not something this
->    infrastructure change should do silently. The one thing this migration did remove is the description's
+> 1. (2026-07-10) The previous version of this file, and the rest of `docs/chrome-web-store/`, was written and
+>    audited against **v0.1.0**. The product is now **v0.2.0** (Settings screen, language/appearance preferences
+>    — see `CHANGELOG.md`) and, per the landing page's install link, already has a **live** Chrome Web Store
+>    listing. `listing.yaml`'s copy is otherwise unchanged from what was written for v0.1.0 — it has **not** been
+>    rewritten for v0.2.0's feature set. That's a product/marketing content decision for the owner, not something
+>    this infrastructure change should do silently. The one thing this migration did remove is the description's
 >    "CURRENT SCOPE (v0.1.0)" paragraph, because a hardcoded stale version number in a file titled "canonical" is
 >    actively misleading, not just outdated — regenerating the rest of the copy for v0.2.0 is left open.
-> 2. This file's "Official website / homepage" guidance (see `SUBMISSION_GUIDE.md`) previously guessed
->    `https://hamesh.fandees.tech` as the likely landing domain, not yet confirmed deployed. The landing page's
->    own `<link rel="canonical">` shows the actual live domain is **`https://hamesh.app`** — `listing.yaml` uses
->    the confirmed domain, not the guess.
+> 2. (2026-07-10, corrected 2026-07-11) This file's "Official website / homepage" guidance (see
+>    `SUBMISSION_GUIDE.md`) has always used `https://hamesh.fandees.tech` as the landing domain. When first
+>    writing `listing.yaml`, that guess was second-guessed and "corrected" to `https://hamesh.app` because the
+>    landing page's own `<link rel="canonical">` pointed there — but that canonical tag was itself wrong (a
+>    separate, unrelated bug: `hamesh.app` returns a dead Cloudflare 522, confirmed by direct fetch). Both the
+>    canonical tag (`landing/index.html`) and `listing.yaml` now correctly use `https://hamesh.fandees.tech`,
+>    confirmed live.
 
 ---
 

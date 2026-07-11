@@ -13,9 +13,9 @@ function validListing(overrides: Partial<Listing> = {}): unknown {
   return {
     productName: 'Hamesh — Contextual Notes',
     category: 'Productivity',
-    homepageUrl: 'https://hamesh.app',
+    homepageUrl: 'https://hamesh.fandees.tech',
     supportUrl: 'https://github.com/mohammed-fandees/hamesh/issues',
-    privacyPolicyUrl: 'https://hamesh.app/privacy.html',
+    privacyPolicyUrl: 'https://hamesh.fandees.tech/privacy.html',
     locales: {
       en: {
         shortDescription: 'Attach a note to any element.',
@@ -71,7 +71,7 @@ describe('validateListing', () => {
 
   it('rejects a non-https privacyPolicyUrl', () => {
     const result = validateListing(
-      validListing({ privacyPolicyUrl: 'http://hamesh.app/privacy.html' }),
+      validListing({ privacyPolicyUrl: 'http://hamesh.fandees.tech/privacy.html' }),
     );
     expect(result.success).toBe(false);
   });
@@ -135,9 +135,9 @@ describe('loadAndValidateListing', () => {
     const yaml = `
 productName: Hamesh
 category: Productivity
-homepageUrl: https://hamesh.app
+homepageUrl: https://hamesh.fandees.tech
 supportUrl: ''
-privacyPolicyUrl: https://hamesh.app/privacy.html
+privacyPolicyUrl: https://hamesh.fandees.tech/privacy.html
 locales:
   en:
     shortDescription: A short summary.
