@@ -1,15 +1,15 @@
 name: Release
 
-# Cut a release by pushing a semver tag (vMAJOR.MINOR.PATCH), or run manually.
+# Cut a release automatically on pushes to main, or run manually.
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Existing tag to release (e.g. v0.1.0)'
-        required: true
+        description: 'Tag to release (e.g. v0.1.0)'
+        required: false
 
 # Default: read-only. The publish job elevates to contents: write.
 permissions:
@@ -53,9 +53,15 @@ jobs:
       - name: Resolve tag, artifact & notes
         id: meta
         run: |
-          TAG="${{ github.event.inputs.tag || github.ref_name }}"
-          VERSION="${TAG#v}"
+          if [ -n "${{ github.event.inputs.tag }}" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+            VERSION="${TAG#v}"
+          else
+            VERSION=$(node -p "require('./package.json').version")
+            TAG="v${VERSION}-build${{ github.run_number }}"
+          fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          
           ZIP=$(ls .output/*-chrome.zip | head -n1)
           echo "zip=$ZIP" >> "$GITHUB_OUTPUT"
           sha256sum "$ZIP" > "$ZIP.sha256"
@@ -72,9 +78,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # If the tag doesn't exist yet, gh release create will automatically create it at the current commit
           gh release create "${{ steps.meta.outputs.tag }}" \
             "${{ steps.meta.outputs.zip }}" \
             "${{ steps.meta.outputs.sha256 }}" \
             --title "${{ steps.meta.outputs.tag }}" \
             --notes-file notes.md \
-            --verify-tag
+            --target "${{ github.sha }}"

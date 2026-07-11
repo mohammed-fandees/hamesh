@@ -20,6 +20,16 @@ const fakeStorage = vi.hoisted(() => {
       for (const cb of watchers.get(key) ?? []) cb(value);
       return Promise.resolve();
     }),
+    snapshot: vi.fn((area?: string) => {
+      const entries = [...store.entries()];
+      if (area) {
+        const filtered = entries.filter(([k]) => k.startsWith(`${area}:`));
+        return Promise.resolve(
+          Object.fromEntries(filtered.map(([k, v]) => [k.slice(area.length + 1), v])),
+        );
+      }
+      return Promise.resolve(Object.fromEntries(store));
+    }),
     watch: vi.fn((key: string, cb: (v: unknown) => void) => {
       if (!watchers.has(key)) watchers.set(key, new Set());
       watchers.get(key)!.add(cb);
@@ -224,6 +234,35 @@ describe('popup Settings navigation', () => {
     await waitFor(() => expect(sendMessage).toHaveBeenCalledWith(1, { type: 'ENABLE_SELECTION' }));
   });
 
+  it('opens the notes browser and shows grouped saved notes', async () => {
+    fakeStorage.store.set('local:hamesh:notes:https://example.com/docs', [
+      {
+        id: '1',
+        schemaVersion: 1,
+        pageKey: 'https://example.com/docs',
+        originalUrl: 'https://example.com/docs',
+        content: 'first saved note',
+        anchor: {
+          primarySelector: null,
+          signals: { tagName: 'div' },
+          fallbackDocumentPosition: { x: 0, y: 0 },
+        },
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-02T00:00:00.000Z',
+      },
+    ]);
+
+    const App = await importApp();
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /browse notes/i }));
+
+    expect(await screen.findByRole('heading', { name: 'Notes browser' })).toBeInTheDocument();
+    expect(screen.getByText('example.com')).toBeInTheDocument();
+    expect(screen.getByText('example.com/docs')).toBeInTheDocument();
+    expect(screen.getByText('first saved note')).toBeInTheDocument();
+  });
+
   it('mirrors slide direction for RTL', async () => {
     query.mockResolvedValue([{ id: 1 }]);
     vi.doMock('wxt/browser', () => ({
@@ -239,6 +278,6 @@ describe('popup Settings navigation', () => {
     expect(track.style.transform).toContain('0%');
 
     fireEvent.click(await screen.findByRole('button', { name: 'الإعدادات' }));
-    expect(track.style.transform).toBe('translateX(50%)');
+    expect(track.style.transform).toBe('translateX(66.66666666666667%)');
   });
 });

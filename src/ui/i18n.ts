@@ -38,6 +38,13 @@ export interface Strings {
   settingsLanguageArabic: string;
   settingsAppearanceLight: string;
   settingsAppearanceDark: string;
+  browseNotesButton: string;
+  notesBrowser: string;
+  noSavedNotes: string;
+  noSavedNotesHint: string;
+  notesBrowserSummary: (websiteCount: number, noteCount: number) => string;
+  websiteNotesCount: (n: number) => string;
+  pageNotesCount: (n: number) => string;
 }
 
 const en: Strings = {
@@ -70,6 +77,14 @@ const en: Strings = {
   settingsLanguageArabic: 'Arabic',
   settingsAppearanceLight: 'Light',
   settingsAppearanceDark: 'Dark',
+  browseNotesButton: 'Browse notes',
+  notesBrowser: 'Notes browser',
+  noSavedNotes: 'No saved notes yet',
+  noSavedNotesHint: 'Save a note on any website to build a list here.',
+  notesBrowserSummary: (websiteCount, noteCount) =>
+    `${websiteCount} website${websiteCount === 1 ? '' : 's'} · ${noteCount} note${noteCount === 1 ? '' : 's'}`,
+  websiteNotesCount: (n) => `${n} note${n === 1 ? '' : 's'}`,
+  pageNotesCount: (n) => `${n} note${n === 1 ? '' : 's'}`,
 };
 
 const ar: Strings = {
@@ -102,6 +117,13 @@ const ar: Strings = {
   settingsLanguageArabic: 'العربية',
   settingsAppearanceLight: 'فاتح',
   settingsAppearanceDark: 'داكن',
+  browseNotesButton: 'تصفح الملاحظات',
+  notesBrowser: 'متصفح الملاحظات',
+  noSavedNotes: 'لا توجد ملاحظات محفوظة بعد',
+  noSavedNotesHint: 'احفظ ملاحظة في أي موقع لتظهر هنا.',
+  notesBrowserSummary: (websiteCount, noteCount) => `${websiteCount} موقع · ${noteCount} ملاحظة`,
+  websiteNotesCount: (n) => `${n} ملاحظة`,
+  pageNotesCount: (n) => `${n} ملاحظة`,
 };
 
 export function resolveLang(uiLanguage?: string): Lang {

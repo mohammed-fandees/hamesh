@@ -1,31 +1,55 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, useCallback, type CSSProperties } from 'react';
 import { browser } from 'wxt/browser';
 import { MarginMark } from '@/ui/MarginMark';
 import { SettingsView } from '@/ui/SettingsView';
+import { NotesBrowser } from '@/ui/NotesBrowser';
 import { getStrings, resolveLang, dirForLang, type Lang } from '@/ui/i18n';
 import { createPreferencesRepository } from '@/storage/preferences-repository';
+import { createNotesRepository } from '@/storage/notes-repository';
 import type { AppearanceMode } from '@/domain/preferences';
 import type { PageStateResponse } from '@/messaging/types';
+import type { Note } from '@/domain/note';
+import { parsePreferences } from '@/domain/preferences';
 import '@/ui/tokens.css';
 
-const initialLang = resolveLang(browser.i18n?.getUILanguage?.());
-// The popup has no host webpage of its own to detect — the OS-level scheme
-// is the closest analog to "Match website" for Hamesh's own chrome, and
-// matches what the popup already did before Appearance existed.
+const STORAGE_KEY = 'local:hamesh:preferences';
 const prefersDark =
   typeof matchMedia !== 'undefined' && matchMedia('(prefers-color-scheme: dark)').matches;
 const prefsRepo = createPreferencesRepository();
+const notesRepo = createNotesRepository();
 
-type View = 'home' | 'settings';
+// Read stored preferences synchronously before React mounts so the popup
+// opens with the correct theme and language on the first frame, avoiding
+// a flash from the async fallback. Uses the `storage` global (WXT runtime)
+// — same pattern as the repositories.
+let initialAppearance: AppearanceMode = 'match-website';
+let storedLang: Lang | null = null;
+try {
+  const raw = await (globalThis as any).storage?.getItem?.(STORAGE_KEY);
+  const parsed = parsePreferences(raw);
+  if (parsed.appearance) initialAppearance = parsed.appearance;
+  if (parsed.language) storedLang = resolveLang(parsed.language);
+} catch {
+  // Storage read failed — fall back to defaults silently.
+}
+
+const initialLang = storedLang ?? resolveLang(browser.i18n?.getUILanguage?.());
+
+type View = 'home' | 'browse' | 'settings';
 
 export function App() {
   const [count, setCount] = useState<number | null>(null);
   const [active, setActive] = useState(false);
   const [view, setView] = useState<View>('home');
   const [lang, setLang] = useState<Lang>(initialLang);
-  const [appearance, setAppearance] = useState<AppearanceMode>('match-website');
+  const [appearance, setAppearance] = useState<AppearanceMode>(initialAppearance);
+  const [allNotes, setAllNotes] = useState<Note[]>([]);
   const settingsBtnRef = useRef<HTMLButtonElement>(null);
+  const homePaneRef = useRef<HTMLDivElement>(null);
+  const browsePaneRef = useRef<HTMLDivElement>(null);
+  const settingsPaneRef = useRef<HTMLDivElement>(null);
   const skipFocusRef = useRef(true);
+  const [paneHeight, setPaneHeight] = useState<number | null>(null);
 
   const strings = getStrings(lang);
   const dir = dirForLang(lang);
@@ -88,6 +112,22 @@ export function App() {
     void prefsRepo.setAppearance(next);
   }
 
+  useEffect(() => {
+    if (view !== 'browse') return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const notes = await notesRepo.getAll();
+        if (!cancelled) setAllNotes(notes);
+      } catch {
+        if (!cancelled) setAllNotes([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [view]);
+
   async function handleAdd() {
     const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
     if (tab?.id == null) return;
@@ -111,11 +151,28 @@ export function App() {
     if (view === 'home') settingsBtnRef.current?.focus({ preventScroll: true });
   }, [view]);
 
-  // Escape backs out of Settings, matching the Escape-to-close convention
-  // used throughout Hamesh's content-script UI (selection mode, composer,
-  // viewer).
+  // Measure the active pane height and lock the viewport to it. This allows
+  // the popup to shrink back down when returning to smaller panes (like Home),
+  // and grow when entering larger panes (like Browse).
   useEffect(() => {
-    if (view !== 'settings') return;
+    const activeRef =
+      view === 'home' ? homePaneRef : view === 'browse' ? browsePaneRef : settingsPaneRef;
+      
+    if (!activeRef.current) return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setPaneHeight(entry.target.scrollHeight);
+      }
+    });
+
+    observer.observe(activeRef.current);
+    return () => observer.disconnect();
+  }, [view]);
+  // convention used throughout Hamesh's content-script UI (selection mode,
+  // composer, viewer).
+  useEffect(() => {
+    if (view !== 'settings' && view !== 'browse') return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
@@ -129,15 +186,19 @@ export function App() {
   // Slide direction is spatially mirrored for RTL: forward navigation moves
   // toward the reading direction's "in" side (left in LTR, right in RTL).
   const sign = dir === 'rtl' ? 1 : -1;
+  const viewIndex = view === 'home' ? 0 : view === 'browse' ? 1 : 2;
   const trackStyle: CSSProperties = {
-    transform: `translateX(${view === 'settings' ? sign * 50 : 0}%)`,
+    transform: `translateX(${sign * viewIndex * (100 / 3)}%)`,
   };
 
   return (
     <div className="hm-scope hm-popup" dir={dir} data-hm-theme={theme}>
-      <div className="hm-popup__viewport">
+      <div 
+        className="hm-popup__viewport" 
+        style={paneHeight ? { height: paneHeight, transition: 'height 200ms cubic-bezier(0.16, 1, 0.3, 1)' } : undefined}
+      >
         <div className="hm-popup__track" style={trackStyle}>
-          <div className="hm-popup__pane" aria-hidden={view !== 'home'} inert={view !== 'home'}>
+          <div ref={homePaneRef} className="hm-popup__pane" aria-hidden={view !== 'home'} inert={view !== 'home'}>
             <div className="hm-popup__head">
               <MarginMark size={16} strokeWidth={3.5} style={{ color: 'var(--hm-accent)' }} />
               {lang === 'ar' ? (
@@ -190,6 +251,15 @@ export function App() {
               + {strings.addNote}
             </button>
 
+            <button
+              type="button"
+              className="hm-btn hm-btn-ghost"
+              style={{ width: '100%', marginTop: 'var(--hm-space-2)', padding: '11px' }}
+              onClick={() => setView('browse')}
+            >
+              {strings.browseNotesButton}
+            </button>
+
             <div
               className={`hm-status ${active ? 'hm-status--success' : 'hm-status--warning'}`}
               style={{ marginTop: 'var(--hm-space-3)', marginBottom: 0 }}
@@ -204,6 +274,22 @@ export function App() {
           </div>
 
           <div
+            ref={browsePaneRef}
+            className="hm-popup__pane"
+            aria-hidden={view !== 'browse'}
+            inert={view !== 'browse'}
+          >
+            <NotesBrowser
+              notes={allNotes}
+              strings={strings}
+              lang={lang}
+              active={view === 'browse'}
+              onBack={() => setView('home')}
+            />
+          </div>
+
+          <div
+            ref={settingsPaneRef}
             className="hm-popup__pane"
             aria-hidden={view !== 'settings'}
             inert={view !== 'settings'}
