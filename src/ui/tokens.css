@@ -418,6 +418,43 @@
   box-shadow: 0 0 0 2px var(--hm-accent);
 }
 
+/* Mirrors .hm-close (same size/position pattern, opposite corner) — a
+   persistent pin toggle shown across every NoteViewer state. */
+.hm-pin-toggle {
+  position: absolute;
+  top: 8px;
+  inset-inline-start: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: var(--hm-radius-sm);
+  cursor: pointer;
+  color: var(--hm-ink-40);
+  transition:
+    background var(--hm-dur-fast) var(--hm-ease-out),
+    color var(--hm-dur-fast) var(--hm-ease-out),
+    transform var(--hm-dur-fast) var(--hm-ease-out);
+}
+.hm-pin-toggle:hover {
+  background: var(--hm-paper-dim);
+  color: var(--hm-ink);
+}
+.hm-pin-toggle:active {
+  transform: scale(0.88);
+}
+.hm-pin-toggle[aria-pressed='true'] {
+  color: var(--hm-accent-strong);
+}
+.hm-pin-toggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--hm-accent);
+}
+
 /* ---- Feedback ---- */
 .hm-error {
   display: flex;

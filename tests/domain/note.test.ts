@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { createNote, updateNoteContent, validateNoteContent, validateNote } from '@/domain/note';
+import {
+  createNote,
+  updateNoteContent,
+  setNotePinned,
+  validateNoteContent,
+  validateNote,
+} from '@/domain/note';
 import type { ElementAnchor } from '@/domain/note';
 
 function makeAnchor(overrides?: Partial<ElementAnchor>): ElementAnchor {
@@ -84,6 +90,36 @@ describe('updateNoteContent', () => {
     expect(updated.content).toBe('updated');
     expect(new Date(updated.updatedAt).getTime()).toBeGreaterThanOrEqual(before);
     expect(updated.id).toBe(note.id);
+  });
+});
+
+describe('setNotePinned', () => {
+  it('sets pinned to true without touching updatedAt', () => {
+    const anchor = makeAnchor();
+    const note = createNote({ content: 'x', pageKey: 'p', originalUrl: 'u', anchor });
+
+    const pinned = setNotePinned(note, true);
+    expect(pinned.pinned).toBe(true);
+    expect(pinned.updatedAt).toBe(note.updatedAt);
+    expect(pinned.id).toBe(note.id);
+  });
+
+  it('sets pinned to false', () => {
+    const anchor = makeAnchor();
+    const note = {
+      ...createNote({ content: 'x', pageKey: 'p', originalUrl: 'u', anchor }),
+      pinned: true,
+    };
+
+    const unpinned = setNotePinned(note, false);
+    expect(unpinned.pinned).toBe(false);
+    expect(unpinned.updatedAt).toBe(note.updatedAt);
+  });
+
+  it('leaves a fresh note unpinned by default', () => {
+    const anchor = makeAnchor();
+    const note = createNote({ content: 'x', pageKey: 'p', originalUrl: 'u', anchor });
+    expect(note.pinned).toBeUndefined();
   });
 });
 

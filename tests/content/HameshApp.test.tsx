@@ -1,12 +1,13 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup, waitFor } from '@testing-library/react';
+import { render, screen, cleanup, waitFor, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { HameshApp } from '@/content/HameshApp';
 import type { NotesRepository } from '@/storage/notes-repository';
 import type { PreferencesRepository } from '@/storage/preferences-repository';
 import type { Note } from '@/domain/note';
 import { DEFAULT_PREFERENCES } from '@/domain/preferences';
+import { generatePageKey } from '@/domain/page-key';
 
 function makeRepo(notes: Note[]): NotesRepository {
   return {
@@ -15,6 +16,7 @@ function makeRepo(notes: Note[]): NotesRepository {
     create: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
+    setPinned: vi.fn(),
   };
 }
 
@@ -52,7 +54,7 @@ describe('HameshApp — Open Note restore flow', () => {
     cleanup();
     document.body.innerHTML = '<div id="restore-target">Target element</div>';
     scrollIntoViewMock = vi.fn();
-    Element.prototype.scrollIntoView = scrollIntoViewMock;
+    Element.prototype.scrollIntoView = scrollIntoViewMock as unknown as Element['scrollIntoView'];
     // jsdom doesn't implement matchMedia at all — assign a stub directly
     // rather than vi.spyOn, which requires an existing function. HameshApp's
     // own host-theme-detection effect also calls matchMedia and attaches a
@@ -144,6 +146,7 @@ describe('HameshApp — Open Note restore flow', () => {
       create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
+      setPinned: vi.fn(),
     };
     const prefsRepo = makePrefsRepo();
     let restoreNote: ((noteId: string) => void) | null = null;
@@ -199,5 +202,89 @@ describe('HameshApp — Open Note restore flow', () => {
 
     expect(await screen.findByText('the restored note content')).toBeInTheDocument();
     expect(scrollIntoViewMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('HameshApp — pin toggle', () => {
+  beforeEach(() => {
+    cleanup();
+    document.body.innerHTML = '<div id="restore-target">Target element</div>';
+    Element.prototype.scrollIntoView = vi.fn() as unknown as Element['scrollIntoView'];
+    window.matchMedia = vi.fn().mockReturnValue({
+      matches: false,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }) as unknown as typeof window.matchMedia;
+    document.elementFromPoint = vi.fn().mockReturnValue(null);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  async function renderWithOpenViewer(note: Note, repo: NotesRepository) {
+    const prefsRepo = makePrefsRepo();
+    let restoreNote: ((noteId: string) => void) | null = null;
+
+    render(
+      <HameshApp
+        repo={repo}
+        prefsRepo={prefsRepo}
+        initialLang="en"
+        registerActivate={() => {}}
+        registerRestoreNote={(fn) => {
+          restoreNote = fn;
+        }}
+      />,
+    );
+
+    await waitFor(() => expect(restoreNote).not.toBeNull());
+    // Reuse RESTORE_NOTE purely as a way to get the viewer open in this
+    // test — the pin toggle itself doesn't care how the viewer got there.
+    restoreNote!(note.id);
+    await screen.findByText(note.content);
+  }
+
+  it('pinning a note calls repo.setPinned and flips the toggle to pressed', async () => {
+    const note = makeNote({ pinned: false });
+    const repo = makeRepo([note]);
+    (repo.setPinned as ReturnType<typeof vi.fn>).mockResolvedValue({ ...note, pinned: true });
+
+    await renderWithOpenViewer(note, repo);
+
+    const pinButton = screen.getByRole('button', { name: 'Pin this note' });
+    expect(pinButton).toHaveAttribute('aria-pressed', 'false');
+
+    fireEvent.click(pinButton);
+
+    // handleTogglePin uses the component's *current-page* pageKey (matching
+    // handleUpdate/handleDelete), not the note's own stored pageKey — they
+    // happen to be the same in production (HameshApp only ever manages
+    // notes for the page it's mounted on) but jsdom's default test URL
+    // differs from the note fixture's pageKey, so compute it the same way.
+    const currentPageKey = generatePageKey(location.href);
+    await waitFor(() => expect(repo.setPinned).toHaveBeenCalledWith(note.id, currentPageKey, true));
+    expect(await screen.findByRole('button', { name: 'Unpin this note' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  });
+
+  it('unpinning an already-pinned note calls repo.setPinned with false', async () => {
+    const note = makeNote({ pinned: true });
+    const repo = makeRepo([note]);
+    (repo.setPinned as ReturnType<typeof vi.fn>).mockResolvedValue({ ...note, pinned: false });
+
+    await renderWithOpenViewer(note, repo);
+
+    const pinButton = screen.getByRole('button', { name: 'Unpin this note' });
+    expect(pinButton).toHaveAttribute('aria-pressed', 'true');
+
+    fireEvent.click(pinButton);
+
+    const currentPageKey = generatePageKey(location.href);
+    await waitFor(() =>
+      expect(repo.setPinned).toHaveBeenCalledWith(note.id, currentPageKey, false),
+    );
   });
 });

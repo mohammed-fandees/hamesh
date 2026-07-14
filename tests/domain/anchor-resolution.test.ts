@@ -77,6 +77,25 @@ describe('resolveAnchor', () => {
     expect(result.quality).toBe(ResolutionQuality.Unresolved);
   });
 
+  it('falls back to Unresolved when elementFromPoint throws (unlike every other query path here, it had no guard until this test)', async () => {
+    mockDoc.elementFromPoint.mockImplementation(() => {
+      throw new Error('not implemented');
+    });
+
+    const result = resolveAnchor(makeMockNote());
+    expect(result.quality).toBe(ResolutionQuality.Unresolved);
+    expect(result.element).toBeNull();
+  });
+
+  it('returns Fallback when elementFromPoint finds an element', async () => {
+    const el = {} as Element;
+    mockDoc.elementFromPoint.mockReturnValue(el);
+
+    const result = resolveAnchor(makeMockNote());
+    expect(result.quality).toBe(ResolutionQuality.Fallback);
+    expect(result.element).toBe(el);
+  });
+
   it('returns Probable when findByDataAttributes finds single match', async () => {
     const el = {} as Element;
     mockDoc.querySelector.mockReturnValue(null);

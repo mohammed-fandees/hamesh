@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   groupNotesByDomain,
   getContinueWebsites,
+  getPinnedNotes,
   deriveMonogram,
   derivePageLabel,
   sortWebsiteGroups,
@@ -119,6 +120,26 @@ describe('groupNotesByDomain', () => {
     expect(groups).toHaveLength(1);
     expect(groups[0].count).toBe(1);
   });
+
+  it('sorts pinned notes to the top of each group, otherwise preserving order', () => {
+    const notes = [
+      makeNote({ id: 'a', originalUrl: 'https://x.com' }),
+      makeNote({ id: 'b', originalUrl: 'https://x.com', pinned: true }),
+      makeNote({ id: 'c', originalUrl: 'https://x.com' }),
+      makeNote({ id: 'd', originalUrl: 'https://x.com', pinned: true }),
+    ];
+    const [group] = groupNotesByDomain(notes);
+    expect(group.notes.map((n) => n.id)).toEqual(['b', 'd', 'a', 'c']);
+  });
+
+  it('leaves a group with no pinned notes in its original order', () => {
+    const notes = [
+      makeNote({ id: 'a', originalUrl: 'https://x.com' }),
+      makeNote({ id: 'b', originalUrl: 'https://x.com' }),
+    ];
+    const [group] = groupNotesByDomain(notes);
+    expect(group.notes.map((n) => n.id)).toEqual(['a', 'b']);
+  });
 });
 
 describe('getContinueWebsites', () => {
@@ -157,6 +178,68 @@ describe('getContinueWebsites', () => {
     const notes = [makeNote({ id: 'note-xyz', originalUrl: 'https://a.com' })];
     const [result] = getContinueWebsites(notes);
     expect(result.latestNoteId).toBe('note-xyz');
+  });
+});
+
+describe('getPinnedNotes', () => {
+  it('returns an empty array when nothing is pinned', () => {
+    const notes = [makeNote(), makeNote({ pinned: false })];
+    expect(getPinnedNotes(notes)).toEqual([]);
+  });
+
+  it('returns only pinned notes', () => {
+    const notes = [
+      makeNote({ id: 'a', pinned: true }),
+      makeNote({ id: 'b' }),
+      makeNote({ id: 'c', pinned: true }),
+    ];
+    const result = getPinnedNotes(notes);
+    expect(result.map((n) => n.noteId).sort()).toEqual(['a', 'c']);
+  });
+
+  it('sorts most recently edited pinned note first', () => {
+    const notes = [
+      makeNote({
+        id: 'old-pin',
+        pinned: true,
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      }),
+      makeNote({
+        id: 'new-pin',
+        pinned: true,
+        updatedAt: '2026-03-01T00:00:00.000Z',
+      }),
+    ];
+    const result = getPinnedNotes(notes);
+    expect(result.map((n) => n.noteId)).toEqual(['new-pin', 'old-pin']);
+  });
+
+  it('includes domain, url, preview, and updatedAt for each pinned note', () => {
+    const notes = [
+      makeNote({
+        id: 'a',
+        pinned: true,
+        originalUrl: 'https://github.com/x',
+        content: 'resume this',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      }),
+    ];
+    const [item] = getPinnedNotes(notes);
+    expect(item).toEqual({
+      noteId: 'a',
+      domain: 'github.com',
+      url: 'https://github.com/x',
+      preview: 'resume this',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    });
+  });
+
+  it('spans multiple websites, not grouped by domain', () => {
+    const notes = [
+      makeNote({ id: 'a', pinned: true, originalUrl: 'https://x.com' }),
+      makeNote({ id: 'b', pinned: true, originalUrl: 'https://y.com' }),
+    ];
+    expect(getPinnedNotes(notes)).toHaveLength(2);
   });
 });
 

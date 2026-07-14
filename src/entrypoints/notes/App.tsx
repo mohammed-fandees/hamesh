@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { browser } from 'wxt/browser';
 import { MarginMark } from '@/ui/MarginMark';
 import { WebsiteGroup } from '@/ui/WebsiteGroup';
 import { ContinueSection } from '@/ui/ContinueSection';
+import { PinnedSection } from '@/ui/PinnedSection';
 import { SegmentedControl } from '@/ui/SegmentedControl';
 import { getStrings, resolveLang, dirForLang, type Lang } from '@/ui/i18n';
 import { createNotesRepository } from '@/storage/notes-repository';
@@ -10,6 +11,7 @@ import { createPreferencesRepository } from '@/storage/preferences-repository';
 import {
   groupNotesByDomain,
   getContinueWebsites,
+  getPinnedNotes,
   filterNotesByQuery,
   sortWebsiteGroups,
   type GroupSortMode,
@@ -37,6 +39,7 @@ export function App() {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [sortMode, setSortMode] = useState<GroupSortMode>('alphabetical');
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const strings = getStrings(lang);
   const dir = dirForLang(lang);
@@ -83,6 +86,23 @@ export function App() {
     };
   }, []);
 
+  // "/" focuses search from anywhere on the page — ignored while focus is
+  // already in an editable field (so it types a literal "/" there instead,
+  // e.g. into the search box itself).
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== '/') return;
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      const isEditable = tag === 'INPUT' || tag === 'TEXTAREA' || !!target?.isContentEditable;
+      if (isEditable) return;
+      e.preventDefault();
+      searchInputRef.current?.focus();
+    }
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, []);
+
   const isSearching = searchQuery.trim() !== '';
   const filteredNotes = useMemo(
     () => filterNotesByQuery(notes ?? [], searchQuery),
@@ -92,10 +112,11 @@ export function App() {
     () => sortWebsiteGroups(groupNotesByDomain(filteredNotes), sortMode),
     [filteredNotes, sortMode],
   );
-  // Continue always reflects the full, unfiltered library — resuming a
-  // train of thought isn't a "search result", so it's hidden (not filtered)
-  // while actively searching. See render logic below.
+  // Continue and Pinned always reflect the full, unfiltered library —
+  // neither is a "search result" — so both are hidden (not filtered) while
+  // actively searching. See render logic below.
   const continueWebsites = useMemo(() => getContinueWebsites(notes ?? []), [notes]);
+  const pinnedNotes = useMemo(() => getPinnedNotes(notes ?? []), [notes]);
 
   function toggleGroup(domain: string) {
     setExpanded((prev) => {
@@ -119,22 +140,50 @@ export function App() {
           <h1 className="hm-notes-page__title">{strings.notesLibrary}</h1>
         </header>
 
+        <span className="hm-visually-hidden" role="status">
+          {loading ? strings.loadingNotes : ''}
+        </span>
+
         {hasAnyNotes && (
-          <input
-            type="search"
-            className="hm-search"
-            placeholder={strings.searchPlaceholder}
-            aria-label={strings.searchPlaceholder}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+          <div className="hm-search-wrap">
+            <input
+              ref={searchInputRef}
+              type="search"
+              className="hm-search"
+              placeholder={strings.searchPlaceholder}
+              aria-label={strings.searchPlaceholder}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key !== 'Escape' || !searchQuery) return;
+                e.preventDefault();
+                e.stopPropagation();
+                setSearchQuery('');
+              }}
+            />
+            {!isSearching && (
+              <kbd className="hm-search__hint" aria-hidden="true">
+                /
+              </kbd>
+            )}
+          </div>
         )}
 
         {!isSearching && hasAnyNotes && (
           <ContinueSection websites={continueWebsites} strings={strings} lang={lang} />
         )}
 
-        {loading ? null : noNotesAtAll ? (
+        {!isSearching && hasAnyNotes && (
+          <PinnedSection notes={pinnedNotes} strings={strings} lang={lang} />
+        )}
+
+        {loading ? (
+          <div className="hm-skeleton" aria-hidden="true">
+            <div className="hm-skeleton__row" />
+            <div className="hm-skeleton__row" />
+            <div className="hm-skeleton__row" />
+          </div>
+        ) : noNotesAtAll ? (
           <div className="hm-empty hm-fade-in">
             <MarginMark size={28} strokeWidth={3} />
             <p className="hm-empty__title">{strings.notesLibraryEmptyTitle}</p>
