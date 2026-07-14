@@ -4,6 +4,8 @@ import {
   getContinueWebsites,
   deriveMonogram,
   derivePageLabel,
+  sortWebsiteGroups,
+  filterNotesByQuery,
 } from '@/domain/notes-grouping';
 import type { Note, ElementAnchor } from '@/domain/note';
 
@@ -94,6 +96,23 @@ describe('groupNotesByDomain', () => {
     expect(group.latestNoteUrl).toBe('https://a.com/newest-page');
   });
 
+  it('sets latestNoteId to the id of the most recently updated note', () => {
+    const notes = [
+      makeNote({
+        id: 'older',
+        originalUrl: 'https://a.com',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      }),
+      makeNote({
+        id: 'newest',
+        originalUrl: 'https://a.com',
+        updatedAt: '2026-03-01T00:00:00.000Z',
+      }),
+    ];
+    const [group] = groupNotesByDomain(notes);
+    expect(group.latestNoteId).toBe('newest');
+  });
+
   it('degrades gracefully for a malformed originalUrl instead of dropping the note', () => {
     const notes = [makeNote({ originalUrl: 'not-a-valid-url' })];
     const groups = groupNotesByDomain(notes);
@@ -132,6 +151,96 @@ describe('getContinueWebsites', () => {
     const notes = [makeNote({ originalUrl: 'https://a.com/some-page' })];
     const [result] = getContinueWebsites(notes);
     expect(result.latestNoteUrl).toBe('https://a.com/some-page');
+  });
+
+  it('carries the latest note id through', () => {
+    const notes = [makeNote({ id: 'note-xyz', originalUrl: 'https://a.com' })];
+    const [result] = getContinueWebsites(notes);
+    expect(result.latestNoteId).toBe('note-xyz');
+  });
+});
+
+describe('sortWebsiteGroups', () => {
+  it('sorts alphabetically by domain', () => {
+    const notes = [
+      makeNote({ originalUrl: 'https://stackoverflow.com/q' }),
+      makeNote({ originalUrl: 'https://github.com/a' }),
+    ];
+    const groups = groupNotesByDomain(notes);
+    const sorted = sortWebsiteGroups(groups, 'alphabetical');
+    expect(sorted.map((g) => g.domain)).toEqual(['github.com', 'stackoverflow.com']);
+  });
+
+  it('sorts by most recent activity, most recent first', () => {
+    const notes = [
+      makeNote({ originalUrl: 'https://old.com', updatedAt: '2026-01-01T00:00:00.000Z' }),
+      makeNote({ originalUrl: 'https://newest.com', updatedAt: '2026-03-01T00:00:00.000Z' }),
+    ];
+    const groups = groupNotesByDomain(notes);
+    const sorted = sortWebsiteGroups(groups, 'recent');
+    expect(sorted.map((g) => g.domain)).toEqual(['newest.com', 'old.com']);
+  });
+
+  it('does not mutate the input array', () => {
+    const notes = [
+      makeNote({ originalUrl: 'https://b.com' }),
+      makeNote({ originalUrl: 'https://a.com' }),
+    ];
+    const groups = groupNotesByDomain(notes);
+    const original = [...groups];
+    sortWebsiteGroups(groups, 'recent');
+    expect(groups).toEqual(original);
+  });
+});
+
+describe('filterNotesByQuery', () => {
+  it('returns all notes for an empty or whitespace-only query', () => {
+    const notes = [makeNote(), makeNote()];
+    expect(filterNotesByQuery(notes, '')).toEqual(notes);
+    expect(filterNotesByQuery(notes, '   ')).toEqual(notes);
+  });
+
+  it('matches note content, case-insensitively', () => {
+    const notes = [
+      makeNote({ content: 'Review the Authentication flow' }),
+      makeNote({ content: 'Unrelated note' }),
+    ];
+    const result = filterNotesByQuery(notes, 'authentication');
+    expect(result).toHaveLength(1);
+    expect(result[0].content).toBe('Review the Authentication flow');
+  });
+
+  it('matches the page title', () => {
+    const notes = [
+      makeNote({ content: 'x', pageContext: { title: 'Grid Template Rows - MDN' } }),
+      makeNote({ content: 'y', pageContext: { title: 'Unrelated Page' } }),
+    ];
+    const result = filterNotesByQuery(notes, 'grid template');
+    expect(result).toHaveLength(1);
+  });
+
+  it('matches the URL pathname when there is no captured title', () => {
+    const notes = [
+      makeNote({ content: 'x', originalUrl: 'https://example.com/settings/profile' }),
+      makeNote({ content: 'y', originalUrl: 'https://example.com/other' }),
+    ];
+    const result = filterNotesByQuery(notes, 'settings');
+    expect(result).toHaveLength(1);
+  });
+
+  it('matches the domain', () => {
+    const notes = [
+      makeNote({ content: 'x', originalUrl: 'https://github.com/a' }),
+      makeNote({ content: 'y', originalUrl: 'https://stackoverflow.com/b' }),
+    ];
+    const result = filterNotesByQuery(notes, 'github');
+    expect(result).toHaveLength(1);
+    expect(result[0].originalUrl).toContain('github.com');
+  });
+
+  it('returns an empty array when nothing matches', () => {
+    const notes = [makeNote({ content: 'hello' })];
+    expect(filterNotesByQuery(notes, 'nonexistent-term')).toEqual([]);
   });
 });
 

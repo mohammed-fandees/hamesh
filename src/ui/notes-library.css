@@ -29,6 +29,44 @@
   font-weight: 600;
 }
 
+/* ---- Search — live, no button. Same focus treatment as the composer's
+   textarea (tokens.css .hm-textarea) for a consistent input feel. ---- */
+.hm-search {
+  display: block;
+  width: 100%;
+  margin-bottom: var(--hm-space-5);
+  padding: 9px var(--hm-space-3);
+  font-family: var(--hm-sans);
+  font-size: 13.5px;
+  color: var(--hm-ink);
+  background: var(--hm-surface);
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-md);
+  transition: border-color var(--hm-dur-fast) var(--hm-ease-out);
+}
+.hm-search::placeholder {
+  color: var(--hm-ink-40);
+}
+.hm-search:focus-visible,
+.hm-search:focus {
+  outline: none;
+  border-color: var(--hm-accent);
+  box-shadow: 0 0 0 3px var(--hm-accent-tint);
+}
+
+/* ---- Sort row — sits above the grouped list, hidden while searching ---- */
+.hm-sort-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--hm-space-2);
+  margin-bottom: var(--hm-space-2);
+}
+.hm-sort-row__label {
+  font-size: 11.5px;
+  color: var(--hm-ink-40);
+}
+
 /* ---- Entrance animation — subtle, one-shot, respects reduced motion via
    the blanket `.hm-scope *` override in tokens.css ---- */
 @keyframes hm-fade-in {

@@ -24,8 +24,11 @@ export default defineContentScript({
     // from here and stays subscribed to preference changes.
     const initialLang = resolveLang(browser.i18n?.getUILanguage?.());
 
-    // Exposed by the React app so the toolbar/shortcut can start selection mode.
+    // Exposed by the React app so the toolbar/shortcut can start selection mode,
+    // and so the Notes Library's "open note" flow can restore a specific note
+    // once this tab is ready (see registerRestoreNote below).
     let activate: (() => void) | null = null;
+    let restoreNote: ((noteId: string) => void) | null = null;
 
     const ui = await createShadowRootUi<Root>(ctx, {
       name: 'hamesh-ui',
@@ -58,6 +61,19 @@ export default defineContentScript({
               // boundary for listeners (unlike a plain property assignment,
               // which would only be visible inside this isolated world).
               window.dispatchEvent(new CustomEvent('hamesh:ready'));
+              // Same milestone, broadcast as a runtime message instead of a DOM
+              // event: the Notes Library's "open note" flow (a different
+              // extension context, in a different tab, with no access to this
+              // page's `window`) listens for this to know precisely when it's
+              // safe to send `RESTORE_NOTE` — no polling or fixed delay. If
+              // nothing is listening (the overwhelmingly common case — a
+              // normal page load with no pending open-note request), Chrome
+              // rejects with "Could not establish connection", which is
+              // expected and harmless here.
+              browser.runtime.sendMessage({ type: 'CONTENT_READY' }).catch(() => {});
+            },
+            registerRestoreNote: (fn: (noteId: string) => void) => {
+              restoreNote = fn;
             },
           }),
         );
@@ -92,6 +108,9 @@ export default defineContentScript({
               .catch(() => sendResponse({ type: 'PAGE_STATE', count: 0 }));
             return true; // async response
           }
+          case 'RESTORE_NOTE':
+            restoreNote?.(message.noteId);
+            return undefined;
           default:
             return undefined;
         }
