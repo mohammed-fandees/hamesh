@@ -268,8 +268,25 @@ re-attach markers as content mounts.
   (the extension CSP blocks live Google Fonts, and the handoff calls for
   self-hosting).
 - Multiple notes on one element render as stacked markers; the grouped count
-  badge from the design is not yet wired.
+  badge from the design is not yet wired (the `Marker` component already
+  accepts a `badge` prop for this — it's just never passed a value > 1 today).
+  Unrelated to the Notes Library; a candidate for a future on-page-marker pass.
 - Text-snippet matching is exact only.
+- Pinning is toggled only from the content-script `NoteViewer`, not from the
+  Notes Library's own rows — those are already a single full-row link, and a
+  second interactive control can't nest inside an `<a>`. The Notes Library
+  reflects pin state (badge + sort-to-top + a dedicated "Pinned" section)
+  without letting you toggle it there; open the note to change it.
 - Extension points: new storage backends via `NotesRepository`; additional
   anchor signals slot into the priority chain; a future side panel can reuse the
   tokens and repository.
+
+## Development note: TypeScript coverage of test files
+
+`tsconfig.json`'s `include` originally listed `tests/**/*.ts` but not
+`tests/**/*.tsx` — meaning `pnpm typecheck` silently never checked any
+React component test (`.test.tsx`), across every phase of this project.
+Fixed in the Notes Library PR3 pass; it immediately caught two real (if
+narrow) type errors in existing test mocks. If you add a new `.test.tsx`
+file, it's now covered — if `pnpm typecheck` ever stops catching a test
+file's type errors again, check this `include` list first.

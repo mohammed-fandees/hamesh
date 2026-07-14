@@ -1,6 +1,7 @@
 import type { Note } from '@/domain/note';
 import { derivePageLabel } from '@/domain/notes-grouping';
 import { isPlainLeftClick, openNoteAndRestore } from '@/entrypoints/notes/openNote';
+import { PinIcon } from './PinIcon';
 import type { Lang, Strings } from './i18n';
 import { relativeTime } from './i18n';
 
@@ -20,7 +21,12 @@ interface NoteRowProps {
  *  ctrl/cmd-click, and middle-click all work natively. A plain left-click is
  *  intercepted to drive `openNoteAndRestore` instead, which opens the tab
  *  itself and restores the note (scrolls to it, highlights it, opens it)
- *  once that tab's content script is ready. */
+ *  once that tab's content script is ready.
+ *
+ *  Pinned notes show a small decorative pin badge. Toggling the pin only
+ *  happens from the content-script NoteViewer — this row is already a
+ *  single full-row link, and a second interactive control can't nest inside
+ *  an `<a>`. */
 export function NoteRow({ note, strings, lang }: NoteRowProps) {
   return (
     <a
@@ -34,7 +40,10 @@ export function NoteRow({ note, strings, lang }: NoteRowProps) {
         void openNoteAndRestore(note.originalUrl, note.id);
       }}
     >
-      <p className="hm-note-row__title">{derivePageLabel(note)}</p>
+      <p className="hm-note-row__title">
+        {note.pinned && <PinIcon filled size={10} />}
+        {derivePageLabel(note)}
+      </p>
       <p className="hm-note-row__preview" dir="auto">
         {note.content}
       </p>

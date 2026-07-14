@@ -13,6 +13,8 @@ One core flow: activate → select an element → write a note → it persists l
 → a small marker restores it in context on return, where it can be opened,
 edited, and deleted. No accounts, no cloud, no sync, no AI. See
 [docs/PROMPT.md](docs/PROMPT.md) for the original engineering specification.
+A dedicated **Notes Library** page (see below) was added on top of that MVP
+to browse notes across every page at once.
 
 ## Tech stack
 
@@ -30,12 +32,13 @@ edited, and deleted. No accounts, no cloud, no sync, no AI. See
 
 ```
 src/
-├── domain/       # Pure logic: Note, page-key, anchor build + resolution, validation, preferences
+├── domain/       # Pure logic: Note, page-key, anchor build + resolution, validation, preferences,
+│                 #   notes-grouping (Notes Library grouping/search/sort/pinning selectors)
 ├── storage/      # NotesRepository + PreferencesRepository over chrome.storage.local
 ├── content/      # HameshApp (React orchestrator), theme detection, navigation, positioning
 ├── ui/           # React components + design tokens (Composer, NoteViewer, Marker, …)
 ├── messaging/    # Runtime message types
-└── entrypoints/  # WXT entrypoints: content (Shadow DOM mount), background, popup
+└── entrypoints/  # WXT entrypoints: content (Shadow DOM mount), background, popup, notes (Notes Library page)
 ```
 
 All page UI is rendered by one React app inside a single Shadow DOM root, so
@@ -95,6 +98,29 @@ styling stays isolated in its own Shadow DOM root either way. Like language,
 the choice persists and applies live across every open tab. See
 [docs/architecture.md](docs/architecture.md#theme-detection-srccontentthemets)
 for the detection algorithm.
+
+## Notes Library
+
+Opened from the popup ("Notes Library →") as a dedicated extension page —
+`chrome-extension://…/notes.html` — rather than growing the popup itself. It
+reuses the same `NotesRepository`, design tokens, and localization as the
+rest of the extension; no separate storage, no new permissions beyond
+`favicon` (reads Chrome's own local favicon cache — no network request).
+
+- **Grouped by website**, alphabetical by default, with a "Recent" sort
+  toggle. Each group expands to show every note's page, preview, and
+  last-edited time.
+- **Continue** — the 3 websites you most recently left notes on, so you can
+  pick up where you left off without scanning the full list.
+- **Pinned** — every note you've explicitly pinned (from the note viewer on
+  the page itself), across every website, most-recently-edited first.
+- **Search** — live, no button — matches note text, page title, and domain.
+- **Open Note** — clicking a note opens its original page in a new tab and
+  restores it there: scrolls to the anchored element, briefly highlights it,
+  and opens the note. This is a real cross-tab handshake (`CONTENT_READY` /
+  `RESTORE_NOTE` runtime messages), not a fixed-delay guess — see
+  [docs/architecture.md](docs/architecture.md#open-note-flow-notes-library--original-page).
+- Keyboard: `/` focuses search from anywhere on the page; `Escape` clears it.
 
 ## Known MVP limitations
 

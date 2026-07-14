@@ -39,6 +39,13 @@ export interface Note {
   content: string;
   anchor: ElementAnchor;
   pageContext?: PageContext;
+  /** User-marked "keep this handy" flag. Optional — absent/undefined on
+   *  every note written before this field existed, treated the same as
+   *  `false`. Toggling it is a metadata action, not an edit, so it
+   *  deliberately does not touch `updatedAt` (see `setNotePinned`) —
+   *  pinning a note shouldn't make it jump to the top of a "most recently
+   *  edited" sort. */
+  pinned?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -81,6 +88,11 @@ export function updateNoteContent(note: Note, input: UpdateNoteInput): Note {
     content: input.content,
     updatedAt: new Date().toISOString(),
   };
+}
+
+/** Toggles the pin flag without touching `updatedAt` — see `Note.pinned`. */
+export function setNotePinned(note: Note, pinned: boolean): Note {
+  return { ...note, pinned };
 }
 
 export function validateNoteContent(content: string): NoteValidationError | null {

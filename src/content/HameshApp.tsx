@@ -406,6 +406,25 @@ export function HameshApp({
     [repo, pageKey, commitNotes, strings.saveError],
   );
 
+  // Pinning is a metadata toggle, not a save — deliberately doesn't touch
+  // `busy`/`error` the way create/update/delete do, so it stays instant
+  // rather than showing a saving state for something this quick.
+  const handleTogglePin = useCallback(
+    async (noteId: string) => {
+      const current = notesRef.current.find((n) => n.id === noteId);
+      if (!current) return;
+      try {
+        const updated = await repo.setPinned(noteId, pageKey, !current.pinned);
+        if (updated) {
+          commitNotes(notesRef.current.map((n) => (n.id === noteId ? updated : n)));
+        }
+      } catch {
+        setError(strings.saveError);
+      }
+    },
+    [repo, pageKey, commitNotes, strings.saveError],
+  );
+
   const handleDelete = useCallback(
     async (noteId: string) => {
       setBusy(true);
@@ -555,6 +574,7 @@ export function HameshApp({
           error={error}
           onUpdate={(content) => handleUpdate(viewerNote.id, content)}
           onDelete={() => handleDelete(viewerNote.id)}
+          onTogglePin={() => handleTogglePin(viewerNote.id)}
           onClose={() => setViewerId(null)}
         />
       )}
@@ -596,6 +616,7 @@ function FloatingViewer({
   error,
   onUpdate,
   onDelete,
+  onTogglePin,
   onClose,
 }: {
   note: Note;
@@ -607,6 +628,7 @@ function FloatingViewer({
   error: string | null;
   onUpdate: (content: string) => void;
   onDelete: () => void;
+  onTogglePin: () => void;
   onClose: () => void;
 }) {
   const getRect = useCallback((): AnchorRect | null => {
@@ -630,6 +652,7 @@ function FloatingViewer({
         error={error}
         onUpdate={onUpdate}
         onDelete={onDelete}
+        onTogglePin={onTogglePin}
         onClose={onClose}
       />
     </div>

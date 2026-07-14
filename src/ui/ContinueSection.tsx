@@ -27,10 +27,11 @@ export function ContinueSection({ websites, strings, lang }: ContinueSectionProp
     <section className="hm-continue" aria-label={strings.continueSection}>
       <h2 className="hm-continue__title">{strings.continueSection}</h2>
       <ul className="hm-continue__list">
-        {websites.map((site) => (
+        {websites.map((site, i) => (
           <li key={site.domain}>
             <a
-              className="hm-continue__item"
+              className="hm-continue__item hm-fade-in"
+              style={{ animationDelay: `${i * 30}ms` }}
               href={site.latestNoteUrl}
               target="_blank"
               rel="noopener noreferrer"

@@ -149,4 +149,51 @@ describe('NotesRepository', () => {
       expect(all).toHaveLength(2);
     });
   });
+
+  describe('setPinned', () => {
+    it('pins a note and persists it', async () => {
+      const created = await repo.create({
+        content: 'x',
+        pageKey,
+        originalUrl: 'u',
+        anchor: makeAnchor(),
+      });
+
+      const updated = await repo.setPinned(created.id, pageKey, true);
+      expect(updated?.pinned).toBe(true);
+
+      const notes = await repo.getForPage(pageKey);
+      expect(notes[0].pinned).toBe(true);
+    });
+
+    it('unpins a note', async () => {
+      const created = await repo.create({
+        content: 'x',
+        pageKey,
+        originalUrl: 'u',
+        anchor: makeAnchor(),
+      });
+      await repo.setPinned(created.id, pageKey, true);
+
+      const updated = await repo.setPinned(created.id, pageKey, false);
+      expect(updated?.pinned).toBe(false);
+    });
+
+    it('does not change updatedAt', async () => {
+      const created = await repo.create({
+        content: 'x',
+        pageKey,
+        originalUrl: 'u',
+        anchor: makeAnchor(),
+      });
+
+      const updated = await repo.setPinned(created.id, pageKey, true);
+      expect(updated?.updatedAt).toBe(created.updatedAt);
+    });
+
+    it('returns null for an unknown note id', async () => {
+      const result = await repo.setPinned('nonexistent', pageKey, true);
+      expect(result).toBeNull();
+    });
+  });
 });

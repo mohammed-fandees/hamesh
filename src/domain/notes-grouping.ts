@@ -56,8 +56,17 @@ function latestNote(notes: Note[]): Note {
   return notes.reduce((latest, n) => (n.updatedAt > latest.updatedAt ? n : latest), notes[0]);
 }
 
-/** Groups notes by website, sorted alphabetically by domain. Recency-based
- *  ordering for this list is deliberately deferred — see `getContinueWebsites`
+/** Pinned notes first, otherwise stable (JS's `Array.prototype.sort` is
+ *  guaranteed stable, so notes sharing a pin state keep their existing
+ *  relative order — this only ever promotes pinned notes, it doesn't
+ *  otherwise reorder a group's notes). */
+function sortNotesWithPinnedFirst(notes: Note[]): Note[] {
+  return [...notes].sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned));
+}
+
+/** Groups notes by website, sorted alphabetically by domain; within each
+ *  group, pinned notes float to the top. Recency-based ordering for the
+ *  group list itself is deliberately deferred — see `getContinueWebsites`
  *  for the one place recency drives ordering in this phase. */
 export function groupNotesByDomain(notes: Note[]): WebsiteGroup[] {
   const groups = new Map<string, Note[]>();
@@ -73,7 +82,7 @@ export function groupNotesByDomain(notes: Note[]): WebsiteGroup[] {
     const latest = latestNote(groupNotes);
     result.push({
       domain,
-      notes: groupNotes,
+      notes: sortNotesWithPinnedFirst(groupNotes),
       count: groupNotes.length,
       lastActivity: latest.updatedAt,
       latestNoteUrl: latest.originalUrl,
@@ -101,6 +110,33 @@ export function getContinueWebsites(notes: Note[], limit = 3): ContinueWebsite[]
       a.lastActivity > b.lastActivity ? -1 : a.lastActivity < b.lastActivity ? 1 : 0,
     )
     .slice(0, limit);
+}
+
+export interface PinnedNoteItem {
+  noteId: string;
+  domain: string;
+  url: string;
+  preview: string;
+  updatedAt: string;
+}
+
+/** Every pinned note across every website, most-recently-edited first — the
+ *  Notes Library's "Pinned" section, a flat list of the individual notes a
+ *  user explicitly marked as important (unlike "Continue", which is one
+ *  entry per website). Unbounded: unlike "Continue" (a system-inferred
+ *  shortcut, capped to stay quick to scan), pins are user-curated by
+ *  definition, so there's no "too many" to defensively cap. */
+export function getPinnedNotes(notes: Note[]): PinnedNoteItem[] {
+  return notes
+    .filter((n) => n.pinned)
+    .map((n) => ({
+      noteId: n.id,
+      domain: extractDomain(n.originalUrl),
+      url: n.originalUrl,
+      preview: n.content,
+      updatedAt: n.updatedAt,
+    }))
+    .sort((a, b) => (a.updatedAt > b.updatedAt ? -1 : a.updatedAt < b.updatedAt ? 1 : 0));
 }
 
 export type GroupSortMode = 'alphabetical' | 'recent';

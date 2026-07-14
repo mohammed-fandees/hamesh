@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import type { Note } from '@/domain/note';
+import { PinIcon } from './PinIcon';
 import type { Lang, Strings } from './i18n';
 import { relativeTime } from './i18n';
 
@@ -13,11 +14,16 @@ interface NoteViewerProps {
   onUpdate: (content: string) => void;
   onDelete: () => void;
   onClose: () => void;
+  onTogglePin: () => void;
 }
 
 /**
  * Note viewer / editor — opens a saved note back up. Supports viewing, editing,
- * a delete confirmation step, and an "anchor unavailable" fallback state.
+ * a delete confirmation step, an "anchor unavailable" fallback state, and
+ * pinning. This is the only place a note's pin state is toggled — the Notes
+ * Library only ever reflects it (a badge + sort-to-top), since its rows are
+ * already a single full-row link and nesting a second interactive control
+ * inside an `<a>` isn't valid HTML.
  */
 export function NoteViewer({
   note,
@@ -29,6 +35,7 @@ export function NoteViewer({
   onUpdate,
   onDelete,
   onClose,
+  onTogglePin,
 }: NoteViewerProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(note.content);
@@ -66,6 +73,16 @@ export function NoteViewer({
       onKeyDown={handleKeyDown}
     >
       <span className="hm-connector" data-unavailable={!anchorAvailable} aria-hidden="true" />
+
+      <button
+        type="button"
+        className="hm-pin-toggle"
+        aria-pressed={!!note.pinned}
+        aria-label={note.pinned ? strings.unpinNote : strings.pinNote}
+        onClick={onTogglePin}
+      >
+        <PinIcon filled={!!note.pinned} />
+      </button>
 
       {!anchorAvailable && (
         <div className="hm-status hm-status--warning" role="status">

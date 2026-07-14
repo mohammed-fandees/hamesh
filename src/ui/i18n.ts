@@ -51,6 +51,10 @@ export interface Strings {
   sortLabel: string;
   sortAlphabetical: string;
   sortRecent: string;
+  pinNote: string;
+  unpinNote: string;
+  pinnedSection: string;
+  loadingNotes: string;
 }
 
 const en: Strings = {
@@ -89,13 +93,17 @@ const en: Strings = {
   continueLastActivity: (rel) => `Updated ${rel}`,
   notesCount: (n) => (n === 1 ? '1 note' : `${n} notes`),
   notesLibraryEmptyTitle: 'No notes yet',
-  notesLibraryEmptyBody: 'Select an element on any page to leave your first note.',
+  notesLibraryEmptyBody: 'Press Alt+H on any page to leave your first note.',
   searchPlaceholder: 'Search notes…',
   searchNoResultsTitle: 'No matches',
   searchNoResultsBody: (query) => `Nothing found for "${query}".`,
   sortLabel: 'Sort',
   sortAlphabetical: 'A–Z',
   sortRecent: 'Recent',
+  pinNote: 'Pin this note',
+  unpinNote: 'Unpin this note',
+  pinnedSection: 'Pinned',
+  loadingNotes: 'Loading notes…',
 };
 
 const ar: Strings = {
@@ -134,13 +142,17 @@ const ar: Strings = {
   continueLastActivity: (rel) => `آخر تحديث ${rel}`,
   notesCount: (n) => `${n} ${n === 1 ? 'ملاحظة' : 'ملاحظات'}`,
   notesLibraryEmptyTitle: 'لا توجد ملاحظات بعد',
-  notesLibraryEmptyBody: 'اختر عنصرًا في أي صفحة لتترك ملاحظتك الأولى.',
+  notesLibraryEmptyBody: 'اضغط Alt+H في أي صفحة لتترك ملاحظتك الأولى.',
   searchPlaceholder: 'ابحث في الملاحظات…',
   searchNoResultsTitle: 'لا نتائج',
   searchNoResultsBody: (query) => `لا توجد نتائج لـ "${query}".`,
   sortLabel: 'ترتيب',
   sortAlphabetical: 'أبجديًا',
   sortRecent: 'الأحدث',
+  pinNote: 'تثبيت هذه الملاحظة',
+  unpinNote: 'إلغاء تثبيت هذه الملاحظة',
+  pinnedSection: 'مثبّت',
+  loadingNotes: 'جارٍ تحميل الملاحظات…',
 };
 
 export function resolveLang(uiLanguage?: string): Lang {

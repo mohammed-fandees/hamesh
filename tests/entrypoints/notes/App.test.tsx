@@ -110,7 +110,7 @@ describe('Notes Library page', () => {
 
     expect(await screen.findByText('No notes yet')).toBeInTheDocument();
     expect(
-      screen.getByText('Select an element on any page to leave your first note.'),
+      screen.getByText('Press Alt+H on any page to leave your first note.'),
     ).toBeInTheDocument();
   });
 
@@ -423,6 +423,139 @@ describe('Notes Library page', () => {
       await waitFor(() =>
         expect(screen.queryByRole('radio', { name: 'Recent' })).not.toBeInTheDocument(),
       );
+    });
+  });
+
+  describe('pinned section', () => {
+    it('does not render when nothing is pinned', async () => {
+      seedNote();
+      const App = await importApp();
+      render(<App />);
+
+      await screen.findByRole('button', { name: /example\.com/ });
+      expect(screen.queryByRole('region', { name: 'Pinned' })).not.toBeInTheDocument();
+    });
+
+    it('shows pinned notes across websites, most recently edited first', async () => {
+      seedNote({
+        pageKey: 'https://old-pin.com',
+        originalUrl: 'https://old-pin.com',
+        content: 'older pinned note',
+        pinned: true,
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      });
+      seedNote({
+        pageKey: 'https://new-pin.com',
+        originalUrl: 'https://new-pin.com',
+        content: 'newer pinned note',
+        pinned: true,
+        updatedAt: '2026-03-01T00:00:00.000Z',
+      });
+      seedNote({
+        pageKey: 'https://unpinned.com',
+        originalUrl: 'https://unpinned.com',
+        content: 'not pinned',
+      });
+
+      const App = await importApp();
+      render(<App />);
+
+      const pinnedSection = await screen.findByRole('region', { name: 'Pinned' });
+      const items = within(pinnedSection).getAllByRole('listitem');
+      expect(items).toHaveLength(2);
+      expect(items[0]).toHaveTextContent('newer pinned note');
+      expect(items[1]).toHaveTextContent('older pinned note');
+      expect(pinnedSection).not.toHaveTextContent('not pinned');
+    });
+
+    it('a pinned note shows a pin badge on its collapsed group row preview', async () => {
+      seedNote({ content: 'this note is pinned', pinned: true });
+
+      const App = await importApp();
+      const { container } = render(<App />);
+
+      await screen.findByRole('button', { name: /example\.com/ });
+      // The pin icon renders inside .hm-note-row__title once the group is
+      // expanded; assert its presence via the SVG rather than text (it's
+      // aria-hidden, purely decorative).
+      fireEvent.click(screen.getByRole('button', { name: /example\.com/ }));
+      const titleEl = container.querySelector('.hm-note-row__title');
+      expect(titleEl?.querySelector('svg')).not.toBeNull();
+    });
+
+    it('hides the Pinned section while searching', async () => {
+      seedNote({ content: 'pinned note', pinned: true });
+
+      const App = await importApp();
+      render(<App />);
+
+      await screen.findByRole('region', { name: 'Pinned' });
+      fireEvent.change(screen.getByPlaceholderText('Search notes…'), {
+        target: { value: 'pinned' },
+      });
+
+      await waitFor(() =>
+        expect(screen.queryByRole('region', { name: 'Pinned' })).not.toBeInTheDocument(),
+      );
+    });
+  });
+
+  describe('loading state', () => {
+    it('shows a skeleton while the initial fetch is in flight, not the empty state', async () => {
+      let resolveSnapshot: (v: Record<string, unknown>) => void = () => {};
+      fakeStorage.api.snapshot.mockImplementationOnce(
+        () => new Promise((resolve) => (resolveSnapshot = resolve)),
+      );
+
+      const App = await importApp();
+      const { container } = render(<App />);
+
+      expect(container.querySelector('.hm-skeleton')).not.toBeNull();
+      expect(screen.queryByText('No notes yet')).not.toBeInTheDocument();
+
+      resolveSnapshot({});
+      await waitFor(() => expect(container.querySelector('.hm-skeleton')).toBeNull());
+      expect(await screen.findByText('No notes yet')).toBeInTheDocument();
+    });
+  });
+
+  describe('keyboard shortcuts', () => {
+    it('"/" focuses the search input from anywhere on the page', async () => {
+      seedNote();
+      const App = await importApp();
+      render(<App />);
+
+      const search = await screen.findByPlaceholderText('Search notes…');
+      expect(search).not.toHaveFocus();
+
+      fireEvent.keyDown(document.body, { key: '/' });
+      expect(search).toHaveFocus();
+    });
+
+    it('does not hijack "/" while already typing in the search input', async () => {
+      seedNote();
+      const App = await importApp();
+      render(<App />);
+
+      const search = await screen.findByPlaceholderText('Search notes…');
+      search.focus();
+      fireEvent.keyDown(search, { key: '/' });
+      // Still focused, and the app didn't try to re-focus/interfere —
+      // verified indirectly: no error, focus unchanged.
+      expect(search).toHaveFocus();
+    });
+
+    it('Escape clears the search query', async () => {
+      seedNote({ content: 'hello world' });
+      const App = await importApp();
+      render(<App />);
+
+      const search = await screen.findByPlaceholderText('Search notes…');
+      fireEvent.change(search, { target: { value: 'hello' } });
+      expect(search).toHaveValue('hello');
+
+      fireEvent.keyDown(search, { key: 'Escape' });
+      expect(search).toHaveValue('');
     });
   });
 });

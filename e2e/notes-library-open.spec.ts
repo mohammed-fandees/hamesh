@@ -95,6 +95,16 @@ async function getExtensionId(context: BrowserContext): Promise<string> {
   return new URL(sw.url()).host;
 }
 
+/** Opens the (already saved) note's marker and pins it from the viewer —
+ *  the only place pinning is toggled (PR3). */
+async function pinNote(page: Page): Promise<void> {
+  await page.locator('.hm-marker').first().click();
+  await expect(page.locator('.hm-card')).toBeVisible();
+  await page.getByRole('button', { name: 'Pin this note' }).click();
+  await expect(page.getByRole('button', { name: 'Unpin this note' })).toBeVisible();
+  await page.keyboard.press('Escape');
+}
+
 test.describe('Notes Library — Open Note flow', () => {
   let context: BrowserContext;
   let server: { url: string; close: () => Promise<void> };
@@ -168,6 +178,37 @@ test.describe('Notes Library — Open Note flow', () => {
     await restoredPage.waitForLoadState('domcontentloaded');
 
     await expect(restoredPage.locator('.hm-card .hm-note-body')).toHaveText(noteText, {
+      timeout: 10000,
+    });
+  });
+
+  test('pinning a note from the page surfaces it in the Notes Library Pinned section', async () => {
+    const extensionId = await getExtensionId(context);
+
+    const sourcePage = await context.newPage();
+    await installReadinessHook(sourcePage);
+    await sourcePage.goto(server.url);
+    const pinnedText = 'This one is pinned.';
+    await createNote(sourcePage, 'article-heading', pinnedText);
+    const unpinnedText = 'This one is not.';
+    await createNote(sourcePage, 'para-one', unpinnedText);
+    await pinNote(sourcePage);
+    await sourcePage.close();
+
+    const library = await context.newPage();
+    await library.goto(`chrome-extension://${extensionId}/notes.html`);
+
+    const pinnedSection = library.getByRole('region', { name: 'Pinned' });
+    await expect(pinnedSection).toBeVisible();
+    await expect(pinnedSection).toContainText(pinnedText);
+    await expect(pinnedSection).not.toContainText(unpinnedText);
+
+    // Clicking the pinned entry restores it too, same as any other note.
+    const [restoredPage] = await Promise.all([
+      context.waitForEvent('page'),
+      pinnedSection.locator('.hm-pinned__item').click(),
+    ]);
+    await expect(restoredPage.locator('.hm-card .hm-note-body')).toHaveText(pinnedText, {
       timeout: 10000,
     });
   });
