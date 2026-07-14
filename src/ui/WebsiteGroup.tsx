@@ -17,11 +17,15 @@ interface WebsiteGroupProps {
 }
 
 /**
- * A collapsible website group — favicon, hostname, note count, and (when
- * expanded) each note's preview. The expand/collapse panel animates height
- * via a CSS grid-rows transition (`hm-group__body`, see notes-library.css)
- * rather than JS height measurement, so it's cheap and automatically
- * disabled by the existing `prefers-reduced-motion` override in tokens.css.
+ * A collapsible website group. The header is two lines even while
+ * collapsed — domain/count on top, a one-line preview of the group's most
+ * recently edited note beneath it — so the row communicates something real
+ * before the user ever expands it, rather than reading as an inert list
+ * item. Expanding reveals each note's full preview. The panel animates via
+ * a CSS grid-rows + opacity transition (`hm-group__body`, see
+ * notes-library.css) rather than JS height measurement, so it's cheap and
+ * automatically disabled by the existing `prefers-reduced-motion` override
+ * in tokens.css.
  */
 export function WebsiteGroup({
   group,
@@ -42,8 +46,13 @@ export function WebsiteGroup({
         onClick={onToggle}
       >
         <Favicon domain={group.domain} />
-        <span className="hm-group__domain">{group.domain}</span>
-        <span className="hm-group__count">{strings.notesCount(group.count)}</span>
+        <span className="hm-group__header-main">
+          <span className="hm-group__header-top">
+            <span className="hm-group__domain">{group.domain}</span>
+            <span className="hm-group__count">{strings.notesCount(group.count)}</span>
+          </span>
+          <span className="hm-group__preview">{group.latestNotePreview}</span>
+        </span>
         <svg
           className="hm-group__chevron"
           data-expanded={expanded}

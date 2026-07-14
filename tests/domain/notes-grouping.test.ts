@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { groupNotesByDomain, getContinueWebsites, deriveMonogram } from '@/domain/notes-grouping';
+import {
+  groupNotesByDomain,
+  getContinueWebsites,
+  deriveMonogram,
+  derivePageLabel,
+} from '@/domain/notes-grouping';
 import type { Note, ElementAnchor } from '@/domain/note';
 
 function makeAnchor(): ElementAnchor {
@@ -74,6 +79,23 @@ describe('groupNotesByDomain', () => {
     expect(group.lastActivity).toBe('2026-03-01T00:00:00.000Z');
   });
 
+  it('sets latestNotePreview to the content of the most recently updated note', () => {
+    const notes = [
+      makeNote({
+        originalUrl: 'https://a.com',
+        content: 'older note',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      }),
+      makeNote({
+        originalUrl: 'https://a.com',
+        content: 'newest note',
+        updatedAt: '2026-03-01T00:00:00.000Z',
+      }),
+    ];
+    const [group] = groupNotesByDomain(notes);
+    expect(group.latestNotePreview).toBe('newest note');
+  });
+
   it('degrades gracefully for a malformed originalUrl instead of dropping the note', () => {
     const notes = [makeNote({ originalUrl: 'not-a-valid-url' })];
     const groups = groupNotesByDomain(notes);
@@ -106,6 +128,47 @@ describe('getContinueWebsites', () => {
     ];
     expect(getContinueWebsites(notes)).toHaveLength(3);
     expect(getContinueWebsites(notes, 2)).toHaveLength(2);
+  });
+
+  it('carries the latest note preview through', () => {
+    const notes = [makeNote({ originalUrl: 'https://a.com', content: 'resume this thought' })];
+    const [result] = getContinueWebsites(notes);
+    expect(result.latestNotePreview).toBe('resume this thought');
+  });
+});
+
+describe('derivePageLabel', () => {
+  it('prefers the captured page title when present', () => {
+    const note = makeNote({ pageContext: { title: 'My Article' } });
+    expect(derivePageLabel(note)).toBe('My Article');
+  });
+
+  it('falls back to the URL pathname when there is no title', () => {
+    const note = makeNote({ originalUrl: 'https://example.com/docs/getting-started' });
+    expect(derivePageLabel(note)).toBe('/docs/getting-started');
+  });
+
+  it('strips a trailing slash from the pathname fallback', () => {
+    const note = makeNote({ originalUrl: 'https://example.com/docs/' });
+    expect(derivePageLabel(note)).toBe('/docs');
+  });
+
+  it('falls back to the hostname when the pathname is just "/"', () => {
+    const note = makeNote({ originalUrl: 'https://example.com/' });
+    expect(derivePageLabel(note)).toBe('example.com');
+  });
+
+  it('falls back to the raw URL for a malformed originalUrl', () => {
+    const note = makeNote({ originalUrl: 'not-a-valid-url' });
+    expect(derivePageLabel(note)).toBe('not-a-valid-url');
+  });
+
+  it('ignores a whitespace-only title and falls back to the pathname', () => {
+    const note = makeNote({
+      originalUrl: 'https://example.com/x',
+      pageContext: { title: '   ' },
+    });
+    expect(derivePageLabel(note)).toBe('/x');
   });
 });
 

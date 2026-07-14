@@ -158,17 +158,39 @@ describe('Notes Library page', () => {
     expect(panel).toHaveAttribute('aria-hidden', 'true');
   });
 
-  it('falls back to "Untitled page" when a note has no pageContext title', async () => {
-    seedNote({ content: 'no title note' });
+  it('falls back to the URL pathname (never "Untitled page") when a note has no pageContext title', async () => {
+    seedNote({
+      content: 'no title note',
+      originalUrl: 'https://example.com/articles/my-post',
+    });
 
     const App = await importApp();
     render(<App />);
 
     fireEvent.click(await screen.findByRole('button', { name: /example\.com/ }));
-    expect(await screen.findByText('Untitled page')).toBeInTheDocument();
+    expect(await screen.findByText('/articles/my-post')).toBeInTheDocument();
+    expect(screen.queryByText('Untitled page')).not.toBeInTheDocument();
   });
 
-  it('renders a Continue section with the most recently active websites', async () => {
+  it('shows a preview of the latest note on a collapsed group row', async () => {
+    seedNote({ content: 'This is the note that should show as a preview.' });
+
+    const App = await importApp();
+    render(<App />);
+
+    const header = await screen.findByRole('button', { name: /example\.com/ });
+    expect(header).toHaveTextContent('This is the note that should show as a preview.');
+  });
+
+  it('shows a quiet "All Websites" heading above the grouped list', async () => {
+    seedNote();
+    const App = await importApp();
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: 'All Websites' })).toBeInTheDocument();
+  });
+
+  it('renders a Continue section with the most recently active websites and a note preview', async () => {
     seedNote({
       pageKey: 'https://old.com',
       originalUrl: 'https://old.com',
@@ -177,6 +199,7 @@ describe('Notes Library page', () => {
     seedNote({
       pageKey: 'https://newest.com',
       originalUrl: 'https://newest.com',
+      content: 'Resume this thought.',
       updatedAt: '2026-03-01T00:00:00.000Z',
     });
 
@@ -186,6 +209,7 @@ describe('Notes Library page', () => {
     const continueSection = await screen.findByRole('region', { name: 'Continue' });
     const items = within(continueSection).getAllByRole('listitem');
     expect(items[0]).toHaveTextContent('newest.com');
+    expect(items[0]).toHaveTextContent('Resume this thought.');
   });
 
   it('strips a leading www. so grouping matches the bare domain', async () => {

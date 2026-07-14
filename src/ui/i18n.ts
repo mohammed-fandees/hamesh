@@ -43,7 +43,7 @@ export interface Strings {
   continueSection: string;
   continueLastActivity: (rel: string) => string;
   notesCount: (n: number) => string;
-  untitledPage: string;
+  allWebsites: string;
   notesLibraryEmptyTitle: string;
   notesLibraryEmptyBody: string;
 }
@@ -83,7 +83,7 @@ const en: Strings = {
   continueSection: 'Continue',
   continueLastActivity: (rel) => `Updated ${rel}`,
   notesCount: (n) => (n === 1 ? '1 note' : `${n} notes`),
-  untitledPage: 'Untitled page',
+  allWebsites: 'All Websites',
   notesLibraryEmptyTitle: 'No notes yet',
   notesLibraryEmptyBody: 'Select an element on any page to leave your first note.',
 };
@@ -123,7 +123,7 @@ const ar: Strings = {
   continueSection: 'تابع',
   continueLastActivity: (rel) => `آخر تحديث ${rel}`,
   notesCount: (n) => `${n} ${n === 1 ? 'ملاحظة' : 'ملاحظات'}`,
-  untitledPage: 'صفحة بدون عنوان',
+  allWebsites: 'جميع المواقع',
   notesLibraryEmptyTitle: 'لا توجد ملاحظات بعد',
   notesLibraryEmptyBody: 'اختر عنصرًا في أي صفحة لتترك ملاحظتك الأولى.',
 };

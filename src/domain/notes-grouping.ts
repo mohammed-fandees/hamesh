@@ -15,12 +15,16 @@ export interface WebsiteGroup {
   count: number;
   /** ISO timestamp of the most recently updated note in this group. */
   lastActivity: string;
+  /** Content of the most recently updated note — surfaced as a compact
+   *  preview so a group communicates something before it's even expanded. */
+  latestNotePreview: string;
 }
 
 export interface ContinueWebsite {
   domain: string;
   count: number;
   lastActivity: string;
+  latestNotePreview: string;
 }
 
 export interface Monogram {
@@ -41,11 +45,12 @@ function extractDomain(url: string): string {
   }
 }
 
-function latestUpdatedAt(notes: Note[]): string {
-  return notes.reduce(
-    (latest, n) => (n.updatedAt > latest ? n.updatedAt : latest),
-    notes[0].updatedAt,
-  );
+/** The most recently updated note in a (non-empty) list. Computed once so
+ *  `lastActivity` and `latestNotePreview` always agree on which note "wins"
+ *  a tie, rather than two separate reduces potentially picking different
+ *  notes with identical timestamps. */
+function latestNote(notes: Note[]): Note {
+  return notes.reduce((latest, n) => (n.updatedAt > latest.updatedAt ? n : latest), notes[0]);
 }
 
 /** Groups notes by website, sorted alphabetically by domain. Recency-based
@@ -62,11 +67,13 @@ export function groupNotesByDomain(notes: Note[]): WebsiteGroup[] {
 
   const result: WebsiteGroup[] = [];
   for (const [domain, groupNotes] of groups) {
+    const latest = latestNote(groupNotes);
     result.push({
       domain,
       notes: groupNotes,
       count: groupNotes.length,
-      lastActivity: latestUpdatedAt(groupNotes),
+      lastActivity: latest.updatedAt,
+      latestNotePreview: latest.content,
     });
   }
   result.sort((a, b) => a.domain.localeCompare(b.domain));
@@ -79,11 +86,34 @@ export function groupNotesByDomain(notes: Note[]): WebsiteGroup[] {
  *  capped at `limit`. Empty when there are no notes at all. */
 export function getContinueWebsites(notes: Note[], limit = 3): ContinueWebsite[] {
   return groupNotesByDomain(notes)
-    .map(({ domain, count, lastActivity }) => ({ domain, count, lastActivity }))
+    .map(({ domain, count, lastActivity, latestNotePreview }) => ({
+      domain,
+      count,
+      lastActivity,
+      latestNotePreview,
+    }))
     .sort((a, b) =>
       a.lastActivity > b.lastActivity ? -1 : a.lastActivity < b.lastActivity ? 1 : 0,
     )
     .slice(0, limit);
+}
+
+/** A human-meaningful label for the page a note was created on. Prefers the
+ *  captured page title; when unavailable (an older note, or a page with no
+ *  `<title>`), falls back to the URL's pathname rather than a generic
+ *  "Untitled page" placeholder, so the row still communicates *something*
+ *  real about the page instead of reading as broken/missing metadata. */
+export function derivePageLabel(note: Note): string {
+  const title = note.pageContext?.title?.trim();
+  if (title) return title;
+
+  try {
+    const url = new URL(note.originalUrl);
+    const path = url.pathname.replace(/\/+$/, '');
+    return path || url.hostname;
+  } catch {
+    return note.originalUrl;
+  }
 }
 
 /** Deterministic letter + palette-slot for a domain, used when no favicon is

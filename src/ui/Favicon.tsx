@@ -29,7 +29,7 @@ export function Favicon({ domain, size = 20 }: FaviconProps) {
     return (
       <span
         className={`hm-favicon hm-favicon--fallback hm-monogram--${monogram.colorIndex}`}
-        style={{ width: size, height: size }}
+        style={{ width: size, height: size, fontSize: Math.round(size * 0.5) }}
         aria-hidden="true"
       >
         {monogram.letter}
