@@ -15,9 +15,6 @@ export interface WebsiteGroup {
   count: number;
   /** ISO timestamp of the most recently updated note in this group. */
   lastActivity: string;
-  /** Content of the most recently updated note — surfaced as a compact
-   *  preview so a group communicates something before it's even expanded. */
-  latestNotePreview: string;
   /** `originalUrl` of the most recently updated note — where a "Continue"
    *  card for this group links to. */
   latestNoteUrl: string;
@@ -27,7 +24,6 @@ export interface ContinueWebsite {
   domain: string;
   count: number;
   lastActivity: string;
-  latestNotePreview: string;
   latestNoteUrl: string;
 }
 
@@ -50,8 +46,8 @@ function extractDomain(url: string): string {
 }
 
 /** The most recently updated note in a (non-empty) list. Computed once so
- *  `lastActivity` and `latestNotePreview` always agree on which note "wins"
- *  a tie, rather than two separate reduces potentially picking different
+ *  `lastActivity` and `latestNoteUrl` always agree on which note "wins" a
+ *  tie, rather than two separate reduces potentially picking different
  *  notes with identical timestamps. */
 function latestNote(notes: Note[]): Note {
   return notes.reduce((latest, n) => (n.updatedAt > latest.updatedAt ? n : latest), notes[0]);
@@ -77,7 +73,6 @@ export function groupNotesByDomain(notes: Note[]): WebsiteGroup[] {
       notes: groupNotes,
       count: groupNotes.length,
       lastActivity: latest.updatedAt,
-      latestNotePreview: latest.content,
       latestNoteUrl: latest.originalUrl,
     });
   }
@@ -91,11 +86,10 @@ export function groupNotesByDomain(notes: Note[]): WebsiteGroup[] {
  *  capped at `limit`. Empty when there are no notes at all. */
 export function getContinueWebsites(notes: Note[], limit = 3): ContinueWebsite[] {
   return groupNotesByDomain(notes)
-    .map(({ domain, count, lastActivity, latestNotePreview, latestNoteUrl }) => ({
+    .map(({ domain, count, lastActivity, latestNoteUrl }) => ({
       domain,
       count,
       lastActivity,
-      latestNotePreview,
       latestNoteUrl,
     }))
     .sort((a, b) =>

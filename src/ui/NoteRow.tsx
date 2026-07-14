@@ -9,11 +9,11 @@ interface NoteRowProps {
   lang: Lang;
 }
 
-/** A single note's compact preview inside an expanded website group. The
- *  note's own text is the focal point (larger, primary-ink serif); the page
- *  label and timestamp recede as secondary/tertiary context, since the note
- *  content — not the page it came from — is what a returning user is
- *  scanning for.
+/** A single note's compact preview inside an expanded website group —
+ *  page title (falls back to the URL pathname/hostname rather than a
+ *  generic "Untitled page" when there's no captured title), note text
+ *  (clamped, not truncated in JS so it stays reflow-friendly), and a
+ *  relative last-edited timestamp.
  *
  *  A plain `<a target="_blank">` to the note's original URL — no
  *  `browser.tabs` call, no new permission needed. This establishes the

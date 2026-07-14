@@ -108,23 +108,20 @@ export function App() {
             <p className="hm-empty__body">{strings.notesLibraryEmptyBody}</p>
           </div>
         ) : (
-          <>
-            <h2 className="hm-notes-page__section-label">{strings.allWebsites}</h2>
-            <ul className="hm-groups">
-              {groups.map((group, i) => (
-                <li key={group.domain}>
-                  <WebsiteGroup
-                    group={group}
-                    expanded={expanded.has(group.domain)}
-                    onToggle={() => toggleGroup(group.domain)}
-                    strings={strings}
-                    lang={lang}
-                    style={{ animationDelay: `${Math.min(i * 30, 240)}ms` }}
-                  />
-                </li>
-              ))}
-            </ul>
-          </>
+          <ul className="hm-groups">
+            {groups.map((group, i) => (
+              <li key={group.domain}>
+                <WebsiteGroup
+                  group={group}
+                  expanded={expanded.has(group.domain)}
+                  onToggle={() => toggleGroup(group.domain)}
+                  strings={strings}
+                  lang={lang}
+                  style={{ animationDelay: `${Math.min(i * 30, 240)}ms` }}
+                />
+              </li>
+            ))}
+          </ul>
         )}
       </div>
     </div>

@@ -79,23 +79,6 @@ describe('groupNotesByDomain', () => {
     expect(group.lastActivity).toBe('2026-03-01T00:00:00.000Z');
   });
 
-  it('sets latestNotePreview to the content of the most recently updated note', () => {
-    const notes = [
-      makeNote({
-        originalUrl: 'https://a.com',
-        content: 'older note',
-        updatedAt: '2026-01-01T00:00:00.000Z',
-      }),
-      makeNote({
-        originalUrl: 'https://a.com',
-        content: 'newest note',
-        updatedAt: '2026-03-01T00:00:00.000Z',
-      }),
-    ];
-    const [group] = groupNotesByDomain(notes);
-    expect(group.latestNotePreview).toBe('newest note');
-  });
-
   it('sets latestNoteUrl to the originalUrl of the most recently updated note', () => {
     const notes = [
       makeNote({
@@ -143,12 +126,6 @@ describe('getContinueWebsites', () => {
     ];
     expect(getContinueWebsites(notes)).toHaveLength(3);
     expect(getContinueWebsites(notes, 2)).toHaveLength(2);
-  });
-
-  it('carries the latest note preview through', () => {
-    const notes = [makeNote({ originalUrl: 'https://a.com', content: 'resume this thought' })];
-    const [result] = getContinueWebsites(notes);
-    expect(result.latestNotePreview).toBe('resume this thought');
   });
 
   it('carries the latest note url through', () => {

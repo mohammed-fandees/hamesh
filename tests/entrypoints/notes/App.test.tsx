@@ -186,25 +186,7 @@ describe('Notes Library page', () => {
     expect(screen.queryByText('Untitled page')).not.toBeInTheDocument();
   });
 
-  it('shows a preview of the latest note on a collapsed group row', async () => {
-    seedNote({ content: 'This is the note that should show as a preview.' });
-
-    const App = await importApp();
-    render(<App />);
-
-    const header = await screen.findByRole('button', { name: /example\.com/ });
-    expect(header).toHaveTextContent('This is the note that should show as a preview.');
-  });
-
-  it('shows a quiet "All Websites" heading above the grouped list', async () => {
-    seedNote();
-    const App = await importApp();
-    render(<App />);
-
-    expect(await screen.findByRole('heading', { name: 'All Websites' })).toBeInTheDocument();
-  });
-
-  it('renders a Continue section with the most recently active websites and a note preview', async () => {
+  it('renders a Continue section with the most recently active websites, linking to that note', async () => {
     seedNote({
       pageKey: 'https://old.com',
       originalUrl: 'https://old.com',
@@ -212,8 +194,7 @@ describe('Notes Library page', () => {
     });
     seedNote({
       pageKey: 'https://newest.com',
-      originalUrl: 'https://newest.com',
-      content: 'Resume this thought.',
+      originalUrl: 'https://newest.com/some-page',
       updatedAt: '2026-03-01T00:00:00.000Z',
     });
 
@@ -223,10 +204,9 @@ describe('Notes Library page', () => {
     const continueSection = await screen.findByRole('region', { name: 'Continue' });
     const items = within(continueSection).getAllByRole('listitem');
     expect(items[0]).toHaveTextContent('newest.com');
-    expect(items[0]).toHaveTextContent('Resume this thought.');
 
     const link = within(items[0]).getByRole('link');
-    expect(link).toHaveAttribute('href', 'https://newest.com');
+    expect(link).toHaveAttribute('href', 'https://newest.com/some-page');
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
   });
