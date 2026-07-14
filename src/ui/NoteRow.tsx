@@ -13,16 +13,21 @@ interface NoteRowProps {
  *  note's own text is the focal point (larger, primary-ink serif); the page
  *  label and timestamp recede as secondary/tertiary context, since the note
  *  content — not the page it came from — is what a returning user is
- *  scanning for. Read-only in this phase; opening a note back up on its page
- *  is PR2 scope. */
+ *  scanning for.
+ *
+ *  A plain `<a target="_blank">` to the note's original URL — no
+ *  `browser.tabs` call, no new permission needed. This establishes the
+ *  interaction model now (PR1); the full restore experience (wait for the
+ *  page, scroll to and highlight the anchored element, open the note,
+ *  handle races) is PR2 scope. */
 export function NoteRow({ note, strings, lang }: NoteRowProps) {
   return (
-    <div className="hm-note-row">
+    <a className="hm-note-row" href={note.originalUrl} target="_blank" rel="noopener noreferrer">
       <p className="hm-note-row__title">{derivePageLabel(note)}</p>
       <p className="hm-note-row__preview" dir="auto">
         {note.content}
       </p>
       <p className="hm-note-row__meta">{strings.editedAgo(relativeTime(note.updatedAt, lang))}</p>
-    </div>
+    </a>
   );
 }

@@ -96,6 +96,21 @@ describe('groupNotesByDomain', () => {
     expect(group.latestNotePreview).toBe('newest note');
   });
 
+  it('sets latestNoteUrl to the originalUrl of the most recently updated note', () => {
+    const notes = [
+      makeNote({
+        originalUrl: 'https://a.com/older-page',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      }),
+      makeNote({
+        originalUrl: 'https://a.com/newest-page',
+        updatedAt: '2026-03-01T00:00:00.000Z',
+      }),
+    ];
+    const [group] = groupNotesByDomain(notes);
+    expect(group.latestNoteUrl).toBe('https://a.com/newest-page');
+  });
+
   it('degrades gracefully for a malformed originalUrl instead of dropping the note', () => {
     const notes = [makeNote({ originalUrl: 'not-a-valid-url' })];
     const groups = groupNotesByDomain(notes);
@@ -134,6 +149,12 @@ describe('getContinueWebsites', () => {
     const notes = [makeNote({ originalUrl: 'https://a.com', content: 'resume this thought' })];
     const [result] = getContinueWebsites(notes);
     expect(result.latestNotePreview).toBe('resume this thought');
+  });
+
+  it('carries the latest note url through', () => {
+    const notes = [makeNote({ originalUrl: 'https://a.com/some-page' })];
+    const [result] = getContinueWebsites(notes);
+    expect(result.latestNoteUrl).toBe('https://a.com/some-page');
   });
 });
 

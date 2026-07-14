@@ -18,6 +18,11 @@ interface ContinueSectionProps {
  * "continue reading" list than a dashboard widget. Derived from existing
  * note timestamps, not a browsing-history feature. Renders nothing when
  * there are no notes yet.
+ *
+ * Each card is a plain `<a target="_blank">` to that site's most recently
+ * edited note — no `browser.tabs` call, no new permission. Same PR1/PR2
+ * split as NoteRow: this establishes the interaction model now, the full
+ * restore experience is PR2.
  */
 export function ContinueSection({ websites, strings, lang }: ContinueSectionProps) {
   if (websites.length === 0) return null;
@@ -27,7 +32,12 @@ export function ContinueSection({ websites, strings, lang }: ContinueSectionProp
       <ul className="hm-continue__list">
         {websites.map((site) => (
           <li key={site.domain}>
-            <div className="hm-continue__item">
+            <a
+              className="hm-continue__item"
+              href={site.latestNoteUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <span className="hm-continue__kicker">
                 <Favicon domain={site.domain} size={14} />
                 {site.domain}
@@ -39,7 +49,7 @@ export function ContinueSection({ websites, strings, lang }: ContinueSectionProp
                 {strings.notesCount(site.count)} ·{' '}
                 {strings.continueLastActivity(relativeTime(site.lastActivity, lang))}
               </span>
-            </div>
+            </a>
           </li>
         ))}
       </ul>

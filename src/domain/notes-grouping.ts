@@ -18,6 +18,9 @@ export interface WebsiteGroup {
   /** Content of the most recently updated note — surfaced as a compact
    *  preview so a group communicates something before it's even expanded. */
   latestNotePreview: string;
+  /** `originalUrl` of the most recently updated note — where a "Continue"
+   *  card for this group links to. */
+  latestNoteUrl: string;
 }
 
 export interface ContinueWebsite {
@@ -25,6 +28,7 @@ export interface ContinueWebsite {
   count: number;
   lastActivity: string;
   latestNotePreview: string;
+  latestNoteUrl: string;
 }
 
 export interface Monogram {
@@ -74,6 +78,7 @@ export function groupNotesByDomain(notes: Note[]): WebsiteGroup[] {
       count: groupNotes.length,
       lastActivity: latest.updatedAt,
       latestNotePreview: latest.content,
+      latestNoteUrl: latest.originalUrl,
     });
   }
   result.sort((a, b) => a.domain.localeCompare(b.domain));
@@ -86,11 +91,12 @@ export function groupNotesByDomain(notes: Note[]): WebsiteGroup[] {
  *  capped at `limit`. Empty when there are no notes at all. */
 export function getContinueWebsites(notes: Note[], limit = 3): ContinueWebsite[] {
   return groupNotesByDomain(notes)
-    .map(({ domain, count, lastActivity, latestNotePreview }) => ({
+    .map(({ domain, count, lastActivity, latestNotePreview, latestNoteUrl }) => ({
       domain,
       count,
       lastActivity,
       latestNotePreview,
+      latestNoteUrl,
     }))
     .sort((a, b) =>
       a.lastActivity > b.lastActivity ? -1 : a.lastActivity < b.lastActivity ? 1 : 0,

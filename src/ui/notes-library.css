@@ -115,14 +115,21 @@
   padding: var(--hm-space-3);
   border-inline-start: 2px solid transparent;
   border-radius: var(--hm-radius-sm);
+  text-decoration: none;
+  color: inherit;
   transition:
     background var(--hm-dur-fast) var(--hm-ease-out),
     border-color var(--hm-dur-fast) var(--hm-ease-out);
 }
-.hm-continue__item:hover,
-.hm-continue__item:focus-within {
+.hm-continue__item:hover {
   background: var(--hm-paper-dim);
   border-inline-start-color: var(--hm-accent);
+}
+.hm-continue__item:focus-visible {
+  outline: none;
+  background: var(--hm-paper-dim);
+  border-inline-start-color: var(--hm-accent);
+  box-shadow: inset 0 0 0 2px var(--hm-accent);
 }
 .hm-continue__kicker {
   display: inline-flex;
@@ -270,8 +277,20 @@
 }
 
 .hm-note-row {
+  display: block;
   padding: var(--hm-space-2) var(--hm-space-2) var(--hm-space-2)
     calc(20px + var(--hm-space-3) + var(--hm-space-2));
+  border-radius: var(--hm-radius-sm);
+  text-decoration: none;
+  color: inherit;
+  transition: background var(--hm-dur-fast) var(--hm-ease-out);
+}
+.hm-note-row:hover {
+  background: var(--hm-paper-dim);
+}
+.hm-note-row:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--hm-accent);
 }
 .hm-note-row__preview {
   margin: 0 0 3px;

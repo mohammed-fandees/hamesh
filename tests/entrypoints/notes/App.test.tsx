@@ -158,6 +158,20 @@ describe('Notes Library page', () => {
     expect(panel).toHaveAttribute('aria-hidden', 'true');
   });
 
+  it("opens the note's original page in a new tab via a plain link (no browser.tabs call)", async () => {
+    seedNote({ content: 'first note', originalUrl: 'https://example.com/some/page' });
+
+    const App = await importApp();
+    const { container } = render(<App />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /example\.com/ }));
+    const panel = container.querySelector('.hm-group__body') as HTMLElement;
+    const link = within(panel).getByRole('link', { name: /first note/ });
+    expect(link).toHaveAttribute('href', 'https://example.com/some/page');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
+  });
+
   it('falls back to the URL pathname (never "Untitled page") when a note has no pageContext title', async () => {
     seedNote({
       content: 'no title note',
@@ -210,6 +224,11 @@ describe('Notes Library page', () => {
     const items = within(continueSection).getAllByRole('listitem');
     expect(items[0]).toHaveTextContent('newest.com');
     expect(items[0]).toHaveTextContent('Resume this thought.');
+
+    const link = within(items[0]).getByRole('link');
+    expect(link).toHaveAttribute('href', 'https://newest.com');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
   });
 
   it('strips a leading www. so grouping matches the bare domain', async () => {
