@@ -21,6 +21,16 @@ export interface ElementAnchor {
   };
 }
 
+/**
+ * Metadata about the page a note was created on, kept separate from the note
+ * itself so future page-level metadata (description, favicon hint, etc.) can
+ * grow here without repeatedly reshaping the top-level Note schema. Optional
+ * and additive — notes written before this field existed simply have none.
+ */
+export interface PageContext {
+  title?: string;
+}
+
 export interface Note {
   id: string;
   schemaVersion: SchemaVersion;
@@ -28,6 +38,7 @@ export interface Note {
   originalUrl: string;
   content: string;
   anchor: ElementAnchor;
+  pageContext?: PageContext;
   createdAt: string;
   updatedAt: string;
 }
@@ -37,6 +48,7 @@ export type CreateNoteInput = {
   pageKey: string;
   originalUrl: string;
   anchor: ElementAnchor;
+  pageContext?: PageContext;
 };
 
 export type UpdateNoteInput = {
@@ -57,6 +69,7 @@ export function createNote(input: CreateNoteInput): Note {
     originalUrl: input.originalUrl,
     content: input.content,
     anchor: input.anchor,
+    pageContext: input.pageContext,
     createdAt: now,
     updatedAt: now,
   };

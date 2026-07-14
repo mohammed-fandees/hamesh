@@ -40,6 +40,24 @@ describe('createNote', () => {
     expect(a.id).not.toBe(b.id);
   });
 
+  it('carries an optional pageContext through unchanged', () => {
+    const anchor = makeAnchor();
+    const note = createNote({
+      content: 'x',
+      pageKey: 'p',
+      originalUrl: 'u',
+      anchor,
+      pageContext: { title: 'Example Page' },
+    });
+    expect(note.pageContext).toEqual({ title: 'Example Page' });
+  });
+
+  it('leaves pageContext undefined when not provided (backward compatible)', () => {
+    const anchor = makeAnchor();
+    const note = createNote({ content: 'x', pageKey: 'p', originalUrl: 'u', anchor });
+    expect(note.pageContext).toBeUndefined();
+  });
+
   it('sets createdAt and updatedAt to ISO strings', () => {
     const anchor = makeAnchor();
     const before = Date.now();

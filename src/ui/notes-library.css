@@ -1,0 +1,248 @@
+/*
+ * Notes Library — styles exclusive to the `notes.html` extension page.
+ *
+ * Kept out of tokens.css deliberately: tokens.css is injected into the
+ * Shadow DOM on every single page the content script runs on, so anything
+ * only the Notes Library needs stays here instead of growing that per-page
+ * payload. Design tokens (color, spacing, radius, motion) are still reused
+ * from tokens.css, which this page also imports.
+ */
+
+.hm-notes-page {
+  min-height: 100vh;
+  background: var(--hm-paper);
+  padding: var(--hm-space-6) var(--hm-space-5);
+}
+.hm-notes-page__inner {
+  max-width: 640px;
+  margin: 0 auto;
+}
+.hm-notes-page__header {
+  display: flex;
+  align-items: center;
+  gap: var(--hm-space-2);
+  margin-bottom: var(--hm-space-6);
+}
+.hm-notes-page__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* ---- Entrance animation — subtle, one-shot, respects reduced motion via
+   the blanket `.hm-scope *` override in tokens.css ---- */
+@keyframes hm-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.hm-fade-in {
+  animation: hm-fade-in var(--hm-dur-slow) var(--hm-ease-out) both;
+}
+
+/* ---- Favicon / monogram fallback ---- */
+.hm-favicon {
+  flex: none;
+  display: block;
+  border-radius: var(--hm-radius-sm);
+}
+.hm-favicon--fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--hm-sans);
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+}
+.hm-monogram--0 {
+  background: var(--hm-accent);
+}
+.hm-monogram--1 {
+  background: var(--hm-info);
+}
+.hm-monogram--2 {
+  background: var(--hm-success);
+}
+.hm-monogram--3 {
+  background: var(--hm-warning);
+}
+.hm-monogram--4 {
+  background: var(--hm-danger);
+}
+
+/* ---- Continue section — a lightweight shortcut row, deliberately not a
+   boxed "card" treatment (calm/minimal, not a dashboard widget) ---- */
+.hm-continue {
+  margin-bottom: var(--hm-space-6);
+}
+.hm-continue__title {
+  margin: 0 0 var(--hm-space-2);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--hm-ink-40);
+}
+.hm-continue__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--hm-space-2);
+}
+.hm-continue__item {
+  display: flex;
+  align-items: center;
+  gap: var(--hm-space-2);
+  padding: var(--hm-space-2) var(--hm-space-3);
+  border-radius: var(--hm-radius-md);
+  background: var(--hm-surface);
+  transition: background var(--hm-dur-fast) var(--hm-ease-out);
+}
+.hm-continue__item:hover {
+  background: var(--hm-paper-dim);
+}
+.hm-continue__domain {
+  font-weight: 600;
+  font-size: 13px;
+}
+.hm-continue__meta {
+  font-size: 11px;
+  color: var(--hm-ink-40);
+}
+
+/* ---- Website groups — grouped-by-website list, hairline separators only
+   (no per-item borders/shadows; "avoid cards everywhere") ---- */
+.hm-groups {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.hm-groups > li + li {
+  border-top: 1px solid var(--hm-border);
+}
+.hm-group__header {
+  display: flex;
+  align-items: center;
+  gap: var(--hm-space-3);
+  width: 100%;
+  padding: var(--hm-space-3) var(--hm-space-2);
+  border: none;
+  background: none;
+  border-radius: var(--hm-radius-md);
+  cursor: pointer;
+  text-align: start;
+  font-family: var(--hm-sans);
+  color: var(--hm-ink);
+  transition: background var(--hm-dur-fast) var(--hm-ease-out);
+}
+.hm-group__header:hover {
+  background: var(--hm-paper-dim);
+}
+.hm-group__header:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--hm-accent);
+}
+.hm-group__domain {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 14px;
+}
+.hm-group__count {
+  flex: none;
+  font-size: 12px;
+  color: var(--hm-ink-40);
+}
+.hm-group__chevron {
+  flex: none;
+  color: var(--hm-ink-40);
+  transition: transform var(--hm-dur-base) var(--hm-ease-out);
+}
+.hm-group__chevron[data-expanded='true'] {
+  transform: rotate(180deg);
+}
+
+/* Height animation via CSS grid-rows — no JS measurement, cheap, and the
+   only way to animate to "auto" height smoothly. */
+.hm-group__body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--hm-dur-base) var(--hm-ease-out);
+}
+.hm-group__body[data-expanded='true'] {
+  grid-template-rows: 1fr;
+}
+.hm-group__list {
+  overflow: hidden;
+  min-height: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0 0 var(--hm-space-2);
+}
+
+.hm-note-row {
+  padding: var(--hm-space-2) var(--hm-space-2) var(--hm-space-2)
+    calc(20px + var(--hm-space-3) + var(--hm-space-2));
+}
+.hm-note-row__title {
+  margin: 0 0 2px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--hm-ink-60);
+}
+.hm-note-row__preview {
+  margin: 0 0 4px;
+  font-family: var(--hm-serif);
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--hm-ink);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.hm-scope[dir='rtl'] .hm-note-row__preview {
+  font-family: var(--hm-arabic);
+}
+.hm-note-row__meta {
+  margin: 0;
+  font-size: 11px;
+  color: var(--hm-ink-40);
+}
+
+/* ---- Empty state ---- */
+.hm-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--hm-space-6) var(--hm-space-4);
+  color: var(--hm-ink-60);
+}
+.hm-empty .hm-mark {
+  color: var(--hm-accent);
+  opacity: 0.7;
+  margin-bottom: var(--hm-space-3);
+}
+.hm-empty__title {
+  margin: 0 0 var(--hm-space-2);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--hm-ink);
+}
+.hm-empty__body {
+  margin: 0;
+  max-width: 320px;
+  font-size: 13px;
+}

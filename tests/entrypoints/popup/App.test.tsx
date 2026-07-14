@@ -5,6 +5,7 @@ import '@testing-library/jest-dom/vitest';
 
 const sendMessage = vi.fn();
 const query = vi.fn();
+const createTab = vi.fn();
 
 // Minimal fake of WXT's `storage` global (auto-imported at runtime, absent in
 // tests) with just enough of getItem/setItem/watch for the preferences
@@ -35,6 +36,10 @@ vi.mock('wxt/browser', () => ({
     tabs: {
       query: (...args: unknown[]) => query(...args),
       sendMessage: (...args: unknown[]) => sendMessage(...args),
+      create: (...args: unknown[]) => createTab(...args),
+    },
+    runtime: {
+      getURL: (path: string) => `chrome-extension://test-extension-id${path}`,
     },
     i18n: {
       getUILanguage: () => 'en',
@@ -52,6 +57,7 @@ describe('popup Settings navigation', () => {
     vi.resetModules();
     query.mockReset().mockResolvedValue([{ id: 1 }]);
     sendMessage.mockReset().mockResolvedValue({ type: 'PAGE_STATE', count: 2 });
+    createTab.mockReset().mockResolvedValue({ id: 2 });
     fakeStorage.store.clear();
     fakeStorage.api.getItem.mockClear();
     fakeStorage.api.setItem.mockClear();
@@ -222,6 +228,20 @@ describe('popup Settings navigation', () => {
     expect(addBtn).toBeEnabled();
     fireEvent.click(addBtn);
     await waitFor(() => expect(sendMessage).toHaveBeenCalledWith(1, { type: 'ENABLE_SELECTION' }));
+  });
+
+  it('opens the Notes Library in a new tab and closes the popup', async () => {
+    const App = await importApp();
+    render(<App />);
+
+    const link = await screen.findByRole('button', { name: 'Notes Library' });
+    fireEvent.click(link);
+
+    await waitFor(() =>
+      expect(createTab).toHaveBeenCalledWith({
+        url: 'chrome-extension://test-extension-id/notes.html',
+      }),
+    );
   });
 
   it('mirrors slide direction for RTL', async () => {

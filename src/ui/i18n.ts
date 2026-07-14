@@ -38,6 +38,14 @@ export interface Strings {
   settingsLanguageArabic: string;
   settingsAppearanceLight: string;
   settingsAppearanceDark: string;
+  openNotesLibrary: string;
+  notesLibrary: string;
+  continueSection: string;
+  continueLastActivity: (rel: string) => string;
+  notesCount: (n: number) => string;
+  untitledPage: string;
+  notesLibraryEmptyTitle: string;
+  notesLibraryEmptyBody: string;
 }
 
 const en: Strings = {
@@ -70,6 +78,14 @@ const en: Strings = {
   settingsLanguageArabic: 'Arabic',
   settingsAppearanceLight: 'Light',
   settingsAppearanceDark: 'Dark',
+  openNotesLibrary: 'Notes Library',
+  notesLibrary: 'Notes Library',
+  continueSection: 'Continue',
+  continueLastActivity: (rel) => `Updated ${rel}`,
+  notesCount: (n) => (n === 1 ? '1 note' : `${n} notes`),
+  untitledPage: 'Untitled page',
+  notesLibraryEmptyTitle: 'No notes yet',
+  notesLibraryEmptyBody: 'Select an element on any page to leave your first note.',
 };
 
 const ar: Strings = {
@@ -102,6 +118,14 @@ const ar: Strings = {
   settingsLanguageArabic: 'العربية',
   settingsAppearanceLight: 'فاتح',
   settingsAppearanceDark: 'داكن',
+  openNotesLibrary: 'مكتبة الملاحظات',
+  notesLibrary: 'مكتبة الملاحظات',
+  continueSection: 'تابع',
+  continueLastActivity: (rel) => `آخر تحديث ${rel}`,
+  notesCount: (n) => `${n} ${n === 1 ? 'ملاحظة' : 'ملاحظات'}`,
+  untitledPage: 'صفحة بدون عنوان',
+  notesLibraryEmptyTitle: 'لا توجد ملاحظات بعد',
+  notesLibraryEmptyBody: 'اختر عنصرًا في أي صفحة لتترك ملاحظتك الأولى.',
 };
 
 export function resolveLang(uiLanguage?: string): Lang {
