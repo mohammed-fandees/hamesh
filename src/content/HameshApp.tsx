@@ -31,6 +31,10 @@ interface HameshAppProps {
   initialLang: Lang;
   /** Imperatively toggles selection mode; wired to the content-script controller. */
   registerActivate: (fn: () => void) => void;
+  /** Imperatively restores (scrolls to, highlights, opens) a specific note by
+   *  id — wired to the content-script controller's `RESTORE_NOTE` handler,
+   *  which fires from the Notes Library's Open Note flow. */
+  registerRestoreNote: (fn: (noteId: string) => void) => void;
 }
 
 function toAnchorRect(el: Element): AnchorRect {
@@ -64,7 +68,13 @@ function useViewportFrame(active: boolean): number {
   return frame;
 }
 
-export function HameshApp({ repo, prefsRepo, initialLang, registerActivate }: HameshAppProps) {
+export function HameshApp({
+  repo,
+  prefsRepo,
+  initialLang,
+  registerActivate,
+  registerRestoreNote,
+}: HameshAppProps) {
   const [lang, setLang] = useState<Lang>(initialLang);
   const [appearance, setAppearance] = useState<AppearanceMode>('match-website');
   const strings = getStrings(lang);
@@ -141,6 +151,12 @@ export function HameshApp({ repo, prefsRepo, initialLang, registerActivate }: Ha
   const [viewerId, setViewerId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // ---- Open Note flow: restore a specific note by id once it resolves ----
+  const [pendingRestoreId, setPendingRestoreId] = useState<string | null>(null);
+  const [restoredFor, setRestoredFor] = useState<string | null>(null);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+  const [highlightElement, setHighlightElement] = useState<Element | null>(null);
 
   const captureRef = useRef<HTMLDivElement>(null);
   const notesRef = useRef<Note[]>([]);
@@ -243,6 +259,56 @@ export function HameshApp({ repo, prefsRepo, initialLang, registerActivate }: Ha
   }, []);
 
   useEffect(() => registerActivate(activate), [registerActivate, activate]);
+
+  useEffect(
+    () => registerRestoreNote((noteId) => setPendingRestoreId(noteId)),
+    [registerRestoreNote],
+  );
+
+  // Adjusts state as soon as the pending restore target appears in
+  // `resolved` — React's documented pattern for reacting to a dependency
+  // change during render rather than in an Effect (see "You Might Not Need
+  // an Effect"). `pendingRestoreId !== restoredFor` makes this
+  // self-limiting: it only fires once per restore request, and if the note
+  // hasn't loaded into `resolved` yet (RESTORE_NOTE can arrive before the
+  // initial notes fetch finishes), it simply re-checks on the next render
+  // that `resolved` changes on — no polling, no fixed delay.
+  if (pendingRestoreId && pendingRestoreId !== restoredFor) {
+    const target = resolved.find((r) => r.note.id === pendingRestoreId);
+    if (target) {
+      setRestoredFor(pendingRestoreId);
+      setComposer(null);
+      setError(null);
+      setViewerId(pendingRestoreId);
+      if (target.element) {
+        setHighlightId(pendingRestoreId);
+        setHighlightElement(target.element);
+      }
+    }
+  }
+
+  // The actual imperative side effect (scrolling), kept separate from the
+  // state adjustment above and keyed on `highlightElement` specifically —
+  // not `resolved`, which changes on every re-resolution pass (e.g. the
+  // debounced MutationObserver below) and would otherwise re-trigger the
+  // scroll and keep extending the highlight for as long as the page keeps
+  // mutating.
+  useEffect(() => {
+    if (!highlightElement) return;
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    highlightElement.scrollIntoView({
+      behavior: reduceMotion ? 'auto' : 'smooth',
+      block: 'center',
+    });
+    // Mirrors the CSS animation duration in tokens.css (.hm-restore-highlight)
+    // — this just unmounts the highlight overlay once that animation has
+    // finished, not a readiness/timing guess.
+    const timer = window.setTimeout(() => {
+      setHighlightId(null);
+      setHighlightElement(null);
+    }, 1400);
+    return () => clearTimeout(timer);
+  }, [highlightElement]);
 
   // Escape exits selection mode
   useEffect(() => {
@@ -407,6 +473,21 @@ export function HameshApp({ repo, prefsRepo, initialLang, registerActivate }: Ha
     return items;
   }, [resolved, dir, frame]);
 
+  // ---- Derived: transient highlight rect for the Open Note flow ----
+  const highlightRect = useMemo(() => {
+    void frame; // track the anchor element as the page scrolls into place
+    if (!highlightId) return null;
+    const target = resolved.find((r) => r.note.id === highlightId);
+    if (!target?.element) return null;
+    const rect = target.element.getBoundingClientRect();
+    return {
+      top: rect.top - 4,
+      left: rect.left - 4,
+      width: rect.width + 8,
+      height: rect.height + 8,
+    };
+  }, [highlightId, resolved, frame]);
+
   const viewerNote = viewerId ? notes.find((n) => n.id === viewerId) : null;
   const viewerResolved = viewerId ? resolved.find((r) => r.note.id === viewerId) : null;
 
@@ -449,6 +530,8 @@ export function HameshApp({ repo, prefsRepo, initialLang, registerActivate }: Ha
           }}
         />
       ))}
+
+      {highlightRect && <div className="hm-restore-highlight" style={highlightRect} />}
 
       {composer && (
         <FloatingComposer

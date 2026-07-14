@@ -1,5 +1,6 @@
 import { Favicon } from './Favicon';
 import { relativeTime } from './i18n';
+import { isPlainLeftClick, openNoteAndRestore } from '@/entrypoints/notes/openNote';
 import type { ContinueWebsite } from '@/domain/notes-grouping';
 import type { Lang, Strings } from './i18n';
 
@@ -15,9 +16,10 @@ interface ContinueSectionProps {
  * scanning the full grouped list. Derived from existing note timestamps, not
  * a browsing-history feature. Renders nothing when there are no notes yet.
  *
- * Each card is a plain `<a target="_blank">` to that site's most recently
- * edited note — no `browser.tabs` call, no new permission. This establishes
- * the interaction model now (PR1); the full restore experience is PR2.
+ * Each card is a real `<a target="_blank">` to that site's most recently
+ * edited note — right-click/ctrl-click/middle-click work natively. A plain
+ * left-click drives `openNoteAndRestore` instead, which restores the note
+ * (scrolls to it, highlights it, opens it) once the new tab is ready.
  */
 export function ContinueSection({ websites, strings, lang }: ContinueSectionProps) {
   if (websites.length === 0) return null;
@@ -32,6 +34,11 @@ export function ContinueSection({ websites, strings, lang }: ContinueSectionProp
               href={site.latestNoteUrl}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={(e) => {
+                if (!isPlainLeftClick(e)) return;
+                e.preventDefault();
+                void openNoteAndRestore(site.latestNoteUrl, site.latestNoteId);
+              }}
             >
               <Favicon domain={site.domain} size={22} />
               <span className="hm-continue__domain">{site.domain}</span>

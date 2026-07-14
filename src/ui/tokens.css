@@ -151,6 +151,39 @@
     width var(--hm-dur-fast) var(--hm-ease-out),
     height var(--hm-dur-fast) var(--hm-ease-out);
 }
+/* Transient "you are here" highlight for the Notes Library's Open Note flow
+   — briefly pulses around the anchored element once it's scrolled into view.
+   Duration (1400ms) is echoed in HameshApp.tsx's cleanup timeout so the DOM
+   node is removed right as the animation finishes; covered by the blanket
+   `.hm-scope *` reduced-motion override above (no separate media query
+   needed here). */
+.hm-restore-highlight {
+  position: fixed;
+  z-index: var(--hm-z-overlay);
+  pointer-events: none;
+  border: 2px solid var(--hm-accent);
+  border-radius: var(--hm-radius-sm);
+  animation: hm-restore-pulse 1400ms var(--hm-ease-out);
+}
+@keyframes hm-restore-pulse {
+  0% {
+    box-shadow: 0 0 0 0 var(--hm-accent-tint);
+    opacity: 0;
+  }
+  15% {
+    box-shadow: 0 0 0 6px var(--hm-accent-tint);
+    opacity: 1;
+  }
+  70% {
+    box-shadow: 0 0 0 6px var(--hm-accent-tint);
+    opacity: 1;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+    opacity: 0;
+  }
+}
+
 .hm-hint {
   position: fixed;
   z-index: var(--hm-z-toast);

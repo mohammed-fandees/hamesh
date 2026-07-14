@@ -14,6 +14,9 @@ The heart of the extension. Injected on `<all_urls>` at `document_idle`. It:
 - restores markers on load and re-evaluates on SPA navigation;
 - listens for a runtime `ENABLE_SELECTION` message (from popup/shortcut) and a
   `GET_PAGE_STATE` request (note count for the popup);
+- broadcasts a runtime `CONTENT_READY` message at the same point it dispatches
+  `hamesh:ready` (see below), and handles an incoming `RESTORE_NOTE` message —
+  together these drive the Notes Library's Open Note flow (see below);
 - exposes a deterministic `hamesh:activate` DOM-event hook for E2E automation
   (capability-equivalent to the toolbar button; documented in the source).
 
@@ -144,6 +147,49 @@ below, which watches the whole subtree for content changes.
 `repo.getForPage` → `domain/anchor-resolution.resolveAnchor` per note → markers
 for resolved notes.
 
+## Open Note flow (Notes Library → original page)
+
+The Notes Library (`src/entrypoints/notes/`) lists every note across every
+page. Clicking a note or a "Continue" card needs to open that note's
+original page in a new tab and, once it's loaded, scroll to the anchored
+element, highlight it, and open the note — without a fragile fixed-wait
+guess at how long the page will take to load.
+
+This works via a small runtime-message handshake, orchestrated by
+`src/entrypoints/notes/openNote.ts`:
+
+1. `openNoteAndRestore(url, noteId)` registers a `runtime.onMessage`
+   listener and a `tabs.onRemoved` listener, **then** calls
+   `browser.tabs.create({ url })` — registering first closes the race
+   between tab creation and the new tab's content script loading.
+2. The new tab's content script (`content.ts`) reaches the same
+   "React has mounted and wired up `activate`" milestone it already uses to
+   dispatch the `hamesh:ready` DOM event (for E2E) — and, at that exact
+   point, also broadcasts a `CONTENT_READY` runtime message. This is the one
+   readiness signal driving both consumers.
+3. `openNoteAndRestore`'s listener matches `CONTENT_READY` against the
+   specific tab id it created, then sends that tab a `RESTORE_NOTE` message
+   with the target note id, and tears down both listeners.
+4. `content.ts` forwards `RESTORE_NOTE` into `HameshApp` via a
+   `registerRestoreNote` callback (the same pattern as `registerActivate`).
+   `HameshApp` records the pending id and, as soon as that note appears in
+   its already-resolved notes (`resolved` — this may be immediately, or
+   after the initial `getForPage` fetch completes, whichever is later),
+   opens the note viewer, scrolls to the resolved element
+   (`prefers-reduced-motion`-aware), and shows a brief accent highlight
+   (`.hm-restore-highlight` in `tokens.css`, self-clearing after its CSS
+   animation duration). If the anchor can't be resolved, the viewer still
+   opens — same "anchor unavailable" state as any other note.
+5. A bounded safety-net timeout (15s) plus the `tabs.onRemoved` listener
+   clean up the listeners if the target page never signals readiness (a
+   page Hamesh can't run on, or the tab is closed first) — a leak-prevention
+   fallback, not the readiness signal itself.
+
+A plain left-click drives this flow (`isPlainLeftClick` in `openNote.ts`);
+every note/Continue link is still a real `<a href target="_blank">`, so
+middle-click, ctrl/cmd-click, and "open in new tab" all still work via the
+browser's native handling — they just skip the restore.
+
 ## Storage boundary
 
 - Backend: `chrome.storage.local` only, via the `NotesRepository` interface
@@ -207,8 +253,12 @@ re-attach markers as content mounts.
   resolution incl. ambiguous/duplicate cases, validation), repository
   serialize/deserialize + CRUD, i18n, and theme luminance. Browser APIs are
   mocked at the boundary.
-- **E2E (Playwright):** drives the real Shadow DOM UI through both critical flows
-  (persistence; edit + delete). See README for the headless/HTTP requirements.
+- **E2E (Playwright):** drives the real Shadow DOM UI through the critical flows
+  (persistence; edit + delete; SPA navigation) plus the Notes Library's Open
+  Note flow (`e2e/notes-library-open.spec.ts`) — the one place that exercises
+  the real cross-tab `CONTENT_READY`/`RESTORE_NOTE` handshake and its timing,
+  which a jsdom component test can't. See README for the headless/HTTP
+  requirements.
 - **CI:** typecheck, lint, format check, unit tests, build. E2E is run locally
   (needs real Chromium + `--headless=new`).
 

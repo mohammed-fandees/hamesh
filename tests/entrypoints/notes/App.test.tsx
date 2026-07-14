@@ -39,11 +39,19 @@ const fakeStorage = vi.hoisted(() => {
   return { store, api };
 });
 
+const tabsCreate = vi.fn();
+
 vi.mock('wxt/browser', () => ({
   browser: {
     runtime: {
       id: 'test-extension-id',
       getURL: (path: string) => `chrome-extension://test-extension-id${path}`,
+      onMessage: { addListener: vi.fn(), removeListener: vi.fn() },
+    },
+    tabs: {
+      create: (...args: unknown[]) => tabsCreate(...args),
+      sendMessage: vi.fn().mockResolvedValue(undefined),
+      onRemoved: { addListener: vi.fn(), removeListener: vi.fn() },
     },
     i18n: {
       getUILanguage: () => 'en',
@@ -92,6 +100,7 @@ describe('Notes Library page', () => {
     fakeStorage.api.getItem.mockClear();
     fakeStorage.api.setItem.mockClear();
     fakeStorage.api.snapshot.mockClear();
+    tabsCreate.mockReset().mockResolvedValue({ id: 42 });
     cleanup();
   });
 
@@ -158,7 +167,7 @@ describe('Notes Library page', () => {
     expect(panel).toHaveAttribute('aria-hidden', 'true');
   });
 
-  it("opens the note's original page in a new tab via a plain link (no browser.tabs call)", async () => {
+  it("carries the note row's href/target/rel for native middle-click/ctrl-click fallback", async () => {
     seedNote({ content: 'first note', originalUrl: 'https://example.com/some/page' });
 
     const App = await importApp();
@@ -170,6 +179,51 @@ describe('Notes Library page', () => {
     expect(link).toHaveAttribute('href', 'https://example.com/some/page');
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
+  });
+
+  it('a plain left-click on a note row opens it via browser.tabs.create (Open Note flow)', async () => {
+    seedNote({ content: 'first note', originalUrl: 'https://example.com/some/page' });
+
+    const App = await importApp();
+    const { container } = render(<App />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /example\.com/ }));
+    const panel = container.querySelector('.hm-group__body') as HTMLElement;
+    const link = within(panel).getByRole('link', { name: /first note/ });
+
+    fireEvent.click(link, { button: 0 });
+    await waitFor(() =>
+      expect(tabsCreate).toHaveBeenCalledWith({ url: 'https://example.com/some/page' }),
+    );
+  });
+
+  it('a ctrl-clicked note row does not trigger the Open Note flow (left to the browser)', async () => {
+    seedNote({ content: 'first note', originalUrl: 'https://example.com/some/page' });
+
+    const App = await importApp();
+    const { container } = render(<App />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /example\.com/ }));
+    const panel = container.querySelector('.hm-group__body') as HTMLElement;
+    const link = within(panel).getByRole('link', { name: /first note/ });
+
+    fireEvent.click(link, { button: 0, ctrlKey: true });
+    expect(tabsCreate).not.toHaveBeenCalled();
+  });
+
+  it('a plain left-click on a Continue card opens it via browser.tabs.create', async () => {
+    seedNote({ originalUrl: 'https://example.com/continue-target' });
+
+    const App = await importApp();
+    render(<App />);
+
+    const continueSection = await screen.findByRole('region', { name: 'Continue' });
+    const link = within(continueSection).getByRole('link');
+    fireEvent.click(link, { button: 0 });
+
+    await waitFor(() =>
+      expect(tabsCreate).toHaveBeenCalledWith({ url: 'https://example.com/continue-target' }),
+    );
   });
 
   it('falls back to the URL pathname (never "Untitled page") when a note has no pageContext title', async () => {
@@ -234,5 +288,141 @@ describe('Notes Library page', () => {
     render(<App />);
 
     await waitFor(() => expect(fakeStorage.api.snapshot).toHaveBeenCalledWith('local'));
+  });
+
+  describe('search', () => {
+    it('does not render a search box when there are no notes', async () => {
+      const App = await importApp();
+      render(<App />);
+      await screen.findByText('No notes yet');
+      expect(screen.queryByPlaceholderText('Search notes…')).not.toBeInTheDocument();
+    });
+
+    it('live-filters the grouped list and hides the Continue section while searching', async () => {
+      seedNote({
+        pageKey: 'https://github.com/a',
+        originalUrl: 'https://github.com/a',
+        content: 'review the pull request',
+      });
+      seedNote({
+        pageKey: 'https://stackoverflow.com/b',
+        originalUrl: 'https://stackoverflow.com/b',
+        content: 'unrelated note',
+      });
+
+      const App = await importApp();
+      render(<App />);
+      await screen.findByRole('region', { name: 'Continue' });
+
+      const search = screen.getByPlaceholderText('Search notes…');
+      fireEvent.change(search, { target: { value: 'pull request' } });
+
+      expect(await screen.findByRole('button', { name: /github\.com/ })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /stackoverflow\.com/ })).not.toBeInTheDocument();
+      expect(screen.queryByRole('region', { name: 'Continue' })).not.toBeInTheDocument();
+    });
+
+    it('auto-expands a matched group so the matching note is visible without clicking', async () => {
+      seedNote({ content: 'a very specific searchable phrase' });
+
+      const App = await importApp();
+      const { container } = render(<App />);
+
+      const search = await screen.findByPlaceholderText('Search notes…');
+      fireEvent.change(search, { target: { value: 'specific searchable' } });
+
+      const header = await screen.findByRole('button', { name: /example\.com/ });
+      expect(header).toHaveAttribute('aria-expanded', 'true');
+      const panel = container.querySelector('.hm-group__body') as HTMLElement;
+      expect(within(panel).getByText('a very specific searchable phrase')).toBeInTheDocument();
+    });
+
+    it('shows a distinct "no matches" state when the search has no results', async () => {
+      seedNote({ content: 'hello world' });
+
+      const App = await importApp();
+      render(<App />);
+
+      const search = await screen.findByPlaceholderText('Search notes…');
+      fireEvent.change(search, { target: { value: 'nonexistent-term' } });
+
+      expect(await screen.findByText('No matches')).toBeInTheDocument();
+      expect(screen.getByText('Nothing found for "nonexistent-term".')).toBeInTheDocument();
+      expect(screen.queryByText('No notes yet')).not.toBeInTheDocument();
+    });
+
+    it('clearing the search restores the normal view', async () => {
+      seedNote({ content: 'hello world' });
+
+      const App = await importApp();
+      render(<App />);
+
+      const search = await screen.findByPlaceholderText('Search notes…');
+      fireEvent.change(search, { target: { value: 'nonexistent-term' } });
+      await screen.findByText('No matches');
+
+      fireEvent.change(search, { target: { value: '' } });
+      expect(await screen.findByRole('region', { name: 'Continue' })).toBeInTheDocument();
+      expect(screen.queryByText('No matches')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('sort', () => {
+    it('defaults to alphabetical order', async () => {
+      seedNote({
+        pageKey: 'https://stackoverflow.com/q',
+        originalUrl: 'https://stackoverflow.com/q',
+      });
+      seedNote({ pageKey: 'https://github.com/a', originalUrl: 'https://github.com/a' });
+
+      const App = await importApp();
+      const { container } = render(<App />);
+      await screen.findByRole('button', { name: /github\.com/ });
+
+      const domains = [...container.querySelectorAll('.hm-group__domain')].map((el) =>
+        el.textContent?.trim(),
+      );
+      expect(domains).toEqual(['github.com', 'stackoverflow.com']);
+    });
+
+    it('switching to "Recent" reorders groups by most recent activity', async () => {
+      seedNote({
+        pageKey: 'https://github.com/a',
+        originalUrl: 'https://github.com/a',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      });
+      seedNote({
+        pageKey: 'https://stackoverflow.com/q',
+        originalUrl: 'https://stackoverflow.com/q',
+        updatedAt: '2026-03-01T00:00:00.000Z',
+      });
+
+      const App = await importApp();
+      const { container } = render(<App />);
+      await screen.findByRole('button', { name: /github\.com/ });
+
+      fireEvent.click(screen.getByRole('radio', { name: 'Recent' }));
+
+      const domains = [...container.querySelectorAll('.hm-group__domain')].map((el) =>
+        el.textContent?.trim(),
+      );
+      expect(domains).toEqual(['stackoverflow.com', 'github.com']);
+    });
+
+    it('hides the sort control while searching', async () => {
+      seedNote({ content: 'hello world' });
+
+      const App = await importApp();
+      render(<App />);
+      await screen.findByRole('button', { name: /example\.com/ });
+      expect(screen.getByRole('radio', { name: 'Recent' })).toBeInTheDocument();
+
+      const search = screen.getByPlaceholderText('Search notes…');
+      fireEvent.change(search, { target: { value: 'hello' } });
+
+      await waitFor(() =>
+        expect(screen.queryByRole('radio', { name: 'Recent' })).not.toBeInTheDocument(),
+      );
+    });
   });
 });

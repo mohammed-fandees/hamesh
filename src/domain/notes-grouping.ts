@@ -18,6 +18,8 @@ export interface WebsiteGroup {
   /** `originalUrl` of the most recently updated note — where a "Continue"
    *  card for this group links to. */
   latestNoteUrl: string;
+  /** id of that same note — the Open Note flow's restore target. */
+  latestNoteId: string;
 }
 
 export interface ContinueWebsite {
@@ -25,6 +27,7 @@ export interface ContinueWebsite {
   count: number;
   lastActivity: string;
   latestNoteUrl: string;
+  latestNoteId: string;
 }
 
 export interface Monogram {
@@ -74,6 +77,7 @@ export function groupNotesByDomain(notes: Note[]): WebsiteGroup[] {
       count: groupNotes.length,
       lastActivity: latest.updatedAt,
       latestNoteUrl: latest.originalUrl,
+      latestNoteId: latest.id,
     });
   }
   result.sort((a, b) => a.domain.localeCompare(b.domain));
@@ -86,16 +90,35 @@ export function groupNotesByDomain(notes: Note[]): WebsiteGroup[] {
  *  capped at `limit`. Empty when there are no notes at all. */
 export function getContinueWebsites(notes: Note[], limit = 3): ContinueWebsite[] {
   return groupNotesByDomain(notes)
-    .map(({ domain, count, lastActivity, latestNoteUrl }) => ({
+    .map(({ domain, count, lastActivity, latestNoteUrl, latestNoteId }) => ({
       domain,
       count,
       lastActivity,
       latestNoteUrl,
+      latestNoteId,
     }))
     .sort((a, b) =>
       a.lastActivity > b.lastActivity ? -1 : a.lastActivity < b.lastActivity ? 1 : 0,
     )
     .slice(0, limit);
+}
+
+export type GroupSortMode = 'alphabetical' | 'recent';
+
+/** Reorders already-grouped websites — alphabetical (the `groupNotesByDomain`
+ *  default) or by most recent activity first. A separate step from grouping
+ *  itself so the two concerns (which notes belong together vs. what order to
+ *  present the groups in) stay independently testable. */
+export function sortWebsiteGroups(groups: WebsiteGroup[], mode: GroupSortMode): WebsiteGroup[] {
+  const sorted = [...groups];
+  if (mode === 'recent') {
+    sorted.sort((a, b) =>
+      a.lastActivity > b.lastActivity ? -1 : a.lastActivity < b.lastActivity ? 1 : 0,
+    );
+  } else {
+    sorted.sort((a, b) => a.domain.localeCompare(b.domain));
+  }
+  return sorted;
 }
 
 /** A human-meaningful label for the page a note was created on. Prefers the
@@ -114,6 +137,20 @@ export function derivePageLabel(note: Note): string {
   } catch {
     return note.originalUrl;
   }
+}
+
+/** Live search filter — matches note text, the page label (captured title,
+ *  or the same pathname fallback `derivePageLabel` shows in the UI), and the
+ *  website domain. Case-insensitive substring match; an empty/whitespace-only
+ *  query matches everything (the "not searching" state). */
+export function filterNotesByQuery(notes: Note[], query: string): Note[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return notes;
+  return notes.filter((note) => {
+    const domain = extractDomain(note.originalUrl).toLowerCase();
+    const label = derivePageLabel(note).toLowerCase();
+    return note.content.toLowerCase().includes(q) || label.includes(q) || domain.includes(q);
+  });
 }
 
 /** Deterministic letter + palette-slot for a domain, used when no favicon is

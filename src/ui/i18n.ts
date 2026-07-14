@@ -45,6 +45,12 @@ export interface Strings {
   notesCount: (n: number) => string;
   notesLibraryEmptyTitle: string;
   notesLibraryEmptyBody: string;
+  searchPlaceholder: string;
+  searchNoResultsTitle: string;
+  searchNoResultsBody: (query: string) => string;
+  sortLabel: string;
+  sortAlphabetical: string;
+  sortRecent: string;
 }
 
 const en: Strings = {
@@ -84,6 +90,12 @@ const en: Strings = {
   notesCount: (n) => (n === 1 ? '1 note' : `${n} notes`),
   notesLibraryEmptyTitle: 'No notes yet',
   notesLibraryEmptyBody: 'Select an element on any page to leave your first note.',
+  searchPlaceholder: 'Search notes…',
+  searchNoResultsTitle: 'No matches',
+  searchNoResultsBody: (query) => `Nothing found for "${query}".`,
+  sortLabel: 'Sort',
+  sortAlphabetical: 'A–Z',
+  sortRecent: 'Recent',
 };
 
 const ar: Strings = {
@@ -123,6 +135,12 @@ const ar: Strings = {
   notesCount: (n) => `${n} ${n === 1 ? 'ملاحظة' : 'ملاحظات'}`,
   notesLibraryEmptyTitle: 'لا توجد ملاحظات بعد',
   notesLibraryEmptyBody: 'اختر عنصرًا في أي صفحة لتترك ملاحظتك الأولى.',
+  searchPlaceholder: 'ابحث في الملاحظات…',
+  searchNoResultsTitle: 'لا نتائج',
+  searchNoResultsBody: (query) => `لا توجد نتائج لـ "${query}".`,
+  sortLabel: 'ترتيب',
+  sortAlphabetical: 'أبجديًا',
+  sortRecent: 'الأحدث',
 };
 
 export function resolveLang(uiLanguage?: string): Lang {
