@@ -455,6 +455,14 @@
   box-shadow: 0 0 0 2px var(--hm-accent);
 }
 
+/* NoteViewer's card has both a pin toggle (top-start) and a close button
+   (top-end) absolutely positioned 8px from the edge at 22px tall — the
+   default .hm-card padding-top (16px) isn't enough to clear that 30px-tall
+   corner zone, so the first line of note text rendered underneath it. */
+.hm-viewer-card {
+  padding-top: 36px;
+}
+
 /* ---- Feedback ---- */
 .hm-error {
   display: flex;
