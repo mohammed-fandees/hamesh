@@ -10,11 +10,12 @@ Hamesh has no backend servers, no external APIs, no analytics services, and no t
 
 ## Permissions
 
-| Permission                  | Purpose                                                                                        |
-| --------------------------- | ---------------------------------------------------------------------------------------------- |
-| `storage`                   | Save and retrieve notes locally via `chrome.storage.local`                                     |
-| `activeTab`                 | Reach the current tab's content script **only when you invoke Hamesh** (toolbar icon or Alt+H) |
-| content script `<all_urls>` | Inject the note-taking UI and restore your saved markers on the pages you visit                |
+| Permission                  | Purpose                                                                                                                   |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `storage`                   | Save and retrieve notes locally via `chrome.storage.local`                                                                |
+| `activeTab`                 | Reach the current tab's content script **only when you invoke Hamesh** (toolbar icon or Alt+H)                            |
+| `favicon`                   | Show each website's favicon in the Notes Library, read from Chrome's own local favicon cache — no network request is made |
+| content script `<all_urls>` | Inject the note-taking UI and restore your saved markers on the pages you visit                                           |
 
 The content script runs on all pages so previously-saved notes can be restored
 in context. It reads page structure only to anchor and restore notes, and only

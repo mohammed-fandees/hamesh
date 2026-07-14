@@ -15,7 +15,7 @@ Hamesh stores the notes you create entirely on your own device. It does not have
 
 ## What Hamesh does
 
-Hamesh lets you attach a short text note to a specific element on a web page (for example, a paragraph, heading, or button). When you return to that page, Hamesh shows a small marker next to that element so you can reopen, edit, or delete the note.
+Hamesh lets you attach a short text note to a specific element on a web page (for example, a paragraph, heading, or button). When you return to that page, Hamesh shows a small marker next to that element so you can reopen, edit, or delete the note. A Notes Library page (opened from the toolbar popup) lists all of your notes, grouped by website, using the same locally stored data — it does not introduce any new data collection.
 
 ## What information Hamesh accesses
 
@@ -69,6 +69,7 @@ Hamesh does not knowingly collect personal information from anyone, including ch
 | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `storage`               | To save your notes locally so they persist across browser sessions.                                                                                  |
 | `activeTab`             | To identify the tab you're currently viewing when you invoke Hamesh from the toolbar or keyboard shortcut.                                           |
+| `favicon`               | To show each website's favicon in the Notes Library, read from Chrome's own local favicon cache — no network request is made.                        |
 | Running on all websites | So previously-saved notes can be automatically restored when you return to a page, without you having to manually re-activate Hamesh on every visit. |
 
 See `PERMISSION_JUSTIFICATIONS.md` in this package for the full technical justification of each permission.

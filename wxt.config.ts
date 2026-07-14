@@ -11,7 +11,14 @@ export default defineConfig({
     // storage: persist notes via chrome.storage.local (no network, no sync).
     // activeTab: reach the current tab's content script only when the user
     //   invokes Hamesh (toolbar icon or shortcut) — no broad tabs access.
-    permissions: ['storage', 'activeTab'],
+    // favicon: read a site's favicon from Chrome's own local favicon cache
+    //   (chrome-extension://<id>/_favicon/?pageUrl=...) for the Notes Library
+    //   page — required by Chrome as of the current Favicon API docs
+    //   (https://developer.chrome.com/docs/extensions/how-to/ui/favicons).
+    //   No network request Hamesh makes itself; used only from the extension's
+    //   own notes.html page, never a content script, so no additional
+    //   web_accessible_resources entry is needed.
+    permissions: ['storage', 'activeTab', 'favicon'],
     action: {
       default_title: 'Hamesh — add a note (Alt+H)',
     },

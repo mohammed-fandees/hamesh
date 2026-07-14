@@ -309,6 +309,7 @@ export function HameshApp({ repo, prefsRepo, initialLang, registerActivate }: Ha
           pageKey,
           originalUrl: location.href,
           anchor: composer.anchor,
+          pageContext: document.title ? { title: document.title } : undefined,
         });
         setComposer(null);
         commitNotes([...notesRef.current, note]);

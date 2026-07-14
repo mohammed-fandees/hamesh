@@ -2,13 +2,13 @@
 
 Audited against the actual **generated production manifest** (`pnpm build` → `.output/chrome-mv3/manifest.json`, version 0.2.0), not just `wxt.config.ts`. Every declared permission and host-access surface is listed below with its exact code usage. Nothing is assumed.
 
-> **Refreshed 2026-07-11 for v0.2.0** (previously audited against v0.1.0). The manifest's `permissions` array is byte-for-byte unchanged between the two versions — confirmed by diff, not assumed — so every finding below was re-verified against the current code rather than copied forward, and none of the conclusions changed. The one addition is a note on the `storage` permission covering the new Settings/preferences code path.
+> **Refreshed 2026-07-14 for the Notes Library (PR1).** `favicon` was added — the first new permission since v0.1.0. All other entries are unchanged from the v0.2.0 audit.
 
 ## Generated manifest (verbatim, permission-relevant excerpt)
 
 ```json
 {
-  "permissions": ["storage", "activeTab"],
+  "permissions": ["storage", "activeTab", "favicon"],
   "content_scripts": [
     { "matches": ["<all_urls>"], "run_at": "document_idle", "js": ["content-scripts/content.js"] }
   ],
@@ -47,6 +47,16 @@ No `host_permissions`, no `optional_permissions`, no `externally_connectable`, n
   > Hamesh's background service worker and popup query the currently active tab (by id only, no URL access) to relay a "start note" message to that tab's content script when the user clicks the toolbar icon, opens the popup, or presses the keyboard shortcut. No page content or tab URL is read via this permission.
 - **If the owner removes `activeTab` before submission:** update this file, `wxt.config.ts`, `PRIVACY.md`, and re-run `pnpm build`/`pnpm zip` before uploading, and update `RELEASE_CHECKLIST.md`'s manifest snapshot.
 
+## `favicon`
+
+- **Declared:** `wxt.config.ts` → `manifest.permissions`.
+- **Used at:** `src/ui/Favicon.tsx`, from the Notes Library extension page only (`src/entrypoints/notes/`) — never from the content script. Renders `chrome-extension://<id>/_favicon/?pageUrl=<url>&size=32`.
+- **Why required:** The Notes Library groups notes by website and shows each group's favicon. Chrome's `_favicon` API reads favicons already cached locally by the browser — it makes no network request of its own and exposes no data beyond what Chrome already fetched while the user was browsing. Per Chrome's current Favicon API docs (https://developer.chrome.com/docs/extensions/how-to/ui/favicons), the `"favicon"` permission is required to use this API; there is no way to request it more narrowly.
+- **Narrower alternative considered:** A third-party favicon service (e.g. a `google.com/s2/favicons` request) would need no manifest permission at all but would send every domain a user has notes on to an external server — a direct violation of Hamesh's "no network requests of any kind" privacy commitment (see `PRIVACY.md`). Chrome's local favicon cache was chosen specifically to avoid that. A generated monogram (initial + deterministic color) is used as the fallback when no cached favicon exists, so the feature degrades gracefully without ever making a request.
+- **Scope note:** Only used from the extension's own `notes.html` page, so — per the same Chrome docs — no `web_accessible_resources` entry for `_favicon/*` is needed (that's only required when fetching favicons from a content script).
+- **Reviewer-facing justification (final text):**
+  > The Notes Library page shows a favicon next to each website a user has notes on, read from Chrome's own local favicon cache via `chrome-extension://<id>/_favicon/`. This makes no network request and exposes no data beyond what Chrome has already cached while the user browsed; the `favicon` permission is required by Chrome to use this API. When no cached favicon exists, a generated monogram is shown instead.
+
 ## Content script host access — `matches: ["<all_urls>"]`
 
 This is not a `permissions` entry but is the broadest access surface in the manifest and CWS reviewers scrutinize it identically to a host permission.
@@ -74,8 +84,9 @@ This is not a `permissions` entry but is the broadest access surface in the mani
 
 ## Summary table for the dashboard
 
-| Permission                                  | Keep as-is for v0.2.0 submission | Justification field text                       |
+| Permission                                  | Keep as-is for next submission   | Justification field text                       |
 | ------------------------------------------- | -------------------------------- | ---------------------------------------------- |
 | `storage`                                   | Yes                              | See "storage" section above                    |
 | `activeTab`                                 | Yes (flagged for future removal) | See "activeTab" section above                  |
+| `favicon`                                   | Yes (new, Notes Library)         | See "favicon" section above                    |
 | Host access via content script `<all_urls>` | Yes                              | See "Content script host access" section above |

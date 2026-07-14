@@ -1,0 +1,6 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--hm-paper, #f7f3ec);
+}

@@ -10,3 +10,30 @@ body {
   width: 300px;
   background: var(--hm-surface, #ffffff);
 }
+
+/* Popup-only, so kept out of the shared tokens.css (that stylesheet is
+   injected into every page the content script runs on). */
+.hm-popup__library-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: var(--hm-space-3);
+  padding: 8px 2px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--hm-sans);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--hm-ink-60);
+  border-radius: var(--hm-radius-sm);
+  transition: color var(--hm-dur-fast) var(--hm-ease-out);
+}
+.hm-popup__library-link:hover {
+  color: var(--hm-ink);
+}
+.hm-popup__library-link:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--hm-accent);
+}

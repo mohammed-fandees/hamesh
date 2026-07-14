@@ -99,6 +99,11 @@ export function App() {
     }
   }
 
+  async function handleOpenNotesLibrary() {
+    await browser.tabs.create({ url: browser.runtime.getURL('/notes.html') });
+    window.close();
+  }
+
   // Return focus to the trigger that opened Settings when navigating back.
   // Settings' own heading grabs focus on its side when navigating in (see
   // SettingsView) — skip the very first run so mounting on "home" doesn't
@@ -201,6 +206,30 @@ export function App() {
                   ? 'غير متاح هنا'
                   : 'Not available here'}
             </div>
+
+            <button
+              type="button"
+              className="hm-popup__library-link"
+              onClick={handleOpenNotesLibrary}
+            >
+              {strings.openNotesLibrary}
+              <svg
+                width="10"
+                height="10"
+                viewBox="0 0 10 10"
+                aria-hidden="true"
+                style={dir === 'rtl' ? { transform: 'scaleX(-1)' } : undefined}
+              >
+                <path
+                  d="M3 2 L7 5 L3 8"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                />
+              </svg>
+            </button>
           </div>
 
           <div
