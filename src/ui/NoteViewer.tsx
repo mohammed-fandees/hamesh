@@ -67,7 +67,7 @@ export function NoteViewer({
 
   return (
     <div
-      className="hm-card"
+      className="hm-card hm-viewer-card"
       role="dialog"
       aria-label={isEditing ? strings.edit : strings.note}
       onKeyDown={handleKeyDown}
