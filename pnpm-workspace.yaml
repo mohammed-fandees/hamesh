@@ -1,6 +1,8 @@
 allowBuilds:
   esbuild: false
   spawn-sync: false
+minimumReleaseAgeExclude:
+  - wxt@0.21.2
 onlyBuiltDependencies:
   - esbuild
   - spawn-sync
