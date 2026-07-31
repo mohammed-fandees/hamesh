@@ -1,24 +1,38 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { NotesRepository } from '@/storage/notes-repository';
 import type { PreferencesRepository } from '@/storage/preferences-repository';
-import type { Note, ElementAnchor } from '@/domain/note';
+import type { Note, ElementAnchor, VideoAnchor } from '@/domain/note';
 import { buildElementAnchor } from '@/domain/anchor';
-import { resolveAnchor, ResolutionQuality } from '@/domain/anchor-resolution';
+import { buildVideoAnchor } from '@/domain/video-anchor';
+import { resolveAnchor, resolveVideoAnchor, ResolutionQuality } from '@/domain/anchor-resolution';
+import { computeMarkerX, formatVideoTimestamp } from '@/domain/video-markers';
 import { generatePageKey } from '@/domain/page-key';
 import { getDeepestEligibleElement } from '@/utils/dom';
 import { onNavigationChange } from '@/content/navigation';
 import { detectHostTheme, type HostTheme } from '@/content/theme';
 import type { AppearanceMode } from '@/domain/preferences';
-import { useFloating, type AnchorRect } from '@/content/useFloating';
+import { useFloating, useFloatingAbove, type AnchorRect } from '@/content/useFloating';
+import { getVideoAdapters, getActiveAdapterMatch } from '@/content/video-adapters/registry';
+import type { VideoPlayerAdapter } from '@/content/video-adapters/types';
+import type { AdapterVideoMatch } from '@/content/video-adapters/registry';
+import { trackVideoContext, getActiveVideoMatchUnderInteraction } from '@/content/video-context';
 import { Composer } from '@/ui/Composer';
 import { NoteViewer } from '@/ui/NoteViewer';
 import { Marker } from '@/ui/Marker';
 import { SelectionHint } from '@/ui/SelectionHint';
+import { VideoQuickNote } from '@/ui/video/VideoQuickNote';
+import { VideoMarker } from '@/ui/video/VideoMarker';
 import { getStrings, dirForLang, type Lang, type Strings } from '@/ui/i18n';
 
 interface Resolved {
   note: Note;
   element: Element | null;
+  quality: ResolutionQuality;
+}
+
+interface VideoResolved {
+  note: Note;
+  video: HTMLVideoElement | null;
   quality: ResolutionQuality;
 }
 
@@ -40,6 +54,31 @@ interface HameshAppProps {
 function toAnchorRect(el: Element): AnchorRect {
   const r = el.getBoundingClientRect();
   return { left: r.left, top: r.top, width: r.width, height: r.height };
+}
+
+interface RailPlacement {
+  left: number;
+  width: number;
+  top: number;
+}
+
+/** Where to draw the timeline rail: a native-timeline adapter (YouTube)
+ *  aligns to the site's own progress-bar rect; otherwise Hamesh's own rail
+ *  docks just below the video element's bottom edge — see PR3's plan for
+ *  why a generic `<video>` can never get pixel-perfect native placement
+ *  (browsers don't expose native `<video controls>` scrubber DOM at all). */
+function getRailPlacement(
+  adapter: VideoPlayerAdapter,
+  video: HTMLVideoElement,
+): RailPlacement | null {
+  if (adapter.capabilities.nativeTimeline) {
+    const rect = adapter.getTimelineRect(video);
+    if (!rect || rect.width === 0) return null;
+    return { left: rect.left, width: rect.width, top: rect.top + rect.height / 2 };
+  }
+  const rect = video.getBoundingClientRect();
+  if (rect.width === 0) return null;
+  return { left: rect.left, width: rect.width, top: rect.bottom + 8 };
 }
 
 /** Coalesced viewport frame counter — bumps on scroll/resize while `active`. */
@@ -152,6 +191,23 @@ export function HameshApp({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // ---- Video notes ----
+  const [videoResolved, setVideoResolved] = useState<VideoResolved[]>([]);
+  // The page's currently-matched adapter + active video, if any — checked
+  // once synchronously at mount via a lazy initializer (same pattern as
+  // `hostTheme` above: the DOM is already present by the time this content
+  // script runs, so there's nothing to wait for), then refreshed on
+  // navigation and as the DOM settles (below) — "which video is active"
+  // changes far less often than scroll position.
+  const [videoMatch, setVideoMatch] = useState<AdapterVideoMatch | null>(() =>
+    getActiveAdapterMatch(),
+  );
+  const [videoComposer, setVideoComposer] = useState<AdapterVideoMatch | null>(null);
+  // Bumped by the active video's loadedmetadata/durationchange — its
+  // duration is frequently unknown at mount time, so marker x-positions
+  // need a reason to recompute once it becomes available.
+  const [videoTick, setVideoTick] = useState(0);
+
   // ---- Open Note flow: restore a specific note by id once it resolves ----
   const [pendingRestoreId, setPendingRestoreId] = useState<string | null>(null);
   const [restoredFor, setRestoredFor] = useState<string | null>(null);
@@ -164,7 +220,8 @@ export function HameshApp({
     notesRef.current = notes;
   }, [notes]);
 
-  const hasFloating = notes.length > 0 || composer !== null || viewerId !== null;
+  const hasFloating =
+    notes.length > 0 || composer !== null || viewerId !== null || videoComposer !== null;
   const frame = useViewportFrame(hasFloating || selecting);
 
   // ---- Load + resolve notes for the current page ----
@@ -177,14 +234,32 @@ export function HameshApp({
     );
   }, []);
 
+  // Runs across the same unified `notes` list as `resolveAll` — element
+  // notes just resolve Unresolved here (and vice versa in `resolveAll`),
+  // rather than filtering the list twice by anchor type.
+  const resolveAllVideo = useCallback((list: Note[]) => {
+    const adapters = getVideoAdapters();
+    setVideoResolved(
+      list.map((note) => {
+        const r = resolveVideoAnchor(note, adapters);
+        return { note, video: r.element as HTMLVideoElement | null, quality: r.quality };
+      }),
+    );
+  }, []);
+
+  const refreshVideoMatch = useCallback(() => {
+    setVideoMatch(getActiveAdapterMatch());
+  }, []);
+
   /** Commit a new notes list to both state slices (avoids nested setState). */
   const commitNotes = useCallback(
     (next: Note[]) => {
       notesRef.current = next;
       setNotes(next);
       resolveAll(next);
+      resolveAllVideo(next);
     },
-    [resolveAll],
+    [resolveAll, resolveAllVideo],
   );
 
   const loadNotes = useCallback(async () => {
@@ -223,28 +298,58 @@ export function HameshApp({
         if (prev !== key) {
           setComposer(null);
           setViewerId(null);
+          setVideoComposer(null);
         }
         return key;
       });
       setHostTheme(detectHostTheme());
+      refreshVideoMatch();
       loadNotes();
     });
-  }, [loadNotes]);
+  }, [loadNotes, refreshVideoMatch]);
 
   // ---- Debounced re-resolution as the DOM settles (dynamic content) ----
+  // Also re-checks the active video-adapter match — a heavy SPA (YouTube)
+  // can swap its player DOM (a different <video>, or one that didn't exist
+  // yet at mount) without a `popstate`/`hashchange`/pushState navigation
+  // this content script would otherwise notice. Kept unconditional (not
+  // gated on `notes.length`, unlike before video notes existed) since
+  // detecting "is there a video here now" doesn't depend on any notes
+  // already existing on the page.
   useEffect(() => {
-    if (notes.length === 0) return;
     let timer = 0;
     const observer = new MutationObserver(() => {
       clearTimeout(timer);
-      timer = window.setTimeout(() => resolveAll(notes), 400);
+      timer = window.setTimeout(() => {
+        resolveAll(notes);
+        resolveAllVideo(notes);
+        refreshVideoMatch();
+      }, 400);
     });
     observer.observe(document.body, { childList: true, subtree: true });
     return () => {
       clearTimeout(timer);
       observer.disconnect();
     };
-  }, [notes, resolveAll]);
+  }, [notes, resolveAll, resolveAllVideo, refreshVideoMatch]);
+
+  // ---- Alt+H context tracking (hover/focus over the active video) ----
+  useEffect(() => trackVideoContext(), []);
+
+  // Re-place markers once the active video's duration becomes known
+  // (frequently unavailable at mount — `loadedmetadata`/`durationchange`
+  // fire asynchronously) or changes (a fresh video swapped in by the site).
+  useEffect(() => {
+    const video = videoMatch?.video;
+    if (!video) return;
+    const bump = () => setVideoTick((t) => t + 1);
+    video.addEventListener('loadedmetadata', bump);
+    video.addEventListener('durationchange', bump);
+    return () => {
+      video.removeEventListener('loadedmetadata', bump);
+      video.removeEventListener('durationchange', bump);
+    };
+  }, [videoMatch]);
 
   // ---- Selection mode ----
   const stopSelecting = useCallback(() => {
@@ -252,9 +357,22 @@ export function HameshApp({
     setHover(null);
   }, []);
 
+  // Alt+H is one shortcut, context-aware: hovering/focused on the page's
+  // video opens the quick video note; otherwise it's today's element
+  // selection. See `video-context.ts` for the (heuristic, documented)
+  // hover/focus check this branches on.
   const activate = useCallback(() => {
+    const match = getActiveVideoMatchUnderInteraction();
+    if (match) {
+      setViewerId(null);
+      setComposer(null);
+      setSelecting(false);
+      setVideoComposer(match);
+      return;
+    }
     setViewerId(null);
     setComposer(null);
+    setVideoComposer(null);
     setSelecting(true);
   }, []);
 
@@ -388,6 +506,32 @@ export function HameshApp({
     [composer, repo, pageKey, commitNotes, strings.saveError],
   );
 
+  // No busy/error state, unlike `handleSave` — the quick-note popup has no
+  // UI for either (spec: "extremely lightweight, never interrupt
+  // watching"). A failed save is dropped silently, same as a cancel; a
+  // persistent storage failure would already be visible via element notes.
+  const handleSaveVideoNote = useCallback(
+    async (content: string) => {
+      if (!videoComposer) return;
+      const anchor = buildVideoAnchor(videoComposer.video, videoComposer.adapter);
+      setVideoComposer(null);
+      if (!anchor) return;
+      try {
+        const note = await repo.create({
+          content,
+          pageKey,
+          originalUrl: location.href,
+          anchor,
+          pageContext: document.title ? { title: document.title } : undefined,
+        });
+        commitNotes([...notesRef.current, note]);
+      } catch {
+        /* dropped — see comment above */
+      }
+    },
+    [videoComposer, repo, pageKey, commitNotes],
+  );
+
   const handleUpdate = useCallback(
     async (noteId: string, content: string) => {
       setBusy(true);
@@ -443,7 +587,7 @@ export function HameshApp({
 
   // ---- Outside-click closes composer / viewer (non-modal) ----
   useEffect(() => {
-    if (!composer && !viewerId) return;
+    if (!composer && !viewerId && !videoComposer) return;
     const onDown = (e: Event) => {
       const path = e.composedPath();
       const insideCard = path.some(
@@ -455,11 +599,12 @@ export function HameshApp({
       if (!insideCard && !onMarker) {
         setComposer(null);
         setViewerId(null);
+        setVideoComposer(null);
       }
     };
     window.addEventListener('pointerdown', onDown, true);
     return () => window.removeEventListener('pointerdown', onDown, true);
-  }, [composer, viewerId]);
+  }, [composer, viewerId, videoComposer]);
 
   // ---- Derived: marker placements ----
   const markerItems = useMemo(() => {
@@ -491,6 +636,30 @@ export function HameshApp({
     }
     return items;
   }, [resolved, dir, frame]);
+
+  // ---- Derived: video marker placements ----
+  const videoMarkerItems = useMemo(() => {
+    void frame; // recompute the rail's position each viewport frame
+    void videoTick; // recompute once duration is known/changes
+    if (!videoMatch) return [];
+    const placement = getRailPlacement(videoMatch.adapter, videoMatch.video);
+    if (!placement) return [];
+    const liveDuration = videoMatch.video.duration;
+    const items: { note: Note; anchor: VideoAnchor; top: number; left: number }[] = [];
+    for (const r of videoResolved) {
+      if (r.quality !== ResolutionQuality.Exact) continue;
+      if (r.note.anchor.type !== 'video') continue;
+      const anchor = r.note.anchor;
+      const duration =
+        Number.isFinite(liveDuration) && liveDuration > 0 ? liveDuration : (anchor.duration ?? 0);
+      const left = computeMarkerX(anchor.timestamp, duration, {
+        left: placement.left,
+        width: placement.width,
+      });
+      items.push({ note: r.note, anchor, top: placement.top, left });
+    }
+    return items;
+  }, [videoMatch, videoResolved, frame, videoTick]);
 
   // ---- Derived: transient highlight rect for the Open Note flow ----
   const highlightRect = useMemo(() => {
@@ -550,6 +719,20 @@ export function HameshApp({
         />
       ))}
 
+      {videoMarkerItems.map((m) => (
+        <VideoMarker
+          key={m.note.id}
+          label={strings.videoMarkerLabel(formatVideoTimestamp(m.anchor.timestamp))}
+          style={{ top: m.top, left: m.left, pointerEvents: 'auto' }}
+          onOpen={() => {
+            // Jump to the stored timestamp only — never call play()/pause(),
+            // so a playing video keeps playing and a paused one stays
+            // paused (spec: "Never unexpectedly autoplay").
+            if (videoMatch) videoMatch.video.currentTime = m.anchor.timestamp;
+          }}
+        />
+      ))}
+
       {highlightRect && <div className="hm-restore-highlight" style={highlightRect} />}
 
       {composer && (
@@ -560,6 +743,15 @@ export function HameshApp({
           error={error}
           onSave={handleSave}
           onCancel={() => setComposer(null)}
+        />
+      )}
+
+      {videoComposer && (
+        <FloatingVideoQuickNote
+          video={videoComposer.video}
+          strings={strings}
+          onSave={handleSaveVideoNote}
+          onCancel={() => setVideoComposer(null)}
         />
       )}
 
@@ -602,6 +794,34 @@ function FloatingComposer({
   return (
     <div ref={cardRef} className="hm-floating" style={{ ...style, width: 300 }}>
       <Composer strings={strings} saving={busy} error={error} onSave={onSave} onCancel={onCancel} />
+    </div>
+  );
+}
+
+function FloatingVideoQuickNote({
+  video,
+  strings,
+  onSave,
+  onCancel,
+}: {
+  video: HTMLVideoElement;
+  strings: Strings;
+  onSave: (content: string) => void;
+  onCancel: () => void;
+}) {
+  // Anchored above the video (never below/over it — see useFloatingAbove),
+  // not below-first like the element composer: a video can be most of the
+  // viewport, so "just below the anchor's top edge" would sit on top of it.
+  const getRect = useCallback(() => toAnchorRect(video), [video]);
+  const { cardRef, style } = useFloatingAbove(getRect);
+  return (
+    <div ref={cardRef} className="hm-floating" style={style}>
+      <VideoQuickNote
+        placeholder={strings.videoQuickNotePlaceholder}
+        label={strings.videoQuickNoteLabel}
+        onSave={onSave}
+        onCancel={onCancel}
+      />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import {
   trackVideoContext,
   resolveVideoUnderInteraction,
   getActiveVideoUnderInteraction,
+  getActiveVideoMatchUnderInteraction,
 } from '@/content/video-context';
 import type { VideoPlayerAdapter } from '@/content/video-adapters/types';
 
@@ -140,6 +141,59 @@ describe('trackVideoContext + getActiveVideoUnderInteraction', () => {
 
     const stop = trackVideoContext();
     expect(getActiveVideoUnderInteraction()).toBeNull();
+    stop();
+  });
+});
+
+describe('getActiveVideoMatchUnderInteraction', () => {
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  it('returns the adapter alongside the video when interacting with it', () => {
+    document.body.innerHTML = `
+      <div id="movie_player">
+        <video class="html5-main-video"></video>
+        <div class="ytp-progress-bar-container"></div>
+        <button id="control"></button>
+      </div>
+    `;
+    Object.defineProperty(window, 'location', {
+      value: new URL('https://www.youtube.com/watch?v=abc123'),
+      writable: true,
+      configurable: true,
+    });
+
+    const stop = trackVideoContext();
+    document.getElementById('control')!.dispatchEvent(new Event('pointermove', { bubbles: true }));
+
+    const match = getActiveVideoMatchUnderInteraction();
+    expect(match?.adapter.id).toBe('youtube');
+    expect(match?.video.classList.contains('html5-main-video')).toBe(true);
+
+    stop();
+  });
+
+  it('returns null when not interacting with the video, even with a matching adapter', () => {
+    document.body.innerHTML = `
+      <div id="movie_player">
+        <video class="html5-main-video"></video>
+        <div class="ytp-progress-bar-container"></div>
+      </div>
+      <button id="elsewhere"></button>
+    `;
+    Object.defineProperty(window, 'location', {
+      value: new URL('https://www.youtube.com/watch?v=abc123'),
+      writable: true,
+      configurable: true,
+    });
+
+    const stop = trackVideoContext();
+    document
+      .getElementById('elsewhere')!
+      .dispatchEvent(new Event('pointermove', { bubbles: true }));
+
+    expect(getActiveVideoMatchUnderInteraction()).toBeNull();
     stop();
   });
 });

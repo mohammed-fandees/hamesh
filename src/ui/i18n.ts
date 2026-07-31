@@ -55,6 +55,9 @@ export interface Strings {
   unpinNote: string;
   pinnedSection: string;
   loadingNotes: string;
+  videoQuickNotePlaceholder: string;
+  videoQuickNoteLabel: string;
+  videoMarkerLabel: (timestamp: string) => string;
 }
 
 const en: Strings = {
@@ -104,6 +107,9 @@ const en: Strings = {
   unpinNote: 'Unpin this note',
   pinnedSection: 'Pinned',
   loadingNotes: 'Loading notes…',
+  videoQuickNotePlaceholder: 'Note this moment…',
+  videoQuickNoteLabel: 'Add a video note',
+  videoMarkerLabel: (timestamp) => `Note at ${timestamp}`,
 };
 
 const ar: Strings = {
@@ -153,6 +159,9 @@ const ar: Strings = {
   unpinNote: 'إلغاء تثبيت هذه الملاحظة',
   pinnedSection: 'مثبّت',
   loadingNotes: 'جارٍ تحميل الملاحظات…',
+  videoQuickNotePlaceholder: 'دوّن هذه اللحظة…',
+  videoQuickNoteLabel: 'إضافة ملاحظة فيديو',
+  videoMarkerLabel: (timestamp) => `ملاحظة عند ${timestamp}`,
 };
 
 export function resolveLang(uiLanguage?: string): Lang {

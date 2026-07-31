@@ -46,9 +46,18 @@ export function resolveVideoUnderInteraction(
  * not a perfect "what is the user watching" detector, the same honesty
  * tradeoff `detectHostTheme` documents for its own DOM heuristic. Returns
  * `null` (→ fall back to element selection) whenever no adapter matches, no
- * video is currently active, or the user isn't interacting with it.
+ * video is currently active, or the user isn't interacting with it. Also
+ * carries the matched adapter — needed by callers that go on to build a
+ * `VideoAnchor` (`buildVideoAnchor` takes an adapter, not just a video).
  */
-export function getActiveVideoUnderInteraction(): HTMLVideoElement | null {
+export function getActiveVideoMatchUnderInteraction(): AdapterVideoMatch | null {
   const match = getActiveAdapterMatch();
-  return resolveVideoUnderInteraction(lastPointerTarget, document.activeElement, match);
+  const video = resolveVideoUnderInteraction(lastPointerTarget, document.activeElement, match);
+  return video ? match : null;
+}
+
+/** Same check as `getActiveVideoMatchUnderInteraction`, for callers that
+ *  only need the video element itself. */
+export function getActiveVideoUnderInteraction(): HTMLVideoElement | null {
+  return getActiveVideoMatchUnderInteraction()?.video ?? null;
 }
