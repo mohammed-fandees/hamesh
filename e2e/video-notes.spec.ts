@@ -146,6 +146,12 @@ async function waitForVideoMetadata(page: Page): Promise<void> {
   });
 }
 
+async function getExtensionId(context: BrowserContext): Promise<string> {
+  let sw = context.serviceWorkers()[0];
+  if (!sw) sw = await context.waitForEvent('serviceworker');
+  return new URL(sw.url()).host;
+}
+
 test.describe('Video Notes — capture + timeline markers', () => {
   let context: BrowserContext;
   let server: { url: string; close: () => Promise<void> };
@@ -467,5 +473,46 @@ test.describe('Video Notes — capture + timeline markers', () => {
     // onKeyDown handler regardless of what `document.activeElement` says.
     await page.locator('.hm-video-cluster-list__item').first().press('Escape');
     await expect(page.locator('.hm-video-cluster-list')).toHaveCount(0);
+  });
+
+  test('opening a video note from the Notes Library seeks the video in a fresh tab, with no viewer', async () => {
+    const extensionId = await getExtensionId(context);
+    const noteText = 'Reached via the Notes Library.';
+    await createVideoNoteAt(page, 6, noteText);
+    await expect(page.locator('.hm-video-marker')).toHaveCount(1);
+
+    const library = await context.newPage();
+    await library.goto(`chrome-extension://${extensionId}/notes.html`);
+    await library.getByRole('button', { name: /127\.0\.0\.1/ }).click();
+    const noteLink = library.locator('.hm-note-row', { hasText: noteText });
+    await expect(noteLink).toBeVisible();
+    // The video badge (not just the note text) is visible in the row too.
+    await expect(noteLink.locator('.hm-note-row__video-badge')).toHaveText('0:06');
+
+    // Clicking opens the note's page in a *new* tab — a fresh load, so the
+    // video starts unseeded (readyState 0, currentTime 0) until Hamesh's
+    // restore handshake completes.
+    const [restoredPage] = await Promise.all([context.waitForEvent('page'), noteLink.click()]);
+    await restoredPage.waitForLoadState('domcontentloaded');
+    expect(new URL(restoredPage.url()).pathname).toBe('/video-page.html');
+
+    // Seeked to the stored timestamp — no fixed wait, this polls until the
+    // restore handshake (CONTENT_READY -> RESTORE_NOTE -> video resolves
+    // -> seek) actually completes.
+    await expect
+      .poll(
+        () =>
+          restoredPage.evaluate(
+            () => (document.querySelector('video') as HTMLVideoElement | null)?.currentTime,
+          ),
+        { timeout: 10000 },
+      )
+      .toBeGreaterThan(5.5);
+
+    // No viewer/composer opens for a video note — same "seek only" design
+    // as clicking its on-page marker (PR3/PR4). Give it a moment to make
+    // sure nothing appears late, not just check immediately.
+    await restoredPage.waitForTimeout(300);
+    await expect(restoredPage.locator('.hm-card')).toHaveCount(0);
   });
 });

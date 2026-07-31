@@ -147,6 +147,12 @@ below, which watches the whole subtree for content changes.
 `repo.getForPage` → `domain/anchor-resolution.resolveAnchor` per note → markers
 for resolved notes.
 
+**Video note write:** Alt+H while hovering/focused on a video →
+`getActiveVideoMatchUnderInteraction` → quick-note popup → `domain/video-anchor.buildVideoAnchor`
+→ `repo.create` → `chrome.storage.local` → note added to state → resolved via
+`resolveVideoAnchor` → marker rendered on the timeline rail (see "Video Notes"
+below).
+
 ## Open Note flow (Notes Library → original page)
 
 The Notes Library (`src/entrypoints/notes/`) lists every note across every
@@ -180,6 +186,10 @@ This works via a small runtime-message handshake, orchestrated by
    (`.hm-restore-highlight` in `tokens.css`, self-clearing after its CSS
    animation duration). If the anchor can't be resolved, the viewer still
    opens — same "anchor unavailable" state as any other note.
+   **For a video note**, the same pending-id mechanism instead watches
+   `videoResolved` and, once the target video resolves `Exact`, seeks
+   `video.currentTime` — no viewer, no `play()`/`pause()` call (see "Video
+   Notes" below for why).
 5. A bounded safety-net timeout (15s) plus the `tabs.onRemoved` listener
    clean up the listeners if the target page never signals readiness (a
    page Hamesh can't run on, or the tab is closed first) — a leak-prevention
@@ -230,6 +240,131 @@ Resolution never throws on a changed page; it returns a quality
 resolved while its viewer is open, the viewer shows an "anchor unavailable" state
 with a dashed connector. Anchors never store input/password values.
 
+## Video Notes
+
+A note anchors to either a DOM element (`ElementAnchor`, above) or a moment in
+a video (`VideoAnchor`). `Note.anchor` is a discriminated union
+(`domain/note.ts`) on a `type` field; `ElementAnchor.type` is optional so
+every note stored before this union existed still discriminates as an
+element anchor with no migration needed. `resolveAnchor` guards against being
+called with a video anchor (returns `Unresolved` rather than touching fields
+that don't exist on it); video anchors resolve separately via
+`resolveVideoAnchor(note, adapters)` in `domain/anchor-resolution.ts`.
+
+Video identity (`videoId`/`platform`) lives entirely in the anchor, not in
+`pageKey` — `page-key.ts` stays untouched, deliberately avoiding a per-site
+query-param allowlist. A page hosting several distinct videos under one URL
+shape (e.g. every `youtube.com/watch` note) is handled by filtering at
+resolution time: a video note only resolves `Exact` when the _currently
+loaded_ video's adapter-derived id matches, the same way an element anchor
+that can't be found simply resolves `Unresolved`.
+
+### Video player adapters (`src/content/video-adapters/`)
+
+Capability-driven, not site-driven — callers branch on
+`capabilities.nativeTimeline`, never on adapter id. The `VideoPlayerAdapter`
+interface (`types.ts`) covers: matching the current page, finding the active
+video, a hit-region for "is the user interacting with this video",
+resolving/producing a stable video id, whether a native timeline DOM exists
+to align markers to, and whether the player's own controls are currently
+visible.
+
+- **`youtube.ts`** — matches youtube.com/m.youtube.com/youtu.be with the
+  player DOM mounted; parses the video id from watch/shorts/embed/short-link
+  URL shapes; aligns markers to `.ytp-progress-bar-container`; reads
+  `.ytp-autohide` on the player container for controls-visibility (a real
+  signal, not a guess).
+- **`html5-generic.ts`** — the last-resort fallback for any page with a
+  `<video>` element; derives an id from `currentSrc`/`src` with an ordinal
+  fallback; has no native timeline (browsers expose no DOM for native
+  `<video controls>` — a hard technical limit, not a shortcut) and
+  approximates controls-visibility as `paused || video.matches(':hover')`.
+
+`registry.ts` holds a priority-ordered list (YouTube first, generic HTML5
+last, first `matches()` wins) mirroring `resolveAnchor`'s own signal
+priority chain. Adding a new site (Vimeo, Coursera, …) is one more adapter
+in this list — nothing in domain resolution, storage, or `HameshApp` needs
+to change.
+
+### Alt+H: one shortcut, context-aware
+
+`src/content/video-context.ts` tracks the last pointer position and
+`document.activeElement`. On Alt+H, `HameshApp` checks
+`getActiveVideoMatchUnderInteraction()`: if the user is hovering/focused on
+the page's active video (per whichever adapter matches), it opens the video
+quick-note popup; otherwise it's today's element-selection mode. A
+pragmatic heuristic — documented as such, the same honesty tradeoff
+`detectHostTheme` makes for its own DOM heuristic — not a perfect "what is
+the user watching" detector.
+
+### Capture and timeline markers
+
+`VideoQuickNote` (`src/ui/video/`) is the ≤3-second capture popup: autofocus
+textarea, Enter saves, Shift+Enter newline, Escape closes, no visible
+buttons or error state, positioned _above_ the video (`useFloatingAbove` in
+`content/useFloating.ts` — below-first placement, which the element composer
+uses, would sit on top of a video that's most of the viewport).
+
+Markers render with `pointer-events: none` — deliberately not hit-testable
+by the browser at all. A real, on-top, `pointer-events: auto` marker sitting
+over a video steals mouse hover from the actual player element beneath it:
+from YouTube's own perspective (or a native `<video controls>` scrubber's),
+the pointer has left the player entirely the instant it's over a marker,
+which hides _their_ controls too, and can flicker Hamesh's own marker in a
+hide/show loop. Clicks and hover are instead detected by coordinate
+proximity in `HameshApp`: a single `window`-level `pointerdown` listener
+(capture phase, `preventDefault`/`stopPropagation` on a hit so the click
+doesn't _also_ seek via the player's own scrubber underneath) and a
+`pointermove` listener (rAF-coalesced, same pattern `useViewportFrame`
+already uses for scroll/resize) drive marker clicks/hover respectively,
+reading from refs rather than closing over state so they don't need to
+re-subscribe on every scroll-driven recompute.
+
+The generic-adapter fallback rail is docked just _below_ the video (not
+overlapping it) — an earlier attempt placed it a few px inside the bottom
+edge instead, to keep markers within the video's real-DOM hover region, but
+that region is exactly where a native `<video controls>` scrubber lives:
+clicks landing there are consumed by the browser's own native seek before
+any page-level listener, capture phase included, ever sees the
+`pointerdown`. Since the rail no longer overlaps the video, `videoMatches`
+`:hover`-based controls-visibility (`html5-generic.ts`) wouldn't naturally
+extend to a marker the user is pointing at; `effectiveVideoControlsVisible`
+in `HameshApp` compensates by also treating "pointer is near a marker" (the
+same coordinate tracking used for hover-preview) as "controls visible",
+independent of the video's own hover/pause state.
+
+Notes close enough together on the rail (`VIDEO_CLUSTER_THRESHOLD_PX`)
+render as one `VideoMarkerCluster` (a larger dot with a count) instead of
+overlapping dots — `domain/video-markers.ts`'s `clusterMarkers` groups by
+chained adjacent-gap distance, the same shape map-pin clustering uses.
+Hovering a marker shows `VideoMarkerPreview` (first line of the note +
+timestamp); hovering a cluster shows a small "N notes" hint instead.
+Clicking a cluster opens `VideoMarkerClusterList`, a real interactive
+`.hm-card` (unlike the passive markers/preview, it only exists because the
+user asked for it, so it doesn't have the hover-stealing problem those
+solve for) listing each note timestamp-ordered; selecting one seeks to it,
+same as a lone marker.
+
+### Restore flow: video notes in the Notes Library
+
+Video notes appear in the Notes Library exactly like element notes — no
+changes needed to `groupNotesByDomain`, `filterNotesByQuery`,
+`derivePageLabel`, or the Continue/Pinned projections, since they were
+already generic over `content`/`originalUrl`/`pageContext.title`. `NoteRow`
+adds a small timestamp badge (`▶ 13:27`) when `note.anchor.type === 'video'`.
+
+The Open Note flow (below) branches the same way: for a video note, restore
+means seeking `video.currentTime` to the stored timestamp once the target
+video resolves `Exact` — never opening a viewer (matching the on-page marker
+click behavior: video notes are seek-only, with no dedicated viewer UI) and
+never calling `play()`/`pause()` (a fresh tab's video is left in whatever
+state it loaded in). On a heavy SPA like YouTube the `<video>` element may
+not exist yet even after `CONTENT_READY`; the same debounced
+`MutationObserver` re-resolution that already re-attaches element-anchor
+markers as content mounts also re-runs video resolution, so the restore
+check (a render-time "adjust state" pattern, not a polling loop) simply
+re-evaluates each time `videoResolved` changes until the video appears.
+
 ## Page identity
 
 `generatePageKey` normalizes: `http`→`https`, lowercased host, default ports
@@ -259,6 +394,13 @@ re-attach markers as content mounts.
   the real cross-tab `CONTENT_READY`/`RESTORE_NOTE` handshake and its timing,
   which a jsdom component test can't. See README for the headless/HTTP
   requirements.
+- **Video Notes E2E (`e2e/video-notes.spec.ts`):** drives the generic HTML5
+  adapter path against a self-hosted `<video>` fixture (`e2e/fixtures/`) — a
+  tiny locally-generated MP4, served with real HTTP Range support (Chromium
+  reports a video's `seekable` ranges as degenerate/unseekable without it,
+  even for a small fully-buffered file). YouTube's own adapter is
+  unit/fixture-tested instead (a saved player DOM shape), consistent with
+  this project's no-live-network testing policy.
 - **CI:** typecheck, lint, format check, unit tests, build. E2E is run locally
   (needs real Chromium + `--headless=new`).
 
@@ -280,6 +422,23 @@ re-attach markers as content mounts.
 - Extension points: new storage backends via `NotesRepository`; additional
   anchor signals slot into the priority chain; a future side panel can reuse the
   tokens and repository.
+- `Note.workspaceId` is a real, required field, but there is no workspace
+  feature yet — every note is stamped with a single implicit
+  `DEFAULT_WORKSPACE_ID` (`domain/workspace.ts`) and there is no UI to
+  create/switch workspaces. Deliberately built ahead of the feature so a
+  future multi-workspace pass is additive (filter by an already-present
+  field) rather than another schema migration.
+- The video timestamp badge (`▶ 13:27`) only appears on `NoteRow` inside an
+  expanded website group — the Continue and Pinned sections' projections
+  (`ContinueWebsite`, `PinnedNoteItem` in `notes-grouping.ts`) don't carry
+  anchor info today, so a pinned or recently-active video note doesn't show
+  its timestamp in those two places. Would need extending those projection
+  functions, not just the row components.
+- The `Anchor` union (`ElementAnchor | VideoAnchor`) is designed so a future
+  anchor kind (PDF page/region, image, audio timestamp, document range) is
+  another union member plus another `resolve*Anchor` function — nothing
+  about `NotesRepository`, the Notes Library, or the Open Note flow assumes
+  there are only two kinds.
 
 ## Development note: TypeScript coverage of test files
 

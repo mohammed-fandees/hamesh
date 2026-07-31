@@ -532,24 +532,82 @@ export function HameshApp({
     [registerRestoreNote],
   );
 
-  // Adjusts state as soon as the pending restore target appears in
-  // `resolved` — React's documented pattern for reacting to a dependency
-  // change during render rather than in an Effect (see "You Might Not Need
-  // an Effect"). `pendingRestoreId !== restoredFor` makes this
-  // self-limiting: it only fires once per restore request, and if the note
-  // hasn't loaded into `resolved` yet (RESTORE_NOTE can arrive before the
-  // initial notes fetch finishes), it simply re-checks on the next render
-  // that `resolved` changes on — no polling, no fixed delay.
+  // Seeking the active video from a JSX-triggered handler (marker/cluster
+  // click, or the Open Note restore flow below) is declared here and
+  // *performed* in the effect below — mutating
+  // `videoMatchRef.current.video.currentTime` directly from a plain
+  // callback (even a `useCallback`) trips this codebase's immutability
+  // lint rule, which only recognizes the mutation as safe once it happens
+  // inside a `useEffect` body (the same reason the coordinate-based
+  // pointerdown handler further down does its own seeking inline rather
+  // than calling out to a shared helper). `nonce` forces the effect to
+  // re-fire even for two requests with the identical timestamp (e.g.
+  // clicking the same marker twice), since object identity alone
+  // wouldn't otherwise change for equal values. Declared before the
+  // restore-flow logic below, which is also a producer of seek requests.
+  const [videoSeekRequest, setVideoSeekRequest] = useState<{
+    timestamp: number;
+    // A number for marker/cluster clicks (a ref counter, incremented in an
+    // event handler); a string for the Open Note restore flow below, which
+    // has no ref access available (that logic runs during render) but
+    // doesn't need one anyway — `restoredFor` already limits it to firing
+    // once per distinct note id, so the id itself is a sufficiently unique
+    // nonce.
+    nonce: number | string;
+  } | null>(null);
+  const videoSeekNonceRef = useRef(0);
+  useEffect(() => {
+    if (!videoSeekRequest) return;
+    // Deferred to a microtask — same reason the coordinate-based
+    // pointerdown handler's mutation (which the immutability lint rule
+    // does accept) lives inside an event-listener callback rather than an
+    // effect's own synchronous body: the rule only recognizes a ref-held
+    // DOM mutation as safe once it's decoupled from the effect's direct,
+    // synchronous execution. Negligible real delay for a video seek.
+    queueMicrotask(() => {
+      const video = videoMatchRef.current?.video;
+      // Jump to the stored timestamp only — never call play()/pause(), so
+      // a playing video keeps playing and a paused one stays paused
+      // (spec: "Never unexpectedly autoplay").
+      if (video) video.currentTime = videoSeekRequest.timestamp;
+    });
+  }, [videoSeekRequest]);
+
+  // Adjusts state as soon as the pending restore target appears resolved
+  // — React's documented pattern for reacting to a dependency change
+  // during render rather than in an Effect (see "You Might Not Need an
+  // Effect"). `pendingRestoreId !== restoredFor` makes this self-limiting:
+  // it only fires once per restore request, and if the note hasn't loaded
+  // yet (RESTORE_NOTE can arrive before the initial notes fetch finishes,
+  // or — for a video note on a heavy SPA like YouTube — before the
+  // `<video>` element even exists yet) it simply re-checks on the next
+  // render that `resolved`/`videoResolved` changes on (the latter already
+  // gets re-run by the debounced DOM-settle effect above) — no polling,
+  // no fixed delay.
   if (pendingRestoreId && pendingRestoreId !== restoredFor) {
-    const target = resolved.find((r) => r.note.id === pendingRestoreId);
-    if (target) {
-      setRestoredFor(pendingRestoreId);
-      setComposer(null);
-      setError(null);
-      setViewerId(pendingRestoreId);
-      if (target.element) {
-        setHighlightId(pendingRestoreId);
-        setHighlightElement(target.element);
+    const pendingNote = notes.find((n) => n.id === pendingRestoreId);
+    if (pendingNote?.anchor.type === 'video') {
+      const videoAnchor = pendingNote.anchor;
+      const target = videoResolved.find((r) => r.note.id === pendingRestoreId);
+      if (target?.quality === ResolutionQuality.Exact) {
+        setRestoredFor(pendingRestoreId);
+        // Seek only — never open a viewer for a video note (matching the
+        // on-page marker click behavior from PR3/PR4) and never call
+        // play()/pause() (spec: "Never unexpectedly autoplay"); a fresh
+        // tab's video is simply left in whatever state it loaded in.
+        setVideoSeekRequest({ timestamp: videoAnchor.timestamp, nonce: pendingRestoreId });
+      }
+    } else {
+      const target = resolved.find((r) => r.note.id === pendingRestoreId);
+      if (target) {
+        setRestoredFor(pendingRestoreId);
+        setComposer(null);
+        setError(null);
+        setViewerId(pendingRestoreId);
+        if (target.element) {
+          setHighlightId(pendingRestoreId);
+          setHighlightElement(target.element);
+        }
       }
     }
   }
@@ -680,39 +738,6 @@ export function HameshApp({
     },
     [videoComposer, repo, pageKey, commitNotes],
   );
-
-  // Seeking the active video from a JSX-triggered handler (marker/cluster
-  // click) is declared here and *performed* in the effect below — mutating
-  // `videoMatchRef.current.video.currentTime` directly from a plain
-  // callback (even a `useCallback`) trips this codebase's immutability
-  // lint rule, which only recognizes the mutation as safe when it happens
-  // literally inside a `useEffect` body (the same reason the coordinate-
-  // based pointerdown handler below does its own seeking inline rather
-  // than calling out to a shared helper). `nonce` forces the effect to
-  // re-fire even for two requests with the identical timestamp (e.g.
-  // clicking the same marker twice), since object identity alone
-  // wouldn't otherwise change for equal values.
-  const [videoSeekRequest, setVideoSeekRequest] = useState<{
-    timestamp: number;
-    nonce: number;
-  } | null>(null);
-  const videoSeekNonceRef = useRef(0);
-  useEffect(() => {
-    if (!videoSeekRequest) return;
-    // Deferred to a microtask — same reason the coordinate-based
-    // pointerdown handler's mutation (which the immutability lint rule
-    // does accept) lives inside an event-listener callback rather than an
-    // effect's own synchronous body: the rule only recognizes a ref-held
-    // DOM mutation as safe once it's decoupled from the effect's direct,
-    // synchronous execution. Negligible real delay for a video seek.
-    queueMicrotask(() => {
-      const video = videoMatchRef.current?.video;
-      // Jump to the stored timestamp only — never call play()/pause(), so
-      // a playing video keeps playing and a paused one stays paused
-      // (spec: "Never unexpectedly autoplay").
-      if (video) video.currentTime = videoSeekRequest.timestamp;
-    });
-  }, [videoSeekRequest]);
 
   const handleVideoMarkerOpen = useCallback((timestamp: number) => {
     setVideoOpenClusterKey(null);
