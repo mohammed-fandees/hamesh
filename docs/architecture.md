@@ -22,9 +22,13 @@ The heart of the extension. Injected on `<all_urls>` at `document_idle`. It:
 
 ### 2. Background service worker (`src/entrypoints/background.ts`)
 
-Minimal. Its only job is to listen for the `activate-hamesh` keyboard command
-(**Alt+H**) and forward `ENABLE_SELECTION` to the active tab's content script.
-No DOM, no storage, no note logic.
+Minimal. Its only job is to listen for two keyboard commands and forward the
+matching message to the active tab's content script: `activate-hamesh`
+(**Alt+H**, default) → `ENABLE_SELECTION`, and `activate-hamesh-video`
+(**Alt+V**, default) → `ENABLE_VIDEO_NOTE`. No DOM, no storage, no note
+logic. Both bindings are user-customizable only via Chrome's own
+`chrome://extensions/shortcuts` page — see "Notes Library, Settings &
+Shortcuts" below for why that's the _only_ place they can be changed.
 
 ### 3. Popup (`src/entrypoints/popup/`)
 
@@ -147,11 +151,16 @@ below, which watches the whole subtree for content changes.
 `repo.getForPage` → `domain/anchor-resolution.resolveAnchor` per note → markers
 for resolved notes.
 
-**Video note write:** Alt+H while hovering/focused on a video →
-`getActiveVideoMatchUnderInteraction` → quick-note popup → `domain/video-anchor.buildVideoAnchor`
-→ `repo.create` → `chrome.storage.local` → note added to state → resolved via
-`resolveVideoAnchor` → marker rendered on the timeline rail (see "Video Notes"
-below).
+**Video note write:** Alt+V → `getActiveAdapterMatch` → quick-note popup →
+`domain/video-anchor.buildVideoAnchor` → `repo.create` → `chrome.storage.local`
+→ note added to state → resolved via `resolveVideoAnchor` → marker rendered
+on the timeline rail (see "Video Notes" below).
+
+**Folder write:** create/rename/delete in `FolderTree` → the matching
+`foldersRepo` method → `chrome.storage.local` (single `local:hamesh:folders`
+key) → `watch()` delivers the updated array back to `App.tsx`. Filing a note
+(menu or drag-and-drop) → `notesRepo.setFolder` → note's `folderId` updated →
+`buildFolderTree` re-derives the tree (see "Folders" below).
 
 ## Open Note flow (Notes Library → original page)
 
@@ -220,6 +229,11 @@ browser's native handling — they just skip the restore.
   with no `appearance` field at all — see no behavior change.
   `parsePreferences` defensively falls back to the default for missing,
   malformed, or unrecognized values in either field, same as notes.
+- **Folders** (`src/storage/folders-repository.ts`) follow the same
+  single-global-key pattern as preferences (`local:hamesh:folders` →
+  `Folder[]`, not per-page), with a `watch()` subscription too. Each `Note`
+  additionally carries an optional `folderId` pointing at one of these — see
+  "Folders" below.
 
 ## Anchoring strategy
 
@@ -286,16 +300,28 @@ priority chain. Adding a new site (Vimeo, Coursera, …) is one more adapter
 in this list — nothing in domain resolution, storage, or `HameshApp` needs
 to change.
 
-### Alt+H: one shortcut, context-aware
+### Alt+H and Alt+V: two deterministic shortcuts, not one heuristic
 
-`src/content/video-context.ts` tracks the last pointer position and
-`document.activeElement`. On Alt+H, `HameshApp` checks
-`getActiveVideoMatchUnderInteraction()`: if the user is hovering/focused on
-the page's active video (per whichever adapter matches), it opens the video
-quick-note popup; otherwise it's today's element-selection mode. A
-pragmatic heuristic — documented as such, the same honesty tradeoff
-`detectHostTheme` makes for its own DOM heuristic — not a perfect "what is
-the user watching" detector.
+An earlier design made a single Alt+H shortcut context-aware — video note if
+hovering/focused on a video, element selection otherwise, via a hover/focus
+heuristic in a now-deleted `src/content/video-context.ts`. That heuristic
+proved unreliable on real sites in practice (real players layer overlay UI —
+play buttons, ad chrome, custom controls — that defeats both DOM-containment
+and pointer-coordinate hover checks often enough to cause real confusion
+between "this made an element note" and "this made a video note"), so it was
+replaced with two separate, pointer-independent commands:
+
+- **Alt+H** (`activate-hamesh`) always opens element selection — the
+  content script's `activate()` unconditionally calls `setSelecting(true)`.
+- **Alt+V** (`activate-hamesh-video`) always opens the video quick-note for
+  whichever video the page's adapter registry currently considers active
+  (`getActiveAdapterMatch()` in `video-adapters/registry.ts`) — no hover or
+  focus check at all, so it works regardless of where the pointer happens to
+  be. A no-op if the page has no video right now.
+
+Both are declared in `wxt.config.ts`'s `manifest.commands` with
+`suggested_key` defaults; a user can rebind either from
+`chrome://extensions/shortcuts`.
 
 ### Capture and timeline markers
 
@@ -353,17 +379,103 @@ changes needed to `groupNotesByDomain`, `filterNotesByQuery`,
 already generic over `content`/`originalUrl`/`pageContext.title`. `NoteRow`
 adds a small timestamp badge (`▶ 13:27`) when `note.anchor.type === 'video'`.
 
-The Open Note flow (below) branches the same way: for a video note, restore
-means seeking `video.currentTime` to the stored timestamp once the target
-video resolves `Exact` — never opening a viewer (matching the on-page marker
-click behavior: video notes are seek-only, with no dedicated viewer UI) and
-never calling `play()`/`pause()` (a fresh tab's video is left in whatever
-state it loaded in). On a heavy SPA like YouTube the `<video>` element may
-not exist yet even after `CONTENT_READY`; the same debounced
-`MutationObserver` re-resolution that already re-attaches element-anchor
-markers as content mounts also re-runs video resolution, so the restore
-check (a render-time "adjust state" pattern, not a polling loop) simply
-re-evaluates each time `videoResolved` changes until the video appears.
+Clicking a video marker (or a note in a cluster list) both seeks
+`video.currentTime` to the stored timestamp _and_ opens the note's viewer —
+`FloatingVideoViewer`, a thin wrapper around the same anchor-agnostic
+`NoteViewer` used for element notes (its `handleUpdate`/`handleDelete`/
+`handleTogglePin` needed no changes), anchored above the marker's own rail
+position via `useFloatingAbove` rather than a resolved DOM element (a video
+note has no page element to anchor to). This was a deliberate scope reversal
+from an earlier "seek-only" design, made because clicking a marker with no
+way to edit/delete/pin the note it represents was reported as a real gap in
+practice. The Open Note flow (below) does the same seek-and-open for
+consistency. Never calls `play()`/`pause()` either way (a fresh tab's video
+is left in whatever state it loaded in). On a heavy SPA like YouTube the
+`<video>` element may not exist yet even after `CONTENT_READY`; the same
+debounced `MutationObserver` re-resolution that already re-attaches
+element-anchor markers as content mounts also re-runs video resolution, so
+the restore check (a render-time "adjust state" pattern, not a polling loop)
+simply re-evaluates each time `videoResolved` changes until the video
+appears.
+
+## Notes Library, Settings & Shortcuts
+
+`src/entrypoints/notes/App.tsx` (the Notes Library page, `notes.html`) has a
+permanent sidebar (`src/ui/Sidebar.tsx`) with two views — Library and
+Settings — instead of Settings being popup-only. A `?view=settings` query
+param lets another context (the popup's own Settings pane) deep-link
+straight to it without a `view` state round-trip.
+
+`LibrarySettingsView.tsx` reuses the same Language/Appearance controls as
+the popup's `SettingsView`, plus a Shortcuts section showing both commands'
+current bindings (read via `browser.commands.getAll()`) and a link to
+`chrome://extensions/shortcuts`. That link is the _only_ way to change
+either binding: Chrome's `commands` API exposes only `getAll`/`onCommand` at
+runtime — `update`/`reset`/`openShortcutSettings` are a Firefox-only
+WebExtensions addition that happens to still appear in the cross-browser
+polyfill's aspirational types, which is misleading enough to be worth
+calling out explicitly here (confirmed by direct probing against a real
+Chromium build, not assumed from the types). The popup's own shortcut badge
+is fetched live from the same `commands.getAll()` call rather than
+hardcoded, so it can't go stale if a user rebinds Alt+H there.
+
+## Folders
+
+A user-defined folder system, independent of the automatic by-website
+grouping `groupNotesByDomain` already provides. Two design choices anchor
+everything else:
+
+- **Folder membership lives on the note, not a separate mapping.** `Note`
+  carries one additive optional field, `folderId?: string` — absent means
+  unfiled, the same convention as `pinned?`. `setNoteFolder` (`domain/note.ts`)
+  follows `setNotePinned`'s pattern exactly: filing a note isn't editing its
+  content, so it doesn't touch `updatedAt`.
+- **Folders are their own storage entity — one global object, not
+  per-page.** `src/storage/folders-repository.ts` mirrors
+  `preferences-repository.ts` (a single fixed key, whole-array
+  read-modify-write, `watch()` for live cross-context sync via
+  `chrome.storage.onChanged`) rather than `notes-repository.ts`'s
+  per-`pageKey` keying, since a folder tree isn't tied to any one page.
+  Folders are stored **flat**, each with a `parentId: string | null`; the
+  nested tree a user actually sees is a pure _derived_ structure —
+  `buildFolderTree` (`domain/folder-grouping.ts`) — the same relationship
+  `groupNotesByDomain` has to the flat `Note[]` it derives view-data from.
+
+`FolderTree.tsx` renders the result: recursive expand/collapse (reusing
+`WebsiteGroup`'s CSS grid-rows pattern), inline create/rename/delete (the
+same inline two-step confirm `NoteViewer` uses for deleting a note — no
+modals anywhere in this codebase), and a synthetic "Unfiled" node for notes
+with no `folderId` (or one pointing at a folder that no longer exists —
+`buildFolderTree` degrades that to unfiled rather than throwing, same
+philosophy as `extractDomain`'s malformed-URL fallback). **Deleting a folder
+never deletes notes** — `getDescendantFolderIds` collects the folder and
+every descendant, `folders-repository`'s `remove()` cascades the folder-tree
+deletion, and the caller (`App.tsx`'s `handleDeleteFolder`) separately calls
+`notes-repository`'s `setFolder(id, pageKey, undefined)` on every note that
+belonged to any of them — `folders-repository` and `notes-repository` stay
+decoupled from each other, so this two-step orchestration lives in the UI
+layer, not either repository.
+
+A `SegmentedControl<'domain' | 'folder'>` (the same generic component
+already used for Language/Appearance/Sort) toggles the Notes Library's main
+list between `groupNotesByDomain`'s output and the folder tree; both read
+from the same search-filtered `Note[]`, so search keeps working in either
+mode. Filing a note into a folder works two ways, both calling the same
+`handleMoveNote` — no duplicated move logic: `MoveToFolderMenu.tsx` (a
+small "⋮" dropdown, the only keyboard/screen-reader-accessible path) and
+native HTML5 drag-and-drop of a note onto a folder node (a mouse-only
+progressive enhancement). `NoteRow` itself needed no structural change for
+either — it's a full-row `<a>` that can't host a second interactive control
+nested inside it (see the Known Limitations note on pinning below), so the
+move menu renders as a sibling, not a child.
+
+Because a folder can mix notes from several different sites (unlike a
+website group, which by definition doesn't), `NoteRow` also grew an opt-in
+`showDomain` prop — off by default, since the domain-grouped view already
+shows one favicon per group header — that shows a small favicon + domain
+line above the title, reusing `Favicon` the same way `PinnedSection`
+already does for its own flat, cross-site list. `FolderTree` is the only
+caller that passes it.
 
 ## Page identity
 
@@ -401,6 +513,13 @@ re-attach markers as content mounts.
   even for a small fully-buffered file). YouTube's own adapter is
   unit/fixture-tested instead (a saved player DOM shape), consistent with
   this project's no-live-network testing policy.
+- **Notes Library E2E (`e2e/library-settings.spec.ts`, `e2e/library-folders.spec.ts`):**
+  drive `notes.html` directly (no content-script fixture page needed) —
+  sidebar/Settings navigation, the Chrome-shortcuts link-out,
+  nesting/rename/cascade-delete-unfiles, both move-to-folder mechanisms
+  (`MoveToFolderMenu` and real drag-and-drop via Playwright's `dragTo`, which
+  dispatches genuine HTML5 DnD events — raw mouse-move simulation does not),
+  search within folder mode, and RTL.
 - **CI:** typecheck, lint, format check, unit tests, build. E2E is run locally
   (needs real Chromium + `--headless=new`).
 
@@ -428,17 +547,29 @@ re-attach markers as content mounts.
   create/switch workspaces. Deliberately built ahead of the feature so a
   future multi-workspace pass is additive (filter by an already-present
   field) rather than another schema migration.
-- The video timestamp badge (`▶ 13:27`) only appears on `NoteRow` inside an
-  expanded website group — the Continue and Pinned sections' projections
-  (`ContinueWebsite`, `PinnedNoteItem` in `notes-grouping.ts`) don't carry
-  anchor info today, so a pinned or recently-active video note doesn't show
-  its timestamp in those two places. Would need extending those projection
-  functions, not just the row components.
+- The video timestamp badge (`▶ 13:27`) only appears on `NoteRow` (inside an
+  expanded website group, or a folder in folder mode) — the Continue and
+  Pinned sections' projections (`ContinueWebsite`, `PinnedNoteItem` in
+  `notes-grouping.ts`) don't carry anchor info today, so a pinned or
+  recently-active video note doesn't show its timestamp in those two places.
+  Would need extending those projection functions, not just the row
+  components.
 - The `Anchor` union (`ElementAnchor | VideoAnchor`) is designed so a future
   anchor kind (PDF page/region, image, audio timestamp, document range) is
   another union member plus another `resolve*Anchor` function — nothing
   about `NotesRepository`, the Notes Library, or the Open Note flow assumes
   there are only two kinds.
+- No folder reparenting UI — a folder's `parentId` is set once at creation
+  (either top-level, or as a direct child of the folder whose "+" created
+  it) and never changed after. Drag-and-drop in the Notes Library moves
+  _notes_ into folders, not folders within the tree. An isolated, additive
+  follow-up if wanted (`folders-repository.ts` would need a `move()`, plus
+  cycle-prevention when reparenting into one of the folder's own
+  descendants — `getDescendantFolderIds` already provides exactly that
+  check).
+- Keyboard shortcuts (Alt+H/Alt+V) can only be rebound via Chrome's own
+  `chrome://extensions/shortcuts` page, linked from Settings — see "Notes
+  Library, Settings & Shortcuts" above for why there's no in-app editor.
 
 ## Development note: TypeScript coverage of test files
 

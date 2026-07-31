@@ -4,6 +4,8 @@ Audited against the actual **generated production manifest** (`pnpm build` → `
 
 > **Refreshed 2026-07-14 for the Notes Library (PR1).** `favicon` was added — the first new permission since v0.1.0. All other entries are unchanged from the v0.2.0 audit.
 
+> **Refreshed 2026-08-01 for v1.1.0 (Video Notes, Folders, Settings/Shortcuts).** No permission or host-access change: still exactly `["storage", "activeTab", "favicon"]`, no `host_permissions`. The manifest gained a second `commands` entry (`activate-hamesh-video`, default Alt+V) alongside the existing `activate-hamesh` — commands are not a `permissions`-tab concept and don't change anything below. `storage` is now also used by `src/storage/folders-repository.ts` (a new single global key, `local:hamesh:folders`) and the existing `notes-repository.ts` gained a `folderId` field on stored notes — both still within the already-justified `storage` permission, no new surface.
+
 ## Generated manifest (verbatim, permission-relevant excerpt)
 
 ```json
