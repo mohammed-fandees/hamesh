@@ -6,13 +6,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-Video Notes: notes anchored to a moment in a video instead of a page element, delivered
-incrementally across five PRs.
+## [1.1.0] — 2026-08-01
+
+Video Notes, Folders, and shortcut/settings improvements, delivered incrementally across nine PRs.
 
 ### Added
 
-- **Video Notes** — press Alt+H while hovering or focused on a video (instead of a page element)
-  to leave a note at that exact timestamp.
+- **Video Notes** — press **Alt+V** to leave a note at the current moment in a video (a dedicated
+  shortcut, independent of Alt+H — see "Changed" below).
   - A small quick-note popup appears above the video: autofocus textarea, Enter saves,
     Shift+Enter for a newline, Escape cancels — never pauses or otherwise interrupts playback.
   - Saved notes show as small timeline markers. On YouTube, markers align to YouTube's own
@@ -23,13 +24,39 @@ incrementally across five PRs.
   - Hovering a marker shows a quick preview (first line of the note + timestamp). Notes close
     together in time cluster into a single marker; clicking a cluster opens a small list to jump
     to any of them.
-  - Clicking a marker jumps the video to that moment without affecting playback — a playing video
-    keeps playing, a paused one stays paused.
+  - Clicking a marker jumps the video to that moment and opens the note for viewing, editing,
+    deleting, or pinning — without affecting playback (a playing video keeps playing, a paused
+    one stays paused, and it's never auto-played).
   - Video notes appear in the Notes Library exactly like page notes, with a timestamp badge.
-    Opening one from the Library opens the video in a new tab and seeks to that moment.
+    Opening one from the Library seeks to that moment and opens its viewer, same as clicking its
+    on-page marker.
   - Currently supports YouTube (a first-class adapter reading its own timeline UI) and any other
     page with a plain HTML5 `<video>` element, via a generic adapter. Architecture supports adding
     more site-specific adapters later without touching storage or the rest of the UI.
+- **Folders** — organize notes into user-defined, arbitrarily nested folders in the Notes Library,
+  independent of the automatic by-website grouping. A "By site / By folder" switch at the top of
+  the list toggles between the two views; search works in either.
+  - Any note can be filed into exactly one folder, regardless of which site it came from.
+  - File a note into a folder from a "⋮ Move to…" menu on its row, or by dragging it directly
+    onto a folder.
+  - Create nested sub-folders, rename, and delete a folder — deleting one unfiles its notes (and
+    its sub-folders' notes) rather than deleting them.
+  - Each note shows a small favicon in folder view, since a folder can mix notes from different
+    sites (unlike a website group, which by definition can't).
+- **Settings** moved out of the popup's slide-in pane into a permanent page in the Notes Library
+  (Sidebar → Settings), alongside the existing Language/Appearance controls. A new Shortcuts
+  section shows the current Alt+H/Alt+V bindings and links to Chrome's own
+  `chrome://extensions/shortcuts` page to change them — the only place Chrome allows a shortcut to
+  be rebound. The popup's own Settings pane keeps Language/Appearance for quick access, plus a new
+  "Open full settings" link to the rest.
+
+### Changed
+
+- **Alt+H** now always opens element selection; it no longer tries to detect whether you're
+  hovering a video first. That earlier "one shortcut, context-aware" heuristic was unreliable on
+  real sites — overlay UI on custom video players (play buttons, ad chrome, custom controls)
+  defeated the hover detection often enough to cause real confusion between an element note and a
+  video note — so video notes now use their own dedicated shortcut, **Alt+V**, instead.
 
 ## [1.0.0] — 2026-07-14
 
@@ -150,7 +177,8 @@ First functional MVP of the Hamesh browser extension (Chrome, Manifest V3).
   analytics, telemetry, or network requests. Least-privilege permissions
   (`storage`, `activeTab`); no input/password values are ever read or stored.
 
-[Unreleased]: https://github.com/mohammed-fandees/hamesh/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/mohammed-fandees/hamesh/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/mohammed-fandees/hamesh/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/mohammed-fandees/hamesh/compare/v0.2.0...v1.0.0
 [0.2.0]: https://github.com/mohammed-fandees/hamesh/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/mohammed-fandees/hamesh/releases/tag/v0.1.0
