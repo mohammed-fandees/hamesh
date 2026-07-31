@@ -1,5 +1,6 @@
 import type { Note, CreateNoteInput, UpdateNoteInput } from '@/domain/note';
 import { createNote, updateNoteContent, setNotePinned, validateNoteContent } from '@/domain/note';
+import { DEFAULT_WORKSPACE_ID } from '@/domain/workspace';
 
 const STORAGE_KEY_PREFIX = 'hamesh:notes:';
 
@@ -9,10 +10,17 @@ function storageKey(pageKey: string): string {
 
 function parseStoredNotes(data: unknown): Note[] {
   if (!Array.isArray(data)) return [];
-  return data.filter((item): item is Note => {
-    if (!item || typeof item !== 'object') return false;
-    return typeof (item as Note).id === 'string' && typeof (item as Note).pageKey === 'string';
-  });
+  return data
+    .filter((item): item is Note => {
+      if (!item || typeof item !== 'object') return false;
+      return typeof (item as Note).id === 'string' && typeof (item as Note).pageKey === 'string';
+    })
+    .map((note) => ({
+      ...note,
+      // Backfill for notes written before `workspaceId` existed — same
+      // defensive-parse pattern as every other additive field here.
+      workspaceId: note.workspaceId ?? DEFAULT_WORKSPACE_ID,
+    }));
 }
 
 export interface NotesRepository {

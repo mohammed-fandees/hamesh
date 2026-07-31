@@ -196,4 +196,35 @@ describe('NotesRepository', () => {
       expect(result).toBeNull();
     });
   });
+
+  describe('workspaceId backfill', () => {
+    it('stamps a default workspaceId on newly created notes', async () => {
+      const note = await repo.create({
+        content: 'x',
+        pageKey,
+        originalUrl: 'u',
+        anchor: makeAnchor(),
+      });
+      expect(note.workspaceId).toBe('default');
+    });
+
+    it('backfills a default workspaceId for notes stored before the field existed', async () => {
+      const key = `local:hamesh:notes:${pageKey}`;
+      const legacyNote = {
+        id: 'legacy-1',
+        schemaVersion: 1,
+        pageKey,
+        originalUrl: 'u',
+        content: 'legacy note',
+        anchor: makeAnchor(),
+        createdAt: '2024-01-01T00:00:00.000Z',
+        updatedAt: '2024-01-01T00:00:00.000Z',
+      };
+      mockStore.set(key, [legacyNote]);
+
+      const notes = await repo.getForPage(pageKey);
+      expect(notes).toHaveLength(1);
+      expect(notes[0].workspaceId).toBe('default');
+    });
+  });
 });

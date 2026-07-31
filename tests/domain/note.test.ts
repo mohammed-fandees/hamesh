@@ -210,6 +210,7 @@ describe('validateNote', () => {
       originalUrl: '',
       content: '',
       anchor: null as unknown as ElementAnchor,
+      workspaceId: 'default',
       createdAt: '2024-01-01',
       updatedAt: '2024-01-01',
     };
