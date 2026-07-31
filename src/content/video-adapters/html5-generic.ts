@@ -6,9 +6,9 @@ function getAllVideos(): HTMLVideoElement[] {
 
 /** Prefers a currently-playing video; falls back to the first one in
  *  document order. Deliberately simple — this is the last-resort adapter
- *  for arbitrary HTML5 pages, not a general "which video is the user
- *  watching" heuristic (that's `video-context.ts`'s job, for Alt+H
- *  specifically, via hover/focus rather than playback state). */
+ *  for arbitrary HTML5 pages, and the only signal Hamesh's dedicated video
+ *  shortcut needs: it always targets whichever video an adapter considers
+ *  "active," not whichever the pointer happens to be over. */
 function pickActiveVideo(): HTMLVideoElement | null {
   const videos = getAllVideos();
   if (videos.length === 0) return null;

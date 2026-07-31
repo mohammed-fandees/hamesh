@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { browser } from 'wxt/browser';
 import { MarginMark } from '@/ui/MarginMark';
+import { Sidebar, type LibraryView } from '@/ui/Sidebar';
+import { LibrarySettingsView } from '@/ui/LibrarySettingsView';
 import { WebsiteGroup } from '@/ui/WebsiteGroup';
 import { ContinueSection } from '@/ui/ContinueSection';
 import { PinnedSection } from '@/ui/PinnedSection';
@@ -22,6 +24,10 @@ import '@/ui/tokens.css';
 import '@/ui/notes-library.css';
 
 const initialLang = resolveLang(browser.i18n?.getUILanguage?.());
+// Lets the popup's "Open full settings" link land directly on the Settings
+// view (`notes.html?view=settings`) instead of always opening to Library.
+const initialView: LibraryView =
+  new URLSearchParams(location.search).get('view') === 'settings' ? 'settings' : 'library';
 // Same rationale as the popup: this page has no single host webpage of its
 // own to detect a background from, so "Match website" resolves to the OS
 // scheme here too.
@@ -31,6 +37,7 @@ const repo = createNotesRepository();
 const prefsRepo = createPreferencesRepository();
 
 export function App() {
+  const [view, setView] = useState<LibraryView>(initialView);
   const [lang, setLang] = useState<Lang>(initialLang);
   const [appearance, setAppearance] = useState<AppearanceMode>('match-website');
   /** `null` while the initial load is in flight; distinguishes "loading" from
@@ -118,6 +125,16 @@ export function App() {
   const continueWebsites = useMemo(() => getContinueWebsites(notes ?? []), [notes]);
   const pinnedNotes = useMemo(() => getPinnedNotes(notes ?? []), [notes]);
 
+  function handleLanguageChange(next: Lang) {
+    setLang(next); // immediate feedback; persisted below, and re-confirmed by watch()
+    void prefsRepo.setLanguage(next);
+  }
+
+  function handleAppearanceChange(next: AppearanceMode) {
+    setAppearance(next); // immediate feedback; persisted below, and re-confirmed by watch()
+    void prefsRepo.setAppearance(next);
+  }
+
   function toggleGroup(domain: string) {
     setExpanded((prev) => {
       const next = new Set(prev);
@@ -134,101 +151,115 @@ export function App() {
 
   return (
     <div className="hm-scope hm-notes-page" dir={dir} data-hm-theme={theme}>
-      <div className="hm-notes-page__inner">
-        <header className="hm-notes-page__header">
-          <MarginMark size={20} strokeWidth={3.5} style={{ color: 'var(--hm-accent)' }} />
-          <h1 className="hm-notes-page__title">{strings.notesLibrary}</h1>
-        </header>
+      <Sidebar view={view} strings={strings} onNavigate={setView} />
 
-        <span className="hm-visually-hidden" role="status">
-          {loading ? strings.loadingNotes : ''}
-        </span>
+      {view === 'settings' ? (
+        <LibrarySettingsView
+          strings={strings}
+          lang={lang}
+          appearance={appearance}
+          onLanguageChange={handleLanguageChange}
+          onAppearanceChange={handleAppearanceChange}
+        />
+      ) : (
+        <div className="hm-notes-main">
+          <div className="hm-notes-page__inner">
+            <header className="hm-notes-page__header">
+              <MarginMark size={20} strokeWidth={3.5} style={{ color: 'var(--hm-accent)' }} />
+              <h1 className="hm-notes-page__title">{strings.notesLibrary}</h1>
+            </header>
 
-        {hasAnyNotes && (
-          <div className="hm-search-wrap">
-            <input
-              ref={searchInputRef}
-              type="search"
-              className="hm-search"
-              placeholder={strings.searchPlaceholder}
-              aria-label={strings.searchPlaceholder}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key !== 'Escape' || !searchQuery) return;
-                e.preventDefault();
-                e.stopPropagation();
-                setSearchQuery('');
-              }}
-            />
-            {!isSearching && (
-              <kbd className="hm-search__hint" aria-hidden="true">
-                /
-              </kbd>
-            )}
-          </div>
-        )}
+            <span className="hm-visually-hidden" role="status">
+              {loading ? strings.loadingNotes : ''}
+            </span>
 
-        {!isSearching && hasAnyNotes && (
-          <ContinueSection websites={continueWebsites} strings={strings} lang={lang} />
-        )}
-
-        {!isSearching && hasAnyNotes && (
-          <PinnedSection notes={pinnedNotes} strings={strings} lang={lang} />
-        )}
-
-        {loading ? (
-          <div className="hm-skeleton" aria-hidden="true">
-            <div className="hm-skeleton__row" />
-            <div className="hm-skeleton__row" />
-            <div className="hm-skeleton__row" />
-          </div>
-        ) : noNotesAtAll ? (
-          <div className="hm-empty hm-fade-in">
-            <MarginMark size={28} strokeWidth={3} />
-            <p className="hm-empty__title">{strings.notesLibraryEmptyTitle}</p>
-            <p className="hm-empty__body">{strings.notesLibraryEmptyBody}</p>
-          </div>
-        ) : noSearchResults ? (
-          <div className="hm-empty hm-fade-in">
-            <MarginMark size={28} strokeWidth={3} />
-            <p className="hm-empty__title">{strings.searchNoResultsTitle}</p>
-            <p className="hm-empty__body">{strings.searchNoResultsBody(searchQuery.trim())}</p>
-          </div>
-        ) : (
-          <>
-            {!isSearching && groups.length > 0 && (
-              <div className="hm-sort-row">
-                <span className="hm-sort-row__label">{strings.sortLabel}</span>
-                <SegmentedControl<GroupSortMode>
-                  value={sortMode}
-                  name="hm-notes-sort"
-                  groupLabel={strings.sortLabel}
-                  options={[
-                    { value: 'alphabetical', label: strings.sortAlphabetical },
-                    { value: 'recent', label: strings.sortRecent },
-                  ]}
-                  onChange={setSortMode}
+            {hasAnyNotes && (
+              <div className="hm-search-wrap">
+                <input
+                  ref={searchInputRef}
+                  type="search"
+                  className="hm-search"
+                  placeholder={strings.searchPlaceholder}
+                  aria-label={strings.searchPlaceholder}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key !== 'Escape' || !searchQuery) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setSearchQuery('');
+                  }}
                 />
+                {!isSearching && (
+                  <kbd className="hm-search__hint" aria-hidden="true">
+                    /
+                  </kbd>
+                )}
               </div>
             )}
-            <ul className="hm-groups">
-              {groups.map((group, i) => (
-                <li key={group.domain}>
-                  <WebsiteGroup
-                    group={group}
-                    expanded={isSearching || expanded.has(group.domain)}
-                    onToggle={() => toggleGroup(group.domain)}
-                    strings={strings}
-                    lang={lang}
-                    style={{ animationDelay: `${Math.min(i * 30, 240)}ms` }}
-                  />
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-      </div>
+
+            {!isSearching && hasAnyNotes && (
+              <ContinueSection websites={continueWebsites} strings={strings} lang={lang} />
+            )}
+
+            {!isSearching && hasAnyNotes && (
+              <PinnedSection notes={pinnedNotes} strings={strings} lang={lang} />
+            )}
+
+            {loading ? (
+              <div className="hm-skeleton" aria-hidden="true">
+                <div className="hm-skeleton__row" />
+                <div className="hm-skeleton__row" />
+                <div className="hm-skeleton__row" />
+              </div>
+            ) : noNotesAtAll ? (
+              <div className="hm-empty hm-fade-in">
+                <MarginMark size={28} strokeWidth={3} />
+                <p className="hm-empty__title">{strings.notesLibraryEmptyTitle}</p>
+                <p className="hm-empty__body">{strings.notesLibraryEmptyBody}</p>
+              </div>
+            ) : noSearchResults ? (
+              <div className="hm-empty hm-fade-in">
+                <MarginMark size={28} strokeWidth={3} />
+                <p className="hm-empty__title">{strings.searchNoResultsTitle}</p>
+                <p className="hm-empty__body">{strings.searchNoResultsBody(searchQuery.trim())}</p>
+              </div>
+            ) : (
+              <>
+                {!isSearching && groups.length > 0 && (
+                  <div className="hm-sort-row">
+                    <span className="hm-sort-row__label">{strings.sortLabel}</span>
+                    <SegmentedControl<GroupSortMode>
+                      value={sortMode}
+                      name="hm-notes-sort"
+                      groupLabel={strings.sortLabel}
+                      options={[
+                        { value: 'alphabetical', label: strings.sortAlphabetical },
+                        { value: 'recent', label: strings.sortRecent },
+                      ]}
+                      onChange={setSortMode}
+                    />
+                  </div>
+                )}
+                <ul className="hm-groups">
+                  {groups.map((group, i) => (
+                    <li key={group.domain}>
+                      <WebsiteGroup
+                        group={group}
+                        expanded={isSearching || expanded.has(group.domain)}
+                        onToggle={() => toggleGroup(group.domain)}
+                        strings={strings}
+                        lang={lang}
+                        style={{ animationDelay: `${Math.min(i * 30, 240)}ms` }}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -21,6 +21,10 @@ type View = 'home' | 'settings';
 export function App() {
   const [count, setCount] = useState<number | null>(null);
   const [active, setActive] = useState(false);
+  // `null` until the real current binding loads — shortcuts are now
+  // user-customizable (Notes Library → Settings), so this can no longer be
+  // a hardcoded "Alt+H" without going stale the moment someone rebinds it.
+  const [addNoteShortcut, setAddNoteShortcut] = useState<string | null>(null);
   const [view, setView] = useState<View>('home');
   const [lang, setLang] = useState<Lang>(initialLang);
   const [appearance, setAppearance] = useState<AppearanceMode>('match-website');
@@ -78,6 +82,16 @@ export function App() {
     })();
   }, []);
 
+  useEffect(() => {
+    browser.commands
+      ?.getAll()
+      .then((commands) => {
+        const shortcut = commands.find((c) => c.name === 'activate-hamesh')?.shortcut;
+        if (shortcut) setAddNoteShortcut(shortcut);
+      })
+      .catch(() => {});
+  }, []);
+
   function handleLanguageChange(next: Lang) {
     setLang(next); // immediate feedback; persisted below, and re-confirmed by watch()
     void prefsRepo.setLanguage(next);
@@ -101,6 +115,11 @@ export function App() {
 
   async function handleOpenNotesLibrary() {
     await browser.tabs.create({ url: browser.runtime.getURL('/notes.html') });
+    window.close();
+  }
+
+  async function handleOpenFullSettings() {
+    await browser.tabs.create({ url: browser.runtime.getURL('/notes.html?view=settings') });
     window.close();
   }
 
@@ -150,7 +169,7 @@ export function App() {
               ) : (
                 <span className="hm-popup__brand">{strings.brand}</span>
               )}
-              <span className="hm-popup__shortcut">Alt+H</span>
+              {addNoteShortcut && <span className="hm-popup__shortcut">{addNoteShortcut}</span>}
               <button
                 ref={settingsBtnRef}
                 type="button"
@@ -246,6 +265,7 @@ export function App() {
               onBack={() => setView('home')}
               onLanguageChange={handleLanguageChange}
               onAppearanceChange={handleAppearanceChange}
+              onOpenFullSettings={handleOpenFullSettings}
             />
           </div>
         </div>

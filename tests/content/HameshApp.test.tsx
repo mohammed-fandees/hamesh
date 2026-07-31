@@ -89,6 +89,7 @@ describe('HameshApp — Open Note restore flow', () => {
         prefsRepo={prefsRepo}
         initialLang="en"
         registerActivate={() => {}}
+        registerActivateVideo={() => {}}
         registerRestoreNote={(fn) => {
           restoreNote = fn;
         }}
@@ -125,6 +126,7 @@ describe('HameshApp — Open Note restore flow', () => {
         prefsRepo={prefsRepo}
         initialLang="en"
         registerActivate={() => {}}
+        registerActivateVideo={() => {}}
         registerRestoreNote={(fn) => {
           restoreNote = fn;
         }}
@@ -158,6 +160,7 @@ describe('HameshApp — Open Note restore flow', () => {
         prefsRepo={prefsRepo}
         initialLang="en"
         registerActivate={() => {}}
+        registerActivateVideo={() => {}}
         registerRestoreNote={(fn) => {
           restoreNote = fn;
         }}
@@ -192,6 +195,7 @@ describe('HameshApp — Open Note restore flow', () => {
         prefsRepo={prefsRepo}
         initialLang="en"
         registerActivate={() => {}}
+        registerActivateVideo={() => {}}
         registerRestoreNote={(fn) => {
           restoreNote = fn;
         }}
@@ -233,6 +237,7 @@ describe('HameshApp — pin toggle', () => {
         prefsRepo={prefsRepo}
         initialLang="en"
         registerActivate={() => {}}
+        registerActivateVideo={() => {}}
         registerRestoreNote={(fn) => {
           restoreNote = fn;
         }}

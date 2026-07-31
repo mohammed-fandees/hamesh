@@ -16,6 +16,9 @@ interface SettingsViewProps {
   onBack: () => void;
   onLanguageChange: (lang: Lang) => void;
   onAppearanceChange: (appearance: AppearanceMode) => void;
+  /** Opens the Notes Library's full-page Settings view (Shortcuts section,
+   *  etc.) — this popup pane only has room for Language/Appearance. */
+  onOpenFullSettings: () => void;
 }
 
 /**
@@ -31,6 +34,7 @@ export function SettingsView({
   onBack,
   onLanguageChange,
   onAppearanceChange,
+  onOpenFullSettings,
 }: SettingsViewProps) {
   const headingRef = useRef<HTMLHeadingElement>(null);
 
@@ -112,6 +116,26 @@ export function SettingsView({
           }
         />
       </div>
+
+      <button type="button" className="hm-popup__library-link" onClick={onOpenFullSettings}>
+        {strings.settingsOpenFull}
+        <svg
+          width="10"
+          height="10"
+          viewBox="0 0 10 10"
+          aria-hidden="true"
+          style={dir === 'rtl' ? { transform: 'scaleX(-1)' } : undefined}
+        >
+          <path
+            d="M3 2 L7 5 L3 8"
+            stroke="currentColor"
+            strokeWidth="1.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+          />
+        </svg>
+      </button>
     </div>
   );
 }

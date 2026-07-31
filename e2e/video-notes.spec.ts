@@ -122,15 +122,18 @@ async function moveToVideoMarker(page: Page, selector = '.hm-video-marker'): Pro
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
 }
 
-/** Hovers the video, opens the quick-note popup via Alt+H, types `text`,
- *  and saves with Enter — the same flow every test below repeats to get a
- *  note onto the timeline at a given moment. */
+/** Opens the quick-note popup via the dedicated video shortcut, types
+ *  `text`, and saves with Enter — the same flow every test below repeats
+ *  to get a note onto the timeline at a given moment. The hover here isn't
+ *  load-bearing for the shortcut itself (it's pointer-independent — see
+ *  the video-shortcut tests below) but keeps this helper visually honest
+ *  about what a user would actually be doing. */
 async function createVideoNoteAt(page: Page, timestamp: number, text: string): Promise<void> {
   await page.evaluate((t) => {
     (document.querySelector('video') as HTMLVideoElement).currentTime = t;
   }, timestamp);
   await page.locator('[data-testid="test-video"]').hover();
-  await page.evaluate(() => window.dispatchEvent(new CustomEvent('hamesh:activate')));
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent('hamesh:activate-video')));
   await page.locator('.hm-video-quick-note textarea').fill(text);
   await page.keyboard.press('Enter');
   await expect(page.locator('.hm-video-quick-note')).toHaveCount(0);
@@ -172,9 +175,15 @@ test.describe('Video Notes — capture + timeline markers', () => {
     await server.close();
   });
 
-  test('Alt+H over the video opens the quick-note popup, not element selection', async () => {
-    await page.locator('[data-testid="test-video"]').hover();
-    await page.evaluate(() => window.dispatchEvent(new CustomEvent('hamesh:activate')));
+  test('the video shortcut opens the quick-note popup regardless of pointer position, not element selection', async () => {
+    // Hovering something that isn't the video at all — proving this is a
+    // dedicated, pointer-independent shortcut, not a hover/focus heuristic.
+    // The old Alt+H design branched on "is the pointer over the video,"
+    // which real-world testing showed was unreliable (real players layer
+    // overlay UI that defeats DOM- and even coordinate-based hover checks).
+    // The dedicated shortcut always targets the page's active video instead.
+    await page.locator('h1').hover();
+    await page.evaluate(() => window.dispatchEvent(new CustomEvent('hamesh:activate-video')));
 
     await expect(page.locator('.hm-video-quick-note')).toBeVisible();
     await expect(page.locator('.hm-capture')).toHaveCount(0);
@@ -185,12 +194,33 @@ test.describe('Video Notes — capture + timeline markers', () => {
     expect(noteBox!.y + noteBox!.height).toBeLessThanOrEqual(videoBox!.y + 1);
   });
 
-  test('Alt+H away from the video falls back to element selection', async () => {
-    await page.locator('h1').hover();
+  test('Alt+H always opens element selection, even while hovering the video', async () => {
+    // The confusion this fixes: an earlier design made Alt+H context-aware
+    // (video note when hovering the video, element selection otherwise),
+    // which broke down in real usage — the video shortcut above exists
+    // specifically so this shortcut can stay simple and predictable.
+    await page.locator('[data-testid="test-video"]').hover();
     await page.evaluate(() => window.dispatchEvent(new CustomEvent('hamesh:activate')));
 
     await expect(page.locator('.hm-capture')).toBeVisible();
     await expect(page.locator('.hm-video-quick-note')).toHaveCount(0);
+  });
+
+  test('the video shortcut is a no-op on a page with no active video', async () => {
+    // A fresh navigation to a page with no <video> at all, rather than
+    // removing the fixture's video and waiting on HameshApp's debounced
+    // MutationObserver to notice — that observer's re-check is timer-based
+    // (see its 400ms debounce in HameshApp.tsx) and proved flaky to wait on
+    // from outside. Navigating instead means `videoMatch` is `null` from
+    // this page's very first synchronous render, no timing dependency.
+    const noVideoUrl = server.url.replace('video-page.html', 'no-video-page.html');
+    await page.goto(noVideoUrl);
+    await waitForHameshReady(page);
+
+    await page.evaluate(() => window.dispatchEvent(new CustomEvent('hamesh:activate-video')));
+
+    await expect(page.locator('.hm-video-quick-note')).toHaveCount(0);
+    await expect(page.locator('.hm-capture')).toHaveCount(0);
   });
 
   test('typing a note and pressing Enter saves it and shows a timeline marker', async () => {
@@ -199,7 +229,7 @@ test.describe('Video Notes — capture + timeline markers', () => {
     });
 
     await page.locator('[data-testid="test-video"]').hover();
-    await page.evaluate(() => window.dispatchEvent(new CustomEvent('hamesh:activate')));
+    await page.evaluate(() => window.dispatchEvent(new CustomEvent('hamesh:activate-video')));
     await expect(page.locator('.hm-video-quick-note')).toBeVisible();
     // Not asserting actual focus state here: confirmed (via a throwaway
     // repro against this exact environment) that headless Chromium never
@@ -217,7 +247,7 @@ test.describe('Video Notes — capture + timeline markers', () => {
 
   test('Shift+Enter inserts a newline instead of saving', async () => {
     await page.locator('[data-testid="test-video"]').hover();
-    await page.evaluate(() => window.dispatchEvent(new CustomEvent('hamesh:activate')));
+    await page.evaluate(() => window.dispatchEvent(new CustomEvent('hamesh:activate-video')));
 
     const textarea = page.locator('.hm-video-quick-note textarea');
     await textarea.fill('line one');
@@ -230,7 +260,7 @@ test.describe('Video Notes — capture + timeline markers', () => {
 
   test('Escape closes the popup without saving', async () => {
     await page.locator('[data-testid="test-video"]').hover();
-    await page.evaluate(() => window.dispatchEvent(new CustomEvent('hamesh:activate')));
+    await page.evaluate(() => window.dispatchEvent(new CustomEvent('hamesh:activate-video')));
     await page.locator('.hm-video-quick-note textarea').fill('discarded');
     await page.keyboard.press('Escape');
 
@@ -243,7 +273,7 @@ test.describe('Video Notes — capture + timeline markers', () => {
       (document.querySelector('video') as HTMLVideoElement).currentTime = 6;
     });
     await page.locator('[data-testid="test-video"]').hover();
-    await page.evaluate(() => window.dispatchEvent(new CustomEvent('hamesh:activate')));
+    await page.evaluate(() => window.dispatchEvent(new CustomEvent('hamesh:activate-video')));
     await page.locator('.hm-video-quick-note textarea').fill('Six seconds in');
     await page.keyboard.press('Enter');
     await expect(page.locator('.hm-video-marker')).toHaveCount(1);
@@ -270,7 +300,7 @@ test.describe('Video Notes — capture + timeline markers', () => {
       await video.play();
     });
     await page.locator('[data-testid="test-video"]').hover();
-    await page.evaluate(() => window.dispatchEvent(new CustomEvent('hamesh:activate')));
+    await page.evaluate(() => window.dispatchEvent(new CustomEvent('hamesh:activate-video')));
     await page.locator('.hm-video-quick-note textarea').fill('Six seconds in, playing');
     await page.keyboard.press('Enter');
     await expect(page.locator('.hm-video-marker')).toHaveCount(1);
@@ -291,7 +321,7 @@ test.describe('Video Notes — capture + timeline markers', () => {
 
   test('markers hide with the video controls while playing and unhovered, and reappear on hover or pause', async () => {
     await page.locator('[data-testid="test-video"]').hover();
-    await page.evaluate(() => window.dispatchEvent(new CustomEvent('hamesh:activate')));
+    await page.evaluate(() => window.dispatchEvent(new CustomEvent('hamesh:activate-video')));
     await page.locator('.hm-video-quick-note textarea').fill('Note while paused');
     await page.keyboard.press('Enter');
     // Created while paused — visible immediately, matching native controls
@@ -334,7 +364,7 @@ test.describe('Video Notes — capture + timeline markers', () => {
       (document.querySelector('video') as HTMLVideoElement).currentTime = 6;
     });
     await page.locator('[data-testid="test-video"]').hover();
-    await page.evaluate(() => window.dispatchEvent(new CustomEvent('hamesh:activate')));
+    await page.evaluate(() => window.dispatchEvent(new CustomEvent('hamesh:activate-video')));
     await page.locator('.hm-video-quick-note textarea').fill('Regression check');
     await page.keyboard.press('Enter');
     await expect(page.locator('.hm-video-marker')).toHaveCount(1);
@@ -475,7 +505,7 @@ test.describe('Video Notes — capture + timeline markers', () => {
     await expect(page.locator('.hm-video-cluster-list')).toHaveCount(0);
   });
 
-  test('opening a video note from the Notes Library seeks the video in a fresh tab, with no viewer', async () => {
+  test('opening a video note from the Notes Library seeks the video and opens its viewer in a fresh tab', async () => {
     const extensionId = await getExtensionId(context);
     const noteText = 'Reached via the Notes Library.';
     await createVideoNoteAt(page, 6, noteText);
@@ -509,10 +539,35 @@ test.describe('Video Notes — capture + timeline markers', () => {
       )
       .toBeGreaterThan(5.5);
 
-    // No viewer/composer opens for a video note — same "seek only" design
-    // as clicking its on-page marker (PR3/PR4). Give it a moment to make
-    // sure nothing appears late, not just check immediately.
-    await restoredPage.waitForTimeout(300);
-    await expect(restoredPage.locator('.hm-card')).toHaveCount(0);
+    // The note's viewer opens too — same as clicking its on-page marker —
+    // so the user lands somewhere they can read/edit/delete/pin it, not
+    // just a silently-seeked video.
+    await expect(restoredPage.locator('.hm-card .hm-note-body')).toHaveText(noteText, {
+      timeout: 5000,
+    });
+  });
+
+  test('clicking a marker opens the note viewer, where it can be edited, pinned, and deleted', async () => {
+    await createVideoNoteAt(page, 6, 'Original video note text');
+    await expect(page.locator('.hm-video-marker')).toHaveCount(1);
+
+    await clickVideoMarker(page);
+    await expect(page.locator('.hm-card .hm-note-body')).toHaveText('Original video note text');
+
+    // Pin.
+    await page.getByRole('button', { name: 'Pin this note' }).click();
+    await expect(page.getByRole('button', { name: 'Unpin this note' })).toBeVisible();
+
+    // Edit.
+    await page.getByRole('button', { name: 'Edit' }).click();
+    await page.locator('.hm-card textarea').fill('Edited video note text');
+    await page.getByRole('button', { name: 'Save changes' }).click();
+    await expect(page.locator('.hm-card .hm-note-body')).toHaveText('Edited video note text');
+
+    // Delete.
+    await page.getByRole('button', { name: 'Delete', exact: true }).click();
+    await page.getByRole('button', { name: 'Delete', exact: true }).click();
+    await expect(page.locator('.hm-card')).toHaveCount(0);
+    await expect(page.locator('.hm-video-marker')).toHaveCount(0);
   });
 });
