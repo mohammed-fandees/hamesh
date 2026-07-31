@@ -59,6 +59,9 @@ export interface Strings {
   videoQuickNoteLabel: string;
   videoMarkerLabel: (timestamp: string) => string;
   videoClusterLabel: (count: number) => string;
+  settingsShortcuts: string;
+  shortcutNotSet: string;
+  shortcutOpenChromeSettings: string;
 }
 
 const en: Strings = {
@@ -112,6 +115,9 @@ const en: Strings = {
   videoQuickNoteLabel: 'Add a video note',
   videoMarkerLabel: (timestamp) => `Note at ${timestamp}`,
   videoClusterLabel: (count) => (count === 1 ? '1 note here' : `${count} notes here`),
+  settingsShortcuts: 'Shortcuts',
+  shortcutNotSet: 'Not set',
+  shortcutOpenChromeSettings: 'Change in Chrome settings',
 };
 
 const ar: Strings = {
@@ -165,6 +171,9 @@ const ar: Strings = {
   videoQuickNoteLabel: 'إضافة ملاحظة فيديو',
   videoMarkerLabel: (timestamp) => `ملاحظة عند ${timestamp}`,
   videoClusterLabel: (count) => `${count} ${count === 1 ? 'ملاحظة' : 'ملاحظات'} هنا`,
+  settingsShortcuts: 'الاختصارات',
+  shortcutNotSet: 'غير محدد',
+  shortcutOpenChromeSettings: 'تغيير من إعدادات Chrome',
 };
 
 export function resolveLang(uiLanguage?: string): Lang {

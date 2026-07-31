@@ -20,7 +20,6 @@ import { useFloating, useFloatingAbove, type AnchorRect } from '@/content/useFlo
 import { getVideoAdapters, getActiveAdapterMatch } from '@/content/video-adapters/registry';
 import type { VideoPlayerAdapter } from '@/content/video-adapters/types';
 import type { AdapterVideoMatch } from '@/content/video-adapters/registry';
-import { trackVideoContext, getActiveVideoMatchUnderInteraction } from '@/content/video-context';
 import { Composer } from '@/ui/Composer';
 import { NoteViewer } from '@/ui/NoteViewer';
 import { Marker } from '@/ui/Marker';
@@ -85,6 +84,9 @@ interface HameshAppProps {
   initialLang: Lang;
   /** Imperatively toggles selection mode; wired to the content-script controller. */
   registerActivate: (fn: () => void) => void;
+  /** Imperatively opens the video quick-note for the page's current video, if
+   *  any; wired to the content-script controller's dedicated video shortcut. */
+  registerActivateVideo: (fn: () => void) => void;
   /** Imperatively restores (scrolls to, highlights, opens) a specific note by
    *  id — wired to the content-script controller's `RESTORE_NOTE` handler,
    *  which fires from the Notes Library's Open Note flow. */
@@ -184,6 +186,7 @@ export function HameshApp({
   prefsRepo,
   initialLang,
   registerActivate,
+  registerActivateVideo,
   registerRestoreNote,
 }: HameshAppProps) {
   const [lang, setLang] = useState<Lang>(initialLang);
@@ -448,9 +451,6 @@ export function HameshApp({
     };
   }, [notes, resolveAll, resolveAllVideo, refreshVideoMatch]);
 
-  // ---- Alt+H context tracking (hover/focus over the active video) ----
-  useEffect(() => trackVideoContext(), []);
-
   // Re-place markers once the active video's duration becomes known
   // (frequently unavailable at mount — `loadedmetadata`/`durationchange`
   // fire asynchronously) or changes (a fresh video swapped in by the site).
@@ -506,26 +506,36 @@ export function HameshApp({
     setHover(null);
   }, []);
 
-  // Alt+H is one shortcut, context-aware: hovering/focused on the page's
-  // video opens the quick video note; otherwise it's today's element
-  // selection. See `video-context.ts` for the (heuristic, documented)
-  // hover/focus check this branches on.
+  // Alt+H always opens element selection — the same thing it did before
+  // video notes existed. An earlier version made this context-aware
+  // (hovering/focusing the video opened a video note instead), but that
+  // heuristic proved unreliable on real sites: real players layer overlay
+  // UI (play buttons, ad chrome, custom controls) that defeats both DOM-
+  // containment and pointer-coordinate hover checks often enough to cause
+  // real confusion between "this made an element note" and "this made a
+  // video note." `activateVideo` below is the deterministic replacement.
   const activate = useCallback(() => {
-    const match = getActiveVideoMatchUnderInteraction();
-    if (match) {
-      setViewerId(null);
-      setComposer(null);
-      setSelecting(false);
-      setVideoComposer(match);
-      return;
-    }
     setViewerId(null);
     setComposer(null);
     setVideoComposer(null);
     setSelecting(true);
   }, []);
 
+  // Alt+V (default; customizable in the Notes Library's Settings) — a
+  // dedicated shortcut for video notes, so there's no hover/focus guess:
+  // it always targets whichever video the page's adapter currently
+  // considers active, regardless of pointer position. A no-op if the page
+  // has no video right now.
+  const activateVideo = useCallback(() => {
+    if (!videoMatch) return;
+    setViewerId(null);
+    setComposer(null);
+    setSelecting(false);
+    setVideoComposer(videoMatch);
+  }, [videoMatch]);
+
   useEffect(() => registerActivate(activate), [registerActivate, activate]);
+  useEffect(() => registerActivateVideo(activateVideo), [registerActivateVideo, activateVideo]);
 
   useEffect(
     () => registerRestoreNote((noteId) => setPendingRestoreId(noteId)),
@@ -1058,6 +1068,13 @@ export function HameshApp({
     viewerId && !viewerIsVideo ? resolved.find((r) => r.note.id === viewerId) : null;
   const viewerVideoResolved =
     viewerId && viewerIsVideo ? videoResolved.find((r) => r.note.id === viewerId) : null;
+  // The viewer's own marker group — so it anchors above the dot on the
+  // rail, same as the cluster list, rather than above the whole video
+  // element (which for a large player reads as "a fixed spot on screen"
+  // unrelated to where the note actually sits on the timeline).
+  const viewerVideoGroup = viewerIsVideo
+    ? videoMarkerGroups.find((g) => g.items.some((i) => i.note.id === viewerId))
+    : undefined;
 
   // Not gated on visibility — proximity to a group is exactly what
   // (re)reveals it via `effectiveVideoControlsVisible` above; gating this
@@ -1211,6 +1228,9 @@ export function HameshApp({
         <FloatingVideoViewer
           note={viewerNote}
           video={viewerVideoResolved?.video ?? videoMatch?.video ?? null}
+          markerRect={
+            viewerVideoGroup ? { left: viewerVideoGroup.left, top: viewerVideoGroup.top } : null
+          }
           anchorAvailable={viewerVideoResolved?.quality === ResolutionQuality.Exact}
           strings={strings}
           lang={lang}
@@ -1317,6 +1337,7 @@ function FloatingVideoClusterList({
 function FloatingVideoViewer({
   note,
   video,
+  markerRect,
   anchorAvailable,
   strings,
   lang,
@@ -1329,6 +1350,10 @@ function FloatingVideoViewer({
 }: {
   note: Note;
   video: HTMLVideoElement | null;
+  /** The note's own marker position on the rail, if it currently has one
+   *  (i.e. its dot is visible) — preferred over `video` so the viewer opens
+   *  right above the dot the user clicked, not above the whole player. */
+  markerRect: { left: number; top: number } | null;
   anchorAvailable: boolean;
   strings: Strings;
   lang: Lang;
@@ -1340,6 +1365,7 @@ function FloatingVideoViewer({
   onClose: () => void;
 }) {
   const getRect = useCallback((): AnchorRect | null => {
+    if (markerRect) return { left: markerRect.left, top: markerRect.top, width: 0, height: 0 };
     if (video) return toAnchorRect(video);
     return {
       left: window.innerWidth / 2 - 150,
@@ -1347,7 +1373,7 @@ function FloatingVideoViewer({
       width: 0,
       height: 0,
     };
-  }, [video]);
+  }, [markerRect, video]);
   const { cardRef, style } = useFloatingAbove(getRect);
   return (
     <div ref={cardRef} className="hm-floating" style={{ ...style, width: 300 }}>

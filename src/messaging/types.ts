@@ -6,6 +6,7 @@
  */
 export type HameshMessage =
   | { type: 'ENABLE_SELECTION' }
+  | { type: 'ENABLE_VIDEO_NOTE' }
   | { type: 'GET_PAGE_STATE' }
   | { type: 'CONTENT_READY' }
   | { type: 'RESTORE_NOTE'; noteId: string };

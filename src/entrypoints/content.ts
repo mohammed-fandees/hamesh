@@ -28,6 +28,7 @@ export default defineContentScript({
     // and so the Notes Library's "open note" flow can restore a specific note
     // once this tab is ready (see registerRestoreNote below).
     let activate: (() => void) | null = null;
+    let activateVideo: (() => void) | null = null;
     let restoreNote: ((noteId: string) => void) | null = null;
 
     const ui = await createShadowRootUi<Root>(ctx, {
@@ -72,6 +73,9 @@ export default defineContentScript({
               // expected and harmless here.
               browser.runtime.sendMessage({ type: 'CONTENT_READY' }).catch(() => {});
             },
+            registerActivateVideo: (fn: () => void) => {
+              activateVideo = fn;
+            },
             registerRestoreNote: (fn: (noteId: string) => void) => {
               restoreNote = fn;
             },
@@ -86,19 +90,26 @@ export default defineContentScript({
 
     ui.mount();
 
-    // Deterministic activation hook for E2E automation. Dispatching a custom
+    // Deterministic activation hooks for E2E automation. Dispatching a custom
     // DOM event is far more reliable in headless Chrome than simulating the
-    // toolbar click or OS-level command. It only *starts selection mode* — the
-    // same thing the toolbar does — so it grants no capability the user doesn't
-    // already have, and carries no payload. Production activation remains the
-    // toolbar icon and Alt+H shortcut.
+    // toolbar click or OS-level command. `hamesh:activate` only *starts
+    // selection mode* and `hamesh:activate-video` only *opens the video
+    // quick-note* — the same things the toolbar/shortcuts do — so neither
+    // grants a capability the user doesn't already have, and carries no
+    // payload. Production activation remains the toolbar icon and the
+    // Alt+H / Alt+V shortcuts (both customizable from the Notes Library's
+    // Settings view).
     window.addEventListener('hamesh:activate', () => activate?.());
+    window.addEventListener('hamesh:activate-video', () => activateVideo?.());
 
     browser.runtime.onMessage.addListener(
       (message: HameshMessage, _sender, sendResponse): boolean | undefined => {
         switch (message.type) {
           case 'ENABLE_SELECTION':
             activate?.();
+            return undefined;
+          case 'ENABLE_VIDEO_NOTE':
+            activateVideo?.();
             return undefined;
           case 'GET_PAGE_STATE': {
             const pageKey = generatePageKey(location.href);
