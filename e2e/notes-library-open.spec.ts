@@ -84,9 +84,16 @@ async function createNote(page: Page, testId: string, text: string): Promise<voi
   await page.mouse.move(cx, cy);
   await page.mouse.click(cx, cy);
   await expect(page.locator('.hm-card textarea')).toBeVisible();
+  // Captured *after* the composer opens (its own outside-click handling
+  // doesn't touch markers, but this keeps the "before" snapshot as close to
+  // the save as possible either way) — asserting a *delta* of +1 rather
+  // than a fixed absolute count, since some callers (the pinning test)
+  // create more than one note on elements that stay simultaneously in the
+  // viewport (no scroll happens to hide the earlier one in between).
+  const markerCountBefore = await page.locator('.hm-marker').count();
   await page.locator('.hm-card textarea').fill(text);
   await page.getByRole('button', { name: 'Save', exact: true }).click();
-  await expect(page.locator('.hm-marker')).toHaveCount(1);
+  await expect(page.locator('.hm-marker')).toHaveCount(markerCountBefore + 1);
 }
 
 async function getExtensionId(context: BrowserContext): Promise<string> {
