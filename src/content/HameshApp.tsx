@@ -64,9 +64,16 @@ interface RailPlacement {
 
 /** Where to draw the timeline rail: a native-timeline adapter (YouTube)
  *  aligns to the site's own progress-bar rect; otherwise Hamesh's own rail
- *  docks just below the video element's bottom edge — see PR3's plan for
- *  why a generic `<video>` can never get pixel-perfect native placement
- *  (browsers don't expose native `<video controls>` scrubber DOM at all). */
+ *  overlaps the video element's own bottom edge (a few px *inside* it, not
+ *  below) — see PR3's plan for why a generic `<video>` can never get
+ *  pixel-perfect native placement (browsers don't expose native
+ *  `<video controls>` scrubber DOM at all). Placing it below the video
+ *  instead would put every marker's hoverable area outside the video's own
+ *  hover region — moving the pointer down to click one would cross that
+ *  boundary and trigger `areControlsVisible`'s hide-on-mouseleave before
+ *  the click lands. Overlapping the frame keeps markers inside the same
+ *  hover region the whole approach, which also happens to match how most
+ *  custom players place their own control bar. */
 function getRailPlacement(
   adapter: VideoPlayerAdapter,
   video: HTMLVideoElement,
@@ -78,7 +85,7 @@ function getRailPlacement(
   }
   const rect = video.getBoundingClientRect();
   if (rect.width === 0) return null;
-  return { left: rect.left, width: rect.width, top: rect.bottom + 8 };
+  return { left: rect.left, width: rect.width, top: rect.bottom - 6 };
 }
 
 /** Coalesced viewport frame counter — bumps on scroll/resize while `active`. */
@@ -207,6 +214,23 @@ export function HameshApp({
   // duration is frequently unknown at mount time, so marker x-positions
   // need a reason to recompute once it becomes available.
   const [videoTick, setVideoTick] = useState(0);
+  // Whether the active video's own controls (native or the site's) are
+  // currently visible — timeline markers hide when this is false, so they
+  // don't linger over a video whose own chrome has faded away. See each
+  // adapter's `areControlsVisible` for how this is actually determined.
+  const [videoControlsVisible, setVideoControlsVisible] = useState(true);
+  // Tracks which `videoMatch` `videoControlsVisible` was last computed for,
+  // so a change in the active video re-seeds it synchronously during render
+  // (React's documented "adjust state when a prop changes" pattern — see
+  // `pendingRestoreId`/`restoredFor` below for the same technique) rather
+  // than via a direct setState call in an effect body.
+  const [controlsVisibleFor, setControlsVisibleFor] = useState<AdapterVideoMatch | null>(null);
+  if (videoMatch !== controlsVisibleFor) {
+    setControlsVisibleFor(videoMatch);
+    setVideoControlsVisible(
+      videoMatch ? videoMatch.adapter.areControlsVisible(videoMatch.video) : true,
+    );
+  }
 
   // ---- Open Note flow: restore a specific note by id once it resolves ----
   const [pendingRestoreId, setPendingRestoreId] = useState<string | null>(null);
@@ -348,6 +372,40 @@ export function HameshApp({
     return () => {
       video.removeEventListener('loadedmetadata', bump);
       video.removeEventListener('durationchange', bump);
+    };
+  }, [videoMatch]);
+
+  // Keeps `videoControlsVisible` current after the initial value seeded
+  // above: recomputes on the handful of real signals that actually drive
+  // it — pointer entering/leaving/moving over the video (the html5-generic
+  // heuristic) and play/pause (both adapters), plus a MutationObserver on
+  // the player container's `class` attribute (YouTube toggles
+  // `.ytp-autohide` there — see youtube.ts). Some of these are no-ops for
+  // a given adapter; cheap enough not to bother branching per-adapter here.
+  useEffect(() => {
+    if (!videoMatch) return;
+    const { adapter, video } = videoMatch;
+    const recompute = () => setVideoControlsVisible(adapter.areControlsVisible(video));
+
+    video.addEventListener('mouseenter', recompute);
+    video.addEventListener('mouseleave', recompute);
+    video.addEventListener('mousemove', recompute);
+    video.addEventListener('play', recompute);
+    video.addEventListener('pause', recompute);
+
+    const container = adapter.getPlayerContainer(video);
+    const observer = new MutationObserver(recompute);
+    if (container) {
+      observer.observe(container, { attributes: true, attributeFilter: ['class'] });
+    }
+
+    return () => {
+      video.removeEventListener('mouseenter', recompute);
+      video.removeEventListener('mouseleave', recompute);
+      video.removeEventListener('mousemove', recompute);
+      video.removeEventListener('play', recompute);
+      video.removeEventListener('pause', recompute);
+      observer.disconnect();
     };
   }, [videoMatch]);
 
@@ -719,19 +777,20 @@ export function HameshApp({
         />
       ))}
 
-      {videoMarkerItems.map((m) => (
-        <VideoMarker
-          key={m.note.id}
-          label={strings.videoMarkerLabel(formatVideoTimestamp(m.anchor.timestamp))}
-          style={{ top: m.top, left: m.left, pointerEvents: 'auto' }}
-          onOpen={() => {
-            // Jump to the stored timestamp only — never call play()/pause(),
-            // so a playing video keeps playing and a paused one stays
-            // paused (spec: "Never unexpectedly autoplay").
-            if (videoMatch) videoMatch.video.currentTime = m.anchor.timestamp;
-          }}
-        />
-      ))}
+      {videoControlsVisible &&
+        videoMarkerItems.map((m) => (
+          <VideoMarker
+            key={m.note.id}
+            label={strings.videoMarkerLabel(formatVideoTimestamp(m.anchor.timestamp))}
+            style={{ top: m.top, left: m.left, pointerEvents: 'auto' }}
+            onOpen={() => {
+              // Jump to the stored timestamp only — never call play()/pause(),
+              // so a playing video keeps playing and a paused one stays
+              // paused (spec: "Never unexpectedly autoplay").
+              if (videoMatch) videoMatch.video.currentTime = m.anchor.timestamp;
+            }}
+          />
+        ))}
 
       {highlightRect && <div className="hm-restore-highlight" style={highlightRect} />}
 

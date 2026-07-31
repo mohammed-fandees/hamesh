@@ -247,4 +247,37 @@ test.describe('Video Notes — capture + timeline markers', () => {
       await page.evaluate(() => (document.querySelector('video') as HTMLVideoElement).paused),
     ).toBe(false);
   });
+
+  test('markers hide with the video controls while playing and unhovered, and reappear on hover or pause', async () => {
+    await page.locator('[data-testid="test-video"]').hover();
+    await page.evaluate(() => window.dispatchEvent(new CustomEvent('hamesh:activate')));
+    await page.locator('.hm-video-quick-note textarea').fill('Note while paused');
+    await page.keyboard.press('Enter');
+    // Created while paused — visible immediately, matching native controls
+    // staying up while paused.
+    await expect(page.locator('.hm-video-marker')).toHaveCount(1);
+
+    await page.evaluate(async () => {
+      await (document.querySelector('video') as HTMLVideoElement).play();
+    });
+    // Move well away from the video (and the rail overlapping its bottom
+    // edge) — the marker should hide, the same way native controls would
+    // fade once you stop interacting with a playing video.
+    await page.locator('h1').hover();
+    await expect(page.locator('.hm-video-marker')).toHaveCount(0);
+
+    // Hovering the video again brings it back without needing to pause.
+    await page.locator('[data-testid="test-video"]').hover();
+    await expect(page.locator('.hm-video-marker')).toHaveCount(1);
+
+    // Moving away again hides it (still playing)...
+    await page.locator('h1').hover();
+    await expect(page.locator('.hm-video-marker')).toHaveCount(0);
+
+    // ...but pausing brings it back even while the pointer stays elsewhere.
+    await page.evaluate(() => {
+      (document.querySelector('video') as HTMLVideoElement).pause();
+    });
+    await expect(page.locator('.hm-video-marker')).toHaveCount(1);
+  });
 });

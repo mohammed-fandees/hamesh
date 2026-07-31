@@ -57,4 +57,15 @@ export const html5GenericAdapter: VideoPlayerAdapter = {
     // overlay rail docked to the video element's own rect instead.
     return null;
   },
+
+  areControlsVisible(video: HTMLVideoElement): boolean {
+    // Native <video controls> visibility isn't observable at all — browsers
+    // render them in an internal UA shadow tree with no exposed state. This
+    // approximates the same two triggers that actually show native controls
+    // in every major browser: the pointer being over the video, or playback
+    // being paused (controls stay up while paused). It hides immediately on
+    // pointer-leave during playback rather than after a fade-timeout, since
+    // there's no way to observe or replicate that timing.
+    return video.paused || video.matches(':hover');
+  },
 };

@@ -95,4 +95,33 @@ describe('html5GenericAdapter', () => {
       expect(html5GenericAdapter.getTimelineRect(video)).toBeNull();
     });
   });
+
+  describe('areControlsVisible', () => {
+    function makeVideo(paused: boolean): HTMLVideoElement {
+      document.body.innerHTML = '<video id="v1"></video>';
+      const video = document.getElementById('v1') as HTMLVideoElement;
+      Object.defineProperty(video, 'paused', { value: paused, configurable: true });
+      return video;
+    }
+
+    it('is true while paused, regardless of hover', () => {
+      expect(html5GenericAdapter.areControlsVisible(makeVideo(true))).toBe(true);
+    });
+
+    it('is false while playing and not hovered', () => {
+      // jsdom has no layout engine, so `:hover` never matches without a
+      // stub — this exercises that default (unhovered) state directly.
+      expect(html5GenericAdapter.areControlsVisible(makeVideo(false))).toBe(false);
+    });
+
+    it('is true while playing and hovered', () => {
+      const video = makeVideo(false);
+      // Same jsdom gap as above, stubbed directly (matching the pattern
+      // used elsewhere in this codebase for unimplemented jsdom behavior,
+      // e.g. window.matchMedia/document.elementFromPoint).
+      video.matches = ((selector: string) =>
+        selector === ':hover') as unknown as typeof video.matches;
+      expect(html5GenericAdapter.areControlsVisible(video)).toBe(true);
+    });
+  });
 });

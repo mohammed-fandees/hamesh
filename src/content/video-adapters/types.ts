@@ -46,4 +46,13 @@ export interface VideoPlayerAdapter {
   /** The site's own progress-bar rect to align markers with, or `null` when
    *  `capabilities.nativeTimeline` is false (no such DOM exists). */
   getTimelineRect(video: HTMLVideoElement): DOMRect | null;
+
+  /** Whether the player's controls (native or the site's own) are visible
+   *  right now — timeline markers hide when this is false, so they don't
+   *  linger over a video whose own chrome has faded away. Browsers give no
+   *  API for native `<video controls>` visibility, so each adapter
+   *  approximates from whatever signal it actually has (see each adapter
+   *  for its specific heuristic); when genuinely unknown, an adapter should
+   *  fail open (return `true`) rather than hide markers incorrectly. */
+  areControlsVisible(video: HTMLVideoElement): boolean;
 }
