@@ -79,6 +79,13 @@ export interface Note {
    *  pinning a note shouldn't make it jump to the top of a "most recently
    *  edited" sort. */
   pinned?: boolean;
+  /** The folder this note is filed into, if any. Optional — absent means
+   *  unfiled, same treatment as `pinned`'s absent-means-false convention, so
+   *  no backfill is needed for notes written before folders existed. A
+   *  `folderId` pointing at a folder that no longer exists (e.g. deleted
+   *  outside a normal flow) is treated as unfiled too — see
+   *  `buildFolderTree` in `folder-grouping.ts`. */
+  folderId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -130,6 +137,13 @@ export function updateNoteContent(note: Note, input: UpdateNoteInput): Note {
 /** Toggles the pin flag without touching `updatedAt` — see `Note.pinned`. */
 export function setNotePinned(note: Note, pinned: boolean): Note {
   return { ...note, pinned };
+}
+
+/** Files a note into a folder, or unfiles it when `folderId` is `undefined`.
+ *  Same reasoning as `setNotePinned`: organizing a note isn't editing its
+ *  content, so `updatedAt` is left untouched. */
+export function setNoteFolder(note: Note, folderId: string | undefined): Note {
+  return { ...note, folderId };
 }
 
 export function validateNoteContent(content: string): NoteValidationError | null {

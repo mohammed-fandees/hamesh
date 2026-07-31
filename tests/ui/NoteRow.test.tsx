@@ -96,4 +96,19 @@ describe('NoteRow', () => {
       'https://www.youtube.com/watch?v=abc123',
     );
   });
+
+  it('shows no favicon/domain kicker by default (domain-grouped view already has one per group header)', async () => {
+    const NoteRow = await importNoteRow();
+    render(<NoteRow note={makeElementNote()} strings={strings} lang="en" />);
+    expect(document.querySelector('.hm-note-row__domain')).not.toBeInTheDocument();
+  });
+
+  it('shows a favicon + domain kicker when showDomain is set (the folder view, which mixes sites)', async () => {
+    const NoteRow = await importNoteRow();
+    render(<NoteRow note={makeElementNote()} strings={strings} lang="en" showDomain />);
+    const kicker = document.querySelector('.hm-note-row__domain');
+    expect(kicker).toBeInTheDocument();
+    expect(kicker).toHaveTextContent('example.com');
+    expect(kicker?.querySelector('.hm-favicon')).toBeInTheDocument();
+  });
 });

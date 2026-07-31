@@ -38,8 +38,11 @@ export interface Monogram {
 /** Registrable hostname, lowercased, `www.` stripped. Never throws — a
  *  malformed `originalUrl` (which shouldn't occur since it's always captured
  *  from `location.href`) degrades to grouping under the raw string rather
- *  than silently dropping the note. */
-function extractDomain(url: string): string {
+ *  than silently dropping the note. Exported for reuse wherever a note's
+ *  originating site needs to be shown outside a domain-grouped context —
+ *  e.g. `NoteRow`'s per-row favicon in the Notes Library's folder view,
+ *  where notes from different sites can sit side by side. */
+export function extractDomain(url: string): string {
   try {
     const hostname = new URL(url).hostname.toLowerCase();
     return hostname.startsWith('www.') ? hostname.slice(4) : hostname;
@@ -59,8 +62,9 @@ function latestNote(notes: Note[]): Note {
 /** Pinned notes first, otherwise stable (JS's `Array.prototype.sort` is
  *  guaranteed stable, so notes sharing a pin state keep their existing
  *  relative order — this only ever promotes pinned notes, it doesn't
- *  otherwise reorder a group's notes). */
-function sortNotesWithPinnedFirst(notes: Note[]): Note[] {
+ *  otherwise reorder a group's notes). Exported for reuse by
+ *  `folder-grouping.ts`, which orders notes within a folder the same way. */
+export function sortNotesWithPinnedFirst(notes: Note[]): Note[] {
   return [...notes].sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned));
 }
 

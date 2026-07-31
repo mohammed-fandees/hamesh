@@ -63,6 +63,18 @@ export interface Strings {
   shortcutNotSet: string;
   shortcutOpenChromeSettings: string;
   settingsOpenFull: string;
+  libraryModeLabel: string;
+  modeDomain: string;
+  modeFolder: string;
+  newFolder: string;
+  folderNamePlaceholder: string;
+  renameFolder: string;
+  deleteFolder: string;
+  deleteFolderConfirm: (name: string) => string;
+  unfiledSection: string;
+  moveToFolder: string;
+  noFolderOption: string;
+  addSubfolder: string;
 }
 
 const en: Strings = {
@@ -120,6 +132,19 @@ const en: Strings = {
   shortcutNotSet: 'Not set',
   shortcutOpenChromeSettings: 'Change in Chrome settings',
   settingsOpenFull: 'Open full settings',
+  libraryModeLabel: 'View',
+  modeDomain: 'By site',
+  modeFolder: 'By folder',
+  newFolder: 'New folder',
+  folderNamePlaceholder: 'Folder name…',
+  renameFolder: 'Rename folder',
+  deleteFolder: 'Delete folder',
+  deleteFolderConfirm: (name) =>
+    `Delete "${name}"? Its notes (and any sub-folders) will become unfiled, not deleted.`,
+  unfiledSection: 'Unfiled',
+  moveToFolder: 'Move to folder',
+  noFolderOption: 'No folder',
+  addSubfolder: 'Add sub-folder',
 };
 
 const ar: Strings = {
@@ -177,6 +202,19 @@ const ar: Strings = {
   shortcutNotSet: 'غير محدد',
   shortcutOpenChromeSettings: 'تغيير من إعدادات Chrome',
   settingsOpenFull: 'فتح الإعدادات الكاملة',
+  libraryModeLabel: 'العرض',
+  modeDomain: 'حسب الموقع',
+  modeFolder: 'حسب الفولدر',
+  newFolder: 'فولدر جديد',
+  folderNamePlaceholder: 'اسم الفولدر…',
+  renameFolder: 'إعادة تسمية الفولدر',
+  deleteFolder: 'حذف الفولدر',
+  deleteFolderConfirm: (name) =>
+    `حذف "${name}"؟ ملاحظاته (وأي فولدرات فرعية) هتبقى بدون فولدر، مش هتتحذف.`,
+  unfiledSection: 'بدون فولدر',
+  moveToFolder: 'نقل إلى فولدر',
+  noFolderOption: 'بدون فولدر',
+  addSubfolder: 'إضافة فولدر فرعي',
 };
 
 export function resolveLang(uiLanguage?: string): Lang {
