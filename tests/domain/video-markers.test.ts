@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { computeMarkerX, clusterMarkers, formatVideoTimestamp } from '@/domain/video-markers';
+import {
+  computeMarkerX,
+  clusterMarkers,
+  formatVideoTimestamp,
+  firstLineOf,
+} from '@/domain/video-markers';
 
 describe('computeMarkerX', () => {
   const rail = { left: 100, width: 200 };
@@ -114,5 +119,27 @@ describe('formatVideoTimestamp', () => {
 
   it('clamps NaN input to 0:00', () => {
     expect(formatVideoTimestamp(NaN)).toBe('0:00');
+  });
+});
+
+describe('firstLineOf', () => {
+  it('returns the whole string when there is no newline', () => {
+    expect(firstLineOf('a single line note')).toBe('a single line note');
+  });
+
+  it('returns only the text before the first newline', () => {
+    expect(firstLineOf('first line\nsecond line\nthird line')).toBe('first line');
+  });
+
+  it('trims surrounding whitespace on the first line', () => {
+    expect(firstLineOf('  padded line  \nrest')).toBe('padded line');
+  });
+
+  it('returns an empty string for an empty note', () => {
+    expect(firstLineOf('')).toBe('');
+  });
+
+  it('returns an empty string when the note starts with a blank line', () => {
+    expect(firstLineOf('\nactual content')).toBe('');
   });
 });

@@ -5,7 +5,12 @@ import type { Note, ElementAnchor, VideoAnchor } from '@/domain/note';
 import { buildElementAnchor } from '@/domain/anchor';
 import { buildVideoAnchor } from '@/domain/video-anchor';
 import { resolveAnchor, resolveVideoAnchor, ResolutionQuality } from '@/domain/anchor-resolution';
-import { computeMarkerX, formatVideoTimestamp } from '@/domain/video-markers';
+import {
+  computeMarkerX,
+  clusterMarkers,
+  formatVideoTimestamp,
+  firstLineOf,
+} from '@/domain/video-markers';
 import { generatePageKey } from '@/domain/page-key';
 import { getDeepestEligibleElement } from '@/utils/dom';
 import { onNavigationChange } from '@/content/navigation';
@@ -22,6 +27,12 @@ import { Marker } from '@/ui/Marker';
 import { SelectionHint } from '@/ui/SelectionHint';
 import { VideoQuickNote } from '@/ui/video/VideoQuickNote';
 import { VideoMarker } from '@/ui/video/VideoMarker';
+import { VideoMarkerPreview } from '@/ui/video/VideoMarkerPreview';
+import { VideoMarkerCluster } from '@/ui/video/VideoMarkerCluster';
+import {
+  VideoMarkerClusterList,
+  type VideoMarkerClusterItem,
+} from '@/ui/video/VideoMarkerClusterList';
 import { getStrings, dirForLang, type Lang, type Strings } from '@/ui/i18n';
 
 interface Resolved {
@@ -43,12 +54,27 @@ interface VideoMarkerItem {
   left: number;
 }
 
-/** Half-width/height (px) of the click-detection zone around a marker's
- *  center — generous relative to the 8px dot itself, since markers are
- *  `pointer-events: none` (see the click handler below for why) and so
- *  aren't hit-tested by the browser at all; this radius is the only
- *  "clickable size" they have. */
+/** Half-width/height (px) of the click/hover-detection zone around a
+ *  marker's center — generous relative to the 8px dot itself, since
+ *  markers are `pointer-events: none` (see the click handler below for
+ *  why) and so aren't hit-tested by the browser at all; this radius is
+ *  the only "clickable/hoverable size" they have. */
 const VIDEO_MARKER_HIT_RADIUS = 10;
+
+/** Markers within this many px of each other (chained — see
+ *  `clusterMarkers`) render as one cluster instead of overlapping dots. */
+const VIDEO_CLUSTER_THRESHOLD_PX = 16;
+
+/** One or more video notes at (roughly) the same rail position. `key` is
+ *  stable for a given set of member notes (their ids, joined) — used both
+ *  as the React list key and to match hover/open state against whichever
+ *  group is currently under the pointer or expanded. */
+interface VideoMarkerGroup {
+  key: string;
+  items: VideoMarkerItem[];
+  top: number;
+  left: number;
+}
 
 interface HameshAppProps {
   repo: NotesRepository;
@@ -99,7 +125,32 @@ function getRailPlacement(
   }
   const rect = video.getBoundingClientRect();
   if (rect.width === 0) return null;
-  return { left: rect.left, width: rect.width, top: rect.bottom - 6 };
+  // Docked just *below* the video's bottom edge, not overlapping it.
+  // An earlier attempt placed this a few px *inside* the edge instead, to
+  // keep markers within the video's own real-DOM hover region — but that
+  // region is exactly where a native `<video controls>` scrubber lives,
+  // and clicks landing there get consumed by the browser's own native
+  // seek before a page-level `pointerdown` listener (any of them, capture
+  // phase included) ever sees the event — confirmed with a throwaway
+  // repro: clicks up to 70px above the video's bottom edge were silently
+  // swallowed, only clicks in roughly the upper half of the video frame
+  // reached `window`. Markers being briefly hard to "hover" via real
+  // `:hover` because they now sit outside the video's box is mitigated
+  // separately (see `effectiveVideoControlsVisible` below), and is a far
+  // smaller problem than clicks not working at all.
+  return { left: rect.left, width: rect.width, top: rect.bottom + 8 };
+}
+
+/** Fixed position for the hover preview/cluster hint, centered above a
+ *  marker group's rail position and clamped into the viewport. Simpler
+ *  than `useFloating`'s own-size-measuring approach — these are small,
+ *  roughly fixed-size bubbles, so a static estimate is enough and avoids
+ *  needing a forwarded ref through `VideoMarkerPreview`/`SelectionHint`. */
+function videoHoverInfoStyle(group: VideoMarkerGroup): React.CSSProperties {
+  const ESTIMATED_WIDTH = 200;
+  const vw = window.innerWidth;
+  const left = Math.max(8, Math.min(group.left - ESTIMATED_WIDTH / 2, vw - ESTIMATED_WIDTH - 8));
+  return { position: 'fixed', top: group.top - 34, left };
 }
 
 /** Coalesced viewport frame counter — bumps on scroll/resize while `active`. */
@@ -245,6 +296,12 @@ export function HameshApp({
       videoMatch ? videoMatch.adapter.areControlsVisible(videoMatch.video) : true,
     );
   }
+  // Which marker/cluster group (by `VideoMarkerGroup.key`) the pointer is
+  // currently near, and which cluster (if any) is expanded into a list.
+  // Both are coordinate-proximity driven, not real DOM :hover/click — see
+  // the tracking/click effects further down for why.
+  const [videoHoverGroupKey, setVideoHoverGroupKey] = useState<string | null>(null);
+  const [videoOpenClusterKey, setVideoOpenClusterKey] = useState<string | null>(null);
 
   // ---- Open Note flow: restore a specific note by id once it resolves ----
   const [pendingRestoreId, setPendingRestoreId] = useState<string | null>(null);
@@ -258,10 +315,20 @@ export function HameshApp({
     notesRef.current = notes;
   }, [notes]);
 
-  // Read by the coordinate-based click handler below (registered once, not
-  // per-render) so it always sees current marker positions/the active video
-  // without needing to re-subscribe on every scroll-driven recompute.
-  const videoMarkerItemsRef = useRef<VideoMarkerItem[]>([]);
+  // Read by the coordinate-based click/hover handlers below (registered
+  // once, not per-render) so they always see current marker positions/the
+  // active video without needing to re-subscribe on every scroll-driven
+  // recompute. Two separate refs, deliberately gated differently:
+  // `videoMarkerGroupsRef` is *un*gated (every group, regardless of
+  // current visibility) and drives hover *detection* — hovering near
+  // where a currently-hidden marker would be is what reveals it (see
+  // `effectiveVideoControlsVisible` below), so gating this one on
+  // visibility would be circular (nothing could ever become hoverable
+  // once hidden). `visibleClickTargetsRef` mirrors only what's actually
+  // shown right now, since a click shouldn't be able to hit an invisible
+  // marker.
+  const videoMarkerGroupsRef = useRef<VideoMarkerGroup[]>([]);
+  const visibleClickTargetsRef = useRef<VideoMarkerGroup[]>([]);
   const videoMatchRef = useRef<AdapterVideoMatch | null>(null);
   useEffect(() => {
     videoMatchRef.current = videoMatch;
@@ -346,6 +413,7 @@ export function HameshApp({
           setComposer(null);
           setViewerId(null);
           setVideoComposer(null);
+          setVideoOpenClusterKey(null);
         }
         return key;
       });
@@ -613,6 +681,55 @@ export function HameshApp({
     [videoComposer, repo, pageKey, commitNotes],
   );
 
+  // Seeking the active video from a JSX-triggered handler (marker/cluster
+  // click) is declared here and *performed* in the effect below — mutating
+  // `videoMatchRef.current.video.currentTime` directly from a plain
+  // callback (even a `useCallback`) trips this codebase's immutability
+  // lint rule, which only recognizes the mutation as safe when it happens
+  // literally inside a `useEffect` body (the same reason the coordinate-
+  // based pointerdown handler below does its own seeking inline rather
+  // than calling out to a shared helper). `nonce` forces the effect to
+  // re-fire even for two requests with the identical timestamp (e.g.
+  // clicking the same marker twice), since object identity alone
+  // wouldn't otherwise change for equal values.
+  const [videoSeekRequest, setVideoSeekRequest] = useState<{
+    timestamp: number;
+    nonce: number;
+  } | null>(null);
+  const videoSeekNonceRef = useRef(0);
+  useEffect(() => {
+    if (!videoSeekRequest) return;
+    // Deferred to a microtask — same reason the coordinate-based
+    // pointerdown handler's mutation (which the immutability lint rule
+    // does accept) lives inside an event-listener callback rather than an
+    // effect's own synchronous body: the rule only recognizes a ref-held
+    // DOM mutation as safe once it's decoupled from the effect's direct,
+    // synchronous execution. Negligible real delay for a video seek.
+    queueMicrotask(() => {
+      const video = videoMatchRef.current?.video;
+      // Jump to the stored timestamp only — never call play()/pause(), so
+      // a playing video keeps playing and a paused one stays paused
+      // (spec: "Never unexpectedly autoplay").
+      if (video) video.currentTime = videoSeekRequest.timestamp;
+    });
+  }, [videoSeekRequest]);
+
+  const handleVideoMarkerOpen = useCallback((timestamp: number) => {
+    setVideoOpenClusterKey(null);
+    videoSeekNonceRef.current += 1;
+    setVideoSeekRequest({ timestamp, nonce: videoSeekNonceRef.current });
+  }, []);
+
+  const handleVideoClusterToggle = useCallback((key: string) => {
+    setVideoOpenClusterKey((prev) => (prev === key ? null : key));
+  }, []);
+
+  const handleVideoClusterSelect = useCallback((item: VideoMarkerClusterItem) => {
+    setVideoOpenClusterKey(null);
+    videoSeekNonceRef.current += 1;
+    setVideoSeekRequest({ timestamp: item.anchor.timestamp, nonce: videoSeekNonceRef.current });
+  }, []);
+
   const handleUpdate = useCallback(
     async (noteId: string, content: string) => {
       setBusy(true);
@@ -665,27 +782,6 @@ export function HameshApp({
     },
     [repo, pageKey, commitNotes, strings.saveError],
   );
-
-  // ---- Outside-click closes composer / viewer (non-modal) ----
-  useEffect(() => {
-    if (!composer && !viewerId && !videoComposer) return;
-    const onDown = (e: Event) => {
-      const path = e.composedPath();
-      const insideCard = path.some(
-        (n) => n instanceof HTMLElement && n.classList?.contains('hm-card'),
-      );
-      const onMarker = path.some(
-        (n) => n instanceof HTMLElement && n.classList?.contains('hm-marker'),
-      );
-      if (!insideCard && !onMarker) {
-        setComposer(null);
-        setViewerId(null);
-        setVideoComposer(null);
-      }
-    };
-    window.addEventListener('pointerdown', onDown, true);
-    return () => window.removeEventListener('pointerdown', onDown, true);
-  }, [composer, viewerId, videoComposer]);
 
   // ---- Derived: marker placements ----
   const markerItems = useMemo(() => {
@@ -742,56 +838,162 @@ export function HameshApp({
     return items;
   }, [videoMatch, videoResolved, frame, videoTick]);
 
-  // Mirrors the actually-rendered (i.e. visibility-gated) markers, since
-  // the click handler below must not seek to a marker that isn't currently
-  // shown (see the `videoControlsVisible` render gate further down).
-  useEffect(() => {
-    videoMarkerItemsRef.current = videoControlsVisible ? videoMarkerItems : [];
-  }, [videoMarkerItems, videoControlsVisible]);
+  // ---- Derived: video marker items grouped into clusters ----
+  // Notes close enough together on the rail (`VIDEO_CLUSTER_THRESHOLD_PX`)
+  // render as one cluster instead of overlapping dots — see
+  // `domain/video-markers.ts`'s `clusterMarkers` for the grouping rule.
+  const videoMarkerGroups = useMemo((): VideoMarkerGroup[] => {
+    if (videoMarkerItems.length === 0) return [];
+    const clusters = clusterMarkers(
+      videoMarkerItems.map((item) => ({ item, x: item.left })),
+      VIDEO_CLUSTER_THRESHOLD_PX,
+    );
+    return clusters.map((c) => ({
+      key: c.items.map((i) => i.note.id).join(','),
+      items: c.items,
+      top: c.items[0].top,
+      left: c.x,
+    }));
+  }, [videoMarkerItems]);
 
-  // ---- Video marker clicks: coordinate-based, not real DOM hit-testing ----
-  // Markers render with `pointer-events: none` (see the render below) —
-  // deliberately not hit-testable by the browser at all. A real, on-top,
-  // pointer-events:auto marker sitting over a video steals mouse hover from
-  // the actual player element beneath it: from YouTube's own perspective
-  // (or the browser's, for a native `<video controls>` scrubber) the
-  // pointer has left the player entirely the instant it's over our marker,
-  // which immediately hides *their* controls too — a real flicker bug, not
-  // just a cosmetic one, and it also broke `html5-generic.ts`'s own
-  // hover-based `areControlsVisible` heuristic the same way. Detecting
-  // clicks by coordinate proximity instead lets real pointer events pass
-  // straight through to the player underneath, so its own hover tracking
-  // (and ours) stays correct. Registered once (not per-render) and reads
-  // current state from refs, since marker positions change on every
-  // scroll-driven recompute and this shouldn't re-subscribe that often.
+  // Markers are also revealed while the pointer is near one, even if
+  // `videoControlsVisible` itself says hidden — the fallback rail now sits
+  // just outside the video's own box (see `getRailPlacement`), so it isn't
+  // covered by the video's real `:hover` state the way `areControlsVisible`
+  // assumes; without this, a marker the user is actively pointing at could
+  // stay (or become) invisible right as they try to interact with it.
+  const effectiveVideoControlsVisible = videoControlsVisible || videoHoverGroupKey !== null;
+
+  // `videoMarkerGroupsRef` stays *un*gated (every group, always) — hover
+  // detection below needs to find markers that aren't visible yet in order
+  // to reveal them; gating it here would make that impossible. Only the
+  // click-target ref is gated, since a click shouldn't be able to hit a
+  // marker that isn't actually shown.
   useEffect(() => {
-    const onPointerDown = (e: PointerEvent) => {
-      const items = videoMarkerItemsRef.current;
-      if (items.length === 0) return;
-      let closest: VideoMarkerItem | null = null;
+    videoMarkerGroupsRef.current = videoMarkerGroups;
+    visibleClickTargetsRef.current = effectiveVideoControlsVisible ? videoMarkerGroups : [];
+  }, [videoMarkerGroups, effectiveVideoControlsVisible]);
+
+  // ---- Video marker hover: coordinate-based, not real DOM :hover ----
+  // Same reasoning as the click handler below — a hit-testable overlay
+  // sitting on top of the player would steal hover from it. Pointer
+  // position is stored in a ref on every move (cheap) and the actual state
+  // update is rAF-coalesced, the same pattern `useViewportFrame` already
+  // uses for scroll/resize.
+  const lastPointerPosRef = useRef<{ x: number; y: number } | null>(null);
+  useEffect(() => {
+    let raf = 0;
+    const recompute = () => {
+      raf = 0;
+      const pos = lastPointerPosRef.current;
+      const groups = videoMarkerGroupsRef.current;
+      if (!pos || groups.length === 0) {
+        setVideoHoverGroupKey(null);
+        return;
+      }
+      let closestKey: string | null = null;
       let closestDist = Infinity;
-      for (const item of items) {
-        const dx = e.clientX - item.left;
-        const dy = e.clientY - item.top;
-        const dist = Math.hypot(dx, dy);
+      for (const g of groups) {
+        const dist = Math.hypot(pos.x - g.left, pos.y - g.top);
         if (dist <= VIDEO_MARKER_HIT_RADIUS && dist < closestDist) {
-          closest = item;
+          closestKey = g.key;
           closestDist = dist;
         }
       }
-      if (!closest) return;
-      // Preempt the underlying player's own click-to-seek (YouTube's
-      // scrubber, or a native <video controls> scrubber) so it doesn't
-      // *also* seek — the whole reason markers overlap the player's own
-      // hoverable/clickable region is to stay within its hover tracking,
-      // which means a real click here also lands on whatever's beneath.
-      e.preventDefault();
-      e.stopPropagation();
-      const video = videoMatchRef.current?.video;
-      // Jump to the stored timestamp only — never call play()/pause(), so
-      // a playing video keeps playing and a paused one stays paused (spec:
-      // "Never unexpectedly autoplay").
-      if (video) video.currentTime = closest.anchor.timestamp;
+      setVideoHoverGroupKey(closestKey);
+    };
+    const onPointerMove = (e: PointerEvent) => {
+      lastPointerPosRef.current = { x: e.clientX, y: e.clientY };
+      if (!raf) raf = requestAnimationFrame(recompute);
+    };
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      window.removeEventListener('pointermove', onPointerMove);
+    };
+  }, []);
+
+  // ---- Global pointerdown: video marker clicks + outside-click-closes ----
+  // Combined into one listener rather than two separate ones: the video
+  // marker hit-test and "click outside closes composer/viewer/cluster
+  // list" both need to run on the same pointerdown, and as two independent
+  // `window` listeners their relative order (i.e. which state update
+  // "wins") was an accident of registration order — which mattered for,
+  // e.g., a second click toggling an already-open cluster closed racing
+  // against a separate "outside click" listener that would otherwise
+  // already have cleared it first.
+  //
+  // Video marker/cluster hit-testing is coordinate-based, not real DOM
+  // hit-testing: markers render with `pointer-events: none` (see the
+  // render below). A real, on-top, pointer-events:auto marker sitting
+  // over a video steals mouse hover from the actual player element
+  // beneath it — from YouTube's own perspective (or a native
+  // `<video controls>` scrubber's) the pointer has left the player
+  // entirely the instant it's over a marker, hiding *their* controls too
+  // (a real flicker bug, not just cosmetic — it also broke
+  // `html5-generic.ts`'s own hover-based `areControlsVisible` heuristic
+  // the same way). Detecting clicks by coordinate proximity instead lets
+  // real pointer events pass straight through to the player underneath.
+  //
+  // Registered once (not per-render) and reads current state from refs,
+  // since marker positions change on every scroll-driven recompute and
+  // this shouldn't re-subscribe that often.
+  useEffect(() => {
+    const onPointerDown = (e: PointerEvent) => {
+      const groups = visibleClickTargetsRef.current;
+      let closest: VideoMarkerGroup | null = null;
+      let closestDist = Infinity;
+      for (const g of groups) {
+        const dist = Math.hypot(e.clientX - g.left, e.clientY - g.top);
+        if (dist <= VIDEO_MARKER_HIT_RADIUS && dist < closestDist) {
+          closest = g;
+          closestDist = dist;
+        }
+      }
+
+      if (closest) {
+        // Preempt the underlying player's own click-to-seek (YouTube's
+        // scrubber, or a native <video controls> scrubber) so it doesn't
+        // *also* seek — the whole reason markers overlap the player's own
+        // hoverable/clickable region is to stay within its hover
+        // tracking, which means a real click here also lands on
+        // whatever's beneath.
+        e.preventDefault();
+        e.stopPropagation();
+        if (closest.items.length > 1) {
+          // A single note among the cluster's own click targets: opening
+          // (not seeking) — the cluster list drives the actual seek once
+          // a specific note is chosen.
+          setVideoOpenClusterKey((prev) => (prev === closest!.key ? null : closest!.key));
+        } else {
+          setVideoOpenClusterKey(null);
+          const video = videoMatchRef.current?.video;
+          // Jump to the stored timestamp only — never call play()/
+          // pause(), so a playing video keeps playing and a paused one
+          // stays paused (spec: "Never unexpectedly autoplay").
+          if (video) video.currentTime = closest.items[0].anchor.timestamp;
+        }
+        return;
+      }
+
+      // No marker/cluster hit: fall through to "click outside closes the
+      // non-modal composer/viewer/cluster-list." A click inside any
+      // .hm-card (composer, viewer, quick-note, or the cluster list — its
+      // own row selection is a real DOM click, not this coordinate hack)
+      // is exempted, same as it already was before this handler merge.
+      const path = e.composedPath();
+      const insideCard = path.some(
+        (n) => n instanceof HTMLElement && n.classList?.contains('hm-card'),
+      );
+      const onElementMarker = path.some(
+        (n) => n instanceof HTMLElement && n.classList?.contains('hm-marker'),
+      );
+      if (!insideCard && !onElementMarker) {
+        setComposer(null);
+        setViewerId(null);
+        setVideoComposer(null);
+        setVideoOpenClusterKey(null);
+      }
     };
     window.addEventListener('pointerdown', onPointerDown, true);
     return () => window.removeEventListener('pointerdown', onPointerDown, true);
@@ -814,6 +1016,19 @@ export function HameshApp({
 
   const viewerNote = viewerId ? notes.find((n) => n.id === viewerId) : null;
   const viewerResolved = viewerId ? resolved.find((r) => r.note.id === viewerId) : null;
+
+  // Not gated on visibility — proximity to a group is exactly what
+  // (re)reveals it via `effectiveVideoControlsVisible` above; gating this
+  // too would mean nothing hidden could ever be discovered by hovering.
+  const hoveredVideoGroup = videoMarkerGroups.find((g) => g.key === videoHoverGroupKey);
+  // Also ungated: once a cluster list is explicitly opened, it stays open
+  // regardless of ambient hover/controls state — same as the composer or
+  // quick-note popup, which aren't tied to video-controls-visibility
+  // either. It only closes via an explicit action (outside click, Escape,
+  // selecting an item).
+  const openVideoCluster = videoMarkerGroups.find(
+    (g) => g.key === videoOpenClusterKey && g.items.length > 1,
+  );
 
   return (
     <div className="hm-scope" data-hm-theme={theme} dir={dir}>
@@ -855,24 +1070,56 @@ export function HameshApp({
         />
       ))}
 
-      {videoControlsVisible &&
-        videoMarkerItems.map((m) => (
-          <VideoMarker
-            key={m.note.id}
-            label={strings.videoMarkerLabel(formatVideoTimestamp(m.anchor.timestamp))}
-            // pointer-events stays 'none' (the .hm-scope default) — real
-            // mouse clicks are handled by the coordinate-based listener
-            // above, not by this element being hit-tested directly. This
-            // still renders a real, focusable <button>, so Tab + Enter/
-            // Space (keyboard activation dispatches a trusted click event
-            // directly at the focused element, bypassing pointer
-            // hit-testing entirely) keeps working.
-            style={{ top: m.top, left: m.left }}
-            onOpen={() => {
-              if (videoMatch) videoMatch.video.currentTime = m.anchor.timestamp;
-            }}
+      {effectiveVideoControlsVisible &&
+        videoMarkerGroups.map((g) =>
+          g.items.length === 1 ? (
+            <VideoMarker
+              key={g.key}
+              label={strings.videoMarkerLabel(formatVideoTimestamp(g.items[0].anchor.timestamp))}
+              // pointer-events stays 'none' (the .hm-scope default) — real
+              // mouse clicks are handled by the coordinate-based listener
+              // above, not by this element being hit-tested directly. This
+              // still renders a real, focusable <button>, so Tab + Enter/
+              // Space (keyboard activation dispatches a trusted click event
+              // directly at the focused element, bypassing pointer
+              // hit-testing entirely) keeps working.
+              style={{ top: g.top, left: g.left }}
+              onOpen={() => handleVideoMarkerOpen(g.items[0].anchor.timestamp)}
+            />
+          ) : (
+            <VideoMarkerCluster
+              key={g.key}
+              count={g.items.length}
+              label={strings.videoClusterLabel(g.items.length)}
+              style={{ top: g.top, left: g.left }}
+              onOpen={() => handleVideoClusterToggle(g.key)}
+            />
+          ),
+        )}
+
+      {hoveredVideoGroup &&
+        hoveredVideoGroup.key !== videoOpenClusterKey &&
+        (hoveredVideoGroup.items.length === 1 ? (
+          <VideoMarkerPreview
+            preview={firstLineOf(hoveredVideoGroup.items[0].note.content)}
+            timestamp={formatVideoTimestamp(hoveredVideoGroup.items[0].anchor.timestamp)}
+            style={videoHoverInfoStyle(hoveredVideoGroup)}
+          />
+        ) : (
+          <SelectionHint
+            text={strings.videoClusterLabel(hoveredVideoGroup.items.length)}
+            style={videoHoverInfoStyle(hoveredVideoGroup)}
           />
         ))}
+
+      {openVideoCluster && (
+        <FloatingVideoClusterList
+          group={openVideoCluster}
+          strings={strings}
+          onSelect={handleVideoClusterSelect}
+          onClose={() => setVideoOpenClusterKey(null)}
+        />
+      )}
 
       {highlightRect && <div className="hm-restore-highlight" style={highlightRect} />}
 
@@ -962,6 +1209,37 @@ function FloatingVideoQuickNote({
         label={strings.videoQuickNoteLabel}
         onSave={onSave}
         onCancel={onCancel}
+      />
+    </div>
+  );
+}
+
+function FloatingVideoClusterList({
+  group,
+  strings,
+  onSelect,
+  onClose,
+}: {
+  group: VideoMarkerGroup;
+  strings: Strings;
+  onSelect: (item: VideoMarkerClusterItem) => void;
+  onClose: () => void;
+}) {
+  // Anchored to the cluster's own rail position (a synthetic zero-size
+  // rect, same technique `FloatingViewer` uses when its note has no
+  // resolved element) — above it, same reasoning as the quick-note popup.
+  const getRect = useCallback(
+    (): AnchorRect => ({ left: group.left, top: group.top, width: 0, height: 0 }),
+    [group.left, group.top],
+  );
+  const { cardRef, style } = useFloatingAbove(getRect);
+  return (
+    <div ref={cardRef} className="hm-floating" style={style}>
+      <VideoMarkerClusterList
+        items={group.items}
+        strings={strings}
+        onSelect={onSelect}
+        onClose={onClose}
       />
     </div>
   );

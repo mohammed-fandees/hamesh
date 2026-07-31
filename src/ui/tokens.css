@@ -616,6 +616,128 @@
     0 0 0 4px var(--hm-accent-tint);
 }
 
+/* Cluster dot — a plain .hm-video-marker sized up with a count inside,
+   for the handful of notes close enough together that individual dots
+   would overlap. */
+.hm-video-marker--cluster {
+  width: 16px;
+  height: 16px;
+  border-width: 1.5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-family: var(--hm-sans);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* ---- Video marker hover preview ---- */
+/* Read-only, pointer-events: none (see VideoMarkerPreview.tsx) — fade +
+   scale in, matching the "fast, premium" motion the design calls for. */
+.hm-video-preview {
+  position: fixed;
+  z-index: var(--hm-z-overlay);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: var(--hm-space-2);
+  max-width: 240px;
+  padding: 7px 10px;
+  border-radius: var(--hm-radius-md);
+  background: var(--hm-surface);
+  border: 1px solid var(--hm-border);
+  box-shadow: var(--hm-shadow-md);
+  animation: hm-video-preview-in var(--hm-dur-fast) var(--hm-ease-settle);
+}
+@keyframes hm-video-preview-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.hm-video-preview__dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--hm-radius-pill);
+  background: var(--hm-accent);
+}
+.hm-video-preview__text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--hm-ink);
+  font-family: var(--hm-serif);
+  font-size: 12.5px;
+}
+.hm-scope[dir='rtl'] .hm-video-preview__text {
+  font-family: var(--hm-arabic);
+}
+.hm-video-preview__time {
+  flex: none;
+  color: var(--hm-ink-40);
+  font-family: var(--hm-mono);
+  font-size: 11px;
+}
+
+/* ---- Video marker cluster list — click-opened, unlike the preview above ---- */
+.hm-video-cluster-list {
+  width: 260px;
+  padding: var(--hm-space-2);
+}
+.hm-video-cluster-list__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.hm-video-cluster-list__item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--hm-space-2);
+  width: 100%;
+  padding: var(--hm-space-2);
+  border: none;
+  border-radius: var(--hm-radius-sm);
+  background: none;
+  text-align: start;
+  cursor: pointer;
+  transition: background var(--hm-dur-fast) var(--hm-ease-out);
+}
+.hm-video-cluster-list__item:hover,
+.hm-video-cluster-list__item:focus-visible {
+  background: var(--hm-paper-dim);
+  outline: none;
+}
+.hm-video-cluster-list__time {
+  flex: none;
+  color: var(--hm-accent-strong);
+  font-family: var(--hm-mono);
+  font-size: 11.5px;
+}
+.hm-video-cluster-list__preview {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--hm-ink);
+  font-family: var(--hm-serif);
+  font-size: 13px;
+}
+.hm-scope[dir='rtl'] .hm-video-cluster-list__preview {
+  font-family: var(--hm-arabic);
+}
+
 /* ---- Icon buttons (settings trigger, back navigation) ---- */
 .hm-icon-btn {
   display: inline-flex;

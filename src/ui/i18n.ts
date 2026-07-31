@@ -58,6 +58,7 @@ export interface Strings {
   videoQuickNotePlaceholder: string;
   videoQuickNoteLabel: string;
   videoMarkerLabel: (timestamp: string) => string;
+  videoClusterLabel: (count: number) => string;
 }
 
 const en: Strings = {
@@ -110,6 +111,7 @@ const en: Strings = {
   videoQuickNotePlaceholder: 'Note this moment…',
   videoQuickNoteLabel: 'Add a video note',
   videoMarkerLabel: (timestamp) => `Note at ${timestamp}`,
+  videoClusterLabel: (count) => (count === 1 ? '1 note here' : `${count} notes here`),
 };
 
 const ar: Strings = {
@@ -162,6 +164,7 @@ const ar: Strings = {
   videoQuickNotePlaceholder: 'دوّن هذه اللحظة…',
   videoQuickNoteLabel: 'إضافة ملاحظة فيديو',
   videoMarkerLabel: (timestamp) => `ملاحظة عند ${timestamp}`,
+  videoClusterLabel: (count) => `${count} ${count === 1 ? 'ملاحظة' : 'ملاحظات'} هنا`,
 };
 
 export function resolveLang(uiLanguage?: string): Lang {
