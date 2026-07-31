@@ -101,6 +101,18 @@ async function waitForHameshReady(page: Page): Promise<void> {
   );
 }
 
+/** Clicks a video marker via real screen coordinates (`page.mouse.click`),
+ *  not `locator.click()` — markers are `pointer-events: none` (real clicks
+ *  pass through to the player beneath, and Hamesh detects them by
+ *  coordinate proximity instead, see HameshApp.tsx), so `locator.click()`'s
+ *  actionability check would otherwise refuse the click, correctly
+ *  reporting that the video "intercepts pointer events". */
+async function clickVideoMarker(page: Page): Promise<void> {
+  const box = await page.locator('.hm-video-marker').boundingBox();
+  if (!box) throw new Error('no visible .hm-video-marker to click');
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+}
+
 async function waitForVideoMetadata(page: Page): Promise<void> {
   await page.evaluate(() => {
     const video = document.querySelector('video')!;
@@ -211,7 +223,7 @@ test.describe('Video Notes — capture + timeline markers', () => {
     await page.evaluate(() => {
       (document.querySelector('video') as HTMLVideoElement).currentTime = 0;
     });
-    await page.locator('.hm-video-marker').click();
+    await clickVideoMarker(page);
     await expect
       .poll(() =>
         page.evaluate(() => (document.querySelector('video') as HTMLVideoElement).currentTime),
@@ -237,7 +249,7 @@ test.describe('Video Notes — capture + timeline markers', () => {
     await page.evaluate(() => {
       (document.querySelector('video') as HTMLVideoElement).currentTime = 0;
     });
-    await page.locator('.hm-video-marker').click();
+    await clickVideoMarker(page);
     await expect
       .poll(() =>
         page.evaluate(() => (document.querySelector('video') as HTMLVideoElement).currentTime),
@@ -246,5 +258,79 @@ test.describe('Video Notes — capture + timeline markers', () => {
     expect(
       await page.evaluate(() => (document.querySelector('video') as HTMLVideoElement).paused),
     ).toBe(false);
+  });
+
+  test('markers hide with the video controls while playing and unhovered, and reappear on hover or pause', async () => {
+    await page.locator('[data-testid="test-video"]').hover();
+    await page.evaluate(() => window.dispatchEvent(new CustomEvent('hamesh:activate')));
+    await page.locator('.hm-video-quick-note textarea').fill('Note while paused');
+    await page.keyboard.press('Enter');
+    // Created while paused — visible immediately, matching native controls
+    // staying up while paused.
+    await expect(page.locator('.hm-video-marker')).toHaveCount(1);
+
+    await page.evaluate(async () => {
+      await (document.querySelector('video') as HTMLVideoElement).play();
+    });
+    // Move well away from the video (and the rail overlapping its bottom
+    // edge) — the marker should hide, the same way native controls would
+    // fade once you stop interacting with a playing video.
+    await page.locator('h1').hover();
+    await expect(page.locator('.hm-video-marker')).toHaveCount(0);
+
+    // Hovering the video again brings it back without needing to pause.
+    await page.locator('[data-testid="test-video"]').hover();
+    await expect(page.locator('.hm-video-marker')).toHaveCount(1);
+
+    // Moving away again hides it (still playing)...
+    await page.locator('h1').hover();
+    await expect(page.locator('.hm-video-marker')).toHaveCount(0);
+
+    // ...but pausing brings it back even while the pointer stays elsewhere.
+    await page.evaluate(() => {
+      (document.querySelector('video') as HTMLVideoElement).pause();
+    });
+    await expect(page.locator('.hm-video-marker')).toHaveCount(1);
+  });
+
+  test('hovering directly over a marker does not steal hover from the video (regression)', async () => {
+    // A marker with real pointer-events used to sit on top of the video —
+    // hovering it meant the *video* itself was no longer the hit-tested
+    // element, which (on a real site) hides that site's own controls too,
+    // and here would also hide our own marker via its hover-based
+    // visibility check — a hide/show flicker loop the instant the pointer
+    // reached a marker it was trying to interact with.
+    await page.evaluate(() => {
+      (document.querySelector('video') as HTMLVideoElement).currentTime = 6;
+    });
+    await page.locator('[data-testid="test-video"]').hover();
+    await page.evaluate(() => window.dispatchEvent(new CustomEvent('hamesh:activate')));
+    await page.locator('.hm-video-quick-note textarea').fill('Regression check');
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.hm-video-marker')).toHaveCount(1);
+
+    await page.evaluate(async () => {
+      await (document.querySelector('video') as HTMLVideoElement).play();
+    });
+
+    // Move to the marker's exact on-screen position, not just "somewhere
+    // on the video" — this is the precise spot that used to trigger it.
+    const box = await page.locator('.hm-video-marker').boundingBox();
+    await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+
+    // Sample repeatedly over a short window: a flicker loop would show up
+    // as the count dropping to 0 at some point during this window, not
+    // just in a single snapshot taken after the fact.
+    for (let i = 0; i < 5; i++) {
+      await expect(page.locator('.hm-video-marker')).toHaveCount(1);
+      await page.waitForTimeout(60);
+    }
+
+    // The video itself — not the marker — is what's actually hovered.
+    expect(
+      await page.evaluate(() =>
+        (document.querySelector('video') as HTMLVideoElement).matches(':hover'),
+      ),
+    ).toBe(true);
   });
 });

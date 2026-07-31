@@ -79,4 +79,13 @@ export const youtubeAdapter: VideoPlayerAdapter = {
   getTimelineRect(): DOMRect | null {
     return getProgressBarContainer()?.getBoundingClientRect() ?? null;
   },
+
+  areControlsVisible(): boolean {
+    // YouTube toggles `.ytp-autohide` on the player container itself while
+    // its chrome (controls + progress bar) is faded out — a real, stable
+    // signal we can read directly, rather than approximating one. Fails
+    // open (visible) if the player container can't be found at all.
+    const container = getPlayerContainerEl();
+    return !container?.classList.contains('ytp-autohide');
+  },
 };

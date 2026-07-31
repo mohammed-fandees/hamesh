@@ -572,7 +572,22 @@
    a site's own UI, e.g. YouTube's progress bar) needs to blend in, not
    announce itself. `top`/`left` are supplied by the caller, already
    centered on the marker's rail position (this rule centers the dot on
-   that point via transform). */
+   that point via transform).
+
+   Deliberately NOT interactive via pointer-events (inherits `none` from
+   .hm-scope, same as every marker here unless explicitly opted back in —
+   see the shadow-DOM pointer-events note near .hm-capture). A real,
+   hit-testable overlay sitting on top of a video steals mouse hover from
+   the actual player beneath it: from YouTube's (or a native
+   `<video controls>` scrubber's) perspective, the pointer leaves the
+   player entirely the instant it's over this dot, hiding *their* controls
+   too. HameshApp handles clicks by coordinate proximity instead, so real
+   pointer events pass straight through to the player. Keyboard activation
+   (Tab + Enter/Space) still works — it doesn't go through pointer
+   hit-testing — so `:hover`/`:active` below are effectively unreachable by
+   mouse today; left in place as the visual `:focus-visible` neighbors,
+   and PR4's hover-preview work is expected to trigger the same escalation
+   from its own proximity check rather than real `:hover`. */
 .hm-video-marker {
   position: fixed;
   z-index: var(--hm-z-marker);
@@ -582,7 +597,6 @@
   border: 1.5px solid var(--hm-surface);
   border-radius: var(--hm-radius-pill);
   background: var(--hm-accent);
-  cursor: pointer;
   transform: translate(-50%, -50%);
   transition:
     transform var(--hm-dur-fast) var(--hm-ease-out),

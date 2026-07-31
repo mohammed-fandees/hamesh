@@ -17,6 +17,7 @@ function makeAdapter(overrides?: Partial<VideoPlayerAdapter>): VideoPlayerAdapte
     getVideoId: () => null,
     capabilities: { nativeTimeline: false },
     getTimelineRect: () => null,
+    areControlsVisible: () => true,
     ...overrides,
   };
 }

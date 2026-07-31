@@ -150,4 +150,25 @@ describe('youtubeAdapter', () => {
       expect(youtubeAdapter.getTimelineRect(stubVideo)).toBeNull();
     });
   });
+
+  describe('areControlsVisible', () => {
+    beforeEach(() => {
+      setLocation('https://www.youtube.com/watch?v=abc123');
+      mountYouTubePlayer();
+    });
+
+    it('is true when the player container has no ytp-autohide class', () => {
+      expect(youtubeAdapter.areControlsVisible(stubVideo)).toBe(true);
+    });
+
+    it('is false when the player container has the ytp-autohide class', () => {
+      document.getElementById('movie_player')!.classList.add('ytp-autohide');
+      expect(youtubeAdapter.areControlsVisible(stubVideo)).toBe(false);
+    });
+
+    it('fails open (true) when the player container cannot be found', () => {
+      document.body.innerHTML = '';
+      expect(youtubeAdapter.areControlsVisible(stubVideo)).toBe(true);
+    });
+  });
 });
