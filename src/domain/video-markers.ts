@@ -65,6 +65,15 @@ function toCluster<T>(group: MarkerPosition<T>[]): MarkerCluster<T> {
   return { items: group.map((g) => g.item), x };
 }
 
+/** The hover preview shows only the note's first line, not its full body —
+ *  it's a glance, not a read. Trims surrounding whitespace; an empty/
+ *  whitespace-only first line (rare, but content could start with a blank
+ *  line) degrades to an empty string rather than throwing, leaving the
+ *  caller to decide how to render that. */
+export function firstLineOf(content: string): string {
+  return (content.split('\n')[0] ?? '').trim();
+}
+
 /** `m:ss` under an hour, `h:mm:ss` from an hour onward. Negative/NaN input
  *  clamps to `0:00` rather than rendering a broken label. */
 export function formatVideoTimestamp(seconds: number): string {

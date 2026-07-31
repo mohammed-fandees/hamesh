@@ -101,16 +101,39 @@ async function waitForHameshReady(page: Page): Promise<void> {
   );
 }
 
-/** Clicks a video marker via real screen coordinates (`page.mouse.click`),
- *  not `locator.click()` — markers are `pointer-events: none` (real clicks
- *  pass through to the player beneath, and Hamesh detects them by
- *  coordinate proximity instead, see HameshApp.tsx), so `locator.click()`'s
- *  actionability check would otherwise refuse the click, correctly
- *  reporting that the video "intercepts pointer events". */
-async function clickVideoMarker(page: Page): Promise<void> {
-  const box = await page.locator('.hm-video-marker').boundingBox();
-  if (!box) throw new Error('no visible .hm-video-marker to click');
+/** Clicks a video marker (or cluster — same class, plus `--cluster`) via
+ *  real screen coordinates (`page.mouse.click`), not `locator.click()` —
+ *  both are `pointer-events: none` (real clicks pass through to the
+ *  player beneath, and Hamesh detects them by coordinate proximity
+ *  instead, see HameshApp.tsx), so `locator.click()`'s actionability check
+ *  would otherwise refuse the click, correctly reporting that the video
+ *  "intercepts pointer events". */
+async function clickVideoMarker(page: Page, selector = '.hm-video-marker'): Promise<void> {
+  const box = await page.locator(selector).boundingBox();
+  if (!box) throw new Error(`no visible ${selector} to click`);
   await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+}
+
+/** Same real-coordinate reasoning as `clickVideoMarker`, for hovering —
+ *  `locator.hover()` would fail its own actionability check the same way. */
+async function moveToVideoMarker(page: Page, selector = '.hm-video-marker'): Promise<void> {
+  const box = await page.locator(selector).boundingBox();
+  if (!box) throw new Error(`no visible ${selector} to hover`);
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+}
+
+/** Hovers the video, opens the quick-note popup via Alt+H, types `text`,
+ *  and saves with Enter — the same flow every test below repeats to get a
+ *  note onto the timeline at a given moment. */
+async function createVideoNoteAt(page: Page, timestamp: number, text: string): Promise<void> {
+  await page.evaluate((t) => {
+    (document.querySelector('video') as HTMLVideoElement).currentTime = t;
+  }, timestamp);
+  await page.locator('[data-testid="test-video"]').hover();
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent('hamesh:activate')));
+  await page.locator('.hm-video-quick-note textarea').fill(text);
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.hm-video-quick-note')).toHaveCount(0);
 }
 
 async function waitForVideoMetadata(page: Page): Promise<void> {
@@ -293,13 +316,14 @@ test.describe('Video Notes — capture + timeline markers', () => {
     await expect(page.locator('.hm-video-marker')).toHaveCount(1);
   });
 
-  test('hovering directly over a marker does not steal hover from the video (regression)', async () => {
+  test('hovering directly over a marker does not flicker it (regression)', async () => {
     // A marker with real pointer-events used to sit on top of the video —
-    // hovering it meant the *video* itself was no longer the hit-tested
-    // element, which (on a real site) hides that site's own controls too,
-    // and here would also hide our own marker via its hover-based
-    // visibility check — a hide/show flicker loop the instant the pointer
-    // reached a marker it was trying to interact with.
+    // hovering it meant the *marker*, not the video (or a real site's
+    // player container), was the hit-tested element, which hides a real
+    // site's own controls (see the youtube.ts adapter) and could also
+    // flicker our own marker in a hide/show loop via its hover-based
+    // visibility check, the instant the pointer reached a dot it was
+    // trying to interact with.
     await page.evaluate(() => {
       (document.querySelector('video') as HTMLVideoElement).currentTime = 6;
     });
@@ -326,11 +350,122 @@ test.describe('Video Notes — capture + timeline markers', () => {
       await page.waitForTimeout(60);
     }
 
-    // The video itself — not the marker — is what's actually hovered.
+    // pointer-events: none means the marker is never the actual
+    // hit-tested element — real hover/click at this exact point passes
+    // through to whatever's really there (the page body, since the
+    // generic-adapter fallback rail sits just outside the video's own
+    // box — see getRailPlacement's comment on why it isn't overlapping).
+    const hitTag = await page.evaluate(
+      ([x, y]) => document.elementFromPoint(x, y)?.tagName ?? null,
+      [box!.x + box!.width / 2, box!.y + box!.height / 2],
+    );
+    expect(hitTag).not.toBe('BUTTON');
+  });
+
+  test('hovering a single marker shows the note preview (first line + timestamp)', async () => {
+    await createVideoNoteAt(page, 4, 'First line of the note\nSecond line, hidden in the preview');
+    await expect(page.locator('.hm-video-marker')).toHaveCount(1);
+
+    await page.locator('h1').hover();
+    await expect(page.locator('.hm-video-preview')).toHaveCount(0);
+
+    await moveToVideoMarker(page);
+    await expect(page.locator('.hm-video-preview')).toBeVisible();
+    await expect(page.locator('.hm-video-preview__text')).toHaveText('First line of the note');
+    await expect(page.locator('.hm-video-preview__time')).toHaveText('0:04');
+
+    await page.locator('h1').hover();
+    await expect(page.locator('.hm-video-preview')).toHaveCount(0);
+  });
+
+  test('notes close together on the timeline render as one cluster instead of overlapping markers', async () => {
+    await createVideoNoteAt(page, 4, 'First note');
+    await createVideoNoteAt(page, 4.2, 'Second note');
+
+    await expect(page.locator('.hm-video-marker--cluster')).toHaveCount(1);
+    await expect(page.locator('.hm-video-marker:not(.hm-video-marker--cluster)')).toHaveCount(0);
+    await expect(page.locator('.hm-video-marker--cluster')).toHaveText('2');
+  });
+
+  test('hovering a cluster shows a small "N notes" hint, not the full preview', async () => {
+    await createVideoNoteAt(page, 4, 'First note');
+    await createVideoNoteAt(page, 4.2, 'Second note');
+    await expect(page.locator('.hm-video-marker--cluster')).toHaveCount(1);
+
+    await moveToVideoMarker(page, '.hm-video-marker--cluster');
+    await expect(page.locator('.hm-hint')).toHaveText('2 notes here');
+    await expect(page.locator('.hm-video-preview')).toHaveCount(0);
+  });
+
+  test('clicking a cluster opens a list of its notes, ordered by timestamp', async () => {
+    await createVideoNoteAt(page, 4.1, 'Later note');
+    await createVideoNoteAt(page, 3.9, 'Earlier note');
+    await expect(page.locator('.hm-video-marker--cluster')).toHaveCount(1);
+
+    await clickVideoMarker(page, '.hm-video-marker--cluster');
+    await expect(page.locator('.hm-video-cluster-list')).toBeVisible();
+
+    const items = page.locator('.hm-video-cluster-list__item');
+    await expect(items).toHaveCount(2);
+    await expect(items.nth(0)).toContainText('0:03');
+    await expect(items.nth(0)).toContainText('Earlier note');
+    await expect(items.nth(1)).toContainText('0:04');
+    await expect(items.nth(1)).toContainText('Later note');
+  });
+
+  test('selecting a note from the cluster list seeks to it and closes the list', async () => {
+    await createVideoNoteAt(page, 3.9, 'Earlier note');
+    await createVideoNoteAt(page, 4.1, 'Later note');
+    await clickVideoMarker(page, '.hm-video-marker--cluster');
+
+    const items = page.locator('.hm-video-cluster-list__item');
+    await expect(items).toHaveCount(2);
+
+    await page.evaluate(() => {
+      (document.querySelector('video') as HTMLVideoElement).currentTime = 0;
+    });
+    await items.nth(1).click(); // the later ("0:04") note
+    await expect(page.locator('.hm-video-cluster-list')).toHaveCount(0);
+    await expect
+      .poll(() =>
+        page.evaluate(() => (document.querySelector('video') as HTMLVideoElement).currentTime),
+      )
+      .toBeGreaterThan(4.05);
+  });
+
+  test('clicking outside an open cluster list closes it without seeking', async () => {
+    await createVideoNoteAt(page, 3.9, 'Earlier note');
+    await createVideoNoteAt(page, 4.1, 'Later note');
+    await clickVideoMarker(page, '.hm-video-marker--cluster');
+    await expect(page.locator('.hm-video-cluster-list')).toBeVisible();
+
+    await page.evaluate(() => {
+      (document.querySelector('video') as HTMLVideoElement).currentTime = 0;
+    });
+    await page.locator('h1').click();
+
+    await expect(page.locator('.hm-video-cluster-list')).toHaveCount(0);
     expect(
-      await page.evaluate(() =>
-        (document.querySelector('video') as HTMLVideoElement).matches(':hover'),
-      ),
-    ).toBe(true);
+      await page.evaluate(() => (document.querySelector('video') as HTMLVideoElement).currentTime),
+    ).toBe(0);
+  });
+
+  test('Escape closes an open cluster list', async () => {
+    await createVideoNoteAt(page, 3.9, 'Earlier note');
+    await createVideoNoteAt(page, 4.1, 'Later note');
+    await clickVideoMarker(page, '.hm-video-marker--cluster');
+    await expect(page.locator('.hm-video-cluster-list')).toBeVisible();
+
+    // Not `page.keyboard.press` (global, dispatched at whatever
+    // `document.activeElement` currently is) — confirmed via a throwaway
+    // repro that headless Chromium in this environment never reflects a
+    // programmatic `.focus()` call in `document.activeElement`, the same
+    // environment gap noted for the quick-note's autoFocus elsewhere in
+    // this file. `locator.press()` on the list's first row (which the
+    // component auto-focuses on open) targets the key event at that
+    // specific, real element instead, which correctly reaches the list's
+    // onKeyDown handler regardless of what `document.activeElement` says.
+    await page.locator('.hm-video-cluster-list__item').first().press('Escape');
+    await expect(page.locator('.hm-video-cluster-list')).toHaveCount(0);
   });
 });
