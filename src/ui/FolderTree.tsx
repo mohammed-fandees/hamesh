@@ -183,7 +183,7 @@ function FolderNoteList({ notes }: { notes: Note[] }) {
           draggable
           onDragStart={(e) => e.dataTransfer.setData(NOTE_DRAG_MIME, note.id)}
         >
-          <NoteRow note={note} strings={strings} lang={lang} />
+          <NoteRow note={note} strings={strings} lang={lang} showDomain />
           <MoveToFolderMenu
             note={note}
             folders={flatFoldersForMenu}

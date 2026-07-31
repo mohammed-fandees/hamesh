@@ -38,8 +38,11 @@ export interface Monogram {
 /** Registrable hostname, lowercased, `www.` stripped. Never throws — a
  *  malformed `originalUrl` (which shouldn't occur since it's always captured
  *  from `location.href`) degrades to grouping under the raw string rather
- *  than silently dropping the note. */
-function extractDomain(url: string): string {
+ *  than silently dropping the note. Exported for reuse wherever a note's
+ *  originating site needs to be shown outside a domain-grouped context —
+ *  e.g. `NoteRow`'s per-row favicon in the Notes Library's folder view,
+ *  where notes from different sites can sit side by side. */
+export function extractDomain(url: string): string {
   try {
     const hostname = new URL(url).hostname.toLowerCase();
     return hostname.startsWith('www.') ? hostname.slice(4) : hostname;

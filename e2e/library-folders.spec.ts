@@ -153,6 +153,18 @@ test.describe('Notes Library — Folders', () => {
     );
   });
 
+  test('shows a favicon + domain for each note in folder mode, but not in the domain-grouped view', async () => {
+    await expect(library.locator('.hm-note-row__domain')).toHaveCount(0);
+
+    await switchToFolderMode(library);
+    await folderNode(library, 'Unfiled').locator('.hm-folder-node__name').click();
+
+    const kickers = library.locator('.hm-note-row__domain');
+    await expect(kickers).toHaveCount(2);
+    await expect(kickers.first()).toContainText('127.0.0.1');
+    await expect(kickers.first().locator('.hm-favicon')).toBeVisible();
+  });
+
   test('creates a top-level folder and a nested sub-folder', async () => {
     await switchToFolderMode(library);
     await createFolder(library, 'Work');

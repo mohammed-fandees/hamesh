@@ -1,7 +1,8 @@
 import type { Note } from '@/domain/note';
-import { derivePageLabel } from '@/domain/notes-grouping';
+import { derivePageLabel, extractDomain } from '@/domain/notes-grouping';
 import { formatVideoTimestamp } from '@/domain/video-markers';
 import { isPlainLeftClick, openNoteAndRestore } from '@/entrypoints/notes/openNote';
+import { Favicon } from './Favicon';
 import { PinIcon } from './PinIcon';
 import { PlayIcon } from './PlayIcon';
 import type { Lang, Strings } from './i18n';
@@ -11,6 +12,13 @@ interface NoteRowProps {
   note: Note;
   strings: Strings;
   lang: Lang;
+  /** Shows a small favicon + domain kicker above the title — off by
+   *  default, since the domain-grouped view already shows one favicon per
+   *  group header (repeating it per row there would be redundant). The
+   *  folder view has no such header (a folder can mix notes from several
+   *  sites), so it turns this on — same "flat, cross-site list" reasoning
+   *  `PinnedSection` already uses for its own per-item favicon. */
+  showDomain?: boolean;
 }
 
 /** A single note's compact preview inside an expanded website group —
@@ -32,7 +40,7 @@ interface NoteRowProps {
  *  happens from the content-script NoteViewer — this row is already a
  *  single full-row link, and a second interactive control can't nest inside
  *  an `<a>`. */
-export function NoteRow({ note, strings, lang }: NoteRowProps) {
+export function NoteRow({ note, strings, lang, showDomain }: NoteRowProps) {
   return (
     <a
       className="hm-note-row"
@@ -45,6 +53,12 @@ export function NoteRow({ note, strings, lang }: NoteRowProps) {
         void openNoteAndRestore(note.originalUrl, note.id);
       }}
     >
+      {showDomain && (
+        <span className="hm-note-row__domain">
+          <Favicon domain={extractDomain(note.originalUrl)} size={14} />
+          {extractDomain(note.originalUrl)}
+        </span>
+      )}
       <p className="hm-note-row__title">
         {note.pinned && <PinIcon filled size={10} />}
         {derivePageLabel(note)}
