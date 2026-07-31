@@ -197,6 +197,53 @@ describe('NotesRepository', () => {
     });
   });
 
+  describe('setFolder', () => {
+    it('files a note into a folder and persists it', async () => {
+      const created = await repo.create({
+        content: 'x',
+        pageKey,
+        originalUrl: 'u',
+        anchor: makeAnchor(),
+      });
+
+      const updated = await repo.setFolder(created.id, pageKey, 'folder-1');
+      expect(updated?.folderId).toBe('folder-1');
+
+      const notes = await repo.getForPage(pageKey);
+      expect(notes[0].folderId).toBe('folder-1');
+    });
+
+    it('unfiles a note by passing undefined', async () => {
+      const created = await repo.create({
+        content: 'x',
+        pageKey,
+        originalUrl: 'u',
+        anchor: makeAnchor(),
+      });
+      await repo.setFolder(created.id, pageKey, 'folder-1');
+
+      const updated = await repo.setFolder(created.id, pageKey, undefined);
+      expect(updated?.folderId).toBeUndefined();
+    });
+
+    it('does not change updatedAt', async () => {
+      const created = await repo.create({
+        content: 'x',
+        pageKey,
+        originalUrl: 'u',
+        anchor: makeAnchor(),
+      });
+
+      const updated = await repo.setFolder(created.id, pageKey, 'folder-1');
+      expect(updated?.updatedAt).toBe(created.updatedAt);
+    });
+
+    it('returns null for an unknown note id', async () => {
+      const result = await repo.setFolder('nonexistent', pageKey, 'folder-1');
+      expect(result).toBeNull();
+    });
+  });
+
   describe('workspaceId backfill', () => {
     it('stamps a default workspaceId on newly created notes', async () => {
       const note = await repo.create({

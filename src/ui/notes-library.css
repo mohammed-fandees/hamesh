@@ -532,3 +532,217 @@
   background: var(--hm-paper-dim);
   border-radius: var(--hm-radius-sm);
 }
+
+/* ---- Folder tree (Notes Library "By folder" mode) — same hairline-
+   separator, no-cards aesthetic as the domain-grouped list. ---- */
+.hm-folder-tree__toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--hm-space-2);
+}
+.hm-folder-tree__list,
+.hm-folder-node__children {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.hm-folder-tree__list > li + li {
+  border-top: 1px solid var(--hm-border);
+}
+.hm-folder-node__children {
+  padding-inline-start: var(--hm-space-2);
+}
+
+.hm-folder-node {
+  display: flex;
+  align-items: center;
+  gap: var(--hm-space-2);
+  padding: var(--hm-space-2);
+  border-radius: var(--hm-radius-md);
+  transition: background var(--hm-dur-fast) var(--hm-ease-out);
+}
+.hm-folder-node:hover {
+  background: var(--hm-paper-dim);
+}
+.hm-folder-node[data-drag-over='true'] {
+  background: var(--hm-accent-tint);
+  outline: 1px dashed var(--hm-accent);
+  outline-offset: -1px;
+}
+.hm-folder-node--unfiled .hm-folder-node__name {
+  color: var(--hm-ink-60);
+  font-style: italic;
+}
+.hm-folder-node__toggle {
+  flex: none;
+  display: inline-flex;
+  border: none;
+  background: none;
+  padding: 2px;
+  cursor: pointer;
+  color: var(--hm-ink-40);
+}
+.hm-folder-node__chevron {
+  /* Collapsed: points at the folder glyph beside it (►). Expanded: rotates
+     to point down (▼) — the familiar file-explorer convention. */
+  transition: transform var(--hm-dur-base) var(--hm-ease-out);
+}
+.hm-folder-node__chevron[data-expanded='true'] {
+  transform: rotate(90deg);
+}
+/* Mirrored in RTL so a collapsed folder's chevron still points toward its
+   glyph (now on the chevron's visual left, since the row itself mirrors). */
+.hm-scope[dir='rtl'] .hm-folder-node__chevron {
+  transform: scaleX(-1);
+}
+.hm-scope[dir='rtl'] .hm-folder-node__chevron[data-expanded='true'] {
+  transform: scaleX(-1) rotate(90deg);
+}
+.hm-folder-node__glyph {
+  flex: none;
+  color: var(--hm-accent);
+}
+.hm-folder-node__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: start;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--hm-sans);
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--hm-ink);
+  padding: 0;
+}
+.hm-folder-node__count {
+  flex: none;
+  font-size: 12px;
+  color: var(--hm-ink-40);
+}
+.hm-folder-node__actions {
+  flex: none;
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity var(--hm-dur-fast) var(--hm-ease-out);
+}
+.hm-folder-node:hover .hm-folder-node__actions,
+.hm-folder-node:focus-within .hm-folder-node__actions {
+  opacity: 1;
+}
+
+.hm-folder-node__confirm {
+  padding: var(--hm-space-2) var(--hm-space-2) var(--hm-space-3);
+  font-size: 12.5px;
+  color: var(--hm-ink-60);
+}
+.hm-folder-node__confirm p {
+  margin: 0 0 var(--hm-space-2);
+}
+
+.hm-folder-node__body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--hm-dur-base) var(--hm-ease-out);
+}
+.hm-folder-node__body[data-expanded='true'] {
+  grid-template-rows: 1fr;
+}
+.hm-folder-node__notes {
+  overflow: hidden;
+  min-height: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0 0 var(--hm-space-2);
+}
+.hm-folder-note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--hm-space-1);
+}
+.hm-folder-note .hm-note-row {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.hm-folder-note[draggable='true'] {
+  cursor: grab;
+}
+
+/* Inline create/rename form — matches the composer's textarea focus
+   treatment, kept to a single-line input since folder names are short. */
+.hm-folder-form {
+  display: flex;
+  align-items: center;
+  gap: var(--hm-space-2);
+  padding: var(--hm-space-2);
+}
+.hm-folder-form__input,
+.hm-folder-menu__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 6px var(--hm-space-2);
+  font-family: var(--hm-sans);
+  font-size: 13px;
+  color: var(--hm-ink);
+  background: var(--hm-surface);
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-sm);
+}
+.hm-folder-form__input:focus-visible,
+.hm-folder-menu__input:focus-visible {
+  outline: none;
+  border-color: var(--hm-accent);
+  box-shadow: 0 0 0 3px var(--hm-accent-tint);
+}
+
+/* ---- Move-to-folder menu ---- */
+.hm-folder-menu {
+  position: relative;
+  flex: none;
+}
+.hm-folder-menu__panel {
+  position: absolute;
+  inset-inline-end: 0;
+  top: 100%;
+  z-index: 10;
+  margin-top: 4px;
+  min-width: 180px;
+  padding: var(--hm-space-1);
+  background: var(--hm-surface);
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-md);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+.hm-folder-menu__item {
+  display: block;
+  width: 100%;
+  padding: 6px var(--hm-space-2);
+  border: none;
+  background: none;
+  border-radius: var(--hm-radius-sm);
+  cursor: pointer;
+  text-align: start;
+  font-family: var(--hm-sans);
+  font-size: 12.5px;
+  color: var(--hm-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hm-folder-menu__item:hover {
+  background: var(--hm-paper-dim);
+}
+.hm-folder-menu__item--new {
+  color: var(--hm-accent);
+  font-weight: 500;
+}
+.hm-folder-menu__create {
+  display: flex;
+  align-items: center;
+  gap: var(--hm-space-1);
+  padding: 4px;
+}

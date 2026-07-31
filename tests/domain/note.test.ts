@@ -3,6 +3,7 @@ import {
   createNote,
   updateNoteContent,
   setNotePinned,
+  setNoteFolder,
   validateNoteContent,
   validateNote,
 } from '@/domain/note';
@@ -120,6 +121,36 @@ describe('setNotePinned', () => {
     const anchor = makeAnchor();
     const note = createNote({ content: 'x', pageKey: 'p', originalUrl: 'u', anchor });
     expect(note.pinned).toBeUndefined();
+  });
+});
+
+describe('setNoteFolder', () => {
+  it('files a note into a folder without touching updatedAt', () => {
+    const anchor = makeAnchor();
+    const note = createNote({ content: 'x', pageKey: 'p', originalUrl: 'u', anchor });
+
+    const filed = setNoteFolder(note, 'folder-1');
+    expect(filed.folderId).toBe('folder-1');
+    expect(filed.updatedAt).toBe(note.updatedAt);
+    expect(filed.id).toBe(note.id);
+  });
+
+  it('unfiles a note by passing undefined', () => {
+    const anchor = makeAnchor();
+    const note = {
+      ...createNote({ content: 'x', pageKey: 'p', originalUrl: 'u', anchor }),
+      folderId: 'folder-1',
+    };
+
+    const unfiled = setNoteFolder(note, undefined);
+    expect(unfiled.folderId).toBeUndefined();
+    expect(unfiled.updatedAt).toBe(note.updatedAt);
+  });
+
+  it('leaves a fresh note unfiled by default', () => {
+    const anchor = makeAnchor();
+    const note = createNote({ content: 'x', pageKey: 'p', originalUrl: 'u', anchor });
+    expect(note.folderId).toBeUndefined();
   });
 });
 

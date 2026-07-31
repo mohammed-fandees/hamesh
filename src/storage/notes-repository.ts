@@ -1,5 +1,11 @@
 import type { Note, CreateNoteInput, UpdateNoteInput } from '@/domain/note';
-import { createNote, updateNoteContent, setNotePinned, validateNoteContent } from '@/domain/note';
+import {
+  createNote,
+  updateNoteContent,
+  setNotePinned,
+  setNoteFolder,
+  validateNoteContent,
+} from '@/domain/note';
 import { DEFAULT_WORKSPACE_ID } from '@/domain/workspace';
 
 const STORAGE_KEY_PREFIX = 'hamesh:notes:';
@@ -30,6 +36,7 @@ export interface NotesRepository {
   delete(noteId: string, pageKey: string): Promise<boolean>;
   getAll(): Promise<Note[]>;
   setPinned(noteId: string, pageKey: string, pinned: boolean): Promise<Note | null>;
+  setFolder(noteId: string, pageKey: string, folderId: string | undefined): Promise<Note | null>;
 }
 
 export function createNotesRepository(): NotesRepository {
@@ -90,6 +97,22 @@ export function createNotesRepository(): NotesRepository {
       if (index === -1) return null;
 
       const updated = setNotePinned(existing[index], pinned);
+      existing[index] = updated;
+      const key = storageKey(pageKey);
+      await storage.setItem(`local:${key}`, existing);
+      return updated;
+    },
+
+    async setFolder(
+      noteId: string,
+      pageKey: string,
+      folderId: string | undefined,
+    ): Promise<Note | null> {
+      const existing = await this.getForPage(pageKey);
+      const index = existing.findIndex((n) => n.id === noteId);
+      if (index === -1) return null;
+
+      const updated = setNoteFolder(existing[index], folderId);
       existing[index] = updated;
       const key = storageKey(pageKey);
       await storage.setItem(`local:${key}`, existing);

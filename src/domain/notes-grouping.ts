@@ -59,8 +59,9 @@ function latestNote(notes: Note[]): Note {
 /** Pinned notes first, otherwise stable (JS's `Array.prototype.sort` is
  *  guaranteed stable, so notes sharing a pin state keep their existing
  *  relative order — this only ever promotes pinned notes, it doesn't
- *  otherwise reorder a group's notes). */
-function sortNotesWithPinnedFirst(notes: Note[]): Note[] {
+ *  otherwise reorder a group's notes). Exported for reuse by
+ *  `folder-grouping.ts`, which orders notes within a folder the same way. */
+export function sortNotesWithPinnedFirst(notes: Note[]): Note[] {
   return [...notes].sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned));
 }
 
