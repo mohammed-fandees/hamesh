@@ -118,6 +118,11 @@ export function App() {
     window.close();
   }
 
+  async function handleOpenFullSettings() {
+    await browser.tabs.create({ url: browser.runtime.getURL('/notes.html?view=settings') });
+    window.close();
+  }
+
   // Return focus to the trigger that opened Settings when navigating back.
   // Settings' own heading grabs focus on its side when navigating in (see
   // SettingsView) — skip the very first run so mounting on "home" doesn't
@@ -260,6 +265,7 @@ export function App() {
               onBack={() => setView('home')}
               onLanguageChange={handleLanguageChange}
               onAppearanceChange={handleAppearanceChange}
+              onOpenFullSettings={handleOpenFullSettings}
             />
           </div>
         </div>

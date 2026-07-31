@@ -24,6 +24,10 @@ import '@/ui/tokens.css';
 import '@/ui/notes-library.css';
 
 const initialLang = resolveLang(browser.i18n?.getUILanguage?.());
+// Lets the popup's "Open full settings" link land directly on the Settings
+// view (`notes.html?view=settings`) instead of always opening to Library.
+const initialView: LibraryView =
+  new URLSearchParams(location.search).get('view') === 'settings' ? 'settings' : 'library';
 // Same rationale as the popup: this page has no single host webpage of its
 // own to detect a background from, so "Match website" resolves to the OS
 // scheme here too.
@@ -33,7 +37,7 @@ const repo = createNotesRepository();
 const prefsRepo = createPreferencesRepository();
 
 export function App() {
-  const [view, setView] = useState<LibraryView>('library');
+  const [view, setView] = useState<LibraryView>(initialView);
   const [lang, setLang] = useState<Lang>(initialLang);
   const [appearance, setAppearance] = useState<AppearanceMode>('match-website');
   /** `null` while the initial load is in flight; distinguishes "loading" from

@@ -104,4 +104,26 @@ test.describe('Notes Library — sidebar + Settings', () => {
     await page.reload();
     await expect(page.locator('.hm-scope')).toHaveAttribute('dir', 'rtl');
   });
+
+  test('notes.html?view=settings opens directly to Settings, not Library', async () => {
+    const extensionId = await getExtensionId(context);
+    const page = await context.newPage();
+    await page.goto(`chrome-extension://${extensionId}/notes.html?view=settings`);
+    await expect(page.locator('h1')).toHaveText('Settings');
+  });
+
+  test("the popup's Settings pane links out to the full Settings page", async () => {
+    const extensionId = await getExtensionId(context);
+    const popup = await context.newPage();
+    await popup.goto(`chrome-extension://${extensionId}/popup.html`);
+    await popup.getByRole('button', { name: 'Settings' }).click();
+
+    const [libraryPage] = await Promise.all([
+      context.waitForEvent('page'),
+      popup.getByRole('button', { name: 'Open full settings' }).click(),
+    ]);
+    await libraryPage.waitForLoadState('domcontentloaded');
+    expect(new URL(libraryPage.url()).search).toBe('?view=settings');
+    await expect(libraryPage.locator('h1')).toHaveText('Settings');
+  });
 });

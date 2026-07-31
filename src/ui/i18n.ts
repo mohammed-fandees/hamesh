@@ -62,6 +62,7 @@ export interface Strings {
   settingsShortcuts: string;
   shortcutNotSet: string;
   shortcutOpenChromeSettings: string;
+  settingsOpenFull: string;
 }
 
 const en: Strings = {
@@ -118,6 +119,7 @@ const en: Strings = {
   settingsShortcuts: 'Shortcuts',
   shortcutNotSet: 'Not set',
   shortcutOpenChromeSettings: 'Change in Chrome settings',
+  settingsOpenFull: 'Open full settings',
 };
 
 const ar: Strings = {
@@ -174,6 +176,7 @@ const ar: Strings = {
   settingsShortcuts: 'الاختصارات',
   shortcutNotSet: 'غير محدد',
   shortcutOpenChromeSettings: 'تغيير من إعدادات Chrome',
+  settingsOpenFull: 'فتح الإعدادات الكاملة',
 };
 
 export function resolveLang(uiLanguage?: string): Lang {
