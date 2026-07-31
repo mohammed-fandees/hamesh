@@ -1,9 +1,14 @@
 import { getActiveAdapterMatch, type AdapterVideoMatch } from './video-adapters/registry';
 
-let lastPointerTarget: Element | null = null;
+export interface PointerPosition {
+  x: number;
+  y: number;
+}
+
+let lastPointerPos: PointerPosition | null = null;
 
 function onPointerMove(e: PointerEvent): void {
-  lastPointerTarget = e.target instanceof Element ? e.target : null;
+  lastPointerPos = { x: e.clientX, y: e.clientY };
 }
 
 /**
@@ -18,23 +23,47 @@ export function trackVideoContext(): () => void {
     window.removeEventListener('pointermove', onPointerMove, {
       capture: true,
     } as EventListenerOptions);
-    lastPointerTarget = null;
+    lastPointerPos = null;
   };
 }
 
+function isPointInRect(pos: PointerPosition, rect: DOMRect): boolean {
+  return pos.x >= rect.left && pos.x <= rect.right && pos.y >= rect.top && pos.y <= rect.bottom;
+}
+
 /** Pure decision, separated from the live pointer-tracking state above so
- *  it's testable with plain fixture elements — no event wiring required.
- *  "Interacting with" means inside the matched adapter's whole player
- *  region (`getPlayerContainer`), not just the bare `<video>` box, so
- *  hovering a site's own controls/timeline still counts. */
+ *  it's testable with plain fixture rects — no event wiring required.
+ *
+ *  "Interacting with" means: the pointer's last known position falls
+ *  within the matched adapter's player region's *bounding box*
+ *  (coordinate-based), or the focused element is a descendant of that
+ *  region (DOM containment — focus is inherently element-based, not a
+ *  screen coordinate, so this half stays a `.contains()` check).
+ *
+ *  Deliberately not a `.contains(hoveredElement)` check for hover, unlike
+ *  an earlier version of this function: almost every real video player —
+ *  custom or a plain `<video>` — layers a play-button overlay, ad chrome,
+ *  or its own controls bar *on top of* the player container as CSS-
+ *  positioned siblings, not DOM descendants, of whatever element an
+ *  adapter identifies as "the player." Hit-testing at the pointer's
+ *  position nearly always resolves to one of those overlay elements, not
+ *  a descendant of the container — so a strict ancestry check made this
+ *  detector fail to recognize "hovering the video" on real sites, working
+ *  correctly only for a bare, chrome-less `<video>` with nothing drawn
+ *  over it (exactly the gap between this project's simplified e2e fixture
+ *  and a real page). A bounding-box check doesn't care about DOM
+ *  structure or stacking order — only "is the pointer visually over this
+ *  region" — which is what "hovering the video" actually means to a user. */
 export function resolveVideoUnderInteraction(
-  hoveredElement: Element | null,
+  pointerPos: PointerPosition | null,
   focusedElement: Element | null,
   match: AdapterVideoMatch | null,
 ): HTMLVideoElement | null {
   if (!match) return null;
   const container = match.adapter.getPlayerContainer(match.video) ?? match.video;
-  const hoverInside = !!hoveredElement && container.contains(hoveredElement);
+  const rect = container.getBoundingClientRect();
+  const hoverInside =
+    !!pointerPos && rect.width > 0 && rect.height > 0 && isPointInRect(pointerPos, rect);
   const focusInside = !!focusedElement && container.contains(focusedElement);
   return hoverInside || focusInside ? match.video : null;
 }
@@ -52,7 +81,7 @@ export function resolveVideoUnderInteraction(
  */
 export function getActiveVideoMatchUnderInteraction(): AdapterVideoMatch | null {
   const match = getActiveAdapterMatch();
-  const video = resolveVideoUnderInteraction(lastPointerTarget, document.activeElement, match);
+  const video = resolveVideoUnderInteraction(lastPointerPos, document.activeElement, match);
   return video ? match : null;
 }
 

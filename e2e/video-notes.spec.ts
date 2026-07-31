@@ -475,7 +475,7 @@ test.describe('Video Notes — capture + timeline markers', () => {
     await expect(page.locator('.hm-video-cluster-list')).toHaveCount(0);
   });
 
-  test('opening a video note from the Notes Library seeks the video in a fresh tab, with no viewer', async () => {
+  test('opening a video note from the Notes Library seeks the video and opens its viewer in a fresh tab', async () => {
     const extensionId = await getExtensionId(context);
     const noteText = 'Reached via the Notes Library.';
     await createVideoNoteAt(page, 6, noteText);
@@ -509,10 +509,35 @@ test.describe('Video Notes — capture + timeline markers', () => {
       )
       .toBeGreaterThan(5.5);
 
-    // No viewer/composer opens for a video note — same "seek only" design
-    // as clicking its on-page marker (PR3/PR4). Give it a moment to make
-    // sure nothing appears late, not just check immediately.
-    await restoredPage.waitForTimeout(300);
-    await expect(restoredPage.locator('.hm-card')).toHaveCount(0);
+    // The note's viewer opens too — same as clicking its on-page marker —
+    // so the user lands somewhere they can read/edit/delete/pin it, not
+    // just a silently-seeked video.
+    await expect(restoredPage.locator('.hm-card .hm-note-body')).toHaveText(noteText, {
+      timeout: 5000,
+    });
+  });
+
+  test('clicking a marker opens the note viewer, where it can be edited, pinned, and deleted', async () => {
+    await createVideoNoteAt(page, 6, 'Original video note text');
+    await expect(page.locator('.hm-video-marker')).toHaveCount(1);
+
+    await clickVideoMarker(page);
+    await expect(page.locator('.hm-card .hm-note-body')).toHaveText('Original video note text');
+
+    // Pin.
+    await page.getByRole('button', { name: 'Pin this note' }).click();
+    await expect(page.getByRole('button', { name: 'Unpin this note' })).toBeVisible();
+
+    // Edit.
+    await page.getByRole('button', { name: 'Edit' }).click();
+    await page.locator('.hm-card textarea').fill('Edited video note text');
+    await page.getByRole('button', { name: 'Save changes' }).click();
+    await expect(page.locator('.hm-card .hm-note-body')).toHaveText('Edited video note text');
+
+    // Delete.
+    await page.getByRole('button', { name: 'Delete', exact: true }).click();
+    await page.getByRole('button', { name: 'Delete', exact: true }).click();
+    await expect(page.locator('.hm-card')).toHaveCount(0);
+    await expect(page.locator('.hm-video-marker')).toHaveCount(0);
   });
 });

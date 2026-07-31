@@ -591,10 +591,13 @@ export function HameshApp({
       const target = videoResolved.find((r) => r.note.id === pendingRestoreId);
       if (target?.quality === ResolutionQuality.Exact) {
         setRestoredFor(pendingRestoreId);
-        // Seek only — never open a viewer for a video note (matching the
-        // on-page marker click behavior from PR3/PR4) and never call
+        // Seeks and opens the viewer — same as clicking the note's
+        // on-page marker (see handleVideoMarkerOpen). Never calls
         // play()/pause() (spec: "Never unexpectedly autoplay"); a fresh
         // tab's video is simply left in whatever state it loaded in.
+        setComposer(null);
+        setError(null);
+        setViewerId(pendingRestoreId);
         setVideoSeekRequest({ timestamp: videoAnchor.timestamp, nonce: pendingRestoreId });
       }
     } else {
@@ -739,8 +742,14 @@ export function HameshApp({
     [videoComposer, repo, pageKey, commitNotes],
   );
 
-  const handleVideoMarkerOpen = useCallback((timestamp: number) => {
+  // Clicking a marker both seeks *and* opens the note's viewer — the only
+  // way to read/edit/delete/pin a video note, since there's no separate
+  // "view" affordance beyond the marker itself (the hover preview is
+  // read-only, by design: it has to stay passive so it doesn't itself
+  // become another hover-stealing overlay).
+  const handleVideoMarkerOpen = useCallback((noteId: string, timestamp: number) => {
     setVideoOpenClusterKey(null);
+    setViewerId(noteId);
     videoSeekNonceRef.current += 1;
     setVideoSeekRequest({ timestamp, nonce: videoSeekNonceRef.current });
   }, []);
@@ -751,6 +760,7 @@ export function HameshApp({
 
   const handleVideoClusterSelect = useCallback((item: VideoMarkerClusterItem) => {
     setVideoOpenClusterKey(null);
+    setViewerId(item.note.id);
     videoSeekNonceRef.current += 1;
     setVideoSeekRequest({ timestamp: item.anchor.timestamp, nonce: videoSeekNonceRef.current });
   }, []);
@@ -992,6 +1002,9 @@ export function HameshApp({
           setVideoOpenClusterKey((prev) => (prev === closest!.key ? null : closest!.key));
         } else {
           setVideoOpenClusterKey(null);
+          // Also opens the note's viewer — see handleVideoMarkerOpen's
+          // doc comment for why a click needs to do both.
+          setViewerId(closest.items[0].note.id);
           const video = videoMatchRef.current?.video;
           // Jump to the stored timestamp only — never call play()/
           // pause(), so a playing video keeps playing and a paused one
@@ -1040,12 +1053,22 @@ export function HameshApp({
   }, [highlightId, resolved, frame]);
 
   const viewerNote = viewerId ? notes.find((n) => n.id === viewerId) : null;
-  const viewerResolved = viewerId ? resolved.find((r) => r.note.id === viewerId) : null;
+  const viewerIsVideo = viewerNote?.anchor.type === 'video';
+  const viewerResolved =
+    viewerId && !viewerIsVideo ? resolved.find((r) => r.note.id === viewerId) : null;
+  const viewerVideoResolved =
+    viewerId && viewerIsVideo ? videoResolved.find((r) => r.note.id === viewerId) : null;
 
   // Not gated on visibility — proximity to a group is exactly what
   // (re)reveals it via `effectiveVideoControlsVisible` above; gating this
   // too would mean nothing hidden could ever be discovered by hovering.
-  const hoveredVideoGroup = videoMarkerGroups.find((g) => g.key === videoHoverGroupKey);
+  // Also suppressed for whichever note's viewer is already open, so the
+  // read-only hover preview doesn't double up with the (now editable)
+  // viewer for the same note.
+  const hoveredVideoGroup = videoMarkerGroups.find(
+    (g) =>
+      g.key === videoHoverGroupKey && !(g.items.length === 1 && g.items[0].note.id === viewerId),
+  );
   // Also ungated: once a cluster list is explicitly opened, it stays open
   // regardless of ambient hover/controls state — same as the composer or
   // quick-note popup, which aren't tied to video-controls-visibility
@@ -1109,7 +1132,7 @@ export function HameshApp({
               // directly at the focused element, bypassing pointer
               // hit-testing entirely) keeps working.
               style={{ top: g.top, left: g.left }}
-              onOpen={() => handleVideoMarkerOpen(g.items[0].anchor.timestamp)}
+              onOpen={() => handleVideoMarkerOpen(g.items[0].note.id, g.items[0].anchor.timestamp)}
             />
           ) : (
             <VideoMarkerCluster
@@ -1168,11 +1191,27 @@ export function HameshApp({
         />
       )}
 
-      {viewerNote && (
+      {viewerNote && !viewerIsVideo && (
         <FloatingViewer
           note={viewerNote}
           element={viewerResolved?.element ?? null}
           anchorAvailable={!!viewerResolved?.element}
+          strings={strings}
+          lang={lang}
+          busy={busy}
+          error={error}
+          onUpdate={(content) => handleUpdate(viewerNote.id, content)}
+          onDelete={() => handleDelete(viewerNote.id)}
+          onTogglePin={() => handleTogglePin(viewerNote.id)}
+          onClose={() => setViewerId(null)}
+        />
+      )}
+
+      {viewerNote && viewerIsVideo && (
+        <FloatingVideoViewer
+          note={viewerNote}
+          video={viewerVideoResolved?.video ?? videoMatch?.video ?? null}
+          anchorAvailable={viewerVideoResolved?.quality === ResolutionQuality.Exact}
           strings={strings}
           lang={lang}
           busy={busy}
@@ -1264,6 +1303,64 @@ function FloatingVideoClusterList({
         items={group.items}
         strings={strings}
         onSelect={onSelect}
+        onClose={onClose}
+      />
+    </div>
+  );
+}
+
+/** The video-note counterpart of `FloatingViewer` below — same `NoteViewer`
+ *  component (edit/delete/pin are already anchor-agnostic; nothing about
+ *  them needed to change), positioned above the video via
+ *  `useFloatingAbove` instead of anchored to a resolved DOM element, since
+ *  a video note has no page element to anchor to. */
+function FloatingVideoViewer({
+  note,
+  video,
+  anchorAvailable,
+  strings,
+  lang,
+  busy,
+  error,
+  onUpdate,
+  onDelete,
+  onTogglePin,
+  onClose,
+}: {
+  note: Note;
+  video: HTMLVideoElement | null;
+  anchorAvailable: boolean;
+  strings: Strings;
+  lang: Lang;
+  busy: boolean;
+  error: string | null;
+  onUpdate: (content: string) => void;
+  onDelete: () => void;
+  onTogglePin: () => void;
+  onClose: () => void;
+}) {
+  const getRect = useCallback((): AnchorRect | null => {
+    if (video) return toAnchorRect(video);
+    return {
+      left: window.innerWidth / 2 - 150,
+      top: window.innerHeight / 2 - 80,
+      width: 0,
+      height: 0,
+    };
+  }, [video]);
+  const { cardRef, style } = useFloatingAbove(getRect);
+  return (
+    <div ref={cardRef} className="hm-floating" style={{ ...style, width: 300 }}>
+      <NoteViewer
+        note={note}
+        strings={strings}
+        lang={lang}
+        anchorAvailable={anchorAvailable}
+        saving={busy}
+        error={error}
+        onUpdate={onUpdate}
+        onDelete={onDelete}
+        onTogglePin={onTogglePin}
         onClose={onClose}
       />
     </div>
