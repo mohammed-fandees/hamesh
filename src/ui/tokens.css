@@ -259,6 +259,17 @@
   color: var(--hm-accent);
 }
 
+/* Video quick-note — a smaller, chrome-less variant of .hm-card: no label
+   bar, no visible buttons, just the textarea. Keeps it feeling like a
+   margin note dropped over the video, not a dialog. */
+.hm-video-quick-note {
+  width: 260px;
+  padding: var(--hm-space-3);
+}
+.hm-video-quick-note .hm-textarea {
+  min-height: 52px;
+}
+
 .hm-textarea {
   display: block;
   width: 100%;
@@ -554,6 +565,41 @@
   font-weight: 600;
   line-height: 14px;
   text-align: center;
+}
+
+/* ---- Video timeline marker ---- */
+/* A tiny tick, not the branded margin-mark chip — a video timeline (often
+   a site's own UI, e.g. YouTube's progress bar) needs to blend in, not
+   announce itself. `top`/`left` are supplied by the caller, already
+   centered on the marker's rail position (this rule centers the dot on
+   that point via transform). */
+.hm-video-marker {
+  position: fixed;
+  z-index: var(--hm-z-marker);
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: 1.5px solid var(--hm-surface);
+  border-radius: var(--hm-radius-pill);
+  background: var(--hm-accent);
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  transition:
+    transform var(--hm-dur-fast) var(--hm-ease-out),
+    background var(--hm-dur-fast) var(--hm-ease-out);
+}
+.hm-video-marker:hover {
+  background: var(--hm-accent-strong);
+  transform: translate(-50%, -50%) scale(1.4);
+}
+.hm-video-marker:active {
+  transform: translate(-50%, -50%) scale(1.1);
+}
+.hm-video-marker:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--hm-accent),
+    0 0 0 4px var(--hm-accent-tint);
 }
 
 /* ---- Icon buttons (settings trigger, back navigation) ---- */
