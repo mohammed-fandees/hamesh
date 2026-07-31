@@ -41,6 +41,7 @@ function makeNote(overrides: Partial<Note> = {}): Note {
       signals: { tagName: 'div' },
       fallbackDocumentPosition: { x: 0, y: 0 },
     },
+    workspaceId: 'default',
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
     ...overrides,

@@ -94,6 +94,7 @@ export function buildElementAnchor(element: Element): ElementAnchor {
   const rect = element.getBoundingClientRect();
 
   return {
+    type: 'element',
     primarySelector: selector,
     signals,
     fallbackDocumentPosition: {

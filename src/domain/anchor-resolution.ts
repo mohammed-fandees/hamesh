@@ -147,6 +147,13 @@ function findByDataAttributes(anchor: ElementAnchor): Element | null {
 }
 
 export function resolveAnchor(note: Note): ResolutionResult {
+  if (note.anchor.type === 'video') {
+    // Video anchors resolve via `resolveVideoAnchor` (needs a
+    // `VideoPlayerAdapter` registry, which this DOM-only element resolver
+    // has no business depending on). Defensive guard, not the real path —
+    // HameshApp branches on `anchor.type` before calling either resolver.
+    return { quality: ResolutionQuality.Unresolved, element: null, note };
+  }
   const anchor = note.anchor;
 
   if (anchor.primarySelector) {
@@ -186,6 +193,45 @@ export function resolveAnchor(note: Note): ResolutionResult {
   const el = elementFromPointSafe(pos.x - window.scrollX, pos.y - window.scrollY);
   if (el) {
     return { quality: ResolutionQuality.Fallback, element: el, note };
+  }
+
+  return { quality: ResolutionQuality.Unresolved, element: null, note };
+}
+
+/** The minimal slice of `VideoPlayerAdapter` (`src/content/video-adapters/`)
+ *  `resolveVideoAnchor` needs. Kept structural rather than importing the real
+ *  content-script type, so this module — like the rest of `domain/` — stays
+ *  independently unit-testable with a plain mock, no adapter registry
+ *  wiring required. */
+export interface VideoResolutionSource {
+  id: string;
+  getActiveVideo(): HTMLVideoElement | null;
+  getVideoId(video: HTMLVideoElement): string | null;
+}
+
+/**
+ * Resolves a video anchor against the page's current video-adapter matches.
+ * Only trusts the adapter whose `id` matches `anchor.platform` (the adapter
+ * that produced the anchor) — a page could theoretically have more than one
+ * adapter "matching" in a loose sense, and this note's identity was captured
+ * relative to one specific adapter's id scheme. Same never-throws,
+ * quality-graded contract as `resolveAnchor`: `Exact` when the currently
+ * active video's adapter-derived id matches, `Unresolved` otherwise (the
+ * right video simply isn't loaded on this page right now — not an error).
+ */
+export function resolveVideoAnchor(
+  note: Note,
+  adapters: VideoResolutionSource[],
+): ResolutionResult {
+  const anchor = note.anchor;
+  if (anchor.type !== 'video') {
+    return { quality: ResolutionQuality.Unresolved, element: null, note };
+  }
+
+  const adapter = adapters.find((a) => a.id === anchor.platform);
+  const video = adapter?.getActiveVideo() ?? null;
+  if (adapter && video && adapter.getVideoId(video) === anchor.videoId) {
+    return { quality: ResolutionQuality.Exact, element: video, note };
   }
 
   return { quality: ResolutionQuality.Unresolved, element: null, note };

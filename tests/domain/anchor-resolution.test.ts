@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ResolutionQuality } from '@/domain/anchor-resolution';
-import type { Note, ElementAnchor } from '@/domain/note';
+import { ResolutionQuality, resolveVideoAnchor } from '@/domain/anchor-resolution';
+import type { VideoResolutionSource } from '@/domain/anchor-resolution';
+import type { Note, ElementAnchor, VideoAnchor } from '@/domain/note';
 
 describe('ResolutionQuality enum', () => {
   it('has expected values', () => {
@@ -32,19 +33,24 @@ describe('resolveAnchor', () => {
     resolveAnchor = mod.resolveAnchor;
   });
 
-  function makeMockNote(overrides?: Partial<Note>): Note {
-    const anchor: ElementAnchor = {
+  function makeAnchor(overrides?: Partial<ElementAnchor>): ElementAnchor {
+    return {
       primarySelector: null,
       signals: { tagName: 'div' },
       fallbackDocumentPosition: { x: 100, y: 200 },
+      ...overrides,
     };
+  }
+
+  function makeMockNote(overrides?: Partial<Note>): Note {
     return {
       id: 'n1',
       schemaVersion: 1,
       pageKey: 'p',
       originalUrl: 'u',
       content: 'test',
-      anchor,
+      anchor: makeAnchor(),
+      workspaceId: 'default',
       createdAt: '2024-01-01T00:00:00.000Z',
       updatedAt: '2024-01-01T00:00:00.000Z',
       ...overrides,
@@ -61,7 +67,7 @@ describe('resolveAnchor', () => {
     const el = {} as Element;
     mockDoc.querySelector.mockReturnValue(el);
 
-    const note = makeMockNote({ anchor: { ...makeMockNote().anchor, primarySelector: '#my-id' } });
+    const note = makeMockNote({ anchor: makeAnchor({ primarySelector: '#my-id' }) });
     const result = resolveAnchor(note);
     expect(result.quality).toBe(ResolutionQuality.Exact);
     expect(result.element).toBe(el);
@@ -72,7 +78,7 @@ describe('resolveAnchor', () => {
       throw new Error('bad selector');
     });
 
-    const note = makeMockNote({ anchor: { ...makeMockNote().anchor, primarySelector: ':bad' } });
+    const note = makeMockNote({ anchor: makeAnchor({ primarySelector: ':bad' }) });
     const result = resolveAnchor(note);
     expect(result.quality).toBe(ResolutionQuality.Unresolved);
   });
@@ -101,12 +107,108 @@ describe('resolveAnchor', () => {
     mockDoc.querySelector.mockReturnValue(null);
     mockDoc.querySelectorAll.mockReturnValue([el] as unknown as NodeListOf<Element>);
 
-    const anchor = makeMockNote().anchor;
-    anchor.signals.dataAttributes = { 'data-foo': 'bar' };
-    anchor.primarySelector = null;
+    const anchor = makeAnchor({
+      primarySelector: null,
+      signals: { tagName: 'div', dataAttributes: { 'data-foo': 'bar' } },
+    });
 
     const result = resolveAnchor(makeMockNote({ anchor }));
     expect(result.quality).toBe(ResolutionQuality.Probable);
     expect(result.element).toBe(el);
+  });
+
+  it('returns Unresolved for a video anchor without touching document', async () => {
+    const videoAnchor: VideoAnchor = {
+      type: 'video',
+      platform: 'youtube',
+      videoId: 'abc123',
+      timestamp: 12,
+    };
+    const result = resolveAnchor(makeMockNote({ anchor: videoAnchor }));
+    expect(result.quality).toBe(ResolutionQuality.Unresolved);
+    expect(result.element).toBeNull();
+  });
+});
+
+describe('resolveVideoAnchor', () => {
+  function makeVideoNote(overrides?: Partial<VideoAnchor>): Note {
+    const anchor: VideoAnchor = {
+      type: 'video',
+      platform: 'youtube',
+      videoId: 'abc123',
+      timestamp: 42,
+      ...overrides,
+    };
+    return {
+      id: 'n1',
+      schemaVersion: 1,
+      pageKey: 'p',
+      originalUrl: 'u',
+      content: 'test',
+      anchor,
+      workspaceId: 'default',
+      createdAt: '2024-01-01T00:00:00.000Z',
+      updatedAt: '2024-01-01T00:00:00.000Z',
+    };
+  }
+
+  function makeAdapter(overrides?: Partial<VideoResolutionSource>): VideoResolutionSource {
+    return {
+      id: 'youtube',
+      getActiveVideo: () => null,
+      getVideoId: () => null,
+      ...overrides,
+    };
+  }
+
+  it('returns Unresolved when the note has an element anchor', () => {
+    const elementNote = {
+      ...makeVideoNote(),
+      anchor: {
+        primarySelector: null,
+        signals: { tagName: 'div' },
+        fallbackDocumentPosition: { x: 0, y: 0 },
+      },
+    } as Note;
+    const result = resolveVideoAnchor(elementNote, [makeAdapter()]);
+    expect(result.quality).toBe(ResolutionQuality.Unresolved);
+  });
+
+  it('returns Unresolved when no adapter matches the anchor platform', () => {
+    const result = resolveVideoAnchor(makeVideoNote(), [makeAdapter({ id: 'html5' })]);
+    expect(result.quality).toBe(ResolutionQuality.Unresolved);
+  });
+
+  it('returns Unresolved when the matching adapter has no active video', () => {
+    const result = resolveVideoAnchor(makeVideoNote(), [
+      makeAdapter({ id: 'youtube', getActiveVideo: () => null }),
+    ]);
+    expect(result.quality).toBe(ResolutionQuality.Unresolved);
+  });
+
+  it('returns Unresolved when the active video id does not match', () => {
+    const video = {} as HTMLVideoElement;
+    const result = resolveVideoAnchor(makeVideoNote({ videoId: 'abc123' }), [
+      makeAdapter({ id: 'youtube', getActiveVideo: () => video, getVideoId: () => 'different' }),
+    ]);
+    expect(result.quality).toBe(ResolutionQuality.Unresolved);
+    expect(result.element).toBeNull();
+  });
+
+  it('returns Exact with the video element when the active video id matches', () => {
+    const video = {} as HTMLVideoElement;
+    const result = resolveVideoAnchor(makeVideoNote({ videoId: 'abc123' }), [
+      makeAdapter({ id: 'youtube', getActiveVideo: () => video, getVideoId: () => 'abc123' }),
+    ]);
+    expect(result.quality).toBe(ResolutionQuality.Exact);
+    expect(result.element).toBe(video);
+  });
+
+  it('only trusts the adapter whose id matches anchor.platform', () => {
+    const video = {} as HTMLVideoElement;
+    const result = resolveVideoAnchor(makeVideoNote({ platform: 'youtube', videoId: 'abc123' }), [
+      makeAdapter({ id: 'html5', getActiveVideo: () => video, getVideoId: () => 'abc123' }),
+    ]);
+    expect(result.quality).toBe(ResolutionQuality.Unresolved);
   });
 });
