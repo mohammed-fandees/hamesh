@@ -6,6 +6,31 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+Video Notes: notes anchored to a moment in a video instead of a page element, delivered
+incrementally across five PRs.
+
+### Added
+
+- **Video Notes** — press Alt+H while hovering or focused on a video (instead of a page element)
+  to leave a note at that exact timestamp.
+  - A small quick-note popup appears above the video: autofocus textarea, Enter saves,
+    Shift+Enter for a newline, Escape cancels — never pauses or otherwise interrupts playback.
+  - Saved notes show as small timeline markers. On YouTube, markers align to YouTube's own
+    progress bar; on any other HTML5 `<video>`, Hamesh draws its own marker rail docked to the
+    video (native `<video controls>` render in an internal browser UI Hamesh can't draw on).
+  - Markers fade with the surrounding player controls and reappear on hover or while paused, and
+    stay out of the way of the player's own hover/click handling.
+  - Hovering a marker shows a quick preview (first line of the note + timestamp). Notes close
+    together in time cluster into a single marker; clicking a cluster opens a small list to jump
+    to any of them.
+  - Clicking a marker jumps the video to that moment without affecting playback — a playing video
+    keeps playing, a paused one stays paused.
+  - Video notes appear in the Notes Library exactly like page notes, with a timestamp badge.
+    Opening one from the Library opens the video in a new tab and seeks to that moment.
+  - Currently supports YouTube (a first-class adapter reading its own timeline UI) and any other
+    page with a plain HTML5 `<video>` element, via a generic adapter. Architecture supports adding
+    more site-specific adapters later without touching storage or the rest of the UI.
+
 ## [1.0.0] — 2026-07-14
 
 Notes Library: a dedicated page for browsing, finding, and returning to every note across every
