@@ -36,6 +36,20 @@ interface VideoResolved {
   quality: ResolutionQuality;
 }
 
+interface VideoMarkerItem {
+  note: Note;
+  anchor: VideoAnchor;
+  top: number;
+  left: number;
+}
+
+/** Half-width/height (px) of the click-detection zone around a marker's
+ *  center — generous relative to the 8px dot itself, since markers are
+ *  `pointer-events: none` (see the click handler below for why) and so
+ *  aren't hit-tested by the browser at all; this radius is the only
+ *  "clickable size" they have. */
+const VIDEO_MARKER_HIT_RADIUS = 10;
+
 interface HameshAppProps {
   repo: NotesRepository;
   prefsRepo: PreferencesRepository;
@@ -243,6 +257,15 @@ export function HameshApp({
   useEffect(() => {
     notesRef.current = notes;
   }, [notes]);
+
+  // Read by the coordinate-based click handler below (registered once, not
+  // per-render) so it always sees current marker positions/the active video
+  // without needing to re-subscribe on every scroll-driven recompute.
+  const videoMarkerItemsRef = useRef<VideoMarkerItem[]>([]);
+  const videoMatchRef = useRef<AdapterVideoMatch | null>(null);
+  useEffect(() => {
+    videoMatchRef.current = videoMatch;
+  }, [videoMatch]);
 
   const hasFloating =
     notes.length > 0 || composer !== null || viewerId !== null || videoComposer !== null;
@@ -703,7 +726,7 @@ export function HameshApp({
     const placement = getRailPlacement(videoMatch.adapter, videoMatch.video);
     if (!placement) return [];
     const liveDuration = videoMatch.video.duration;
-    const items: { note: Note; anchor: VideoAnchor; top: number; left: number }[] = [];
+    const items: VideoMarkerItem[] = [];
     for (const r of videoResolved) {
       if (r.quality !== ResolutionQuality.Exact) continue;
       if (r.note.anchor.type !== 'video') continue;
@@ -718,6 +741,61 @@ export function HameshApp({
     }
     return items;
   }, [videoMatch, videoResolved, frame, videoTick]);
+
+  // Mirrors the actually-rendered (i.e. visibility-gated) markers, since
+  // the click handler below must not seek to a marker that isn't currently
+  // shown (see the `videoControlsVisible` render gate further down).
+  useEffect(() => {
+    videoMarkerItemsRef.current = videoControlsVisible ? videoMarkerItems : [];
+  }, [videoMarkerItems, videoControlsVisible]);
+
+  // ---- Video marker clicks: coordinate-based, not real DOM hit-testing ----
+  // Markers render with `pointer-events: none` (see the render below) —
+  // deliberately not hit-testable by the browser at all. A real, on-top,
+  // pointer-events:auto marker sitting over a video steals mouse hover from
+  // the actual player element beneath it: from YouTube's own perspective
+  // (or the browser's, for a native `<video controls>` scrubber) the
+  // pointer has left the player entirely the instant it's over our marker,
+  // which immediately hides *their* controls too — a real flicker bug, not
+  // just a cosmetic one, and it also broke `html5-generic.ts`'s own
+  // hover-based `areControlsVisible` heuristic the same way. Detecting
+  // clicks by coordinate proximity instead lets real pointer events pass
+  // straight through to the player underneath, so its own hover tracking
+  // (and ours) stays correct. Registered once (not per-render) and reads
+  // current state from refs, since marker positions change on every
+  // scroll-driven recompute and this shouldn't re-subscribe that often.
+  useEffect(() => {
+    const onPointerDown = (e: PointerEvent) => {
+      const items = videoMarkerItemsRef.current;
+      if (items.length === 0) return;
+      let closest: VideoMarkerItem | null = null;
+      let closestDist = Infinity;
+      for (const item of items) {
+        const dx = e.clientX - item.left;
+        const dy = e.clientY - item.top;
+        const dist = Math.hypot(dx, dy);
+        if (dist <= VIDEO_MARKER_HIT_RADIUS && dist < closestDist) {
+          closest = item;
+          closestDist = dist;
+        }
+      }
+      if (!closest) return;
+      // Preempt the underlying player's own click-to-seek (YouTube's
+      // scrubber, or a native <video controls> scrubber) so it doesn't
+      // *also* seek — the whole reason markers overlap the player's own
+      // hoverable/clickable region is to stay within its hover tracking,
+      // which means a real click here also lands on whatever's beneath.
+      e.preventDefault();
+      e.stopPropagation();
+      const video = videoMatchRef.current?.video;
+      // Jump to the stored timestamp only — never call play()/pause(), so
+      // a playing video keeps playing and a paused one stays paused (spec:
+      // "Never unexpectedly autoplay").
+      if (video) video.currentTime = closest.anchor.timestamp;
+    };
+    window.addEventListener('pointerdown', onPointerDown, true);
+    return () => window.removeEventListener('pointerdown', onPointerDown, true);
+  }, []);
 
   // ---- Derived: transient highlight rect for the Open Note flow ----
   const highlightRect = useMemo(() => {
@@ -782,11 +860,15 @@ export function HameshApp({
           <VideoMarker
             key={m.note.id}
             label={strings.videoMarkerLabel(formatVideoTimestamp(m.anchor.timestamp))}
-            style={{ top: m.top, left: m.left, pointerEvents: 'auto' }}
+            // pointer-events stays 'none' (the .hm-scope default) — real
+            // mouse clicks are handled by the coordinate-based listener
+            // above, not by this element being hit-tested directly. This
+            // still renders a real, focusable <button>, so Tab + Enter/
+            // Space (keyboard activation dispatches a trusted click event
+            // directly at the focused element, bypassing pointer
+            // hit-testing entirely) keeps working.
+            style={{ top: m.top, left: m.left }}
             onOpen={() => {
-              // Jump to the stored timestamp only — never call play()/pause(),
-              // so a playing video keeps playing and a paused one stays
-              // paused (spec: "Never unexpectedly autoplay").
               if (videoMatch) videoMatch.video.currentTime = m.anchor.timestamp;
             }}
           />
