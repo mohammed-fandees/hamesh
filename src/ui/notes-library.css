@@ -210,35 +210,17 @@
   animation: hm-fade-in var(--hm-dur-slow) var(--hm-ease-out) both;
 }
 
-/* ---- Favicon / monogram fallback ---- */
+/* ---- Favicon / no-favicon fallback ---- */
 .hm-favicon {
   flex: none;
   display: block;
   border-radius: var(--hm-radius-sm);
 }
-.hm-favicon--fallback {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--hm-sans);
-  font-weight: 700;
-  color: #fff;
-  /* font-size is set inline per instance, proportional to the requested icon size */
+.hm-favicon--pending {
+  display: inline-block;
 }
-.hm-monogram--0 {
-  background: var(--hm-accent);
-}
-.hm-monogram--1 {
-  background: var(--hm-info);
-}
-.hm-monogram--2 {
-  background: var(--hm-success);
-}
-.hm-monogram--3 {
-  background: var(--hm-warning);
-}
-.hm-monogram--4 {
-  background: var(--hm-danger);
+.hm-favicon--globe {
+  color: var(--hm-accent);
 }
 
 /* ---- Continue section — a lightweight shortcut row, deliberately not a
