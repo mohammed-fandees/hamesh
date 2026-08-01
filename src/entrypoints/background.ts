@@ -1,5 +1,6 @@
 import { defineBackground } from 'wxt/utils/define-background';
 import { browser } from 'wxt/browser';
+import type { HameshMessage, ShortcutsResponse } from '@/messaging/types';
 
 /** Secondary keep-alive for the `commands.onCommand` path below. Chrome tears
  *  down an idle MV3 service worker ~30s after its last event or API call
@@ -45,6 +46,30 @@ export default defineBackground(() => {
       }
     }
   });
+
+  // `chrome.commands` is not available in a content script's execution
+  // context (Chrome restricts it to background/extension pages), so the
+  // content script's `keydown` listener can't call `commands.getAll()`
+  // itself to learn the user's actual configured bindings — it asks the
+  // background here instead, which does have access to the API.
+  browser.runtime.onMessage.addListener(
+    (message: HameshMessage, _sender, sendResponse): boolean | undefined => {
+      if (message.type !== 'GET_SHORTCUTS') return undefined;
+      browser.commands
+        ?.getAll()
+        .then((commands) => {
+          const response: ShortcutsResponse = {
+            type: 'SHORTCUTS',
+            addNote: commands.find((c) => c.name === 'activate-hamesh')?.shortcut || null,
+            addVideoNote:
+              commands.find((c) => c.name === 'activate-hamesh-video')?.shortcut || null,
+          };
+          sendResponse(response);
+        })
+        .catch(() => sendResponse({ type: 'SHORTCUTS', addNote: null, addVideoNote: null }));
+      return true; // async response
+    },
+  );
 
   // See KEEP_ALIVE_ALARM above. `create` with an existing name just resets
   // that alarm's schedule, so re-registering on every service-worker

@@ -3,7 +3,7 @@ import { createShadowRootUi } from 'wxt/utils/content-script-ui/shadow-root';
 import { browser } from 'wxt/browser';
 import { createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import type { HameshMessage } from '@/messaging/types';
+import type { HameshMessage, ShortcutsResponse } from '@/messaging/types';
 import { createNotesRepository } from '@/storage/notes-repository';
 import { createPreferencesRepository } from '@/storage/preferences-repository';
 import { generatePageKey } from '@/domain/page-key';
@@ -117,13 +117,20 @@ export default defineContentScript({
     // runs), but this is what real usage should rely on.
     let addNoteShortcut = 'Alt+H';
     let videoNoteShortcut = 'Alt+V';
-    browser.commands
-      ?.getAll()
-      .then((commands) => {
-        const add = commands.find((c) => c.name === 'activate-hamesh')?.shortcut;
-        const video = commands.find((c) => c.name === 'activate-hamesh-video')?.shortcut;
-        if (add) addNoteShortcut = add;
-        if (video) videoNoteShortcut = video;
+    // `chrome.commands` itself is not available in a content script's
+    // execution context (Chrome restricts it to background/extension pages)
+    // — asking the background for the actual bindings instead. This message
+    // still reaches the background reliably even if it's currently dormant:
+    // `runtime.onMessage` (unlike `commands.onCommand`) is the standard,
+    // well-supported wake path for an MV3 service worker, and is exactly
+    // what already carries ENABLE_SELECTION/ENABLE_VIDEO_NOTE the other way.
+    // A failure here (or an unset custom shortcut) just keeps the Alt+H/Alt+V
+    // defaults above, which match this extension's actual manifest defaults.
+    browser.runtime
+      .sendMessage({ type: 'GET_SHORTCUTS' })
+      .then((res: ShortcutsResponse | undefined) => {
+        if (res?.addNote) addNoteShortcut = res.addNote;
+        if (res?.addVideoNote) videoNoteShortcut = res.addVideoNote;
       })
       .catch(() => {});
 
