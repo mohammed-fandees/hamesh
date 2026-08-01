@@ -230,7 +230,7 @@ test.describe('Notes Library — Folders', () => {
     // not. Reproducing that exact combination here is the point.
     await folderNode(library, 'Unfiled').locator('.hm-folder-node__name').click();
     await library.locator('.hm-folder-note').first().locator('.hm-folder-menu__trigger').click();
-    await library.getByRole('menuitem', { name: 'Work', exact: true }).click();
+    await library.getByRole('menuitemradio', { name: 'Work', exact: true }).click();
 
     await folderNode(library, 'Work').getByLabel('Add sub-folder').click();
     await library.locator('.hm-folder-form__input').fill('Research');
@@ -272,7 +272,7 @@ test.describe('Notes Library — Folders', () => {
 
     await folderNode(library, 'Unfiled').locator('.hm-folder-node__name').click();
     await library.locator('.hm-folder-menu__trigger').first().click();
-    await library.getByRole('menuitem', { name: 'Work', exact: true }).click();
+    await library.getByRole('menuitemradio', { name: 'Work', exact: true }).click();
 
     await expect(folderCount(library, 'Work')).toHaveText('1 note');
     await expect(folderCount(library, 'Unfiled')).toHaveText('1 note');
@@ -346,7 +346,7 @@ test.describe('Notes Library — Folders', () => {
     await createFolder(library, 'Parent');
     await folderNode(library, 'Unfiled').locator('.hm-folder-node__name').click();
     await library.locator('.hm-folder-menu__trigger').first().click();
-    await library.getByRole('menuitem', { name: 'Parent', exact: true }).click();
+    await library.getByRole('menuitemradio', { name: 'Parent', exact: true }).click();
 
     await folderNode(library, 'Parent').getByLabel('Add sub-folder').click();
     await library.locator('.hm-folder-form__input').fill('Child');
@@ -368,7 +368,7 @@ test.describe('Notes Library — Folders', () => {
     await createFolder(library, 'Persisted');
     await folderNode(library, 'Unfiled').locator('.hm-folder-node__name').click();
     await library.locator('.hm-folder-menu__trigger').first().click();
-    await library.getByRole('menuitem', { name: 'Persisted', exact: true }).click();
+    await library.getByRole('menuitemradio', { name: 'Persisted', exact: true }).click();
     await expect(folderCount(library, 'Persisted')).toHaveText('1 note');
 
     await library.reload();
@@ -381,7 +381,7 @@ test.describe('Notes Library — Folders', () => {
     await createFolder(library, 'Work');
     await folderNode(library, 'Unfiled').locator('.hm-folder-node__name').click();
     await library.locator('.hm-folder-menu__trigger').first().click();
-    await library.getByRole('menuitem', { name: 'Work', exact: true }).click();
+    await library.getByRole('menuitemradio', { name: 'Work', exact: true }).click();
 
     await library.getByPlaceholder('Search notes…').fill('paragraph');
     // The mode switch hides while searching (same as the sort control), but

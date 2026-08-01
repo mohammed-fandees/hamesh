@@ -18,12 +18,13 @@ interface NoteViewerProps {
 }
 
 /**
- * Note viewer / editor — opens a saved note back up. Supports viewing, editing,
- * a delete confirmation step, an "anchor unavailable" fallback state, and
- * pinning. This is the only place a note's pin state is toggled — the Notes
- * Library only ever reflects it (a badge + sort-to-top), since its rows are
- * already a single full-row link and nesting a second interactive control
- * inside an `<a>` isn't valid HTML.
+ * Note viewer / editor — opens a saved note back up, on the page the note
+ * belongs to. Supports viewing, editing, a delete confirmation step, an
+ * "anchor unavailable" fallback state, and pinning. The Notes Library also
+ * offers all of these (pin/edit/delete/move) without leaving the library,
+ * via each row's sibling `NoteActionsMenu` — this viewer isn't the only
+ * place anymore, but it's still the only in-page one, and the only one that
+ * shows the "anchor unavailable" state.
  */
 export function NoteViewer({
   note,

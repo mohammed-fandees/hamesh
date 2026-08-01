@@ -461,13 +461,10 @@ already used for Language/Appearance/Sort) toggles the Notes Library's main
 list between `groupNotesByDomain`'s output and the folder tree; both read
 from the same search-filtered `Note[]`, so search keeps working in either
 mode. Filing a note into a folder works two ways, both calling the same
-`handleMoveNote` — no duplicated move logic: `MoveToFolderMenu.tsx` (a
-small "⋮" dropdown, the only keyboard/screen-reader-accessible path) and
-native HTML5 drag-and-drop of a note onto a folder node (a mouse-only
-progressive enhancement). `NoteRow` itself needed no structural change for
-either — it's a full-row `<a>` that can't host a second interactive control
-nested inside it (see the Known Limitations note on pinning below), so the
-move menu renders as a sibling, not a child.
+`handleMoveNote` — no duplicated move logic: `NoteActionsMenu.tsx` (a small
+"⋮" dropdown, the only keyboard/screen-reader-accessible path — see "Note
+actions menu" below) and native HTML5 drag-and-drop of a note onto a folder
+node (a mouse-only progressive enhancement, folder-tree view only).
 
 Because a folder can mix notes from several different sites (unlike a
 website group, which by definition doesn't), `NoteRow` also grew an opt-in
@@ -477,45 +474,39 @@ line above the title, reusing `Favicon` the same way `PinnedSection`
 already does for its own flat, cross-site list. `FolderTree` is the only
 caller that passes it.
 
-**Post-ship bug fixes**, found via real usage rather than at review time:
+## Note actions menu
 
-- **A collapsed folder with both direct notes and a sub-folder stayed
-  partially expanded.** `.hm-folder-node__body`'s `grid-template-rows: 0fr`
-  collapse trick only clips a _single_ grid item — with the notes `<ul>`
-  and the sub-folder `<ul>` as two separate direct children, CSS grid
-  auto-placement puts the second one into its own implicit row (sized
-  `auto` by default), which never collapses. A folder with only a
-  sub-folder (and no notes of its own) could look correctly fixed while the
-  actually-reported combination — both together — still leaked. Fixed by
-  wrapping both in one `.hm-folder-node__body-inner` element (mirrored for
-  `.hm-group__body`/`.hm-group__body-inner` in the domain-grouped view,
-  which has the same collapse mechanism for a different reason — see next).
-- **The same collapse trick also let a direct child's own padding leak past
-  a "collapsed" (0px) row**, even with `overflow: hidden`/`min-height: 0`
-  on that child — those only cancel the child's _content_ driving a larger
-  minimum, not its own padding, which the grid track's base-size
-  calculation still counts. Same `-inner`, padding-less wrapper fix.
-- **The "Move to…" menu was clipped by the folder tree's own
-  `overflow: hidden` collapse containers**, since a `position: absolute`
-  popover nested in place is clipped by an ancestor's `overflow: hidden`
-  just like any other descendant. Fixed by portaling `MoveToFolderMenu`'s
-  panel to the trigger's `.hm-scope` ancestor (not `document.body`, which
-  would escape the `--hm-*` design-token scope those styles depend on) and
-  positioning it via `getBoundingClientRect()` instead.
-- **A folder row's hover highlight spans its full width, but only the tiny
-  chevron and the name text were actually clickable** — the folder glyph
-  icon and the row's own padding were dead zones despite looking clickable.
-  Fixed by adding a click handler to the row itself that only fires for
-  clicks landing on the row's own box (`e.target === e.currentTarget`), and
-  making the purely-decorative glyph/count `pointer-events: none` so clicks
-  on them fall through to the row.
-- Assorted spacing polish found alongside the above: a border on
-  `.hm-note-row` for easier at-a-glance separation between notes (there
-  was previously no per-note visual boundary at all), and breathing room
-  around the hairline separators between website groups
-  (`.hm-groups > li + li`) and top-level folders
-  (`.hm-folder-tree__list > li + li`), which sat flush against their
-  neighbors.
+`NoteActionsMenu.tsx` is the "⋮" trigger + dropdown attached to every note
+row in both the domain-grouped and folder-tree views (originally just a
+folder-tree "Move to folder" menu, generalized once pin/edit/delete needed
+a home outside the content-script `NoteViewer` too — being unable to
+pin/edit/delete a note without leaving the Notes Library was reported as a
+real gap in practice, the same category of gap that drove the video-note
+viewer scope reversal above). `NoteRow` itself needed no structural change
+for any of this — it's a full-row `<a>` that can't host a second
+interactive control nested inside it, so the menu always renders as a
+sibling (`.hm-folder-note` in folder mode, `.hm-group__note` in domain
+mode), never a child.
+
+The single portaled panel swaps between four views (`menu` /
+`creatingFolder` / `editing` / `confirmingDelete`) rather than stacking
+separate popovers — the same "inline swap, no modals" pattern `NoteViewer`
+and `FolderNodeItem`'s own delete-confirm already use. Escape steps back
+one view at a time (`editing`/`confirmingDelete` → `menu` → closed) instead
+of always closing outright. Portaled to the trigger's own `.hm-scope`
+ancestor (not `document.body`, which would escape the `--hm-*` design-token
+scope those styles depend on) and positioned from `getBoundingClientRect()`
+rather than CSS `position: absolute`, since the folder tree's collapse
+animation relies on `overflow: hidden` on its row-list containers, which
+would otherwise clip an in-flow popover the moment it needed to extend past
+those ancestors' bounds.
+
+`App.tsx` computes two different folder views for this: `folderTree` (the
+nested tree actually rendered in folder mode, scoped to the
+search-filtered notes) and a separate `flatFoldersForMenu` (every folder,
+unfiltered) — the menu's own "Move to folder" section must always be able
+to move a note into any folder, not just ones with currently-visible notes,
+so it can't reuse `folderTree`'s filtered view.
 
 ## Page identity
 
@@ -557,7 +548,7 @@ re-attach markers as content mounts.
   drive `notes.html` directly (no content-script fixture page needed) —
   sidebar/Settings navigation, the Chrome-shortcuts link-out,
   nesting/rename/cascade-delete-unfiles, both move-to-folder mechanisms
-  (`MoveToFolderMenu` and real drag-and-drop via Playwright's `dragTo`, which
+  (`NoteActionsMenu` and real drag-and-drop via Playwright's `dragTo`, which
   dispatches genuine HTML5 DnD events — raw mouse-move simulation does not),
   search within folder mode, and RTL.
 - **CI:** typecheck, lint, format check, unit tests, build. E2E is run locally
@@ -573,11 +564,6 @@ re-attach markers as content mounts.
   accepts a `badge` prop for this — it's just never passed a value > 1 today).
   Unrelated to the Notes Library; a candidate for a future on-page-marker pass.
 - Text-snippet matching is exact only.
-- Pinning is toggled only from the content-script `NoteViewer`, not from the
-  Notes Library's own rows — those are already a single full-row link, and a
-  second interactive control can't nest inside an `<a>`. The Notes Library
-  reflects pin state (badge + sort-to-top + a dedicated "Pinned" section)
-  without letting you toggle it there; open the note to change it.
 - Extension points: new storage backends via `NotesRepository`; additional
   anchor signals slot into the priority chain; a future side panel can reuse the
   tokens and repository.

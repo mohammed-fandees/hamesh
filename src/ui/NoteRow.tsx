@@ -36,10 +36,10 @@ interface NoteRowProps {
  *  timestamp only — same as clicking its on-page marker, no viewer (see
  *  `HameshApp.tsx`'s restore-flow branch).
  *
- *  Pinned notes show a small decorative pin badge. Toggling the pin only
- *  happens from the content-script NoteViewer — this row is already a
- *  single full-row link, and a second interactive control can't nest inside
- *  an `<a>`. */
+ *  Pinned notes show a small decorative pin badge. Pin/edit/delete/move
+ *  live in the sibling `NoteActionsMenu` (`WebsiteGroup`/`FolderTree`), not
+ *  here — this row is already a single full-row link, and a second
+ *  interactive control can't nest inside an `<a>`. */
 export function NoteRow({ note, strings, lang, showDomain }: NoteRowProps) {
   return (
     <a

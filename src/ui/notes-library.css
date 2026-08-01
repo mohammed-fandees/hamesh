@@ -311,6 +311,17 @@
   display: flex;
   flex-direction: column;
 }
+/* Each pinned item + its `NoteActionsMenu` trigger, side by side — same
+   layout as `.hm-group__note`/`.hm-folder-note` in the other two views. */
+.hm-pinned__row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--hm-space-1);
+}
+.hm-pinned__row .hm-pinned__item {
+  flex: 1 1 auto;
+  min-width: 0;
+}
 .hm-pinned__item {
   display: block;
   padding: var(--hm-space-2);
@@ -461,6 +472,18 @@
 .hm-group__list > li + li,
 .hm-folder-node__notes > li + li {
   margin-top: var(--hm-space-2);
+}
+/* Each note row + its `NoteActionsMenu` trigger, side by side — same
+   layout as `.hm-folder-note` in the folder-tree view, minus the
+   folder-tree-only drag-and-drop affordance. */
+.hm-group__note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--hm-space-1);
+}
+.hm-group__note .hm-note-row {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .hm-note-row {
@@ -785,12 +808,14 @@
   box-shadow: 0 0 0 3px var(--hm-accent-tint);
 }
 
-/* ---- Move-to-folder menu ---- */
+/* ---- Note actions menu — pin/unpin, edit, delete, and move to folder,
+   attached to a note row in both the domain-grouped and folder-tree views
+   (see NoteActionsMenu.tsx). ---- */
 .hm-folder-menu {
   flex: none;
 }
 /* `position`/`top`/`left`/`right` are set inline (computed from the
-   trigger's real `getBoundingClientRect()` — see MoveToFolderMenu.tsx) —
+   trigger's real `getBoundingClientRect()` — see NoteActionsMenu.tsx) —
    this is portaled to the page's `.hm-scope` wrapper, not a child of
    `.hm-folder-menu`, specifically so an `overflow: hidden` ancestor several
    levels up (the folder tree's collapse-animation containers) can't clip
@@ -823,6 +848,14 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* The pin item's leading `<PinIcon>` — inline rather than flex, so the
+   truncating-text items (folder names) keep their existing
+   overflow/ellipsis behavior unchanged. */
+.hm-folder-menu__item svg {
+  flex: none;
+  vertical-align: -1px;
+  margin-inline-end: 6px;
+}
 .hm-folder-menu__item:hover {
   background: var(--hm-paper-dim);
 }
@@ -830,9 +863,55 @@
   color: var(--hm-accent);
   font-weight: 500;
 }
+.hm-folder-menu__item--danger {
+  color: var(--hm-danger);
+}
+/* "No folder" + each folder name in the "Move to folder" list — a trailing
+   checkmark on the note's current folder (see `CurrentFolderCheck` in
+   NoteActionsMenu.tsx), not a leading one: the name still needs to start at
+   a consistent position regardless of depth-based indentation (`style=
+   paddingInlineStart`) for the nesting levels to stay visually aligned,
+   which a leading icon would throw off by shifting the text over on
+   whichever rows happen to be checked. */
+.hm-folder-menu__item--folder-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.hm-folder-menu__item--folder-option span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.hm-folder-menu__item--folder-option svg {
+  margin-inline-end: 0;
+}
+.hm-folder-menu__item[aria-checked='true'] {
+  color: var(--hm-accent);
+  font-weight: 600;
+}
+.hm-folder-menu__divider {
+  height: 1px;
+  margin: var(--hm-space-1) 2px;
+  background: var(--hm-border);
+}
+.hm-folder-menu__section-label {
+  padding: 4px var(--hm-space-2) 2px;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--hm-ink-40);
+}
 .hm-folder-menu__create {
   display: flex;
   align-items: center;
   gap: var(--hm-space-1);
   padding: 4px;
+}
+.hm-folder-menu__edit {
+  width: 240px;
+  padding: var(--hm-space-2);
 }
