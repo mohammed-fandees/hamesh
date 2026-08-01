@@ -4,8 +4,8 @@ interface PinIconProps {
 }
 
 /** A small pin/thumbtack glyph — filled when pinned. Shared by the
- *  content-script NoteViewer's pin toggle and the Notes Library's
- *  read-only pin badge on NoteRow. */
+ *  content-script NoteViewer's pin toggle, the Notes Library's read-only
+ *  pin badge on NoteRow, and the pin/unpin item in NoteActionsMenu. */
 export function PinIcon({ filled, size = 13 }: PinIconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 14 14" aria-hidden="true">

@@ -4,7 +4,7 @@ import type { FolderNode } from '@/domain/folder-grouping';
 import { flattenFolderTreeForMenu } from '@/domain/folder-grouping';
 import type { Note } from '@/domain/note';
 import { NoteRow } from './NoteRow';
-import { MoveToFolderMenu } from './MoveToFolderMenu';
+import { NoteActionsMenu } from './NoteActionsMenu';
 import type { Lang, Strings } from './i18n';
 
 /** Custom MIME type carrying a dragged note's id — namespaced so it never
@@ -21,12 +21,15 @@ interface FolderTreeProps {
   unfiledNotes: Note[];
   strings: Strings;
   lang: Lang;
-  /** Resolves to the new folder's id — used directly by `MoveToFolderMenu`'s
+  /** Resolves to the new folder's id — used directly by `NoteActionsMenu`'s
    *  "+ New folder" flow to move the note there immediately after creating it. */
   onCreateFolder: (name: string, parentId: string | null) => Promise<string>;
   onRenameFolder: (folderId: string, name: string) => void;
   onDeleteFolder: (folderId: string) => void;
   onMoveNote: (noteId: string, folderId: string | undefined) => void;
+  onTogglePin: (noteId: string) => void;
+  onEditNote: (noteId: string, content: string) => void;
+  onDeleteNote: (noteId: string) => void;
 }
 
 interface FolderTreeContextValue {
@@ -48,6 +51,9 @@ interface FolderTreeContextValue {
   onRenameFolder: (folderId: string, name: string) => void;
   onDeleteFolder: (folderId: string) => void;
   onMoveNote: (noteId: string, folderId: string | undefined) => void;
+  onTogglePin: (noteId: string) => void;
+  onEditNote: (noteId: string, content: string) => void;
+  onDeleteNote: (noteId: string) => void;
 }
 
 const FolderTreeCtx = createContext<FolderTreeContextValue | null>(null);
@@ -62,9 +68,10 @@ function useFolderTreeCtx(): FolderTreeContextValue {
  * Recursive folder tree for the Notes Library's "By folder" mode. Shares
  * `WebsiteGroup`'s CSS grid-rows expand/collapse pattern and `NoteViewer`'s
  * inline two-step delete-confirm — no modals anywhere in this codebase.
- * Moving a note into a folder works two ways: the `MoveToFolderMenu` on
+ * Moving a note into a folder works two ways: the `NoteActionsMenu` on
  * each note row, and native HTML5 drag-and-drop of a note onto a folder
  * (or onto the synthetic Unfiled node) — both call the same `onMoveNote`.
+ * That same menu also covers pin/unpin, edit, and delete for the note.
  */
 export function FolderTree({
   tree,
@@ -75,6 +82,9 @@ export function FolderTree({
   onRenameFolder,
   onDeleteFolder,
   onMoveNote,
+  onTogglePin,
+  onEditNote,
+  onDeleteNote,
 }: FolderTreeProps) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -120,6 +130,9 @@ export function FolderTree({
     onRenameFolder,
     onDeleteFolder,
     onMoveNote,
+    onTogglePin,
+    onEditNote,
+    onDeleteNote,
   };
 
   return (
@@ -181,7 +194,16 @@ function useDropTargetProps(id: string, onDropNote: (noteId: string) => void) {
 }
 
 function FolderNoteList({ notes }: { notes: Note[] }) {
-  const { strings, lang, flatFoldersForMenu, onCreateFolder, onMoveNote } = useFolderTreeCtx();
+  const {
+    strings,
+    lang,
+    flatFoldersForMenu,
+    onCreateFolder,
+    onMoveNote,
+    onTogglePin,
+    onEditNote,
+    onDeleteNote,
+  } = useFolderTreeCtx();
   if (notes.length === 0) return null;
   return (
     <ul className="hm-folder-node__notes">
@@ -193,12 +215,17 @@ function FolderNoteList({ notes }: { notes: Note[] }) {
           onDragStart={(e) => e.dataTransfer.setData(NOTE_DRAG_MIME, note.id)}
         >
           <NoteRow note={note} strings={strings} lang={lang} showDomain />
-          <MoveToFolderMenu
+          <NoteActionsMenu
             note={note}
-            folders={flatFoldersForMenu}
             strings={strings}
-            onMove={onMoveNote}
-            onCreateFolder={(name) => onCreateFolder(name, null)}
+            onTogglePin={onTogglePin}
+            onEdit={onEditNote}
+            onDelete={onDeleteNote}
+            moveToFolder={{
+              folders: flatFoldersForMenu,
+              onMove: onMoveNote,
+              onCreateFolder: (name) => onCreateFolder(name, null),
+            }}
           />
         </li>
       ))}

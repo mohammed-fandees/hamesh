@@ -219,6 +219,33 @@ export function App() {
     }
   }
 
+  async function handleTogglePin(noteId: string) {
+    const note = notes?.find((n) => n.id === noteId);
+    if (!note) return;
+    const updated = await repo.setPinned(noteId, note.pageKey, !note.pinned);
+    if (updated) {
+      setNotes((prev) => prev?.map((n) => (n.id === noteId ? updated : n)) ?? prev);
+    }
+  }
+
+  async function handleEditNote(noteId: string, content: string) {
+    const note = notes?.find((n) => n.id === noteId);
+    if (!note) return;
+    const updated = await repo.update(noteId, note.pageKey, { content });
+    if (updated) {
+      setNotes((prev) => prev?.map((n) => (n.id === noteId ? updated : n)) ?? prev);
+    }
+  }
+
+  async function handleDeleteNote(noteId: string) {
+    const note = notes?.find((n) => n.id === noteId);
+    if (!note) return;
+    const deleted = await repo.delete(noteId, note.pageKey);
+    if (deleted) {
+      setNotes((prev) => prev?.filter((n) => n.id !== noteId) ?? prev);
+    }
+  }
+
   const loading = notes === null;
   const hasAnyNotes = !loading && notes.length > 0;
   const noNotesAtAll = !loading && !hasAnyNotes;
@@ -278,7 +305,15 @@ export function App() {
             )}
 
             {!isSearching && hasAnyNotes && (
-              <PinnedSection notes={pinnedNotes} strings={strings} lang={lang} />
+              <PinnedSection
+                notes={pinnedNotes}
+                allNotes={notes ?? []}
+                strings={strings}
+                lang={lang}
+                onTogglePin={handleTogglePin}
+                onEditNote={handleEditNote}
+                onDeleteNote={handleDeleteNote}
+              />
             )}
 
             {loading ? (
@@ -340,6 +375,9 @@ export function App() {
                     onRenameFolder={handleRenameFolder}
                     onDeleteFolder={handleDeleteFolder}
                     onMoveNote={handleMoveNote}
+                    onTogglePin={handleTogglePin}
+                    onEditNote={handleEditNote}
+                    onDeleteNote={handleDeleteNote}
                   />
                 ) : (
                   <ul className="hm-groups">
@@ -352,6 +390,9 @@ export function App() {
                           strings={strings}
                           lang={lang}
                           style={{ animationDelay: `${Math.min(i * 30, 240)}ms` }}
+                          onTogglePin={handleTogglePin}
+                          onEditNote={handleEditNote}
+                          onDeleteNote={handleDeleteNote}
                         />
                       </li>
                     ))}

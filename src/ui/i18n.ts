@@ -75,6 +75,7 @@ export interface Strings {
   moveToFolder: string;
   noFolderOption: string;
   addSubfolder: string;
+  noteActions: string;
 }
 
 const en: Strings = {
@@ -145,6 +146,7 @@ const en: Strings = {
   moveToFolder: 'Move to folder',
   noFolderOption: 'No folder',
   addSubfolder: 'Add sub-folder',
+  noteActions: 'Note actions',
 };
 
 const ar: Strings = {
@@ -215,6 +217,7 @@ const ar: Strings = {
   moveToFolder: 'نقل إلى فولدر',
   noFolderOption: 'بدون فولدر',
   addSubfolder: 'إضافة فولدر فرعي',
+  noteActions: 'خيارات الملاحظة',
 };
 
 export function resolveLang(uiLanguage?: string): Lang {

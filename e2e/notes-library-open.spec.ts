@@ -102,8 +102,9 @@ async function getExtensionId(context: BrowserContext): Promise<string> {
   return new URL(sw.url()).host;
 }
 
-/** Opens the (already saved) note's marker and pins it from the viewer —
- *  the only place pinning is toggled (PR3). */
+/** Opens the (already saved) note's marker and pins it from the on-page
+ *  viewer (the Notes Library's own `NoteActionsMenu` is a separate path,
+ *  covered by its own E2E spec). */
 async function pinNote(page: Page): Promise<void> {
   await page.locator('.hm-marker').first().click();
   await expect(page.locator('.hm-card')).toBeVisible();

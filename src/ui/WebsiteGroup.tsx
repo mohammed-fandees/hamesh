@@ -1,6 +1,7 @@
 import { useId } from 'react';
 import { Favicon } from './Favicon';
 import { NoteRow } from './NoteRow';
+import { NoteActionsMenu } from './NoteActionsMenu';
 import type { WebsiteGroup as WebsiteGroupData } from '@/domain/notes-grouping';
 import type { Lang, Strings } from './i18n';
 
@@ -14,14 +15,21 @@ interface WebsiteGroupProps {
    *  here rather than an extra wrapper element so `.hm-groups > li + li`'s
    *  separator rule still sees plain, unwrapped siblings. */
   style?: React.CSSProperties;
+  /** `NoteActionsMenu` here omits "Move to folder" — that section only
+   *  appears in the folder-tree view (see `NoteActionsMenu`'s own doc
+   *  comment). */
+  onTogglePin: (noteId: string) => void;
+  onEditNote: (noteId: string, content: string) => void;
+  onDeleteNote: (noteId: string) => void;
 }
 
 /**
  * A collapsible website group — favicon, hostname, note count, and (when
- * expanded) each note's preview. The expand/collapse panel animates height
- * via a CSS grid-rows transition (`hm-group__body`, see notes-library.css)
- * rather than JS height measurement, so it's cheap and automatically
- * disabled by the existing `prefers-reduced-motion` override in tokens.css.
+ * expanded) each note's preview plus its `NoteActionsMenu`. The expand/
+ * collapse panel animates height via a CSS grid-rows transition
+ * (`hm-group__body`, see notes-library.css) rather than JS height
+ * measurement, so it's cheap and automatically disabled by the existing
+ * `prefers-reduced-motion` override in tokens.css.
  */
 export function WebsiteGroup({
   group,
@@ -30,6 +38,9 @@ export function WebsiteGroup({
   strings,
   lang,
   style,
+  onTogglePin,
+  onEditNote,
+  onDeleteNote,
 }: WebsiteGroupProps) {
   const panelId = useId();
   return (
@@ -84,8 +95,15 @@ export function WebsiteGroup({
         <div className="hm-group__body-inner">
           <ul className="hm-group__list">
             {group.notes.map((note) => (
-              <li key={note.id}>
+              <li key={note.id} className="hm-group__note">
                 <NoteRow note={note} strings={strings} lang={lang} />
+                <NoteActionsMenu
+                  note={note}
+                  strings={strings}
+                  onTogglePin={onTogglePin}
+                  onEdit={onEditNote}
+                  onDelete={onDeleteNote}
+                />
               </li>
             ))}
           </ul>
