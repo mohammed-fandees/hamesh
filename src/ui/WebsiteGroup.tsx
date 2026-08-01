@@ -69,13 +69,27 @@ export function WebsiteGroup({
         aria-hidden={!expanded}
         inert={!expanded}
       >
-        <ul className="hm-group__list">
-          {group.notes.map((note) => (
-            <li key={note.id}>
-              <NoteRow note={note} strings={strings} lang={lang} />
-            </li>
-          ))}
-        </ul>
+        {/* `.hm-group__body`'s `grid-template-rows: 0fr` collapse trick sizes
+         *  its row track from its direct grid item's own required minimum —
+         *  which includes that item's own padding, since padding is never
+         *  shrunk. A `min-height: 0` override doesn't cancel that: it only
+         *  cancels the item's *content* driving a larger minimum, not its
+         *  padding. `.hm-group__list` has vertical padding (see CSS), so it
+         *  can't be the direct grid item itself, or the row (and the
+         *  collapsed panel) settles at that padding's height instead of 0
+         *  (same bug, same fix as `.hm-folder-node__body-inner`). This
+         *  wrapper has no padding of its own, so the row genuinely
+         *  collapses to 0 — the list's padding then simply overflows *this*
+         *  wrapper's own box, where its own `overflow: hidden` clips it. */}
+        <div className="hm-group__body-inner">
+          <ul className="hm-group__list">
+            {group.notes.map((note) => (
+              <li key={note.id}>
+                <NoteRow note={note} strings={strings} lang={lang} />
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </div>
   );

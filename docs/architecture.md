@@ -477,6 +477,46 @@ line above the title, reusing `Favicon` the same way `PinnedSection`
 already does for its own flat, cross-site list. `FolderTree` is the only
 caller that passes it.
 
+**Post-ship bug fixes**, found via real usage rather than at review time:
+
+- **A collapsed folder with both direct notes and a sub-folder stayed
+  partially expanded.** `.hm-folder-node__body`'s `grid-template-rows: 0fr`
+  collapse trick only clips a _single_ grid item — with the notes `<ul>`
+  and the sub-folder `<ul>` as two separate direct children, CSS grid
+  auto-placement puts the second one into its own implicit row (sized
+  `auto` by default), which never collapses. A folder with only a
+  sub-folder (and no notes of its own) could look correctly fixed while the
+  actually-reported combination — both together — still leaked. Fixed by
+  wrapping both in one `.hm-folder-node__body-inner` element (mirrored for
+  `.hm-group__body`/`.hm-group__body-inner` in the domain-grouped view,
+  which has the same collapse mechanism for a different reason — see next).
+- **The same collapse trick also let a direct child's own padding leak past
+  a "collapsed" (0px) row**, even with `overflow: hidden`/`min-height: 0`
+  on that child — those only cancel the child's _content_ driving a larger
+  minimum, not its own padding, which the grid track's base-size
+  calculation still counts. Same `-inner`, padding-less wrapper fix.
+- **The "Move to…" menu was clipped by the folder tree's own
+  `overflow: hidden` collapse containers**, since a `position: absolute`
+  popover nested in place is clipped by an ancestor's `overflow: hidden`
+  just like any other descendant. Fixed by portaling `MoveToFolderMenu`'s
+  panel to the trigger's `.hm-scope` ancestor (not `document.body`, which
+  would escape the `--hm-*` design-token scope those styles depend on) and
+  positioning it via `getBoundingClientRect()` instead.
+- **A folder row's hover highlight spans its full width, but only the tiny
+  chevron and the name text were actually clickable** — the folder glyph
+  icon and the row's own padding were dead zones despite looking clickable.
+  Fixed by adding a click handler to the row itself that only fires for
+  clicks landing on the row's own box (`e.target === e.currentTarget`), and
+  making the purely-decorative glyph/count `pointer-events: none` so clicks
+  on them fall through to the row.
+- Assorted spacing polish found alongside the above: a border on
+  `.hm-note-row` for easier at-a-glance separation between notes (there
+  was previously no per-note visual boundary at all), and breathing room
+  around the hairline separators between website groups
+  (`.hm-groups > li + li`) and top-level folders
+  (`.hm-folder-tree__list > li + li`), which sat flush against their
+  neighbors.
+
 ## Page identity
 
 `generatePageKey` normalizes: `http`→`https`, lowercased host, default ports

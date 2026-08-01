@@ -305,15 +305,28 @@ test.describe('Video Notes — capture + timeline markers', () => {
     await page.keyboard.press('Enter');
     await expect(page.locator('.hm-video-marker')).toHaveCount(1);
 
+    // Reset to a point *after* the marker's target (6s), not 0 — the video
+    // is still playing, and playback only ever moves forward, so resetting
+    // to 0 made this assertion unable to tell a real seek apart from the
+    // video simply having played forward on its own for ~5.5s (which is
+    // indistinguishable from a successful seek once the poll's default
+    // timeout is in the same ballpark — this is exactly what flaked in CI:
+    // a slower runner reported ~4.9s, i.e. plain 1x playback from 0, not a
+    // seek that ever landed). Starting past the target means only an
+    // actual backward jump can land back near 6 within the poll window;
+    // organic forward-only drift from 8 can never revisit it.
     await page.evaluate(() => {
-      (document.querySelector('video') as HTMLVideoElement).currentTime = 0;
+      (document.querySelector('video') as HTMLVideoElement).currentTime = 8;
     });
     await clickVideoMarker(page);
     await expect
       .poll(() =>
         page.evaluate(() => (document.querySelector('video') as HTMLVideoElement).currentTime),
       )
-      .toBeGreaterThan(5.5);
+      .toBeLessThan(7);
+    expect(
+      await page.evaluate(() => (document.querySelector('video') as HTMLVideoElement).currentTime),
+    ).toBeGreaterThan(5.5);
     expect(
       await page.evaluate(() => (document.querySelector('video') as HTMLVideoElement).paused),
     ).toBe(false);

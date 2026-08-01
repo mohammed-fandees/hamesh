@@ -180,6 +180,92 @@ test.describe('Notes Library — Folders', () => {
     await expect(topLevel).toHaveCount(2); // Work + the synthetic Unfiled node
   });
 
+  test('clicking anywhere in a folder row toggles it, not just the tiny chevron/name', async () => {
+    // The row's hover highlight spans its full width (matching the
+    // single-button header used in "By site" mode), which visually promises
+    // the whole row is clickable — but only the chevron and the name text
+    // originally had click handlers, leaving the folder glyph icon and the
+    // row's own padding as dead zones. Reproduces a click on each of those
+    // specifically (not the chevron/name), plus confirms the per-row action
+    // buttons still don't also toggle the row as a side effect.
+    await switchToFolderMode(library);
+    await createFolder(library, 'Work');
+
+    const toggle = folderNode(library, 'Work').locator('.hm-folder-node__toggle');
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+
+    // Click the folder glyph icon — not the chevron, not the name. It's
+    // `pointer-events: none` by design (see notes-library.css) so the click
+    // passes through to the row itself; Playwright's actionability check
+    // treats that redirect as "intercepted" and needs `force` to proceed.
+    await folderNode(library, 'Work').locator('.hm-folder-node__glyph').click({ force: true });
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+
+    // Click the row's own left padding, just left of the chevron.
+    const row = folderNode(library, 'Work');
+    const box = await row.boundingBox();
+    if (!box) throw new Error('no box for Work row');
+    await library.mouse.click(box.x + 2, box.y + box.height / 2);
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+
+    // An action button click must not also toggle the row.
+    await row.hover();
+    await row.getByLabel('Add sub-folder').click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(library.locator('.hm-folder-form__input')).toBeVisible();
+  });
+
+  test('collapsing a folder hides its nested sub-folders, not just its own notes', async () => {
+    await switchToFolderMode(library);
+    await createFolder(library, 'Work');
+
+    // File a note directly into Work *as well as* giving it a sub-folder —
+    // when a folder has both direct notes and a sub-folder, its collapsible
+    // `.hm-folder-node__body` renders two children (the notes <ul> and the
+    // sub-folder <ul>). CSS grid's `grid-template-rows: 0fr` collapse trick
+    // only clips a single grid item: with two direct children, the second
+    // one auto-placed into its own implicit row that never collapses, so a
+    // folder with only a sub-folder (and no notes of its own) could pass
+    // this check while the real, reported bug — a folder with both — did
+    // not. Reproducing that exact combination here is the point.
+    await folderNode(library, 'Unfiled').locator('.hm-folder-node__name').click();
+    await library.locator('.hm-folder-note').first().locator('.hm-folder-menu__trigger').click();
+    await library.getByRole('menuitem', { name: 'Work', exact: true }).click();
+
+    await folderNode(library, 'Work').getByLabel('Add sub-folder').click();
+    await library.locator('.hm-folder-form__input').fill('Research');
+    await library.locator('.hm-folder-form').getByRole('button', { name: 'Save' }).click();
+
+    // Adding a sub-folder auto-expands its new parent, so Research starts visible.
+    await expect(library.locator('.hm-folder-node__name', { hasText: 'Research' })).toBeVisible();
+    await expect(folderCount(library, 'Work')).toHaveText('1 note');
+
+    // The collapsible ancestor's own box height is the ground truth here —
+    // `Research` is a deeply-nested <button> whose own bounding box can
+    // still report a non-zero, non-empty rect even while a zero-height
+    // `overflow: hidden` ancestor clips it from actually being painted
+    // anywhere on screen (confirmed by comparing real screenshots before
+    // and after collapsing during manual verification of this fix), so
+    // `toBeHidden()`/`toBeVisible()` on the descendant itself isn't a
+    // reliable signal for this specific clipping pattern — check the
+    // clipping container's own geometry instead.
+    const workBody = folderNode(library, 'Work').locator(
+      'xpath=following-sibling::div[contains(@class, "hm-folder-node__body")]',
+    );
+    const expandedHeight = (await workBody.boundingBox())?.height ?? 0;
+    expect(expandedHeight).toBeGreaterThan(10);
+
+    // Collapsing Work must hide Research too — not just any notes filed
+    // directly in Work (a separate <ul> inside the same collapsible body;
+    // both need the same CSS treatment to actually clip when collapsed).
+    await folderNode(library, 'Work').locator('.hm-folder-node__toggle').click();
+    await expect.poll(async () => (await workBody.boundingBox())?.height ?? 0).toBeLessThan(1);
+
+    // Re-expanding brings it back.
+    await folderNode(library, 'Work').locator('.hm-folder-node__toggle').click();
+    await expect.poll(async () => (await workBody.boundingBox())?.height ?? 0).toBeGreaterThan(10);
+  });
+
   test('moves a note into a folder via the "Move to…" menu', async () => {
     await switchToFolderMode(library);
     await createFolder(library, 'Work');
@@ -190,6 +276,30 @@ test.describe('Notes Library — Folders', () => {
 
     await expect(folderCount(library, 'Work')).toHaveText('1 note');
     await expect(folderCount(library, 'Unfiled')).toHaveText('1 note');
+  });
+
+  test('the "Move to…" menu is not clipped by the folder tree\'s collapse-animation containers', async () => {
+    // The folder tree's expand/collapse animation relies on `overflow:
+    // hidden` on its row-list containers, which would clip a plain
+    // `position: absolute` popover nested inside them the moment it needed
+    // to extend past those bounds. The menu is portaled to the page's
+    // `.hm-scope` wrapper instead (not `document.body` — that would escape
+    // the `--hm-*` design-token scope and leave the panel unstyled) — assert
+    // that directly, plus a real, non-zero rendered size, rather than just
+    // "some element with this class exists somewhere".
+    await switchToFolderMode(library);
+    await folderNode(library, 'Unfiled').locator('.hm-folder-node__name').click();
+    await library.locator('.hm-folder-menu__trigger').first().click();
+
+    const panel = library.locator('.hm-folder-menu__panel');
+    await expect(panel).toBeVisible();
+    const parentHasScopeClass = await panel.evaluate((el) =>
+      el.parentElement?.classList.contains('hm-scope'),
+    );
+    expect(parentHasScopeClass).toBe(true);
+    const box = await panel.boundingBox();
+    expect(box?.width).toBeGreaterThan(50);
+    expect(box?.height).toBeGreaterThan(20);
   });
 
   test('moves a note into a folder via drag-and-drop', async () => {

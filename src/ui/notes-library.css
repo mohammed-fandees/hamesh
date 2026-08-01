@@ -354,15 +354,22 @@
   color: var(--hm-ink-40);
 }
 
-/* ---- Website groups — grouped-by-website list, hairline separators only
-   (no per-item borders/shadows; "avoid cards everywhere") ---- */
+/* ---- Website groups — hairline separators between groups (`.hm-groups > li
+   + li` below); individual notes inside a group get their own border (see
+   `.hm-note-row`) so they're easy to tell apart at a glance. ---- */
 .hm-groups {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 .hm-groups > li + li {
+  /* Margin above and padding below the hairline give it breathing room on
+     both sides — flush against the previous (possibly-collapsed, 0-height)
+     group above and the next header's content below otherwise looked
+     cramped. */
+  margin-top: var(--hm-space-2);
   border-top: 1px solid var(--hm-border);
+  padding-top: var(--hm-space-2);
 }
 .hm-group__header {
   display: flex;
@@ -414,33 +421,66 @@
 .hm-group__body {
   display: grid;
   grid-template-rows: 0fr;
+  /* Belt-and-suspenders clipping — the actual fix for the direct grid
+     item's own padding is `.hm-group__body-inner` below (a padding-less
+     wrapper, since the 0fr row's own *track size* is computed from its
+     direct item's required minimum, padding included, and doesn't shrink
+     to 0 just because that item has `overflow: hidden`/`min-height: 0`
+     on itself — those only cancel its *content's* minimum, not its own
+     padding). This still helps for anything else nested here that isn't
+     wrapped that carefully. */
+  overflow: hidden;
   transition: grid-template-rows var(--hm-dur-base) var(--hm-ease-out);
 }
 .hm-group__body[data-expanded='true'] {
   grid-template-rows: 1fr;
+}
+.hm-group__body-inner {
+  /* The sole direct child of `.hm-group__body` — see the comment in
+     `WebsiteGroup.tsx` for why `.hm-group__list`'s own padding can't sit on
+     the grid item directly. */
+  overflow: hidden;
+  min-height: 0;
 }
 .hm-group__list {
   overflow: hidden;
   min-height: 0;
   list-style: none;
   margin: 0;
-  padding: 0 0 var(--hm-space-2);
+  /* Top padding keeps the first note's own border (see `.hm-note-row`) from
+     sitting flush against the header row above it. */
+  padding: var(--hm-space-2) 0;
+}
+/* Gap between notes via the sibling combinator (same technique
+   `.hm-groups > li + li` already uses for the domain-grouped list's own
+   separators), not a `:last-child` margin on `.hm-note-row` itself — each
+   note's `<a>` is the *only* child of its own `<li>` wrapper here, so it's
+   trivially always "last child" of *that* `<li>`, making a `:last-child`
+   rule on the row match every note instead of just the actual last one
+   (the bug this replaced: notes rendered with zero gap between them). */
+.hm-group__list > li + li,
+.hm-folder-node__notes > li + li {
+  margin-top: var(--hm-space-2);
 }
 
 .hm-note-row {
   display: block;
-  padding: var(--hm-space-2) var(--hm-space-2) var(--hm-space-2)
-    calc(20px + var(--hm-space-3) + var(--hm-space-2));
-  border-radius: var(--hm-radius-sm);
+  padding: var(--hm-space-3);
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-md);
   text-decoration: none;
   color: inherit;
-  transition: background var(--hm-dur-fast) var(--hm-ease-out);
+  transition:
+    background var(--hm-dur-fast) var(--hm-ease-out),
+    border-color var(--hm-dur-fast) var(--hm-ease-out);
 }
 .hm-note-row:hover {
   background: var(--hm-paper-dim);
+  border-color: var(--hm-ink-20);
 }
 .hm-note-row:focus-visible {
   outline: none;
+  border-color: var(--hm-accent);
   box-shadow: inset 0 0 0 2px var(--hm-accent);
 }
 .hm-note-row__domain {
@@ -556,9 +596,21 @@
   padding: 0;
 }
 .hm-folder-tree__list > li + li {
+  /* Same breathing room as `.hm-groups > li + li` — flush against the
+     previous (possibly-collapsed) folder above and the next row's content
+     below otherwise looked cramped. */
+  margin-top: var(--hm-space-2);
   border-top: 1px solid var(--hm-border);
+  padding-top: var(--hm-space-2);
 }
 .hm-folder-node__children {
+  /* `.hm-folder-node__body`'s collapse trick (grid-template-rows: 0fr) only
+     actually clips its content when every direct child can shrink to
+     nothing — same reason `.hm-folder-node__notes` below needs this too.
+     Without it, a collapsed folder's own sub-folders stayed visible even
+     though its directly-filed notes correctly hid. */
+  overflow: hidden;
+  min-height: 0;
   padding-inline-start: var(--hm-space-2);
 }
 
@@ -568,6 +620,7 @@
   gap: var(--hm-space-2);
   padding: var(--hm-space-2);
   border-radius: var(--hm-radius-md);
+  cursor: pointer;
   transition: background var(--hm-dur-fast) var(--hm-ease-out);
 }
 .hm-folder-node:hover {
@@ -610,6 +663,10 @@
 .hm-folder-node__glyph {
   flex: none;
   color: var(--hm-accent);
+  /* Purely decorative — lets a click on the icon fall through to
+     `.hm-folder-node`'s own row-click-to-toggle handler instead of being a
+     dead zone. */
+  pointer-events: none;
 }
 .hm-folder-node__name {
   flex: 1 1 auto;
@@ -631,6 +688,9 @@
   flex: none;
   font-size: 12px;
   color: var(--hm-ink-40);
+  /* Same reasoning as `.hm-folder-node__glyph` — a click here should still
+     toggle the row, not land on a dead zone. */
+  pointer-events: none;
 }
 .hm-folder-node__actions {
   flex: none;
@@ -656,17 +716,34 @@
 .hm-folder-node__body {
   display: grid;
   grid-template-rows: 0fr;
+  /* Belt-and-suspenders clipping — see the matching comment on
+     `.hm-group__body` for why this alone doesn't zero out a direct grid
+     item's own padding; `.hm-folder-node__body-inner` below is the actual
+     fix for that. */
+  overflow: hidden;
   transition: grid-template-rows var(--hm-dur-base) var(--hm-ease-out);
 }
 .hm-folder-node__body[data-expanded='true'] {
   grid-template-rows: 1fr;
+}
+.hm-folder-node__body-inner {
+  /* The sole direct child of `.hm-folder-node__body`, and deliberately with
+     no padding of its own — see the comment in `FolderTree.tsx` for why the
+     notes list and the sub-folder list can't be two separate direct
+     children of the 0fr/1fr grid row, and the comment on
+     `.hm-group__body-inner` for why `.hm-folder-node__notes`' own padding
+     can't sit on the grid item directly either. */
+  overflow: hidden;
+  min-height: 0;
 }
 .hm-folder-node__notes {
   overflow: hidden;
   min-height: 0;
   list-style: none;
   margin: 0;
-  padding: 0 0 var(--hm-space-2);
+  /* Top padding keeps the first note's own border from sitting flush
+     against the folder header row above it (matches `.hm-group__list`). */
+  padding: var(--hm-space-2) 0;
 }
 .hm-folder-note {
   display: flex;
@@ -710,15 +787,19 @@
 
 /* ---- Move-to-folder menu ---- */
 .hm-folder-menu {
-  position: relative;
   flex: none;
 }
+/* `position`/`top`/`left`/`right` are set inline (computed from the
+   trigger's real `getBoundingClientRect()` — see MoveToFolderMenu.tsx) —
+   this is portaled to the page's `.hm-scope` wrapper, not a child of
+   `.hm-folder-menu`, specifically so an `overflow: hidden` ancestor several
+   levels up (the folder tree's collapse-animation containers) can't clip
+   it, while staying inside the `--hm-*` design-token scope (`.hm-scope`,
+   not `document.body` — see `findScopeRoot`). A plain `position: absolute`
+   popover nested in place would get clipped exactly like any other
+   descendant the moment it needed to extend past those ancestors' bounds. */
 .hm-folder-menu__panel {
-  position: absolute;
-  inset-inline-end: 0;
-  top: 100%;
-  z-index: 10;
-  margin-top: 4px;
+  z-index: 1000;
   min-width: 180px;
   padding: var(--hm-space-1);
   background: var(--hm-surface);
