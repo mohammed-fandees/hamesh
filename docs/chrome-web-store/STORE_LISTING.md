@@ -24,6 +24,14 @@
 >    separate, unrelated bug: `hamesh.app` returns a dead Cloudflare 522, confirmed by direct fetch). Both the
 >    canonical tag (`landing/index.html`) and `listing.yaml` now correctly use `https://hamesh.fandees.tech`,
 >    confirmed live.
+> 3. (2026-08-01) **Previously-flagged exception now resolved:** `listing.yaml`'s `detailedDescription` (EN/AR)
+>    was rewritten at owner request to cover everything shipped since the v0.1.0-era copy — the Notes Library
+>    (Continue, search, pinning), Video Notes, Folders, and the v1.2.0 note actions menu (pin/edit/delete/move a
+>    note without leaving the Library). `shortDescription` was left as-is in both locales: its core claim (attach
+>    a note to an element, restored on return, local-only) is still accurate and it's tight against the 132-char
+>    limit already. **Action required:** the owner must still copy the updated `detailedDescription` into the
+>    live dashboard listing by hand (see `SUBMISSION_GUIDE.md`) — this repo change alone does not update what
+>    Chrome Web Store shows.
 
 ---
 
