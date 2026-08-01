@@ -3,12 +3,13 @@ import { createShadowRootUi } from 'wxt/utils/content-script-ui/shadow-root';
 import { browser } from 'wxt/browser';
 import { createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import type { HameshMessage } from '@/messaging/types';
+import type { HameshMessage, ShortcutsResponse } from '@/messaging/types';
 import { createNotesRepository } from '@/storage/notes-repository';
 import { createPreferencesRepository } from '@/storage/preferences-repository';
 import { generatePageKey } from '@/domain/page-key';
 import { HameshApp } from '@/content/HameshApp';
 import { resolveLang } from '@/ui/i18n';
+import { matchesShortcut } from '@/domain/shortcut';
 import '@/ui/tokens.css';
 
 export default defineContentScript({
@@ -101,6 +102,51 @@ export default defineContentScript({
     // Settings view).
     window.addEventListener('hamesh:activate', () => activate?.());
     window.addEventListener('hamesh:activate-video', () => activateVideo?.());
+
+    // Primary keyboard-shortcut path. `chrome.commands.onCommand` (handled in
+    // background.ts) is the "official" mechanism, but it has a well-documented,
+    // still-open Chromium reliability gap: delivering the event to the
+    // extension's MV3 service worker is not guaranteed, and in practice can
+    // fail to fire at all regardless of which key combo is bound — confirmed
+    // by direct testing (chrome.commands.getAll() shows the shortcut correctly
+    // registered, yet no onCommand event is ever received). A page-level
+    // `keydown` listener sidesteps the service worker entirely: it runs in the
+    // content script, which is already alive on every page, so there is no
+    // browser-to-worker delivery step that can fail. The background listener
+    // is kept as a secondary path (e.g. for pages where no content script
+    // runs), but this is what real usage should rely on.
+    let addNoteShortcut = 'Alt+H';
+    let videoNoteShortcut = 'Alt+V';
+    // `chrome.commands` itself is not available in a content script's
+    // execution context (Chrome restricts it to background/extension pages)
+    // — asking the background for the actual bindings instead. This message
+    // still reaches the background reliably even if it's currently dormant:
+    // `runtime.onMessage` (unlike `commands.onCommand`) is the standard,
+    // well-supported wake path for an MV3 service worker, and is exactly
+    // what already carries ENABLE_SELECTION/ENABLE_VIDEO_NOTE the other way.
+    // A failure here (or an unset custom shortcut) just keeps the Alt+H/Alt+V
+    // defaults above, which match this extension's actual manifest defaults.
+    browser.runtime
+      .sendMessage({ type: 'GET_SHORTCUTS' })
+      .then((res: ShortcutsResponse | undefined) => {
+        if (res?.addNote) addNoteShortcut = res.addNote;
+        if (res?.addVideoNote) videoNoteShortcut = res.addVideoNote;
+      })
+      .catch(() => {});
+
+    window.addEventListener(
+      'keydown',
+      (e) => {
+        if (matchesShortcut(e, addNoteShortcut)) {
+          e.preventDefault();
+          activate?.();
+        } else if (matchesShortcut(e, videoNoteShortcut)) {
+          e.preventDefault();
+          activateVideo?.();
+        }
+      },
+      true,
+    );
 
     browser.runtime.onMessage.addListener(
       (message: HameshMessage, _sender, sendResponse): boolean | undefined => {

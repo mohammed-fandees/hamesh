@@ -18,7 +18,12 @@ export default defineConfig({
     //   No network request Hamesh makes itself; used only from the extension's
     //   own notes.html page, never a content script, so no additional
     //   web_accessible_resources entry is needed.
-    permissions: ['storage', 'activeTab', 'favicon'],
+    // alarms: a periodic no-op heartbeat in the background service worker
+    //   (see background.ts) — works around a well-documented Chromium bug
+    //   where a dormant MV3 service worker doesn't reliably wake back up for
+    //   an incoming chrome.commands.onCommand event, silently dropping the
+    //   Alt+H/Alt+V keyboard shortcut. No user data involved.
+    permissions: ['storage', 'activeTab', 'favicon', 'alarms'],
     action: {
       default_title: 'Hamesh — add a note (Alt+H)',
     },

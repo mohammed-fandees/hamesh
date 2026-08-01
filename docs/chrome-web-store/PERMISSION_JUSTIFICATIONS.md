@@ -8,11 +8,13 @@ Audited against the actual **generated production manifest** (`pnpm build` → `
 
 > **Refreshed 2026-08-01 for v1.2.0 (note actions menu).** No permission, `commands`, or host-access change — confirmed via `pnpm release:validate --tag=v1.2.0 --previous-ref=v1.1.0`, still exactly `["storage", "activeTab", "favicon"]`. The new note actions menu (`src/ui/NoteActionsMenu.tsx`, generalized from the old folder-only `MoveToFolderMenu.tsx`) adds a new UI surface for pinning, editing, deleting, and moving a note from any Notes Library view, but every one of those actions writes through `notes-repository.ts`'s existing `setPinned`/`update`/`delete`/`setFolder` methods against fields already covered by prior audits (`pinned` since the pinning feature, `content` since `v0.1.0`, `folderId` since `v1.1.0`) — no new stored field, no new storage key, no new surface.
 
+> **Refreshed 2026-08-01 for the Alt+H/Alt+V shortcut reliability fix.** `alarms` was added. Root cause of the underlying bug: `chrome.commands.onCommand` (the API this permission's neighbor, `commands`, relies on) has a well-documented, still-open Chromium MV3 reliability gap — confirmed by direct testing (the shortcut was correctly registered per `chrome.commands.getAll()`, yet the event was never delivered to the extension regardless of which key was bound). The primary fix moved shortcut handling into the content script itself (a `keydown` listener matched via `src/domain/shortcut.ts`, verified end-to-end with a real synthetic keypress in `e2e/core-flows.spec.ts` and `e2e/video-notes.spec.ts`), which needs no new permission. `alarms` is used only for a secondary measure: `src/entrypoints/background.ts` registers a harmless periodic no-op alarm (`hamesh-keep-alive`, the Chrome-enforced minimum of every 30s) so the background service worker underlying the retained `commands.onCommand` fallback path stays warm more often. No user data is read, stored, or touched by this permission.
+
 ## Generated manifest (verbatim, permission-relevant excerpt)
 
 ```json
 {
-  "permissions": ["storage", "activeTab", "favicon"],
+  "permissions": ["storage", "activeTab", "favicon", "alarms"],
   "content_scripts": [
     { "matches": ["<all_urls>"], "run_at": "document_idle", "js": ["content-scripts/content.js"] }
   ],
@@ -61,6 +63,16 @@ No `host_permissions`, no `optional_permissions`, no `externally_connectable`, n
 - **Reviewer-facing justification (final text):**
   > The Notes Library page shows a favicon next to each website a user has notes on, read from Chrome's own local favicon cache via `chrome-extension://<id>/_favicon/`. This makes no network request and exposes no data beyond what Chrome has already cached while the user browsed; the `favicon` permission is required by Chrome to use this API. When no cached favicon exists, a generated monogram is shown instead.
 
+## `alarms`
+
+- **Declared:** `wxt.config.ts` → `manifest.permissions`.
+- **Used at:** `src/entrypoints/background.ts` — `browser.alarms.create('hamesh-keep-alive', { periodInMinutes: 0.5 })` and a matching `onAlarm` listener that does nothing beyond handling the event.
+- **Why present:** Not for scheduling any user-facing feature. It's a keep-alive measure for the `commands.onCommand` fallback path (see the "activeTab"-adjacent shortcut fix note above and `commands` discussion): a periodic no-op alarm resets the MV3 service worker's idle timer, so it goes fully dormant less often. `0.5` (30 seconds) is the shortest period Chrome allows.
+- **Why it doesn't fully solve the underlying problem, and isn't the primary fix:** direct testing (confirmed via `chrome.commands.getAll()` showing correct registration, plus a diagnostic build with instrumentation inside the `onCommand` handler) showed the event can still fail to be delivered even with this alarm active — the Chromium gap is in event delivery, not purely idle-timeout. The actual fix is a `keydown` listener in the content script (`src/entrypoints/content.ts`, matched via `src/domain/shortcut.ts`), which needs no permission at all. This alarm is kept only as a harmless secondary measure for the retained `onCommand` fallback (used on pages with no content script, e.g. `chrome://` pages).
+- **Data exposed:** None. The alarm carries no payload and the listener reads nothing.
+- **Reviewer-facing justification (final text):**
+  > A periodic, no-op background alarm (every 30 seconds, the shortest interval Chrome allows) keeps the background service worker from going fully idle, working around a known Chrome reliability issue with keyboard-shortcut delivery to a dormant extension. It reads and stores no data.
+
 ## Content script host access — `matches: ["<all_urls>"]`
 
 This is not a `permissions` entry but is the broadest access surface in the manifest and CWS reviewers scrutinize it identically to a host permission.
@@ -93,4 +105,5 @@ This is not a `permissions` entry but is the broadest access surface in the mani
 | `storage`                                   | Yes                              | See "storage" section above                    |
 | `activeTab`                                 | Yes (flagged for future removal) | See "activeTab" section above                  |
 | `favicon`                                   | Yes (new, Notes Library)         | See "favicon" section above                    |
+| `alarms`                                    | Yes (new, shortcut reliability)  | See "alarms" section above                     |
 | Host access via content script `<all_urls>` | Yes                              | See "Content script host access" section above |

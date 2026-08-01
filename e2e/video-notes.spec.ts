@@ -206,6 +206,18 @@ test.describe('Video Notes — capture + timeline markers', () => {
     await expect(page.locator('.hm-video-quick-note')).toHaveCount(0);
   });
 
+  test('Alt+V keyboard shortcut opens the video quick-note via a real keypress', async () => {
+    // Same reasoning as the Alt+H real-keypress test in core-flows.spec.ts —
+    // this drives `page.keyboard.press` instead of dispatching
+    // `hamesh:activate-video` directly, so it actually exercises the content
+    // script's `keydown` listener and `matchesShortcut` (src/domain/shortcut.ts),
+    // not just the activation callback it eventually calls.
+    await page.locator('[data-testid="test-video"]').hover();
+    await page.keyboard.press('Alt+V');
+
+    await expect(page.locator('.hm-video-quick-note')).toBeVisible();
+  });
+
   test('the video shortcut is a no-op on a page with no active video', async () => {
     // A fresh navigation to a page with no <video> at all, rather than
     // removing the fixture's video and waiting on HameshApp's debounced
