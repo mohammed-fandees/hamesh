@@ -1262,7 +1262,7 @@ function FloatingComposer({
   onCancel: () => void;
 }) {
   const getRect = useCallback(() => toAnchorRect(element), [element]);
-  const { cardRef, style } = useFloating(getRect);
+  const { cardRef, style } = useFloating(getRect, { autoFocus: true });
   return (
     <div ref={cardRef} className="hm-floating" style={{ ...style, width: 300 }}>
       <Composer strings={strings} saving={busy} error={error} onSave={onSave} onCancel={onCancel} />
@@ -1285,7 +1285,7 @@ function FloatingVideoQuickNote({
   // not below-first like the element composer: a video can be most of the
   // viewport, so "just below the anchor's top edge" would sit on top of it.
   const getRect = useCallback(() => toAnchorRect(video), [video]);
-  const { cardRef, style } = useFloatingAbove(getRect);
+  const { cardRef, style } = useFloatingAbove(getRect, { autoFocus: true });
   return (
     <div ref={cardRef} className="hm-floating" style={style}>
       <VideoQuickNote

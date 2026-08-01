@@ -206,6 +206,20 @@ test.describe('Video Notes — capture + timeline markers', () => {
     await expect(page.locator('.hm-video-quick-note')).toHaveCount(0);
   });
 
+  test('video quick-note textarea is focused immediately on open, no click needed to type', async () => {
+    // Same underlying bug/fix as the composer's equivalent test in
+    // core-flows.spec.ts — see useFocusOnceVisible in
+    // src/content/useFloating.ts.
+    await page.locator('[data-testid="test-video"]').hover();
+    await page.evaluate(() => window.dispatchEvent(new CustomEvent('hamesh:activate-video')));
+    await expect(page.locator('.hm-video-quick-note')).toBeVisible();
+
+    await page.keyboard.type('typed without clicking');
+    await expect(page.locator('.hm-video-quick-note textarea')).toHaveValue(
+      'typed without clicking',
+    );
+  });
+
   test('Alt+V keyboard shortcut opens the video quick-note via a real keypress', async () => {
     // Same reasoning as the Alt+H real-keypress test in core-flows.spec.ts —
     // this drives `page.keyboard.press` instead of dispatching

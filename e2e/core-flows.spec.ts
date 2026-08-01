@@ -161,6 +161,29 @@ test.describe('Hamesh core flows', () => {
     await page.close();
   });
 
+  test('composer textarea is focused immediately on open, no click needed to type', async () => {
+    // Regression test: the composer's textarea has `autoFocus`, but the
+    // floating card it lives in mounts `visibility: hidden` first (to
+    // measure its size before positioning) and only flips visible after —
+    // React's `autoFocus` fires once, on that first still-hidden commit, so
+    // it silently did nothing. Fixed via `useFocusOnceVisible` in
+    // src/content/useFloating.ts. Typing without clicking the textarea first
+    // is the actual user-facing behavior this protects — checking
+    // `document.activeElement` directly is unreliable here since it doesn't
+    // pierce the shadow root the UI renders into.
+    const page = await context.newPage();
+    await installReadinessHook(page);
+    await page.goto(server.url);
+    await activateAndSelect(page, 'article-heading');
+
+    await page.keyboard.type('typed without clicking the textarea');
+    await expect(page.locator('.hm-card textarea')).toHaveValue(
+      'typed without clicking the textarea',
+    );
+
+    await page.close();
+  });
+
   test('Alt+H keyboard shortcut activates selection mode via a real keypress', async () => {
     // Every other test here starts selection mode with the `hamesh:activate`
     // DOM event — deliberately capability-equivalent to the real shortcut,
