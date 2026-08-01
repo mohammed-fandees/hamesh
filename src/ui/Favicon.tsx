@@ -36,6 +36,13 @@ function getPlaceholderBytes(size: number): Promise<ArrayBuffer> {
   if (!bytes) {
     const probeUrl = `https://hamesh-favicon-probe-${crypto.randomUUID()}.invalid/`;
     bytes = fetch(faviconUrl(probeUrl, size)).then((res) => res.arrayBuffer());
+    // A transient failure (e.g. a momentary extension-runtime hiccup) would
+    // otherwise cache a permanently-rejected promise, forcing every future
+    // favicon at this size into the globe fallback for the rest of the
+    // session. Evict on rejection so the next call retries instead. This
+    // `.catch` runs on a separate chain — it doesn't swallow the rejection
+    // callers see from the `bytes` promise returned below.
+    bytes.catch(() => placeholderCache.delete(size));
     placeholderCache.set(size, bytes);
   }
   return bytes;
@@ -67,7 +74,16 @@ export function Favicon({ domain, size = 20 }: FaviconProps) {
         if (bytesEqual(realBuf, placeholderBuf)) {
           setState({ status: 'none' });
         } else {
-          createdUrl = URL.createObjectURL(new Blob([realBuf]));
+          const objectUrl = URL.createObjectURL(new Blob([realBuf]));
+          if (cancelled) {
+            // Unmounted/deps-changed between the check above and here —
+            // nothing awaited in between so this shouldn't be reachable
+            // today, but avoids ever setting state after unmount or leaking
+            // this object URL if that ever changes.
+            URL.revokeObjectURL(objectUrl);
+            return;
+          }
+          createdUrl = objectUrl;
           setState({ status: 'real', objectUrl: createdUrl });
         }
       } catch {

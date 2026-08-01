@@ -24,19 +24,24 @@ async function importFavicon() {
 }
 
 describe('Favicon', () => {
+  // `URL.createObjectURL`/`revokeObjectURL` are mutated in place (jsdom
+  // doesn't implement them) rather than via `vi.stubGlobal('URL', ...)` —
+  // stubbing would replace the whole `URL` binding, breaking every other use
+  // of `new URL(...)` in the module under test. Saved/restored explicitly so
+  // the mocks don't leak into other test files.
+  const originalCreateObjectURL = URL.createObjectURL;
+  const originalRevokeObjectURL = URL.revokeObjectURL;
+
   beforeEach(() => {
     vi.resetModules();
     cleanup();
-    vi.stubGlobal(
-      'URL',
-      Object.assign(URL, {
-        createObjectURL: vi.fn(() => 'blob:mock-url'),
-        revokeObjectURL: vi.fn(),
-      }),
-    );
+    URL.createObjectURL = vi.fn(() => 'blob:mock-url');
+    URL.revokeObjectURL = vi.fn();
   });
 
   afterEach(() => {
+    URL.createObjectURL = originalCreateObjectURL;
+    URL.revokeObjectURL = originalRevokeObjectURL;
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
