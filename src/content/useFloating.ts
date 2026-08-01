@@ -31,13 +31,44 @@ function useRepositionOnScroll(reposition: () => void): void {
   }, [reposition]);
 }
 
+/** Once a floating card's `reposition()` has revealed it (`visibility` flips
+ *  from `hidden` to `visible`), focuses its first focusable descendant —
+ *  once only, matching `autoFocus` semantics, not on every scroll-driven
+ *  reposition. This exists because a plain `autoFocus` on a textarea inside
+ *  one of these cards silently does nothing: the card mounts
+ *  `visibility: hidden` (so `reposition` can measure its real size before
+ *  placing it), and React's `autoFocus` only ever fires once, on that very
+ *  first — still hidden, so unfocusable — commit. A `useLayoutEffect` keyed
+ *  on the visibility transition instead runs after the DOM has actually been
+ *  updated to visible, so the focus call lands. */
+function useFocusOnceVisible(
+  cardRef: React.RefObject<HTMLDivElement | null>,
+  visible: boolean,
+  enabled: boolean,
+): void {
+  const focusedRef = useRef(false);
+  useLayoutEffect(() => {
+    if (!enabled || !visible || focusedRef.current) return;
+    focusedRef.current = true;
+    cardRef.current?.querySelector<HTMLElement>('textarea, input, [tabindex]')?.focus();
+  }, [cardRef, visible, enabled]);
+}
+
+export interface UseFloatingOptions {
+  /** Focus the card's first focusable descendant once it's actually visible
+   *  (see `useFocusOnceVisible` above). Off by default — cards with no
+   *  input, or that open already-visible (e.g. entering edit mode inside an
+   *  already-open viewer), don't need this. */
+  autoFocus?: boolean;
+}
+
 /**
  * Positions a floating card (composer / viewer) next to an anchor using fixed
  * coordinates. Prefers below-start of the anchor, flips above when it would
  * overflow the bottom, and clamps into the viewport. Re-measures on scroll and
  * resize so the card tracks its anchor.
  */
-export function useFloating(getAnchorRect: () => AnchorRect | null) {
+export function useFloating(getAnchorRect: () => AnchorRect | null, options?: UseFloatingOptions) {
   const cardRef = useRef<HTMLDivElement | null>(null);
   const [style, setStyle] = useState<React.CSSProperties>(HIDDEN_STYLE);
 
@@ -67,6 +98,7 @@ export function useFloating(getAnchorRect: () => AnchorRect | null) {
   }, [getAnchorRect]);
 
   useRepositionOnScroll(reposition);
+  useFocusOnceVisible(cardRef, style.visibility === 'visible', options?.autoFocus ?? false);
 
   return { cardRef, style, reposition };
 }
@@ -79,7 +111,10 @@ export function useFloating(getAnchorRect: () => AnchorRect | null) {
  * anchor's top edge rather than clipping off-screen. Same scroll/resize
  * tracking and viewport clamping as `useFloating`.
  */
-export function useFloatingAbove(getAnchorRect: () => AnchorRect | null) {
+export function useFloatingAbove(
+  getAnchorRect: () => AnchorRect | null,
+  options?: UseFloatingOptions,
+) {
   const cardRef = useRef<HTMLDivElement | null>(null);
   const [style, setStyle] = useState<React.CSSProperties>(HIDDEN_STYLE);
 
@@ -104,6 +139,7 @@ export function useFloatingAbove(getAnchorRect: () => AnchorRect | null) {
   }, [getAnchorRect]);
 
   useRepositionOnScroll(reposition);
+  useFocusOnceVisible(cardRef, style.visibility === 'visible', options?.autoFocus ?? false);
 
   return { cardRef, style, reposition };
 }

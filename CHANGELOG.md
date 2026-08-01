@@ -8,6 +8,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- The note composer and video quick-note textareas weren't actually receiving focus on open, despite having
+  `autoFocus` — typing required clicking into the textarea first. Root cause: their floating card mounts
+  `visibility: hidden` to measure its size before positioning, and React's `autoFocus` only fires once, on that
+  very first (still hidden, so unfocusable) commit. Fixed at the shared positioning hook level so both cards
+  focus correctly once actually visible.
+
 - The Alt+H / Alt+V keyboard shortcuts could silently stop working, regardless of which key combination was
   bound — root-caused to a Chromium reliability gap in `chrome.commands.onCommand` event delivery to a Manifest
   V3 background service worker. Shortcut handling now lives in a `keydown` listener in the content script
