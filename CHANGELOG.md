@@ -6,6 +6,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- The Alt+H / Alt+V keyboard shortcuts could silently stop working, regardless of which key combination was
+  bound — root-caused to a Chromium reliability gap in `chrome.commands.onCommand` event delivery to a Manifest
+  V3 background service worker. Shortcut handling now lives in a `keydown` listener in the content script
+  itself, which needs no delivery from the background worker at all. The `chrome.commands`-based path is kept
+  as a secondary fallback for pages with no content script.
+
 ## [1.2.0] — 2026-08-01
 
 Note actions menu for the Notes Library, plus a round of bug fixes to the 1.1.0 Folders feature, delivered across two PRs.

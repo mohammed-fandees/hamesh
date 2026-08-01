@@ -161,6 +161,29 @@ test.describe('Hamesh core flows', () => {
     await page.close();
   });
 
+  test('Alt+H keyboard shortcut activates selection mode via a real keypress', async () => {
+    // Every other test here starts selection mode with the `hamesh:activate`
+    // DOM event — deliberately capability-equivalent to the real shortcut,
+    // but it bypasses the actual keyboard-matching code path entirely. This
+    // test drives `page.keyboard.press` instead, a real synthetic keydown
+    // dispatched into the page, so it actually exercises
+    // `matchesShortcut`/the content script's `keydown` listener (see
+    // src/entrypoints/content.ts) — the path a real user's keypress takes.
+    // `chrome.commands.onCommand` (the background.ts fallback) cannot be
+    // exercised this way: it's a browser-chrome-level API with no
+    // automatable surface, which is exactly why that path silently broke in
+    // real usage without any test catching it.
+    const page = await context.newPage();
+    await installReadinessHook(page);
+    await page.goto(server.url);
+    await waitForHameshReady(page);
+
+    await page.keyboard.press('Alt+H');
+    await expect(page.locator('.hm-capture')).toBeVisible();
+
+    await page.close();
+  });
+
   test('E2E 3 — SPA navigation changes page identity and re-evaluates markers', async () => {
     const page = await context.newPage();
     await installReadinessHook(page);

@@ -6,6 +6,8 @@ Every answer below is traced to a specific code path in the `v0.2.0` build (comm
 
 > **Refreshed 2026-08-01 for v1.2.0** (previously audited against v0.2.0 — v1.0.0/v1.1.0 shipped without a refresh here; re-traced against everything added since, not just the newest release). None of the disclosure answers change: the Notes Library, Video Notes, Folders, and the v1.2.0 note actions menu all still write user-authored text (note content, folder names) and page/video identifiers to `chrome.storage.local` only — the same "Website content — Yes, locally processed" row already covers this, since a video's platform/id and timestamp are read from the page the same way an element's attributes are, and a folder name is user-typed text the same way a note's content is. No new data category is touched, no network call exists anywhere in `src/` (re-confirmed by the same `fetch`/`XMLHttpRequest`/`WebSocket`/`sendBeacon` grep as before), and the built bundle's `fetch()` count/origin is unchanged from the v0.2.0 addendum below.
 
+> **Refreshed 2026-08-01 for the Alt+H/Alt+V shortcut reliability fix.** The `alarms` permission was added (`src/entrypoints/background.ts`, a periodic no-op keep-alive alarm — see `PERMISSION_JUSTIFICATIONS.md`). It carries no payload, reads no data, and its listener does nothing beyond handling the event. No disclosure answer below changes.
+
 ## Data usage disclosure — "What user data does your extension collect?"
 
 The dashboard presents a checklist of data categories. For each, the recommended selection is **unchecked (not collected)** unless noted otherwise.
