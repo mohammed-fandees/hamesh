@@ -5,6 +5,8 @@
 
 > **Refreshed 2026-07-11:** re-verified against the `v0.2.0` codebase, including the Settings screen (language/appearance preferences) added since this was first written — see the new bullet under "What information Hamesh stores" below. Data-handling behavior is otherwise unchanged from `v0.1.0`, so the "version 0.1.0 and later" wording above still holds and doesn't need a version bump. The landing site is now confirmed live — see the corrected URL immediately below (the previous `hamesh.fandees.tech` guess in this file was actually correct; a separate, unrelated bug had the landing page's own `<link rel="canonical">` pointing at a different, dead domain — see `landing/index.html`).
 
+> **Refreshed 2026-08-01 for v1.2.0:** re-verified against the current codebase (Video Notes and Folders, both shipped in `v1.1.0`, and the `v1.2.0` note actions menu). Data-handling behavior is still unchanged — everything continues to go through `chrome.storage.local` only, no new permission, no network requests — but two bullets were missing under "What information Hamesh stores" that should have been added when Folders and Video Notes first shipped: **folder names you create, and which folder a note is filed into**, and **a video's platform/id and the note's timestamp within it**, for video notes. Added below. The "version 0.1.0 and later" wording still holds; this is a completeness fix to the description, not a behavior change.
+
 > **Canonical, publicly hosted version:** `landing/privacy.html` — a bilingual (Arabic/English, matching the landing page's design system and language toggle) rendering of this exact policy, deployed alongside the landing page at **`https://hamesh.fandees.tech/privacy.html`** (confirmed live), which is what goes in the Chrome Web Store dashboard's "Privacy policy URL" field — see `SUBMISSION_GUIDE.md`. This Markdown file is the same content kept as a plain-text reference inside the repo; if the two ever diverge, `landing/privacy.html` is source of truth for what's actually public.
 
 This policy describes exactly what the Hamesh browser extension ("Hamesh," "the extension," "we") does and does not do with your data. It is written to match the extension's actual, current implementation — not aspirational or planned behavior.
@@ -35,6 +37,10 @@ On every page you visit, Hamesh also computes a normalized version of that page'
 - **The page's normalized URL**, so notes can be grouped by page.
 - **Timestamps** (created/updated) for each note.
 - **Your Settings choices** (interface language and appearance/theme, if you set them from the Settings screen) — not personal information, just your own configuration of how Hamesh looks and reads.
+- **Folder names you create**, and which folder (if any) each note is filed into, if you use the Folders
+  feature to organize your notes.
+- **For a video note:** which video it belongs to (the platform's own identifier for that video, e.g. a
+  YouTube video ID) and the timestamp within it, so Hamesh can seek back to that moment later.
 
 All of this is stored using your browser's built-in local extension storage (`chrome.storage.local`). It stays on your device.
 

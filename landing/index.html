@@ -725,6 +725,14 @@
         padding: 9px 34px 9px 14px;
         font-family: var(--arabic);
       }
+      .lib-row span {
+        flex: 1 1 auto;
+      }
+      .lib-row-menu {
+        flex: none;
+        margin-inline-start: auto;
+        color: var(--ink-40);
+      }
 
       /* ---- Responsive ---- */
       @media (max-width: 1000px) {
@@ -1083,6 +1091,13 @@
               >
                 ثبّت الملاحظات المهمّة لتبقى في الأعلى، واستأنف من قسم «متابعة» بنقرة.
               </li>
+              <li
+                data-ar="لكل ملاحظة قائمة سريعة لتثبيتها أو تعديلها أو حذفها أو نقلها إلى فولدر — كل ذلك من المكتبة نفسها، دون فتح الصفحة الأصلية."
+                data-en="Every note has a quick menu to pin, edit, delete, or file it into a folder — right from the Library, no need to open the original page."
+              >
+                لكل ملاحظة قائمة سريعة لتثبيتها أو تعديلها أو حذفها أو نقلها إلى فولدر — كل ذلك من
+                المكتبة نفسها، دون فتح الصفحة الأصلية.
+              </li>
             </ul>
           </div>
 
@@ -1157,12 +1172,21 @@
                   <span data-ar="memory-lab.org" data-en="memory-lab.org">memory-lab.org</span>
                   <span class="lib-count" data-ar="٣ ملاحظات" data-en="3 notes">٣ ملاحظات</span>
                 </div>
-                <div
-                  class="lib-row"
-                  data-ar="فكرة موجزة، في مكانها."
-                  data-en="A brief thought, in place."
-                >
-                  فكرة موجزة، في مكانها.
+                <div class="lib-row">
+                  <span data-ar="فكرة موجزة، في مكانها." data-en="A brief thought, in place.">
+                    فكرة موجزة، في مكانها.
+                  </span>
+                  <svg
+                    class="lib-row-menu"
+                    width="12"
+                    height="12"
+                    viewBox="0 0 14 14"
+                    aria-hidden="true"
+                  >
+                    <circle cx="7" cy="2.4" r="1.15" fill="currentColor" />
+                    <circle cx="7" cy="7" r="1.15" fill="currentColor" />
+                    <circle cx="7" cy="11.6" r="1.15" fill="currentColor" />
+                  </svg>
                 </div>
                 <div
                   class="lib-row"

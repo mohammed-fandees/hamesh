@@ -6,6 +6,37 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-08-01
+
+Note actions menu for the Notes Library, plus a round of bug fixes to the 1.1.0 Folders feature, delivered across two PRs.
+
+### Added
+
+- **Note actions menu** — pin/unpin, edit, and delete a note directly from the Notes Library, without opening
+  it on its original page. A "⋮" menu on every note row now covers all four actions (the fourth, moving a note
+  to a folder, was already there):
+  - Available in the domain-grouped ("By site") view, the folder-tree ("By folder") view, and the Pinned
+    section — previously only the on-page note viewer could pin, edit, or delete.
+  - "Move to folder" stays folder-tree-only; the other two views keep a quicker, flatter action list.
+  - The folder-tree menu's "Move to folder" list now marks the note's currently-assigned folder with a
+    checkmark, so it's clear at a glance where a note already lives.
+  - The menu repositions itself to stay fully on-screen — flips above its trigger when there's no room below,
+    and nudges back in bounds horizontally — instead of rendering partly off-screen near a viewport edge.
+
+### Fixed
+
+- A folder containing both notes of its own **and** a sub-folder didn't fully collapse — only the notes hid,
+  the sub-folder stayed visible. Same underlying issue also let a collapsed row's own padding show through as
+  a thin visible sliver. Both were the same root cause (a CSS grid collapse trick that only fully clips a
+  single, padding-less child) and are now fixed for both the folder tree and the domain-grouped view.
+- The "Move to…" folder menu could be clipped by the folder tree's own collapse-animation containers.
+- Clicking a folder row only worked on the tiny chevron/name, despite the whole row's hover highlight
+  suggesting otherwise — the whole row is clickable now.
+- Each note now has a visible border for easier at-a-glance separation, and the hairline separators between
+  website groups and top-level folders no longer sit flush against their neighbors.
+- Patched five dependency vulnerabilities in dev-only build tooling (`shell-quote`, `adm-zip`, `tmp`, `uuid`,
+  `esbuild` — none shipped in the extension bundle) and a flaky video-notes E2E assertion.
+
 ## [1.1.0] — 2026-08-01
 
 Video Notes, Folders, and shortcut/settings improvements, delivered incrementally across nine PRs.
@@ -177,7 +208,8 @@ First functional MVP of the Hamesh browser extension (Chrome, Manifest V3).
   analytics, telemetry, or network requests. Least-privilege permissions
   (`storage`, `activeTab`); no input/password values are ever read or stored.
 
-[Unreleased]: https://github.com/mohammed-fandees/hamesh/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/mohammed-fandees/hamesh/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/mohammed-fandees/hamesh/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/mohammed-fandees/hamesh/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/mohammed-fandees/hamesh/compare/v0.2.0...v1.0.0
 [0.2.0]: https://github.com/mohammed-fandees/hamesh/compare/v0.1.0...v0.2.0
