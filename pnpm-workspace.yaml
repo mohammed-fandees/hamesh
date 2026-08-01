@@ -5,11 +5,25 @@ onlyBuiltDependencies:
   - esbuild
   - spawn-sync
 overrides:
-  'brace-expansion@>=4.0.0 <5.0.8': '>=5.0.8'
+  # Pinned to exact resolved versions, not an open-ended `>=` range — an
+  # unbounded target would force whatever future major happens to satisfy
+  # it (e.g. a hypothetical brace-expansion 6.x) onto anything in the tree
+  # that ever requests a version in the vulnerable range, which is a much
+  # bigger, unreviewed jump than this override is meant to make (flagged in
+  # PR review). Bump these deliberately, not implicitly, when a newer patch
+  # is needed.
+  'brace-expansion@>=4.0.0 <5.0.8': '5.0.9'
   # shell-quote and adm-zip are transitive devDependencies of wxt's
   # Firefox-oriented dev tooling (wxt > web-ext-run > fx-runner /
   # firefox-profile) — unused in this project's actual workflow (Chrome
   # only), never shipped in the extension bundle, but still worth patching
   # since they're pulled into the dev-time dependency tree either way.
-  'shell-quote@<=1.8.4': '>=1.9.0'
-  'adm-zip@<0.6.0': '>=0.6.0'
+  'shell-quote@<=1.8.4': '1.10.0'
+  'adm-zip@<0.6.0': '0.6.0'
+  # Same dev-only story — path traversal / uuid buffer-bounds / esbuild
+  # dev-server file-read advisories, all through wxt's own dependency tree
+  # (web-ext-run's tmp/node-notifier, and vite/vitest's esbuild), not
+  # anything shipped in the extension.
+  'tmp@<0.2.7': '0.2.7'
+  'uuid@<11.1.1': '11.1.1'
+  'esbuild@>=0.27.3 <0.28.1': '0.28.1'
