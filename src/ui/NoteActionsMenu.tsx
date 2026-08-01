@@ -197,7 +197,16 @@ export function NoteActionsMenu({
         return 'menu';
       });
     }
-    function onScroll() {
+    function onScroll(e: Event) {
+      // Capture-phase, so this also sees scroll events from *inside* the
+      // panel — its own `<textarea>` while editing, most notably — not just
+      // the page scrolling underneath it. Only the latter should close the
+      // menu (a stale-positioned popup left behind by the page moving);
+      // scrolling within the panel itself is normal interaction and would
+      // otherwise abruptly discard an in-progress edit.
+      const target = e.target as Node;
+      if (panelRef.current?.contains(target)) return;
+      if (triggerRef.current?.contains(target)) return;
       close();
     }
     document.addEventListener('pointerdown', onPointerDown);
@@ -254,7 +263,13 @@ export function NoteActionsMenu({
           <div
             ref={panelRef}
             className="hm-folder-menu__panel"
-            role="menu"
+            // `role="menu"` only actually fits the `menu` view — its
+            // children are all `menuitem`/`menuitemradio`. The other views
+            // hold an `<input>`/`<textarea>` and plain buttons (a create
+            // form, an edit box, a delete confirm), which aren't valid
+            // `menu` content and would confuse assistive tech expecting
+            // menuitem children throughout.
+            role={view === 'menu' ? 'menu' : 'dialog'}
             aria-label={strings.noteActions}
             style={{
               position: 'fixed',

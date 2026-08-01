@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Favicon } from './Favicon';
 import { PinIcon } from './PinIcon';
 import { NoteActionsMenu } from './NoteActionsMenu';
@@ -46,13 +47,18 @@ export function PinnedSection({
   onEditNote,
   onDeleteNote,
 }: PinnedSectionProps) {
+  // Built once per `allNotes` change rather than an `allNotes.find(...)`
+  // inside the render loop below — that would be O(pinned notes × all
+  // notes) instead of O(pinned notes + all notes).
+  const noteById = useMemo(() => new Map(allNotes.map((n) => [n.id, n])), [allNotes]);
+
   if (notes.length === 0) return null;
   return (
     <section className="hm-pinned" aria-label={strings.pinnedSection}>
       <h2 className="hm-pinned__title">{strings.pinnedSection}</h2>
       <ul className="hm-pinned__list">
         {notes.map((note, i) => {
-          const fullNote = allNotes.find((n) => n.id === note.noteId);
+          const fullNote = noteById.get(note.noteId);
           return (
             <li key={note.noteId} className="hm-pinned__row">
               <a
