@@ -1,10 +1,5 @@
 import type { Note } from './note';
 
-/** Number of monogram tint slots defined in `src/ui/notes-library.css`
- *  (`.hm-monogram--0` … `.hm-monogram--4`). Kept in sync manually — there is
- *  no runtime coupling between the two, so a CSS review should walk both. */
-const MONOGRAM_PALETTE_SIZE = 5;
-
 export interface WebsiteGroup {
   /** Grouping key and display label — registrable hostname with a leading
    *  `www.` stripped. Deliberately not a curated "pretty name" lookup (e.g.
@@ -28,11 +23,6 @@ export interface ContinueWebsite {
   lastActivity: string;
   latestNoteUrl: string;
   latestNoteId: string;
-}
-
-export interface Monogram {
-  letter: string;
-  colorIndex: number;
 }
 
 /** Registrable hostname, lowercased, `www.` stripped. Never throws — a
@@ -191,17 +181,4 @@ export function filterNotesByQuery(notes: Note[], query: string): Note[] {
     const label = derivePageLabel(note).toLowerCase();
     return note.content.toLowerCase().includes(q) || label.includes(q) || domain.includes(q);
   });
-}
-
-/** Deterministic letter + palette-slot for a domain, used when no favicon is
- *  available. Same domain always yields the same monogram. */
-export function deriveMonogram(domain: string): Monogram {
-  const firstAlnum = domain.match(/[a-z0-9]/i)?.[0] ?? '#';
-  const letter = firstAlnum.toUpperCase();
-
-  let hash = 0;
-  for (let i = 0; i < domain.length; i++) {
-    hash = (hash * 31 + domain.charCodeAt(i)) >>> 0;
-  }
-  return { letter, colorIndex: hash % MONOGRAM_PALETTE_SIZE };
 }

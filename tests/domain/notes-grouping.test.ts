@@ -3,7 +3,6 @@ import {
   groupNotesByDomain,
   getContinueWebsites,
   getPinnedNotes,
-  deriveMonogram,
   derivePageLabel,
   sortWebsiteGroups,
   filterNotesByQuery,
@@ -360,25 +359,5 @@ describe('derivePageLabel', () => {
       pageContext: { title: '   ' },
     });
     expect(derivePageLabel(note)).toBe('/x');
-  });
-});
-
-describe('deriveMonogram', () => {
-  it('is deterministic for the same domain', () => {
-    expect(deriveMonogram('github.com')).toEqual(deriveMonogram('github.com'));
-  });
-
-  it('uses the first alphanumeric character, uppercased, as the letter', () => {
-    expect(deriveMonogram('github.com').letter).toBe('G');
-  });
-
-  it('produces a colorIndex within the palette size', () => {
-    const { colorIndex } = deriveMonogram('some-very-unusual-domain.example');
-    expect(colorIndex).toBeGreaterThanOrEqual(0);
-    expect(colorIndex).toBeLessThan(5);
-  });
-
-  it('falls back to # when the domain has no alphanumeric characters', () => {
-    expect(deriveMonogram('---').letter).toBe('#');
   });
 });
