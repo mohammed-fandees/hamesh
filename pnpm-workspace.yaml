@@ -4,3 +4,12 @@ allowBuilds:
 onlyBuiltDependencies:
   - esbuild
   - spawn-sync
+overrides:
+  'brace-expansion@>=4.0.0 <5.0.8': '>=5.0.8'
+  # shell-quote and adm-zip are transitive devDependencies of wxt's
+  # Firefox-oriented dev tooling (wxt > web-ext-run > fx-runner /
+  # firefox-profile) — unused in this project's actual workflow (Chrome
+  # only), never shipped in the extension bundle, but still worth patching
+  # since they're pulled into the dev-time dependency tree either way.
+  'shell-quote@<=1.8.4': '>=1.9.0'
+  'adm-zip@<0.6.0': '>=0.6.0'

@@ -34,6 +34,7 @@ interface FolderTreeContextValue {
   lang: Lang;
   expandedIds: Set<string>;
   onToggleExpand: (id: string) => void;
+  onExpand: (id: string) => void;
   editingId: string | null;
   setEditingId: (id: string | null) => void;
   addingChildId: string | null;
@@ -93,11 +94,19 @@ export function FolderTree({
     });
   }
 
+  // Idempotent, unlike onToggleExpand — used to open a folder that just
+  // gained a new sub-folder, so the result of adding it is immediately
+  // visible instead of silently landing inside a still-collapsed parent.
+  function onExpand(id: string) {
+    setExpandedIds((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
+  }
+
   const ctxValue: FolderTreeContextValue = {
     strings,
     lang,
     expandedIds,
     onToggleExpand,
+    onExpand,
     editingId,
     setEditingId,
     addingChildId,
@@ -202,6 +211,7 @@ function FolderNodeItem({ node, depth }: { node: FolderNode; depth: number }) {
     strings,
     expandedIds,
     onToggleExpand,
+    onExpand,
     editingId,
     setEditingId,
     addingChildId,
@@ -223,7 +233,27 @@ function FolderNodeItem({ node, depth }: { node: FolderNode; depth: number }) {
 
   return (
     <li>
-      <div className="hm-folder-node" style={{ paddingInlineStart: depth * 16 }} {...dropProps}>
+      <div
+        className="hm-folder-node"
+        style={{ paddingInlineStart: depth * 16 }}
+        {...dropProps}
+        // The hover highlight already spans the whole row (matching
+        // `WebsiteGroup`'s single big header button in "By site" mode), so
+        // clicks anywhere in that visual area toggle too — not just the
+        // tiny chevron and the name text. Can't wrap the row in a single
+        // `<button>` like `WebsiteGroup` does, since it also hosts the
+        // add/rename/delete action buttons (nesting interactive elements
+        // isn't valid), so this only fires for clicks that land on the row
+        // itself (its own padding/gaps) rather than on a descendant —
+        // `.hm-folder-node__glyph` and `.hm-folder-node__count` are given
+        // `pointer-events: none` so clicks on those purely-visual bits pass
+        // through and count as "the row" too. The toggle/name buttons keep
+        // their own `onClick` unchanged, so keyboard/AT behavior for them
+        // is untouched.
+        onClick={(e) => {
+          if (e.target === e.currentTarget) onToggleExpand(folder.id);
+        }}
+      >
         <button
           type="button"
           className="hm-folder-node__toggle"
@@ -319,6 +349,7 @@ function FolderNodeItem({ node, depth }: { node: FolderNode; depth: number }) {
           cancelLabel={strings.cancel}
           onSave={(name) => {
             void onCreateFolder(name, folder.id);
+            onExpand(folder.id);
             setAddingChildId(null);
           }}
           onCancel={() => setAddingChildId(null)}
@@ -331,14 +362,23 @@ function FolderNodeItem({ node, depth }: { node: FolderNode; depth: number }) {
         aria-hidden={!expanded}
         inert={!expanded}
       >
-        <FolderNoteList notes={node.notes} />
-        {node.children.length > 0 && (
-          <ul className="hm-folder-node__children">
-            {node.children.map((child) => (
-              <FolderNodeItem key={child.folder.id} node={child} depth={depth + 1} />
-            ))}
-          </ul>
-        )}
+        {/* `.hm-folder-node__body`'s single-row `grid-template-rows: 0fr`
+         *  collapse trick only clips a *single* grid item — with the notes
+         *  list and the sub-folder list as two separate direct children,
+         *  CSS grid auto-placement puts the second one in its own implicit
+         *  row (sized `auto` by default), which never collapses. Wrapping
+         *  both in one element keeps `.hm-folder-node__body` down to exactly
+         *  one grid item, so the whole thing collapses together. */}
+        <div className="hm-folder-node__body-inner">
+          <FolderNoteList notes={node.notes} />
+          {node.children.length > 0 && (
+            <ul className="hm-folder-node__children">
+              {node.children.map((child) => (
+                <FolderNodeItem key={child.folder.id} node={child} depth={depth + 1} />
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </li>
   );
@@ -351,7 +391,13 @@ function UnfiledNode({ notes }: { notes: Note[] }) {
 
   return (
     <li>
-      <div className="hm-folder-node hm-folder-node--unfiled" {...dropProps}>
+      <div
+        className="hm-folder-node hm-folder-node--unfiled"
+        {...dropProps}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) onToggleExpand(UNFILED_ID);
+        }}
+      >
         <button
           type="button"
           className="hm-folder-node__toggle"
@@ -375,7 +421,9 @@ function UnfiledNode({ notes }: { notes: Note[] }) {
         aria-hidden={!expanded}
         inert={!expanded}
       >
-        <FolderNoteList notes={notes} />
+        <div className="hm-folder-node__body-inner">
+          <FolderNoteList notes={notes} />
+        </div>
       </div>
     </li>
   );
