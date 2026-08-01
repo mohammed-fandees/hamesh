@@ -39,19 +39,34 @@ locales:
     detailedDescription: |
       Hamesh gives the web a margin.
 
-      Books and manuscripts have margins — a quiet space beside the text where a
-      reader leaves a note, a question, a connection to something else. Hamesh
-      brings that back to the web.
+      Books and manuscripts have always had margins: a quiet place where readers
+      leave thoughts, questions, and connections. Hamesh brings that idea to the
+      modern web.
+
+      Instead of losing ideas in a separate notes app, attach them directly to
+      the exact paragraph, heading, button, or line of code that inspired them —
+      or to a specific moment in a video. When you come back, your note is
+      waiting exactly where you left it.
 
       HOW IT WORKS
-      1. Activate Hamesh from the toolbar icon or the Alt+H shortcut.
-      2. Click the exact element on the page you want to annotate — a paragraph,
-         a heading, a button, a line of code.
-      3. Write a short note. It saves instantly.
-      4. A small marker stays next to that element. Click it anytime to reopen,
-         edit, or delete the note.
-      5. Leave the page, come back later (even after reloading or restarting your
-         browser) — your note is restored right where you left it.
+      1. Activate Hamesh from the toolbar, or press Alt+H (Alt+V for a video).
+      2. Click any element on the page — or, for a video, just press the
+         shortcut while watching.
+      3. Write your note. It saves instantly.
+      4. A small marker stays attached to that element, or shows up on the
+         video's timeline.
+      5. Return days or weeks later, and your note appears back in context —
+         a video note even seeks to the right moment automatically.
+
+      YOUR NOTES, ORGANIZED
+      As your collection grows, Hamesh automatically builds a Notes Library.
+      - Browse notes grouped by website, or switch to Folders to organize them
+        your own way, across any site.
+      - Continue where you left off with recently active websites.
+      - Search your notes instantly.
+      - Pin, edit, delete, or file any note into a folder right from the
+        Library — no need to reopen the original page.
+      - Revisit ideas without remembering where you wrote them.
 
       WHO IT'S FOR
       - Designers and developers annotating a component, a design detail, or a
@@ -67,6 +82,16 @@ locales:
       requests of any kind — nothing is transmitted, analyzed, or shared. See our
       privacy policy for full details.
 
+      CURRENT FEATURES
+      - Context-aware notes attached to page elements, or to a moment in a video.
+      - Automatic note restoration.
+      - Notes Library with website grouping and custom Folders.
+      - A quick menu to pin, edit, delete, or move any note straight from the
+        Library.
+      - Continue section for recent work, plus search and pinning.
+      - Light and dark appearance options.
+      - English and Arabic interfaces with RTL support.
+
       Hamesh is not a bookmarking tool, not a sticky-note app, and not a
       generic writing assistant — it is a quiet layer for thinking in context,
       exactly where that thought belongs.
@@ -79,18 +104,30 @@ locales:
     detailedDescription: |
       هامش يمنح الويب هامشًا.
 
-      للكتب والمخطوطات هوامش — مساحة هادئة بجانب النص يترك فيها القارئ ملاحظة، أو
-      سؤالًا، أو رابطًا بفكرة أخرى. هامش يعيد ذلك إلى الويب.
+      كانت للكتب والمخطوطات هوامش دائمًا: مساحة هادئة يترك فيها القارئ أفكاره
+      وأسئلته وروابطه بأفكار أخرى. هامش يعيد هذه الفكرة إلى الويب الحديث.
 
-      كيف يعمل
-      1. فعّل هامش من أيقونة شريط الأدوات أو اختصار Alt+H.
-      2. انقر على العنصر المحدد في الصفحة الذي تريد التعليق عليه — فقرة، عنوان،
-         زر، أو سطر شيفرة.
-      3. اكتب ملاحظة قصيرة. تُحفظ فورًا.
-      4. تبقى علامة صغيرة بجانب ذلك العنصر. انقرها في أي وقت لإعادة فتح الملاحظة
-         أو تعديلها أو حذفها.
-      5. غادر الصفحة، وعد لاحقًا (حتى بعد إعادة تحميل الصفحة أو إعادة تشغيل
-         المتصفح) — ستجد ملاحظتك في مكانها تمامًا.
+      بدل ما تفقد أفكارك في تطبيق ملاحظات منفصل، علّقها مباشرة على الفقرة أو
+      العنوان أو الزر أو سطر الكود اللي ألهمك — أو على لحظة محددة في فيديو. ولما
+      ترجع، هتلاقي ملاحظتك في مكانها بالظبط.
+
+      إزاي يعمل
+      1. فعّل هامش من شريط الأدوات، أو اضغط Alt+H (أو Alt+V لملاحظة فيديو).
+      2. انقر على أي عنصر في الصفحة — أو، للفيديو، اضغط الاختصار وانت بتتفرج.
+      3. اكتب ملاحظتك. تُحفظ فورًا.
+      4. تبقى علامة صغيرة ملتصقة بذلك العنصر، أو تظهر على الخط الزمني للفيديو.
+      5. ارجع بعد أيام أو أسابيع، وهتلاقي ملاحظتك ظاهرة في سياقها من جديد — وحتى
+         ملاحظة الفيديو بترجع للحظة الصح تلقائيًا.
+
+      ملاحظاتك، منظّمة
+      مع نمو مجموعتك، هامش بيبني تلقائيًا مكتبة ملاحظات.
+      - تصفّح ملاحظاتك مجمّعة حسب الموقع، أو بدّل لوضع الفولدرات ونظّمها بطريقتك
+        — عبر أي موقع.
+      - استكمل من حيث توقفت مع المواقع النشطة مؤخرًا.
+      - ابحث في ملاحظاتك فورًا.
+      - ثبّت، أو عدّل، أو احذف، أو انقل أي ملاحظة لفولدر مباشرة من المكتبة — بلا
+        حاجة لفتح الصفحة الأصلية.
+      - ارجع لأفكارك بدون ما تفتكر فين كتبتها.
 
       لِمن هذا التطبيق
       - المصممون والمطوّرون الذين يعلّقون على مكوّن أو تفصيلة تصميم أو سطر في
@@ -104,6 +141,15 @@ locales:
       يحفظ هامش كل ملاحظة محليًا على جهازك باستخدام تخزين المتصفح الخاص
       بالإضافات. لا يوجد حساب، ولا خادم خلفي، ولا أي طلبات شبكة من أي نوع — لا
       شيء يُرسل أو يُحلَّل أو يُشارَك. راجع سياسة الخصوصية للتفاصيل الكاملة.
+
+      المميزات الحالية
+      - ملاحظات مرتبطة بسياقها، معلّقة على عناصر الصفحة أو على لحظة في فيديو.
+      - استعادة تلقائية للملاحظات.
+      - مكتبة ملاحظات بتصنيف حسب الموقع وفولدرات مخصّصة.
+      - قائمة سريعة لتثبيت أو تعديل أو حذف أو نقل أي ملاحظة مباشرة من المكتبة.
+      - قسم «متابعة» للعمل الأخير، بالإضافة إلى البحث والتثبيت.
+      - خيارات مظهر فاتح وداكن.
+      - واجهات بالعربية والإنجليزية مع دعم الكتابة من اليمين لليسار.
 
       هامش ليس تطبيق إشارات مرجعية، وليس تطبيق ملاحظات لاصقة، وليس مساعد كتابة
       عامًا — إنه طبقة هادئة للتفكير في السياق، تمامًا حيث تنتمي الفكرة.
