@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.2.1] — 2026-08-01
+
 ### Fixed
 
 - The note composer and video quick-note textareas weren't actually receiving focus on open, despite having
@@ -13,7 +15,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `visibility: hidden` to measure its size before positioning, and React's `autoFocus` only fires once, on that
   very first (still hidden, so unfocusable) commit. Fixed at the shared positioning hook level so both cards
   focus correctly once actually visible.
-
+- Every website with no cached favicon showed Chrome's own generic gray placeholder image instead of Hamesh's
+  intended fallback — Chrome's `_favicon` endpoint returns that placeholder as a normal HTTP 200, not an error,
+  so it could never be distinguished from a real favicon. Now detected by comparing the response bytes against
+  a live probe, and replaced with a globe icon in Hamesh's own accent color.
 - The Alt+H / Alt+V keyboard shortcuts could silently stop working, regardless of which key combination was
   bound — root-caused to a Chromium reliability gap in `chrome.commands.onCommand` event delivery to a Manifest
   V3 background service worker. Shortcut handling now lives in a `keydown` listener in the content script
