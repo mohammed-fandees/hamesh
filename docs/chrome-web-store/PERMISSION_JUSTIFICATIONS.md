@@ -6,6 +6,8 @@ Audited against the actual **generated production manifest** (`pnpm build` → `
 
 > **Refreshed 2026-08-01 for v1.1.0 (Video Notes, Folders, Settings/Shortcuts).** No permission or host-access change: still exactly `["storage", "activeTab", "favicon"]`, no `host_permissions`. The manifest gained a second `commands` entry (`activate-hamesh-video`, default Alt+V) alongside the existing `activate-hamesh` — commands are not a `permissions`-tab concept and don't change anything below. `storage` is now also used by `src/storage/folders-repository.ts` (a new single global key, `local:hamesh:folders`) and the existing `notes-repository.ts` gained a `folderId` field on stored notes — both still within the already-justified `storage` permission, no new surface.
 
+> **Refreshed 2026-08-01 for v1.2.0 (note actions menu).** No permission, `commands`, or host-access change — confirmed via `pnpm release:validate --tag=v1.2.0 --previous-ref=v1.1.0`, still exactly `["storage", "activeTab", "favicon"]`. The new note actions menu (`src/ui/NoteActionsMenu.tsx`, generalized from the old folder-only `MoveToFolderMenu.tsx`) adds a new UI surface for pinning, editing, deleting, and moving a note from any Notes Library view, but every one of those actions writes through `notes-repository.ts`'s existing `setPinned`/`update`/`delete`/`setFolder` methods against fields already covered by prior audits (`pinned` since the pinning feature, `content` since `v0.1.0`, `folderId` since `v1.1.0`) — no new stored field, no new storage key, no new surface.
+
 ## Generated manifest (verbatim, permission-relevant excerpt)
 
 ```json

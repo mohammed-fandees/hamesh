@@ -5,7 +5,7 @@ export default defineConfig({
   srcDir: 'src',
   manifest: {
     name: 'Hamesh — هامش',
-    version: '1.1.0',
+    version: '1.2.0',
     description:
       'Leave a note exactly where it belongs on a web page, and find it there when you return. Local-only.',
     // storage: persist notes via chrome.storage.local (no network, no sync).
