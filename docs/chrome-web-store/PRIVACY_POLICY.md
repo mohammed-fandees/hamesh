@@ -1,6 +1,6 @@
 # Hamesh Privacy Policy
 
-**Last updated:** [OWNER: insert publish date]
+**Last updated:** August 1, 2026
 **Applies to:** Hamesh browser extension, version 0.1.0 and later versions with the same data-handling behavior described below.
 
 > **Refreshed 2026-07-11:** re-verified against the `v0.2.0` codebase, including the Settings screen (language/appearance preferences) added since this was first written — see the new bullet under "What information Hamesh stores" below. Data-handling behavior is otherwise unchanged from `v0.1.0`, so the "version 0.1.0 and later" wording above still holds and doesn't need a version bump. The landing site is now confirmed live — see the corrected URL immediately below (the previous `hamesh.fandees.tech` guess in this file was actually correct; a separate, unrelated bug had the landing page's own `<link rel="canonical">` pointing at a different, dead domain — see `landing/index.html`).
