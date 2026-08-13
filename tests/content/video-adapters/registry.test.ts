@@ -26,9 +26,9 @@ describe('video adapter registry', () => {
     });
   });
 
-  it('lists youtube before html5 (priority order — first match wins)', () => {
+  it('lists youtube, then custom-timeline, then html5 (priority — first match wins)', () => {
     const ids = getVideoAdapters().map((a) => a.id);
-    expect(ids).toEqual(['youtube', 'html5']);
+    expect(ids).toEqual(['youtube', 'custom-timeline', 'html5']);
   });
 
   it('returns null when no adapter matches', () => {
@@ -45,6 +45,29 @@ describe('video adapter registry', () => {
     const match = getActiveAdapterMatch();
     expect(match?.adapter.id).toBe('html5');
     expect(match?.video.id).toBe('v1');
+  });
+
+  it('prefers custom-timeline over html5 for an opted-in player, off YouTube', () => {
+    setLocation('https://example.com/docs');
+    document.body.innerHTML = `
+      <div data-hamesh-player>
+        <video class="html5-main-video" src="a.mp4"></video>
+        <div data-hamesh-timeline></div>
+      </div>
+    `;
+    expect(getMatchingAdapter()?.id).toBe('custom-timeline');
+
+    const match = getActiveAdapterMatch();
+    expect(match?.adapter.id).toBe('custom-timeline');
+    expect(match?.adapter.capabilities.nativeTimeline).toBe(true);
+  });
+
+  it('falls through to html5 for a data-hamesh-player missing its timeline', () => {
+    setLocation('https://example.com/docs');
+    document.body.innerHTML = `
+      <div data-hamesh-player><video id="v2" src="a.mp4"></video></div>
+    `;
+    expect(getMatchingAdapter()?.id).toBe('html5');
   });
 
   it('prefers youtube over html5 on a YouTube watch page', () => {
