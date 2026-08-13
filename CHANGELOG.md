@@ -6,6 +6,32 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.2.3] — 2026-08-13
+
+### Added
+
+- **Video-note markers can align to a custom video player's own timeline.** Until now only the
+  built-in YouTube integration placed markers on the player's real scrubber; every other site fell
+  back to Hamesh's own rail. A site with its own HTML5 player can now opt in — by marking a container
+  with `data-hamesh-player` that holds the `<video>` and a `data-hamesh-timeline` element on its
+  scrubber, and setting `data-hamesh-controls="hidden"` while its controls fade — and get the same
+  on-timeline placement and controls-synced visibility as YouTube. Matching is strictly opt-in via
+  those attributes and never a host allowlist or bare markup, so no site's behavior changes unless it
+  adds them.
+
+### Fixed
+
+- On a custom HTML5 player with its own scrubber and no native `<video controls>`, video-note markers
+  were drawn on the fallback rail **below** the video and only appeared while the video was paused or
+  directly hovered — such a player fell through to the generic HTML5 adapter, which has no native
+  timeline to align to. Players adopting the opt-in convention above now get their markers on the
+  timeline itself, shown whenever the player's own controls are.
+- Marker visibility didn't keep up with a player whose controls fade via a data attribute: the
+  visibility observer watched only the player container's `class` (YouTube's `.ytp-autohide`), so a
+  player signalling through `data-hamesh-controls` — whose overlays also sit over the `<video>`,
+  keeping pointer events from reaching it — left its markers out of sync. The observer now watches
+  that attribute alongside `class`.
+
 ## [1.2.1] — 2026-08-01
 
 ### Fixed

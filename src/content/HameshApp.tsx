@@ -470,9 +470,13 @@ export function HameshApp({
   // above: recomputes on the handful of real signals that actually drive
   // it — pointer entering/leaving/moving over the video (the html5-generic
   // heuristic) and play/pause (both adapters), plus a MutationObserver on
-  // the player container's `class` attribute (YouTube toggles
-  // `.ytp-autohide` there — see youtube.ts). Some of these are no-ops for
-  // a given adapter; cheap enough not to bother branching per-adapter here.
+  // the player container's chrome-visibility attributes: `class` (YouTube
+  // toggles `.ytp-autohide` there — see youtube.ts) and `data-hamesh-controls`
+  // (an opt-in custom player toggles it as its chrome fades — see
+  // custom-timeline.ts). A custom player's own overlays sit on top of the
+  // `<video>`, so the pointer events above rarely reach it; the attribute
+  // observer is what actually keeps its markers in sync. Some of these are
+  // no-ops for a given adapter; cheap enough not to bother branching here.
   useEffect(() => {
     if (!videoMatch) return;
     const { adapter, video } = videoMatch;
@@ -487,7 +491,10 @@ export function HameshApp({
     const container = adapter.getPlayerContainer(video);
     const observer = new MutationObserver(recompute);
     if (container) {
-      observer.observe(container, { attributes: true, attributeFilter: ['class'] });
+      observer.observe(container, {
+        attributes: true,
+        attributeFilter: ['class', 'data-hamesh-controls'],
+      });
     }
 
     return () => {

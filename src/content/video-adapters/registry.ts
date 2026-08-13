@@ -1,13 +1,17 @@
 import type { VideoPlayerAdapter } from './types';
 import { youtubeAdapter } from './youtube';
+import { customTimelineAdapter } from './custom-timeline';
 import { html5GenericAdapter } from './html5-generic';
 
 /** Priority-ordered, first `matches()` wins — same shape as
  *  `resolveAnchor`'s signal priority chain. `html5GenericAdapter` always
  *  matches when any `<video>` exists, so it must stay last: it's the
- *  fallback for every page a more specific adapter doesn't own. Adding a
+ *  fallback for every page a more specific adapter doesn't own.
+ *  `customTimelineAdapter` sits just above it: it only matches a player that
+ *  has explicitly opted in via `data-hamesh-*`, so it takes precedence over
+ *  the bare-`<video>` fallback without ever shadowing a normal page. Adding a
  *  new site is adding an adapter here, nothing else. */
-const adapters: VideoPlayerAdapter[] = [youtubeAdapter, html5GenericAdapter];
+const adapters: VideoPlayerAdapter[] = [youtubeAdapter, customTimelineAdapter, html5GenericAdapter];
 
 export function getVideoAdapters(): VideoPlayerAdapter[] {
   return adapters;
