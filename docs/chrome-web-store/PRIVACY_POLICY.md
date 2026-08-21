@@ -41,13 +41,18 @@ On every page you visit, Hamesh also computes a normalized version of that page'
   feature to organize your notes.
 - **For a video note:** which video it belongs to (the platform's own identifier for that video, e.g. a
   YouTube video ID) and the timestamp within it, so Hamesh can seek back to that moment later.
+- **For a note attached to selected text:** a copy of exactly the text you selected, plus a short run
+  of surrounding text (about 32 characters either side) and its position in the page's text. Hamesh
+  needs all three to find those same words again on your next visit, and to refuse to highlight the
+  wrong ones when it cannot be certain. This is only ever text you selected yourself — Hamesh does
+  not store the rest of the page.
 
 All of this is stored using your browser's built-in local extension storage (`chrome.storage.local`). It stays on your device.
 
 ## What Hamesh does NOT do
 
 - Hamesh does **not** have a backend server of any kind.
-- Hamesh does **not** transmit any data over the network — this includes no analytics, no crash reporting, no telemetry, no advertising SDKs, and no third-party API calls. (You can verify this yourself: the extension's source is available, and it contains no networking code.)
+- Hamesh does **not** transmit any data over the network — this includes no analytics, no crash reporting, no telemetry, no advertising SDKs, and no third-party API calls. (You can verify this yourself: the extension's source is available, and it contains no networking code.) The backup file described below is written to your own device by your own browser; nothing is sent anywhere.
 - Hamesh does **not** require or support an account, login, or authentication.
 - Hamesh does **not** read passwords or other form input values.
 - Hamesh does **not** collect or infer your location.
@@ -63,7 +68,13 @@ Your notes live in `chrome.storage.local`, a storage area Chrome (or another Chr
 - uninstall the extension and separately clear its stored data via your browser's extension data management, or
 - clear your browser's local storage/profile data.
 
-Hamesh provides no built-in export or transmission mechanism for this data — it is designed to stay local.
+Hamesh has one export: **Settings → Backup**, which writes your notes and folders to a JSON file and
+reads one back. Your browser writes that file wherever you choose to save it, on your own device.
+Hamesh does not upload it and has no server to upload it to; the export exists so your notes are
+yours to keep and to move between your own machines. Once the file exists it is an ordinary file you
+own — where it goes from there is your choice.
+
+Beyond that file, which you create deliberately, Hamesh has no transmission mechanism of any kind.
 
 ## Children's privacy
 
