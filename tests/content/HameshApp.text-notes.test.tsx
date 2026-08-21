@@ -38,6 +38,7 @@ function makePrefsRepo(prefs: Preferences = DEFAULT_PREFERENCES): PreferencesRep
     setLanguage: vi.fn(),
     setAppearance: vi.fn(),
     setTextNotes: vi.fn(),
+    setLastSeenReleaseVersion: vi.fn(),
   };
 }
 

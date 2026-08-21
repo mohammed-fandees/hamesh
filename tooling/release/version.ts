@@ -63,13 +63,21 @@ export interface VersionConsistencyInput {
   packageJsonVersion: string;
   manifestVersion: string | undefined;
   changelog: string;
+  /** Versions present in `src/domain/release-notes.ts` — the user-facing
+   *  What's New page. Optional so existing callers/tests that only care
+   *  about the changelog keep working unchanged. */
+  releaseNoteVersions?: readonly string[];
 }
 
 /**
  * Cross-checks a release tag against package.json's version, the extension manifest's
- * version, and the presence of a matching CHANGELOG.md section. Never throws — collects every
- * mismatch so the approval report can show all of them at once instead of failing fast on the
- * first one.
+ * version, the presence of a matching CHANGELOG.md section, and (when supplied) a matching
+ * What's New entry. Never throws — collects every mismatch so the approval report can show all
+ * of them at once instead of failing fast on the first one.
+ *
+ * The What's New check exists because that page is the only changelog most users will ever
+ * read, and nothing else would notice it going stale: the extension would ship, update itself,
+ * open the page, and show the reader nothing about the version they just received.
  */
 export function checkVersionConsistency(input: VersionConsistencyInput): VersionConsistencyReport {
   const issues: VersionConsistencyIssue[] = [];
@@ -115,6 +123,13 @@ export function checkVersionConsistency(input: VersionConsistencyInput): Version
     issues.push({
       field: 'CHANGELOG.md',
       message: `The "## [${tagVersion}]" section in CHANGELOG.md is empty.`,
+    });
+  }
+
+  if (input.releaseNoteVersions && !input.releaseNoteVersions.includes(tagVersion)) {
+    issues.push({
+      field: 'src/domain/release-notes.ts',
+      message: `No release-notes entry for "${tagVersion}" — the What's New page would not mention this version.`,
     });
   }
 

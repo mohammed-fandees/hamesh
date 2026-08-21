@@ -85,6 +85,11 @@ export interface Strings {
   settingsTextSelectionAction: string;
   settingsOn: string;
   settingsOff: string;
+  whatsNew: string;
+  whatsNewIntro: string;
+  whatsNewCurrentBadge: string;
+  whatsNewNewBadge: string;
+  whatsNewReleaseDate: (date: string) => string;
 }
 
 const en: Strings = {
@@ -165,6 +170,11 @@ const en: Strings = {
   settingsTextSelectionAction: 'Show icon after selecting',
   settingsOn: 'On',
   settingsOff: 'Off',
+  whatsNew: "What's New",
+  whatsNewIntro: 'Everything that has changed in Hamesh, newest first.',
+  whatsNewCurrentBadge: 'Installed',
+  whatsNewNewBadge: 'New',
+  whatsNewReleaseDate: (date) => date,
 };
 
 const ar: Strings = {
@@ -245,6 +255,11 @@ const ar: Strings = {
   settingsTextSelectionAction: 'إظهار الأيقونة بعد التحديد',
   settingsOn: 'مفعّل',
   settingsOff: 'معطّل',
+  whatsNew: 'ما الجديد',
+  whatsNewIntro: 'كل ما تغيّر في هامش، الأحدث أولًا.',
+  whatsNewCurrentBadge: 'المثبّتة',
+  whatsNewNewBadge: 'جديد',
+  whatsNewReleaseDate: (date) => date,
 };
 
 export function resolveLang(uiLanguage?: string): Lang {

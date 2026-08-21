@@ -51,6 +51,25 @@ export const DEFAULT_TEXT_NOTE_PREFERENCES: TextNotePreferences = {
   selectionAction: true,
 };
 
+/**
+ * What's New state. Not a setting the user chooses — it's the extension
+ * remembering what it has already shown them — but it lives here rather than
+ * in a storage key of its own for the same reason every other small piece of
+ * persisted state does: one record, one repository, one `watch()`, one
+ * defensive parse (see "Storage boundary" in docs/architecture.md).
+ *
+ * `null` means "has never opened What's New", which is deliberately
+ * different from "has seen version X": the page shows the whole history to
+ * someone who has never read it, instead of claiming there is nothing new.
+ */
+export interface ReleaseNotesPreferences {
+  lastSeenVersion: string | null;
+}
+
+export const DEFAULT_RELEASE_NOTES_PREFERENCES: ReleaseNotesPreferences = {
+  lastSeenVersion: null,
+};
+
 export interface Preferences {
   schemaVersion: SchemaVersion;
   /** No explicit choice yet — callers fall back to the browser's UI language.
@@ -59,6 +78,7 @@ export interface Preferences {
   language: SupportedLanguage | null;
   appearance: AppearanceMode;
   textNotes: TextNotePreferences;
+  releaseNotes: ReleaseNotesPreferences;
 }
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -66,6 +86,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   language: null,
   appearance: 'match-website',
   textNotes: DEFAULT_TEXT_NOTE_PREFERENCES,
+  releaseNotes: DEFAULT_RELEASE_NOTES_PREFERENCES,
 };
 
 function parseTextNotes(value: unknown): TextNotePreferences {
@@ -78,6 +99,14 @@ function parseTextNotes(value: unknown): TextNotePreferences {
       typeof record.selectionAction === 'boolean'
         ? record.selectionAction
         : DEFAULT_TEXT_NOTE_PREFERENCES.selectionAction,
+  };
+}
+
+function parseReleaseNotes(value: unknown): ReleaseNotesPreferences {
+  if (!value || typeof value !== 'object') return DEFAULT_RELEASE_NOTES_PREFERENCES;
+  const record = value as Record<string, unknown>;
+  return {
+    lastSeenVersion: typeof record.lastSeenVersion === 'string' ? record.lastSeenVersion : null,
   };
 }
 
@@ -95,5 +124,6 @@ export function parsePreferences(data: unknown): Preferences {
     language: isSupportedLanguage(record.language) ? record.language : null,
     appearance: isAppearanceMode(record.appearance) ? record.appearance : 'match-website',
     textNotes: parseTextNotes(record.textNotes),
+    releaseNotes: parseReleaseNotes(record.releaseNotes),
   };
 }

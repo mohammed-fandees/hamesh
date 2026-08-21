@@ -70,6 +70,7 @@ describe('parsePreferences', () => {
       language: 'ar',
       appearance: 'match-website',
       textNotes: { enabled: true, selectionAction: true },
+      releaseNotes: { lastSeenVersion: null },
     });
   });
 
@@ -79,16 +80,40 @@ describe('parsePreferences', () => {
       language: 'ar',
       appearance: 'dark',
       textNotes: { enabled: true, selectionAction: true },
+      releaseNotes: { lastSeenVersion: null },
     });
     expect(parsePreferences({ language: 'en', appearance: 'light' })).toEqual({
       schemaVersion: 1,
       language: 'en',
       appearance: 'light',
       textNotes: { enabled: true, selectionAction: true },
+      releaseNotes: { lastSeenVersion: null },
     });
   });
 
   it('normalizes schemaVersion to the current version regardless of stored value', () => {
     expect(parsePreferences({ schemaVersion: 99, language: 'ar' }).schemaVersion).toBe(1);
+  });
+});
+
+describe('parsePreferences — release notes state', () => {
+  it('treats a missing releaseNotes object as "never opened What\u2019s New"', () => {
+    expect(parsePreferences({ schemaVersion: 1 }).releaseNotes).toEqual({ lastSeenVersion: null });
+  });
+
+  it('round-trips a stored last-seen version', () => {
+    const parsed = parsePreferences({ releaseNotes: { lastSeenVersion: '1.2.0' } });
+    expect(parsed.releaseNotes.lastSeenVersion).toBe('1.2.0');
+  });
+
+  it('falls back to null for a malformed last-seen version rather than trusting it', () => {
+    // A non-string here would flow straight into `compareVersions` and make
+    // "is there anything new" answer nonsense.
+    expect(parsePreferences({ releaseNotes: { lastSeenVersion: 3 } }).releaseNotes).toEqual({
+      lastSeenVersion: null,
+    });
+    expect(parsePreferences({ releaseNotes: 'nope' }).releaseNotes).toEqual({
+      lastSeenVersion: null,
+    });
   });
 });

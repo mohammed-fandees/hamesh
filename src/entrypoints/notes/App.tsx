@@ -3,6 +3,7 @@ import { browser } from 'wxt/browser';
 import { MarginMark } from '@/ui/MarginMark';
 import { Sidebar, type LibraryView } from '@/ui/Sidebar';
 import { LibrarySettingsView } from '@/ui/LibrarySettingsView';
+import { WhatsNewView } from '@/ui/WhatsNewView';
 import { WebsiteGroup } from '@/ui/WebsiteGroup';
 import { FolderTree } from '@/ui/FolderTree';
 import { ContinueSection } from '@/ui/ContinueSection';
@@ -23,6 +24,7 @@ import {
 import { buildFolderTree } from '@/domain/folder-grouping';
 import type { AppearanceMode, TextNotePreferences } from '@/domain/preferences';
 import { DEFAULT_TEXT_NOTE_PREFERENCES } from '@/domain/preferences';
+import { getLatestReleaseVersion, hasUnseenReleases } from '@/domain/release-notes';
 import type { Note } from '@/domain/note';
 import type { Folder } from '@/domain/folder';
 import '@/ui/tokens.css';
@@ -31,10 +33,16 @@ import '@/ui/notes-library.css';
 type LibraryMode = 'domain' | 'folder';
 
 const initialLang = resolveLang(browser.i18n?.getUILanguage?.());
-// Lets the popup's "Open full settings" link land directly on the Settings
-// view (`notes.html?view=settings`) instead of always opening to Library.
+// Lets another context deep-link straight to a view instead of always
+// opening to Library: the popup's "Open full settings" link
+// (`notes.html?view=settings`), and the tab the background opens after an
+// update (`notes.html?view=whats-new`).
+const requestedView = new URLSearchParams(location.search).get('view');
 const initialView: LibraryView =
-  new URLSearchParams(location.search).get('view') === 'settings' ? 'settings' : 'library';
+  requestedView === 'settings' || requestedView === 'whats-new' ? requestedView : 'library';
+// The build's own version, so What's New can mark the entry actually
+// installed rather than assuming it's the newest one listed.
+const currentVersion = browser.runtime.getManifest().version;
 // Same rationale as the popup: this page has no single host webpage of its
 // own to detect a background from, so "Match website" resolves to the OS
 // scheme here too.
@@ -49,6 +57,9 @@ export function App() {
   const [lang, setLang] = useState<Lang>(initialLang);
   const [appearance, setAppearance] = useState<AppearanceMode>('match-website');
   const [textNotes, setTextNotes] = useState<TextNotePreferences>(DEFAULT_TEXT_NOTE_PREFERENCES);
+  /** `undefined` until preferences load — distinct from `null`, which means
+   *  "loaded, and this user has never opened What's New". */
+  const [lastSeenVersion, setLastSeenVersion] = useState<string | null | undefined>(undefined);
   /** `null` while the initial load is in flight; distinguishes "loading" from
    *  "loaded, zero notes" so the empty state doesn't flash before data arrives. */
   const [notes, setNotes] = useState<Note[] | null>(null);
@@ -78,12 +89,16 @@ export function App() {
         setLang(prefs.language ?? initialLang);
         setAppearance(prefs.appearance);
         setTextNotes(prefs.textNotes);
+        setLastSeenVersion(prefs.releaseNotes.lastSeenVersion);
       }
     })();
     const unwatch = prefsRepo.watch((prefs) => {
       setLang(prefs.language ?? initialLang);
       setAppearance(prefs.appearance);
       setTextNotes(prefs.textNotes);
+      // Deliberately not mirrored back into `lastSeenVersion`: this view
+      // marks itself read as soon as it opens, and echoing that write back
+      // would clear the "new" dot mid-visit, before the reader has read it.
     });
     return () => {
       cancelled = true;
@@ -174,6 +189,18 @@ export function App() {
     void prefsRepo.setTextNotes(patch);
   }
 
+  // Opening What's New *is* reading it — the badge and the auto-open both
+  // key off this, so it's recorded on arrival rather than on some "mark as
+  // read" affordance nobody would click. The local `lastSeenVersion` stays
+  // as it was for this visit, so entries stay marked "New" while they're
+  // being read.
+  useEffect(() => {
+    if (view !== 'whats-new' || lastSeenVersion === undefined) return;
+    const latest = getLatestReleaseVersion();
+    if (lastSeenVersion === latest) return;
+    void prefsRepo.setLastSeenReleaseVersion(latest);
+  }, [view, lastSeenVersion]);
+
   function toggleGroup(domain: string) {
     setExpanded((prev) => {
       const next = new Set(prev);
@@ -262,9 +289,21 @@ export function App() {
 
   return (
     <div className="hm-scope hm-notes-page" dir={dir} data-hm-theme={theme}>
-      <Sidebar view={view} strings={strings} onNavigate={setView} />
+      <Sidebar
+        view={view}
+        strings={strings}
+        onNavigate={setView}
+        whatsNewUnseen={lastSeenVersion !== undefined && hasUnseenReleases(lastSeenVersion)}
+      />
 
-      {view === 'settings' ? (
+      {view === 'whats-new' ? (
+        <WhatsNewView
+          strings={strings}
+          lang={lang}
+          currentVersion={currentVersion}
+          lastSeenVersion={lastSeenVersion ?? null}
+        />
+      ) : view === 'settings' ? (
         <LibrarySettingsView
           strings={strings}
           lang={lang}

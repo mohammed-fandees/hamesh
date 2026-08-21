@@ -16,6 +16,8 @@ export interface PreferencesRepository {
    *  nested object (and the rest of `Preferences`) alone. One setter for the
    *  group rather than one per flag — the group is the unit that grows. */
   setTextNotes(patch: Partial<TextNotePreferences>): Promise<Preferences>;
+  /** Records that the user has now read What's New up to `version`. */
+  setLastSeenReleaseVersion(version: string): Promise<Preferences>;
   /** Fires on changes from any extension context — popup, other tabs' content
    *  scripts, background — backed by `chrome.storage.onChanged`. Lets open
    *  tabs pick up a preference change made elsewhere without extra messaging. */
@@ -46,6 +48,13 @@ export function createPreferencesRepository(): PreferencesRepository {
     async setTextNotes(patch: Partial<TextNotePreferences>): Promise<Preferences> {
       const current = await this.get();
       const next: Preferences = { ...current, textNotes: { ...current.textNotes, ...patch } };
+      await storage.setItem(STORAGE_KEY, next);
+      return next;
+    },
+
+    async setLastSeenReleaseVersion(version: string): Promise<Preferences> {
+      const current = await this.get();
+      const next: Preferences = { ...current, releaseNotes: { lastSeenVersion: version } };
       await storage.setItem(STORAGE_KEY, next);
       return next;
     },

@@ -7,6 +7,9 @@ import { readManifestConfigFromFile, readManifestConfigAtGitRef } from '../manif
 import { diffPermissions } from '../permission-diff.js';
 import { loadAndValidateListing } from '../metadata-schema.js';
 import { isDryRun } from '../dry-run.js';
+// The What's New page's own data, so a release can't ship without telling
+// users what changed — see `checkVersionConsistency`.
+import { RELEASE_NOTES } from '../../../src/domain/release-notes.js';
 import {
   renderVersionConsistencyMarkdown,
   renderPermissionDiffMarkdown,
@@ -53,6 +56,7 @@ function main(): number {
     packageJsonVersion: packageJson.version,
     manifestVersion: manifestConfig.version,
     changelog,
+    releaseNoteVersions: RELEASE_NOTES.map((release) => release.version),
   });
 
   const listingResult = loadAndValidateListing(listingRaw);

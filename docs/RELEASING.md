@@ -9,8 +9,15 @@ The version is the single source of truth in `package.json` and must match
 1. Ensure `main` is green in CI.
 2. Bump the version in **both** `package.json` and `wxt.config.ts`, and add a
    dated section to `CHANGELOG.md` describing the changes.
-3. Merge that to `main` via PR.
-4. Tag the release commit and push the tag:
+3. Add the same release to **`src/domain/release-notes.ts`**, in English _and_
+   Arabic — this is the What's New page users actually read, and the tab
+   Hamesh opens for them after it updates itself. Write it for them, not for
+   this repo: what changed for someone using the extension, in a couple of
+   lines, no file names or root causes. `pnpm release:validate --tag=vX.Y.Z`
+   fails if the tagged version has no entry, so this can't be forgotten
+   silently.
+4. Merge that to `main` via PR.
+5. Tag the release commit and push the tag:
 
    ```bash
    git switch main && git pull
@@ -18,7 +25,7 @@ The version is the single source of truth in `package.json` and must match
    git push origin v0.1.0
    ```
 
-5. The **Release** workflow (`.github/workflows/release.yml`) triggers on the
+6. The **Release** workflow (`.github/workflows/release.yml`) triggers on the
    `v*.*.*` tag: it re-runs the quality gates, builds the production package with
    `pnpm zip`, generates a SHA-256 checksum, and publishes a GitHub Release with
    the extension `.zip` and checksum attached. Release notes are extracted from
@@ -27,7 +34,7 @@ The version is the single source of truth in `package.json` and must match
    You can also run it manually via **Actions → Release → Run workflow** and
    supplying an existing tag.
 
-6. Publishing that GitHub Release also triggers the Chrome Web Store automation pipeline
+7. Publishing that GitHub Release also triggers the Chrome Web Store automation pipeline
    (`docs/releases/CHROME_WEB_STORE_AUTOMATION.md`) — it validates, packages, and uploads the
    build to the Chrome Web Store and stops for owner approval before submitting for Google
    review. As of this writing that pipeline is still landing incrementally (see the ADR in

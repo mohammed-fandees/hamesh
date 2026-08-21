@@ -83,6 +83,42 @@ describe('checkVersionConsistency', () => {
     expect(report.issues).toEqual([]);
   });
 
+  it('passes when the tagged version also has a What’s New entry', () => {
+    const report = checkVersionConsistency({
+      tag: 'v0.2.0',
+      packageJsonVersion: '0.2.0',
+      manifestVersion: '0.2.0',
+      changelog,
+      releaseNoteVersions: ['1.0.0', '0.2.0'],
+    });
+    expect(report.ok).toBe(true);
+  });
+
+  it('fails when the tagged version is missing from the What’s New page', () => {
+    // Without this, a release ships, updates itself, opens What's New, and
+    // tells the reader nothing about the version they just received.
+    const report = checkVersionConsistency({
+      tag: 'v0.2.0',
+      packageJsonVersion: '0.2.0',
+      manifestVersion: '0.2.0',
+      changelog,
+      releaseNoteVersions: ['1.0.0'],
+    });
+    expect(report.ok).toBe(false);
+    expect(report.issues).toHaveLength(1);
+    expect(report.issues[0].field).toBe('src/domain/release-notes.ts');
+  });
+
+  it('skips the What’s New check entirely when no versions are supplied', () => {
+    const report = checkVersionConsistency({
+      tag: 'v0.2.0',
+      packageJsonVersion: '0.2.0',
+      manifestVersion: '0.2.0',
+      changelog,
+    });
+    expect(report.ok).toBe(true);
+  });
+
   it('fails fast with a single issue on a malformed tag', () => {
     const report = checkVersionConsistency({
       tag: 'v0.2',

@@ -28,6 +28,7 @@ function makePrefsRepo(): PreferencesRepository {
     setLanguage: vi.fn(),
     setAppearance: vi.fn(),
     setTextNotes: vi.fn(),
+    setLastSeenReleaseVersion: vi.fn(),
   };
 }
 
