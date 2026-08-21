@@ -18,6 +18,7 @@ function makeRepo(notes: Note[]): NotesRepository {
     delete: vi.fn(),
     setPinned: vi.fn(),
     setFolder: vi.fn(),
+    saveAll: vi.fn(),
   };
 }
 
@@ -156,6 +157,7 @@ describe('HameshApp — Open Note restore flow', () => {
       delete: vi.fn(),
       setPinned: vi.fn(),
       setFolder: vi.fn(),
+      saveAll: vi.fn(),
     };
     const prefsRepo = makePrefsRepo();
     let restoreNote: ((noteId: string) => void) | null = null;

@@ -989,6 +989,27 @@
   color: var(--hm-ink-40);
   font-size: 12.5px;
 }
+/* A line of explanation under a row, for settings whose consequences aren't
+   obvious from a two-word label (what exactly gets exported; whether an
+   import can destroy anything). Indented to clear the row's icon so it
+   reads as that row's own second line. */
+.hm-setting-row__hint {
+  margin: calc(-1 * var(--hm-space-2)) 0 0;
+  padding-inline-start: calc(14px + var(--hm-space-2));
+  padding-bottom: var(--hm-space-3);
+  border-bottom: 1px solid var(--hm-border);
+  color: var(--hm-ink-40);
+  font-size: 12px;
+  line-height: 1.5;
+}
+/* A row with a hint hands its separator to the hint, so the hairline lands
+   under the pair instead of striking through the explanation. */
+.hm-setting-row:has(+ .hm-setting-row__hint) {
+  border-bottom: none;
+}
+.hm-settings__body > .hm-setting-row__hint:last-child {
+  border-bottom: none;
+}
 
 /* ---- Segmented control (e.g. Language) ---- */
 .hm-segmented {

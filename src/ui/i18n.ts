@@ -90,6 +90,21 @@ export interface Strings {
   whatsNewCurrentBadge: string;
   whatsNewNewBadge: string;
   whatsNewReleaseDate: (date: string) => string;
+  settingsBackup: string;
+  backupExport: string;
+  backupExportHint: string;
+  backupImport: string;
+  backupImportHint: string;
+  backupChooseFile: string;
+  backupWorking: string;
+  backupExported: (notes: number, folders: number) => string;
+  backupImported: (notes: number, folders: number) => string;
+  backupImportedNothingNew: string;
+  backupErrorInvalidJson: string;
+  backupErrorNotABackup: string;
+  backupErrorUnsupported: string;
+  backupErrorEmpty: string;
+  backupErrorFailed: string;
 }
 
 const en: Strings = {
@@ -175,6 +190,27 @@ const en: Strings = {
   whatsNewCurrentBadge: 'Installed',
   whatsNewNewBadge: 'New',
   whatsNewReleaseDate: (date) => date,
+  settingsBackup: 'Backup',
+  backupExport: 'Export',
+  backupExportHint: 'Save every note and folder to a file on this device.',
+  backupImport: 'Import',
+  backupImportHint: 'Restore from a backup file. Nothing is ever deleted.',
+  backupChooseFile: 'Choose a backup file',
+  backupWorking: 'Working…',
+  backupExported: (notes, folders) =>
+    `Saved ${notes} ${notes === 1 ? 'note' : 'notes'} and ${folders} ${
+      folders === 1 ? 'folder' : 'folders'
+    }.`,
+  backupImported: (notes, folders) =>
+    `Restored ${notes} ${notes === 1 ? 'note' : 'notes'} and ${folders} ${
+      folders === 1 ? 'folder' : 'folders'
+    }.`,
+  backupImportedNothingNew: 'Everything in that file was already here.',
+  backupErrorInvalidJson: "That file isn't readable JSON.",
+  backupErrorNotABackup: "That file isn't a Hamesh backup.",
+  backupErrorUnsupported: 'That backup was made by a newer version of Hamesh.',
+  backupErrorEmpty: 'That backup has no notes or folders in it.',
+  backupErrorFailed: "Couldn't finish — your existing notes are untouched.",
 };
 
 const ar: Strings = {
@@ -260,6 +296,21 @@ const ar: Strings = {
   whatsNewCurrentBadge: 'المثبّتة',
   whatsNewNewBadge: 'جديد',
   whatsNewReleaseDate: (date) => date,
+  settingsBackup: 'النسخ الاحتياطي',
+  backupExport: 'تصدير',
+  backupExportHint: 'احفظ كل ملاحظاتك وفولدراتك في ملف على جهازك.',
+  backupImport: 'استيراد',
+  backupImportHint: 'استعد ملاحظاتك من ملف نسخة احتياطية. لا يُحذف أي شيء أبدًا.',
+  backupChooseFile: 'اختر ملف نسخة احتياطية',
+  backupWorking: 'جارٍ التنفيذ…',
+  backupExported: (notes, folders) => `حُفظت ${notes} ملاحظة و${folders} فولدر.`,
+  backupImported: (notes, folders) => `استُعيدت ${notes} ملاحظة و${folders} فولدر.`,
+  backupImportedNothingNew: 'كل ما في الملف موجود لديك بالفعل.',
+  backupErrorInvalidJson: 'الملف ليس بصيغة JSON صالحة.',
+  backupErrorNotABackup: 'هذا الملف ليس نسخة احتياطية من هامش.',
+  backupErrorUnsupported: 'هذه النسخة الاحتياطية من إصدار أحدث من هامش.',
+  backupErrorEmpty: 'لا توجد ملاحظات أو فولدرات في هذه النسخة.',
+  backupErrorFailed: 'تعذّر إكمال العملية — ملاحظاتك الحالية لم تتأثّر.',
 };
 
 export function resolveLang(uiLanguage?: string): Lang {

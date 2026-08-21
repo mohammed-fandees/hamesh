@@ -43,6 +43,57 @@ describe('NotesRepository', () => {
     mockStore.clear();
   });
 
+  describe('saveAll', () => {
+    it('writes notes back into the per-page buckets they belong to', async () => {
+      await repo.saveAll([
+        {
+          id: 'a',
+          schemaVersion: 1,
+          pageKey: 'https://a.example/page',
+          originalUrl: 'https://a.example/page',
+          content: 'first',
+          anchor: makeAnchor(),
+          workspaceId: 'default',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+        {
+          id: 'b',
+          schemaVersion: 1,
+          pageKey: 'https://b.example/page',
+          originalUrl: 'https://b.example/page',
+          content: 'second',
+          anchor: makeAnchor(),
+          workspaceId: 'default',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ]);
+
+      expect((await repo.getForPage('https://a.example/page')).map((n) => n.id)).toEqual(['a']);
+      expect((await repo.getForPage('https://b.example/page')).map((n) => n.id)).toEqual(['b']);
+      expect((await repo.getAll()).map((n) => n.id).sort()).toEqual(['a', 'b']);
+    });
+
+    it('leaves pages it was not given alone', async () => {
+      // `saveAll` is only ever handed a superset by the import flow — a
+      // version that cleared unmentioned pages would turn a restore into a
+      // wipe.
+      const untouched = await repo.create({
+        content: 'keep me',
+        pageKey: 'https://other.example/page',
+        originalUrl: 'https://other.example/page',
+        anchor: makeAnchor(),
+      });
+
+      await repo.saveAll([]);
+
+      expect((await repo.getForPage('https://other.example/page')).map((n) => n.id)).toEqual([
+        untouched.id,
+      ]);
+    });
+  });
+
   describe('create', () => {
     it('adds a note and returns it', async () => {
       const note = await repo.create({

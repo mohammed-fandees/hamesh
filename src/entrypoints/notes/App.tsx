@@ -25,6 +25,15 @@ import { buildFolderTree } from '@/domain/folder-grouping';
 import type { AppearanceMode, TextNotePreferences } from '@/domain/preferences';
 import { DEFAULT_TEXT_NOTE_PREFERENCES } from '@/domain/preferences';
 import { getLatestReleaseVersion, hasUnseenReleases } from '@/domain/release-notes';
+import {
+  backupFileName,
+  buildBackup,
+  mergeFolders,
+  mergeNotes,
+  parseBackup,
+  serializeBackup,
+} from '@/domain/backup';
+import type { BackupImportOutcome } from '@/ui/BackupSection';
 import type { Note } from '@/domain/note';
 import type { Folder } from '@/domain/folder';
 import '@/ui/tokens.css';
@@ -184,6 +193,73 @@ export function App() {
     void prefsRepo.setAppearance(next);
   }
 
+  /**
+   * Export — everything, to a file the user chooses where to keep.
+   *
+   * Reads storage directly rather than the `notes` already in state: a
+   * backup must be the whole truth at the moment it's taken, not whatever
+   * the current view happens to be filtered to.
+   */
+  async function handleExportBackup(): Promise<{ notes: number; folders: number }> {
+    const [allNotes, allFolders] = await Promise.all([repo.getAll(), foldersRepo.getAll()]);
+    const backup = buildBackup({
+      notes: allNotes,
+      folders: allFolders,
+      appVersion: currentVersion,
+    });
+
+    const blob = new Blob([serializeBackup(backup)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    try {
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = backupFileName();
+      link.click();
+    } finally {
+      // Freed on the next tick — revoking synchronously can cancel the
+      // download the click just started.
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+    }
+
+    return { notes: allNotes.length, folders: allFolders.length };
+  }
+
+  /**
+   * Import — merge a backup file back in.
+   *
+   * Reads the current contents fresh, merges by the rules in
+   * `domain/backup.ts` (never deletes; newer edit wins), then writes. If a
+   * write fails partway the user still has everything they had before,
+   * because nothing is ever removed first.
+   */
+  async function handleImportBackup(text: string): Promise<BackupImportOutcome> {
+    const parsed = parseBackup(text);
+    if (!parsed.ok) return { ok: false, reason: parsed.reason };
+
+    const [existingNotes, existingFolders] = await Promise.all([
+      repo.getAll(),
+      foldersRepo.getAll(),
+    ]);
+    const mergedNotes = mergeNotes(existingNotes, parsed.backup.notes);
+    const mergedFolders = mergeFolders(existingFolders, parsed.backup.folders);
+
+    const noteChanges = mergedNotes.added + mergedNotes.updated;
+    const folderChanges = mergedFolders.added + mergedFolders.updated;
+    // Nothing new in the file: skip the writes entirely rather than
+    // rewriting every page bucket for no reason.
+    if (noteChanges === 0 && folderChanges === 0) {
+      return { ok: true, notes: 0, folders: 0 };
+    }
+
+    // Folders first: a note carrying a `folderId` should never be visible
+    // for even a moment before the folder it points at exists.
+    if (folderChanges > 0) await foldersRepo.saveAll(mergedFolders.items);
+    if (noteChanges > 0) await repo.saveAll(mergedNotes.items);
+
+    setNotes(mergedNotes.items);
+    return { ok: true, notes: noteChanges, folders: folderChanges };
+  }
+
   function handleTextNotesChange(patch: Partial<TextNotePreferences>) {
     setTextNotes((prev) => ({ ...prev, ...patch })); // re-confirmed by watch()
     void prefsRepo.setTextNotes(patch);
@@ -312,6 +388,7 @@ export function App() {
           onLanguageChange={handleLanguageChange}
           onAppearanceChange={handleAppearanceChange}
           onTextNotesChange={handleTextNotesChange}
+          backup={{ onExport: handleExportBackup, onImport: handleImportBackup }}
         />
       ) : (
         <div className="hm-notes-main">

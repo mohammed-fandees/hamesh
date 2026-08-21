@@ -6,6 +6,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **Local backup.** Settings → Backup exports every note and folder to a dated JSON file on your
+  own device, and imports one back. Importing **never deletes anything**: it adds what's missing,
+  refreshes anything the file has a newer copy of, and leaves everything else alone — so restoring
+  an old backup can't undo newer notes, and importing the same file twice does nothing the second
+  time. A file that isn't a Hamesh backup, or one written by a newer version, is refused with a
+  reason instead of half-imported. Nothing leaves your device; the file is yours to keep wherever
+  you like.
+
 ### Changed
 
 - **Settings rows are now marked with icons.** Language, Appearance, both Text notes toggles, and

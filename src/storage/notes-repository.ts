@@ -1,3 +1,4 @@
+import { groupNotesByPageKey } from '@/domain/backup';
 import type { Note, CreateNoteInput, UpdateNoteInput } from '@/domain/note';
 import {
   createNote,
@@ -37,6 +38,12 @@ export interface NotesRepository {
   getAll(): Promise<Note[]>;
   setPinned(noteId: string, pageKey: string, pinned: boolean): Promise<Note | null>;
   setFolder(noteId: string, pageKey: string, folderId: string | undefined): Promise<Note | null>;
+  /** Writes a whole set of notes across every page they belong to — the
+   *  restore half of local backup. Takes the already-merged result rather
+   *  than merging here: what to do when a note exists on both sides is a
+   *  policy decision, and it lives in `domain/backup.ts` where it can be
+   *  reasoned about and tested without storage. */
+  saveAll(notes: Note[]): Promise<void>;
 }
 
 export function createNotesRepository(): NotesRepository {
@@ -101,6 +108,19 @@ export function createNotesRepository(): NotesRepository {
       const key = storageKey(pageKey);
       await storage.setItem(`local:${key}`, existing);
       return updated;
+    },
+
+    async saveAll(notes: Note[]): Promise<void> {
+      const byPage = groupNotesByPageKey(notes);
+      // One write per page bucket, matching how notes are stored. Pages
+      // absent from `notes` are deliberately left untouched — `saveAll` is
+      // only ever handed a superset by the import flow, and a version that
+      // cleared unmentioned pages would turn a restore into a wipe.
+      await Promise.all(
+        [...byPage.entries()].map(([pageKey, pageNotes]) =>
+          storage.setItem(`local:${storageKey(pageKey)}`, pageNotes),
+        ),
+      );
     },
 
     async setFolder(

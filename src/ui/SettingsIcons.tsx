@@ -88,6 +88,54 @@ export function TextNoteIcon({ size }: IconProps = {}) {
   );
 }
 
+/** Export: a document leaving, arrow up and out. */
+export function ExportIcon({ size }: IconProps = {}) {
+  return (
+    <Svg size={size}>
+      <path
+        d="M2.4 9.4 V11.6 H11.6 V9.4"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+      <path
+        d="M7 9 V2.2 M4.4 4.6 L7 2 L9.6 4.6"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+    </Svg>
+  );
+}
+
+/** Import: the same tray, arrow coming back down into it. */
+export function ImportIcon({ size }: IconProps = {}) {
+  return (
+    <Svg size={size}>
+      <path
+        d="M2.4 9.4 V11.6 H11.6 V9.4"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+      <path
+        d="M7 2 V8.8 M4.4 6.2 L7 8.8 L9.6 6.2"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+    </Svg>
+  );
+}
+
 /** The selection action: a run of selected text with a pointer on it. */
 export function SelectionActionIcon({ size }: IconProps = {}) {
   return (
