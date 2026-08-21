@@ -46,6 +46,9 @@ vi.mock('wxt/browser', () => ({
     runtime: {
       id: 'test-extension-id',
       getURL: (path: string) => `chrome-extension://test-extension-id${path}`,
+      // Read at module scope by App.tsx so What's New can mark the version
+      // actually installed.
+      getManifest: () => ({ version: '1.2.3' }),
       onMessage: { addListener: vi.fn(), removeListener: vi.fn() },
     },
     tabs: {

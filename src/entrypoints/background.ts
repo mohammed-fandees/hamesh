@@ -1,6 +1,7 @@
 import { defineBackground } from 'wxt/utils/define-background';
 import { browser } from 'wxt/browser';
 import type { HameshMessage, ShortcutsResponse } from '@/messaging/types';
+import { shouldAnnounceUpdate } from '@/domain/release-notes';
 
 /** Secondary keep-alive for the `commands.onCommand` path below. Chrome tears
  *  down an idle MV3 service worker ~30s after its last event or API call
@@ -84,6 +85,36 @@ export default defineBackground(() => {
       return true; // async response
     },
   );
+
+  /**
+   * Shows What's New once, right after Hamesh updates itself in the
+   * background — the one moment the user has new things they didn't ask for
+   * and had no way to find out about.
+   *
+   * `onInstalled` also fires for a fresh install, a browser update, and a
+   * developer reload, so the decision is delegated to `shouldAnnounceUpdate`
+   * (a pure, tested function): only a genuine version-to-version update that
+   * actually has release notes to show opens a tab. Chrome fires this event
+   * exactly once per update, so no "have I already shown this" bookkeeping
+   * is needed here — and the page records what was read anyway, which is
+   * what keeps the sidebar's badge honest afterwards.
+   */
+  browser.runtime.onInstalled.addListener(async (details) => {
+    const currentVersion = browser.runtime.getManifest().version;
+    if (!shouldAnnounceUpdate(details.reason, details.previousVersion, currentVersion)) return;
+    try {
+      await browser.tabs.create({
+        url: browser.runtime.getURL('/notes.html?view=whats-new'),
+        // Opened in the background: an update can land while the user is in
+        // the middle of something, and stealing the foreground for a
+        // changelog would be exactly the kind of interruption Hamesh is
+        // supposed to avoid.
+        active: false,
+      });
+    } catch {
+      /* nothing to do if the browser refuses a tab here */
+    }
+  });
 
   // See KEEP_ALIVE_ALARM above. `create` with an existing name just resets
   // that alarm's schedule, so re-registering on every service-worker

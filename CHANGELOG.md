@@ -28,6 +28,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   back when it's switched on again. With the mark off, the new **Alt+T** shortcut (rebindable in
   Chrome's own shortcuts page, alongside Alt+H and Alt+V) creates a contextual note from the current
   selection, and does nothing when there is no valid selection.
+- **What's New.** A page of Hamesh's own history, in English and Arabic, at the foot of the Notes
+  Library's sidebar. Every version gets a couple of lines about what changed for you — not the
+  developer changelog. Hamesh opens it once, in a background tab, the first time it runs after
+  updating itself; a dot marks it in the sidebar until it's read. It never opens itself on a fresh
+  install, on a browser update, or on a reload of the same version.
 
 ### Fixed
 

@@ -36,8 +36,20 @@
 }
 
 /* ---- Sidebar nav ---- */
+/* Sticky, one viewport tall, rather than stretching with the page. The
+   column has a foot (What's New, pushed down by `margin-top: auto`), and on
+   a long page — the Notes Library with many notes, or What's New itself —
+   a stretched sidebar would park that foot far below the fold where nobody
+   would ever see it. `align-self: flex-start` opts this column out of the
+   parent flex row's `align-items: stretch`, which would otherwise override
+   the height. */
 .hm-sidebar {
   flex: 0 0 208px;
+  align-self: flex-start;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
   border-inline-end: 1px solid var(--hm-border);
   padding: var(--hm-space-5) var(--hm-space-4);
   display: flex;
@@ -89,6 +101,125 @@
 .hm-sidebar__nav-item:focus-visible {
   outline: 2px solid var(--hm-accent);
   outline-offset: -2px;
+}
+
+/* What's New sits apart at the foot of the column — `margin-top: auto`
+   pushes it down inside the sidebar's flex column, so it stays anchored to
+   the bottom however tall the window is, without a second layout mode. */
+.hm-sidebar__nav--foot {
+  margin-top: auto;
+}
+/* The "you haven't read this yet" dot. `margin-inline-start: auto` puts it
+   on the row's trailing edge in both directions. */
+.hm-sidebar__dot {
+  margin-inline-start: auto;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--hm-radius-pill);
+  background: var(--hm-accent);
+  flex: none;
+}
+
+/* ---- What's New ---- */
+.hm-whats-new__intro {
+  margin: calc(-1 * var(--hm-space-2)) 0 var(--hm-space-5);
+  color: var(--hm-ink-60);
+  font-size: 13.5px;
+}
+.hm-whats-new__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+/* A rule down the inline-start edge with a mark at each release — the same
+   "margin note beside the text" idea the brand's own glyph draws, turned
+   vertical into a timeline. */
+.hm-whats-new__release {
+  position: relative;
+  padding: 0 0 var(--hm-space-5) var(--hm-space-5);
+  padding-inline-start: var(--hm-space-5);
+  padding-inline-end: 0;
+  border-inline-start: 1px solid var(--hm-border);
+}
+.hm-whats-new__release:last-child {
+  border-inline-start-color: transparent;
+  padding-bottom: var(--hm-space-4);
+}
+.hm-whats-new__release::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: -4.5px;
+  top: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--hm-radius-pill);
+  background: var(--hm-paper);
+  box-shadow: 0 0 0 1.5px var(--hm-accent);
+}
+.hm-whats-new__head {
+  display: flex;
+  align-items: center;
+  gap: var(--hm-space-2);
+}
+.hm-whats-new__version {
+  font-family: var(--hm-mono);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--hm-ink);
+}
+.hm-whats-new__badge {
+  padding: 1px 7px;
+  border-radius: var(--hm-radius-pill);
+  background: var(--hm-accent-tint);
+  color: var(--hm-accent-strong);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.hm-whats-new__badge--installed {
+  background: var(--hm-ink-10);
+  color: var(--hm-ink-60);
+}
+.hm-whats-new__date {
+  margin-inline-start: auto;
+  color: var(--hm-ink-40);
+  font-family: var(--hm-mono);
+  font-size: 11px;
+}
+.hm-whats-new__title {
+  margin: var(--hm-space-1) 0 var(--hm-space-2);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--hm-ink);
+}
+.hm-whats-new__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--hm-space-2);
+}
+.hm-whats-new__item {
+  position: relative;
+  padding-inline-start: var(--hm-space-3);
+  font-family: var(--hm-serif);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--hm-ink);
+}
+.hm-scope[dir='rtl'] .hm-whats-new__item {
+  font-family: var(--hm-arabic);
+}
+.hm-whats-new__item::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  top: 0.62em;
+  width: 4px;
+  height: 4px;
+  border-radius: var(--hm-radius-pill);
+  background: var(--hm-ink-20);
 }
 
 /* ---- Search — live, no button. Same focus treatment as the composer's

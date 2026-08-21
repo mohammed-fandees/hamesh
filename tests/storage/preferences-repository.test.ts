@@ -35,6 +35,7 @@ describe('PreferencesRepository', () => {
       language: null,
       appearance: 'match-website',
       textNotes: { enabled: true, selectionAction: true },
+      releaseNotes: { lastSeenVersion: null },
     });
   });
 
@@ -67,6 +68,7 @@ describe('PreferencesRepository', () => {
       language: 'ar',
       appearance: 'dark',
       textNotes: { enabled: true, selectionAction: true },
+      releaseNotes: { lastSeenVersion: null },
     });
 
     await repo.setLanguage('en');
@@ -75,6 +77,7 @@ describe('PreferencesRepository', () => {
       language: 'en',
       appearance: 'dark',
       textNotes: { enabled: true, selectionAction: true },
+      releaseNotes: { lastSeenVersion: null },
     });
   });
 
@@ -85,6 +88,7 @@ describe('PreferencesRepository', () => {
       language: null,
       appearance: 'match-website',
       textNotes: { enabled: true, selectionAction: true },
+      releaseNotes: { lastSeenVersion: null },
     });
   });
 

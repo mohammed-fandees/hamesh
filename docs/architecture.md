@@ -537,10 +537,13 @@ appears.
 ## Notes Library, Settings & Shortcuts
 
 `src/entrypoints/notes/App.tsx` (the Notes Library page, `notes.html`) has a
-permanent sidebar (`src/ui/Sidebar.tsx`) with two views — Library and
-Settings — instead of Settings being popup-only. A `?view=settings` query
-param lets another context (the popup's own Settings pane) deep-link
-straight to it without a `view` state round-trip.
+permanent sidebar (`src/ui/Sidebar.tsx`) with three views — Library,
+Settings, and What's New (see its own section below) — instead of Settings
+being popup-only. A `?view=` query param lets another context deep-link
+straight to one without a `view` state round-trip: the popup's own Settings
+pane uses `?view=settings`, and the background's post-update tab uses
+`?view=whats-new`. The sidebar is sticky and one viewport tall, so its
+bottom-docked entry stays reachable however long the page's content runs.
 
 `LibrarySettingsView.tsx` reuses the same Language/Appearance controls as
 the popup's `SettingsView`, plus a Shortcuts section showing both commands'
@@ -554,6 +557,50 @@ calling out explicitly here (confirmed by direct probing against a real
 Chromium build, not assumed from the types). The popup's own shortcut badge
 is fetched live from the same `commands.getAll()` call rather than
 hardcoded, so it can't go stale if a user rebinds Alt+H there.
+
+## What's New (`src/domain/release-notes.ts`, `src/ui/WhatsNewView.tsx`)
+
+A third destination in the Notes Library's sidebar, docked to the foot of
+the column rather than sitting with Library and Settings — it isn't
+somewhere you work, it's somewhere you go once after an update.
+
+- **Content is typed data, not the changelog.** `CHANGELOG.md` is written
+  for whoever maintains this repo (root causes, file names, PR groupings)
+  and only in English; `RELEASE_NOTES` is the same history told to the
+  person using Hamesh, in both interface languages. Keeping it as a plain
+  array means no markdown parser in the bundle, no build step, and no
+  network — and it makes the page checkable: `checkVersionConsistency`
+  (`tooling/release/version.ts`) refuses to validate a tag whose version has
+  no entry, so the page can't silently go stale behind a release.
+- **Both languages, or neither.** A unit test asserts every release carries
+  non-empty `en` _and_ `ar` for its title and every item, and that the
+  Arabic actually contains Arabic script — a copied English string would
+  otherwise pass a non-empty check and quietly ship as an "Arabic" note.
+  Another asserts every version in `CHANGELOG.md` also appears here.
+- **Opening it is reading it.** `Preferences.releaseNotes.lastSeenVersion`
+  (same single record as every other persisted preference — no parallel
+  storage) is written to the newest listed version as soon as the view
+  mounts. `null` means "never opened", which deliberately differs from "has
+  seen version X": the page shows the whole history to a first-time reader
+  rather than claiming nothing is new. The sidebar's unread dot is derived
+  from the same value, and the view deliberately does _not_ mirror the
+  `watch()` callback back into local state, so entries stay marked "New"
+  while they're being read instead of clearing under the reader's eyes.
+- **Auto-open after an update.** `runtime.onInstalled` in the background
+  opens `notes.html?view=whats-new` — but only when `shouldAnnounceUpdate`
+  (a pure, unit-tested function) agrees: a real version-to-version update,
+  moving forwards, that actually has notes to show. A fresh install, a
+  browser update, and a developer reload of the same version all reach that
+  listener too and are all deliberately silent. The tab opens in the
+  **background** (`active: false`): an update can land mid-task, and seizing
+  the foreground for a changelog is exactly the interruption Hamesh avoids.
+  Chrome fires the event once per update, so no "already shown" bookkeeping
+  is needed there.
+
+The listener can't be driven from a test (`onInstalled` has no automatable
+surface, the same gap `commands.onCommand` has), so the decision function is
+unit-tested directly and `e2e/whats-new.spec.ts` proves the URL it opens
+really does land on the page.
 
 ## Folders
 
