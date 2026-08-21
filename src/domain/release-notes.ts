@@ -37,6 +37,33 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    version: '1.3.0',
+    date: '2026-08-21',
+    title: { en: 'Notes on the words themselves', ar: 'ملاحظات على الكلمات نفسها' },
+    items: [
+      {
+        en: 'Select any text on a page and a small Hamesh mark appears beside it. Click it, write a note, and those exact words stay highlighted.',
+        ar: 'حدّد أي نص في الصفحة فتظهر بجانبه علامة هامش صغيرة. انقرها واكتب ملاحظتك، فتبقى تلك الكلمات بالذات مظلَّلة.',
+      },
+      {
+        en: 'Hover the highlighted words to see the note again; click to open it. Selecting text still just selects text — nothing opens unless you ask it to.',
+        ar: 'مرّر المؤشر على الكلمات المظلَّلة لترى ملاحظتك، وانقرها لفتحها. وتحديد النص يبقى مجرّد تحديد — لا يُفتح شيء إلا إذا طلبته.',
+      },
+      {
+        en: 'Hamesh finds the same words again on your next visit, even after the page changes. When it cannot be certain which words were yours, it highlights none of them rather than the wrong ones — the note itself is never lost.',
+        ar: 'يعثر هامش على الكلمات نفسها عند زيارتك التالية، حتى بعد تغيّر الصفحة. وإن لم يتأكّد أيّها كانت كلماتك، فلا يظلّل شيئًا بدل أن يظلّل الخطأ — والملاحظة نفسها لا تضيع أبدًا.',
+      },
+      {
+        en: 'Back up everything: Settings → Backup saves all your notes and folders to a file on your device, and restores from one. Importing never deletes anything you already have.',
+        ar: 'انسخ كل شيء احتياطيًا: من الإعدادات ← النسخ الاحتياطي احفظ ملاحظاتك وفولدراتك في ملف على جهازك، واستعدها منه. والاستيراد لا يحذف أبدًا شيئًا لديك.',
+      },
+      {
+        en: 'This page — What\u2019s New — is itself new, and Settings rows now carry icons so a setting can be found at a glance.',
+        ar: 'وهذه الصفحة — ما الجديد — جديدة بذاتها، وصارت صفوف الإعدادات تحمل أيقونات ليسهل العثور على الإعداد بنظرة.',
+      },
+    ],
+  },
+  {
     version: '1.2.3',
     date: '2026-08-13',
     title: { en: 'Custom video players', ar: 'مشغّلات الفيديو المخصّصة' },

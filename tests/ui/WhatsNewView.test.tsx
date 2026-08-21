@@ -65,9 +65,13 @@ describe('WhatsNewView', () => {
     const newBadges = [...document.querySelectorAll('.hm-whats-new__badge')].filter(
       (el) => !el.classList.contains('hm-whats-new__badge--installed'),
     );
-    // 1.2.1 and 1.2.0 — 1.2.3 is the installed one, which carries the
-    // "Installed" badge instead of doubling up.
-    expect(newBadges.map((el) => el.textContent)).toEqual(['New', 'New']);
+    // Everything released after 1.1.0 except the newest, which carries the
+    // "Installed" badge instead of doubling up. Derived rather than
+    // hard-coded so a release doesn't have to come back and edit a count.
+    const expected = RELEASE_NOTES.filter(
+      (r) => r.version !== newest.version && r.version > '1.1.0',
+    ).length;
+    expect(newBadges.map((el) => el.textContent)).toEqual(Array(expected).fill('New'));
   });
 
   it('marks nothing new once the newest release has been read', () => {
