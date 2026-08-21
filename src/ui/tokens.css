@@ -975,7 +975,15 @@
   border-bottom: none;
 }
 .hm-setting-row__label {
+  display: flex;
+  align-items: center;
+  gap: var(--hm-space-2);
   font-weight: 500;
+}
+.hm-setting-row__icon {
+  display: inline-flex;
+  flex: none;
+  color: var(--hm-accent-strong);
 }
 .hm-setting-row__value {
   color: var(--hm-ink-40);

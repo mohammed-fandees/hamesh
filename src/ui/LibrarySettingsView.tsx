@@ -2,6 +2,17 @@ import { useEffect, useState } from 'react';
 import { browser } from 'wxt/browser';
 import { SettingRow } from './SettingRow';
 import { SegmentedControl } from './SegmentedControl';
+import {
+  AppearanceIcon,
+  DarkIcon,
+  LanguageIcon,
+  LightIcon,
+  MatchWebsiteIcon,
+  SelectionActionIcon,
+  TextNoteIcon,
+} from './SettingsIcons';
+import { MarginMark } from './MarginMark';
+import { PlayIcon } from './PlayIcon';
 import type { AppearanceMode, TextNotePreferences } from '@/domain/preferences';
 import type { Lang, Strings } from './i18n';
 
@@ -78,6 +89,7 @@ export function LibrarySettingsView({
         <div className="hm-settings__body">
           <SettingRow
             label={strings.settingsLanguage}
+            icon={<LanguageIcon />}
             value={
               <SegmentedControl<Lang>
                 value={lang}
@@ -93,15 +105,22 @@ export function LibrarySettingsView({
           />
           <SettingRow
             label={strings.settingsAppearance}
+            icon={<AppearanceIcon />}
             value={
+              // Same icon options as the popup's Settings pane, so a choice
+              // looks identical wherever it's made.
               <SegmentedControl<AppearanceMode>
                 value={appearance}
                 name="hm-appearance"
                 groupLabel={strings.settingsAppearance}
                 options={[
-                  { value: 'match-website', label: strings.settingsMatchWebsite },
-                  { value: 'light', label: strings.settingsAppearanceLight },
-                  { value: 'dark', label: strings.settingsAppearanceDark },
+                  {
+                    value: 'match-website',
+                    label: strings.settingsMatchWebsite,
+                    icon: <MatchWebsiteIcon />,
+                  },
+                  { value: 'light', label: strings.settingsAppearanceLight, icon: <LightIcon /> },
+                  { value: 'dark', label: strings.settingsAppearanceDark, icon: <DarkIcon /> },
                 ]}
                 onChange={onAppearanceChange}
               />
@@ -113,6 +132,7 @@ export function LibrarySettingsView({
         <div className="hm-settings__body">
           <SettingRow
             label={strings.settingsTextNotesEnabled}
+            icon={<TextNoteIcon />}
             value={
               <SegmentedControl<Toggle>
                 value={textNotes.enabled ? 'on' : 'off'}
@@ -128,6 +148,7 @@ export function LibrarySettingsView({
           />
           <SettingRow
             label={strings.settingsTextSelectionAction}
+            icon={<SelectionActionIcon />}
             value={
               <SegmentedControl<Toggle>
                 value={textNotes.selectionAction ? 'on' : 'off'}
@@ -147,6 +168,7 @@ export function LibrarySettingsView({
         <div className="hm-settings__body">
           <SettingRow
             label={strings.addNote}
+            icon={<MarginMark size={13} strokeWidth={4} />}
             value={
               <kbd className="hm-shortcut-badge">
                 {commands['activate-hamesh'] || strings.shortcutNotSet}
@@ -155,6 +177,7 @@ export function LibrarySettingsView({
           />
           <SettingRow
             label={strings.videoQuickNoteLabel}
+            icon={<PlayIcon size={12} />}
             value={
               <kbd className="hm-shortcut-badge">
                 {commands['activate-hamesh-video'] || strings.shortcutNotSet}
@@ -163,6 +186,7 @@ export function LibrarySettingsView({
           />
           <SettingRow
             label={strings.addTextNote}
+            icon={<TextNoteIcon />}
             value={
               <kbd className="hm-shortcut-badge">
                 {commands['activate-hamesh-text'] || strings.shortcutNotSet}

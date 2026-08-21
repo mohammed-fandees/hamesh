@@ -6,6 +6,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **Settings rows are now marked with icons.** Language, Appearance, both Text notes toggles, and
+  each shortcut carry a small glyph before the label — and a shortcut's glyph is the mark of what it
+  creates (the margin mark, the play triangle, the text-note lines), so the rows are tellable apart
+  at a glance rather than by reading each one. Appearance now shows the same three icon choices in
+  the Notes Library's Settings page that the popup's Settings pane already used.
+
 ### Added
 
 - **Hawamesh — notes attached to exact text on a page.** Select any text, click the small Hamesh

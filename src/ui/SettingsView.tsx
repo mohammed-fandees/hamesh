@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { SettingRow } from './SettingRow';
 import { SegmentedControl } from './SegmentedControl';
+import { DarkIcon, LightIcon, MatchWebsiteIcon } from './SettingsIcons';
 import type { AppearanceMode } from '@/domain/preferences';
 import type { Lang, Strings } from './i18n';
 
@@ -137,36 +138,5 @@ export function SettingsView({
         </svg>
       </button>
     </div>
-  );
-}
-
-function LightIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
-      <circle cx="7" cy="7" r="2.4" stroke="currentColor" strokeWidth="1.3" fill="none" />
-      <path
-        d="M7 1.4 V2.6 M7 11.4 V12.6 M1.4 7 H2.6 M11.4 7 H12.6 M3.1 3.1 L4 4 M10 10 L10.9 10.9 M3.1 10.9 L4 10 M10 4 L10.9 3.1"
-        stroke="currentColor"
-        strokeWidth="1.1"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function DarkIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
-      <path d="M11.2 8.6A4.6 4.6 0 0 1 5.4 2.8a4.6 4.6 0 1 0 5.8 5.8Z" fill="currentColor" />
-    </svg>
-  );
-}
-
-function MatchWebsiteIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
-      <circle cx="7" cy="7" r="5.2" stroke="currentColor" strokeWidth="1.3" fill="none" />
-      <path d="M7 1.8 A5.2 5.2 0 0 1 7 12.2 Z" fill="currentColor" />
-    </svg>
   );
 }
