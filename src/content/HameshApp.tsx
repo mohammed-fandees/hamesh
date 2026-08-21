@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { NotesRepository } from '@/storage/notes-repository';
 import type { PreferencesRepository } from '@/storage/preferences-repository';
-import type { Note, ElementAnchor, VideoAnchor } from '@/domain/note';
+import type { Note, ElementAnchor, TextAnchor, VideoAnchor } from '@/domain/note';
 import { buildElementAnchor } from '@/domain/anchor';
 import { buildVideoAnchor } from '@/domain/video-anchor';
+import { buildTextAnchor } from '@/domain/text-anchor';
+import { resolveTextAnchors } from '@/domain/text-anchor-resolution';
 import { resolveAnchor, resolveVideoAnchor, ResolutionQuality } from '@/domain/anchor-resolution';
 import {
   computeMarkerX,
@@ -15,7 +17,20 @@ import { generatePageKey } from '@/domain/page-key';
 import { getDeepestEligibleElement } from '@/utils/dom';
 import { onNavigationChange } from '@/content/navigation';
 import { detectHostTheme, type HostTheme } from '@/content/theme';
-import type { AppearanceMode } from '@/domain/preferences';
+import type { AppearanceMode, TextNotePreferences } from '@/domain/preferences';
+import { DEFAULT_TEXT_NOTE_PREFERENCES } from '@/domain/preferences';
+import {
+  captureTextSelection,
+  rectsContainPoint,
+  visibleRangeRects,
+  type TextSelectionCapture,
+} from '@/content/text-selection';
+import {
+  clearTextHighlights,
+  ensureHighlightStyles,
+  paintTextHighlights,
+  setTextHoverCursor,
+} from '@/content/text-highlights';
 import { useFloating, useFloatingAbove, type AnchorRect } from '@/content/useFloating';
 import { getVideoAdapters, getActiveAdapterMatch } from '@/content/video-adapters/registry';
 import type { VideoPlayerAdapter } from '@/content/video-adapters/types';
@@ -24,6 +39,8 @@ import { Composer } from '@/ui/Composer';
 import { NoteViewer } from '@/ui/NoteViewer';
 import { Marker } from '@/ui/Marker';
 import { SelectionHint } from '@/ui/SelectionHint';
+import { TextSelectionAction } from '@/ui/TextSelectionAction';
+import { TextNotePopup } from '@/ui/TextNotePopup';
 import { VideoQuickNote } from '@/ui/video/VideoQuickNote';
 import { VideoMarker } from '@/ui/video/VideoMarker';
 import { VideoMarkerPreview } from '@/ui/video/VideoMarkerPreview';
@@ -45,6 +62,33 @@ interface VideoResolved {
   video: HTMLVideoElement | null;
   quality: ResolutionQuality;
 }
+
+/** A contextual text note plus wherever (if anywhere) its text currently
+ *  lives on this page. `range === null` is a perfectly normal state — the
+ *  note is intact, the page just doesn't hold its text right now — and is
+ *  never allowed to mean "so highlight something else". */
+interface TextResolved {
+  note: Note;
+  anchor: TextAnchor;
+  range: Range | null;
+  quality: ResolutionQuality;
+}
+
+/** How long the hover popup survives the pointer leaving the highlighted
+ *  text, so the gap between the words and the card can be crossed without
+ *  the card vanishing mid-reach. */
+const TEXT_POPUP_GRACE_MS = 220;
+
+/** How long the Open Note flow keeps waiting for a contextual note's text to
+ *  turn up before opening the note anyway with its "couldn't find this text"
+ *  state. Content loaded after `document_idle` (an SPA route, a lazy
+ *  section) resolves well inside this; a page that genuinely no longer has
+ *  the text shouldn't leave the user staring at nothing. */
+const TEXT_RESTORE_GRACE_MS = 3000;
+
+/** Mirrors the video restore highlight's duration in tokens.css — long
+ *  enough to catch the eye after a scroll, short enough not to linger. */
+const TEXT_FLASH_MS = 1400;
 
 interface VideoMarkerItem {
   note: Note;
@@ -75,6 +119,12 @@ interface VideoMarkerGroup {
   left: number;
 }
 
+/** What the composer is currently attached to. Both shapes carry a
+ *  ready-built anchor, so saving is anchor-kind-agnostic — see `handleSave`. */
+type ComposerTarget =
+  | { kind: 'element'; element: Element; anchor: ElementAnchor }
+  | { kind: 'text'; anchor: TextAnchor; range: Range };
+
 interface HameshAppProps {
   repo: NotesRepository;
   prefsRepo: PreferencesRepository;
@@ -87,6 +137,11 @@ interface HameshAppProps {
   /** Imperatively opens the video quick-note for the page's current video, if
    *  any; wired to the content-script controller's dedicated video shortcut. */
   registerActivateVideo: (fn: () => void) => void;
+  /** Imperatively opens the composer for the page's current text selection —
+   *  the keyboard half of the contextual-note entry points, wired to the
+   *  content-script controller's dedicated text shortcut. A no-op when
+   *  nothing anchorable is selected. */
+  registerActivateText: (fn: () => void) => void;
   /** Imperatively restores (scrolls to, highlights, opens) a specific note by
    *  id — wired to the content-script controller's `RESTORE_NOTE` handler,
    *  which fires from the Notes Library's Open Note flow. */
@@ -95,6 +150,13 @@ interface HameshAppProps {
 
 function toAnchorRect(el: Element): AnchorRect {
   const r = el.getBoundingClientRect();
+  return { left: r.left, top: r.top, width: r.width, height: r.height };
+}
+
+/** A live rect for a text range — recomputed on every scroll/resize by
+ *  `useFloating`, the same way an element anchor's rect is. */
+function rangeAnchorRect(range: Range): AnchorRect {
+  const r = range.getBoundingClientRect();
   return { left: r.left, top: r.top, width: r.width, height: r.height };
 }
 
@@ -187,10 +249,12 @@ export function HameshApp({
   initialLang,
   registerActivate,
   registerActivateVideo,
+  registerActivateText,
   registerRestoreNote,
 }: HameshAppProps) {
   const [lang, setLang] = useState<Lang>(initialLang);
   const [appearance, setAppearance] = useState<AppearanceMode>('match-website');
+  const [textNotes, setTextNotes] = useState<TextNotePreferences>(DEFAULT_TEXT_NOTE_PREFERENCES);
   const strings = getStrings(lang);
   const dir = dirForLang(lang);
 
@@ -205,11 +269,13 @@ export function HameshApp({
       if (!cancelled) {
         setLang(prefs.language ?? initialLang);
         setAppearance(prefs.appearance);
+        setTextNotes(prefs.textNotes);
       }
     })();
     const unwatch = prefsRepo.watch((prefs) => {
       setLang(prefs.language ?? initialLang);
       setAppearance(prefs.appearance);
+      setTextNotes(prefs.textNotes);
     });
     return () => {
       cancelled = true;
@@ -259,10 +325,16 @@ export function HameshApp({
   const [selecting, setSelecting] = useState(false);
   const [hover, setHover] = useState<{ rect: AnchorRect; x: number; y: number } | null>(null);
 
-  const [composer, setComposer] = useState<{ element: Element; anchor: ElementAnchor } | null>(
-    null,
-  );
+  // One composer for both kinds of note, so there is exactly one save path
+  // (`handleSave`) rather than a parallel one per anchor kind. The anchor is
+  // built at the moment the composer opens — from the preserved range for a
+  // text note — never at save time, so a page that changes while the user is
+  // typing can't silently re-point the note at different text.
+  const [composer, setComposer] = useState<ComposerTarget | null>(null);
   const [viewerId, setViewerId] = useState<string | null>(null);
+  /** Set when the viewer is opened straight into edit mode (the hover
+   *  popup's Edit button) — see the `key` on `FloatingViewer` below. */
+  const [viewerEditing, setViewerEditing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -306,14 +378,44 @@ export function HameshApp({
   const [videoHoverGroupKey, setVideoHoverGroupKey] = useState<string | null>(null);
   const [videoOpenClusterKey, setVideoOpenClusterKey] = useState<string | null>(null);
 
+  // ---- Contextual text notes ----
+  const [textResolved, setTextResolved] = useState<TextResolved[]>([]);
+  /** The finished, still-valid selection the action chip is offering itself
+   *  for. Holding the captured range here (rather than reading
+   *  `window.getSelection()` when the chip is clicked) is what guarantees the
+   *  note attaches to the text the user actually selected — clicking any
+   *  external UI can collapse or move the live selection. */
+  const [pendingSelection, setPendingSelection] = useState<TextSelectionCapture | null>(null);
+  const [hoverTextId, setHoverTextId] = useState<string | null>(null);
+  /** Briefly painted more strongly by the Open Note flow — "here it is". */
+  const [flashTextId, setFlashTextId] = useState<string | null>(null);
+  const [scrollToTextId, setScrollToTextId] = useState<string | null>(null);
+
   // ---- Open Note flow: restore a specific note by id once it resolves ----
   const [pendingRestoreId, setPendingRestoreId] = useState<string | null>(null);
+  /** True once a pending contextual-note restore has waited long enough (see
+   *  `TEXT_RESTORE_GRACE_MS`); the note then opens with its "couldn't find
+   *  this text" state instead of waiting forever. */
+  const [restoreExpired, setRestoreExpired] = useState(false);
   const [restoredFor, setRestoredFor] = useState<string | null>(null);
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const [highlightElement, setHighlightElement] = useState<Element | null>(null);
 
   const captureRef = useRef<HTMLDivElement>(null);
+  const scopeRef = useRef<HTMLDivElement>(null);
   const notesRef = useRef<Note[]>([]);
+  /** Last pass's resolved ranges, keyed by note id. Feeding these back into
+   *  the next pass turns the common case into one string compare per note —
+   *  no DOM walk, no page-text index. Rebuilt every pass, never a cache with
+   *  its own lifetime. */
+  const previousTextRangesRef = useRef<Map<string, Range>>(new Map());
+  /** Viewport rects of every currently-resolved highlight, for the
+   *  coordinate hit-testing that stands in for the hover/click a
+   *  Custom-Highlight range can't receive itself. */
+  const textHitTargetsRef = useRef<{ id: string; rects: DOMRect[] }[]>([]);
+  const textResolvedRef = useRef<TextResolved[]>([]);
+  const textPopupHoveredRef = useRef(false);
+  const textPopupTimerRef = useRef(0);
   useEffect(() => {
     notesRef.current = notes;
   }, [notes]);
@@ -364,19 +466,70 @@ export function HameshApp({
     );
   }, []);
 
+  // Runs across the same unified `notes` list as the other two resolvers.
+  // Batched deliberately: `resolveTextAnchors` revalidates last pass's
+  // ranges and tries the stored DOM paths first, and only builds a
+  // normalized index of the page's text if something actually needs
+  // recovering — and then builds it once for all of them.
+  const resolveAllText = useCallback((list: Note[], enabled: boolean) => {
+    const requests = [];
+    for (const note of list) {
+      if (note.anchor.type !== 'text') continue;
+      requests.push({
+        id: note.id,
+        anchor: note.anchor,
+        previous: previousTextRangesRef.current.get(note.id) ?? null,
+      });
+    }
+
+    // Disabling the feature stops it resolving and painting. It does not
+    // touch a single stored note or anchor — turning it back on simply
+    // resolves them again.
+    if (!enabled || requests.length === 0) {
+      previousTextRangesRef.current = new Map();
+      setTextResolved([]);
+      return;
+    }
+
+    const results = resolveTextAnchors(requests);
+    const nextRanges = new Map<string, Range>();
+    const next: TextResolved[] = [];
+    for (const note of list) {
+      if (note.anchor.type !== 'text') continue;
+      const result = results.get(note.id);
+      const range = result?.range ?? null;
+      if (range) nextRanges.set(note.id, range);
+      next.push({
+        note,
+        anchor: note.anchor,
+        range,
+        quality: result?.quality ?? ResolutionQuality.Unresolved,
+      });
+    }
+    previousTextRangesRef.current = nextRanges;
+    setTextResolved(next);
+  }, []);
+
   const refreshVideoMatch = useCallback(() => {
     setVideoMatch(getActiveAdapterMatch());
   }, []);
 
   /** Commit a new notes list to both state slices (avoids nested setState). */
+  // `textNotesEnabled` is a real dependency, not incidental: turning the
+  // feature on or off changes this callback's identity, which re-runs the
+  // load effect below and so re-resolves (or drops) every contextual note's
+  // highlight — no separate "the setting changed" trigger needed, and no
+  // stored note touched either way.
+  const textNotesEnabled = textNotes.enabled;
   const commitNotes = useCallback(
     (next: Note[]) => {
       notesRef.current = next;
       setNotes(next);
       resolveAll(next);
       resolveAllVideo(next);
+      resolveAllText(next, textNotesEnabled);
     },
-    [resolveAll, resolveAllVideo],
+    [resolveAll, resolveAllVideo, resolveAllText, textNotesEnabled],
   );
 
   const loadNotes = useCallback(async () => {
@@ -441,6 +594,7 @@ export function HameshApp({
       timer = window.setTimeout(() => {
         resolveAll(notes);
         resolveAllVideo(notes);
+        resolveAllText(notes, textNotesEnabled);
         refreshVideoMatch();
       }, 400);
     });
@@ -449,7 +603,7 @@ export function HameshApp({
       clearTimeout(timer);
       observer.disconnect();
     };
-  }, [notes, resolveAll, resolveAllVideo, refreshVideoMatch]);
+  }, [notes, resolveAll, resolveAllVideo, resolveAllText, textNotesEnabled, refreshVideoMatch]);
 
   // Re-place markers once the active video's duration becomes known
   // (frequently unavailable at mount — `loadedmetadata`/`durationchange`
@@ -541,13 +695,71 @@ export function HameshApp({
     setVideoComposer(videoMatch);
   }, [videoMatch]);
 
+  // ---- Contextual text notes: one creation flow, two entry points ----
+
+  /** The Hamesh shadow host, so a selection made inside Hamesh's own UI (or
+   *  a click on it) is never mistaken for a selection in the page. */
+  const hameshHost = useCallback((): Element | null => {
+    const root = scopeRef.current?.getRootNode();
+    return root instanceof ShadowRoot ? root.host : null;
+  }, []);
+
+  /**
+   * The single contextual-note creation flow. The selection action chip and
+   * the keyboard shortcut both land here — same validation, same anchor
+   * generation, same composer, and (via `handleSave`) the same note creation
+   * and persistence as every other Hamesh note. Neither entry point has any
+   * note logic of its own.
+   */
+  const startTextNote = useCallback((capture: TextSelectionCapture) => {
+    setPendingSelection(null);
+    // Built from the preserved range, right now — before any of the state
+    // changes below can move focus or collapse what's selected.
+    const built = buildTextAnchor(capture.range);
+    if (!built) return;
+    setSelecting(false);
+    setHover(null);
+    setViewerId(null);
+    setVideoComposer(null);
+    setError(null);
+    setComposer({ kind: 'text', anchor: built.anchor, range: built.range });
+  }, []);
+
+  // Alt+T (default; rebindable in Chrome's own shortcuts page, linked from
+  // Settings). Reads the live selection itself, so it works identically
+  // whether or not the selection action chip is switched on — and does
+  // nothing at all when there's no valid selection, rather than creating an
+  // empty contextual note.
+  const activateText = useCallback(() => {
+    if (!textNotes.enabled) return;
+    const capture = captureTextSelection(hameshHost());
+    if (!capture) return;
+    startTextNote(capture);
+  }, [textNotes.enabled, hameshHost, startTextNote]);
+
   useEffect(() => registerActivate(activate), [registerActivate, activate]);
   useEffect(() => registerActivateVideo(activateVideo), [registerActivateVideo, activateVideo]);
+  useEffect(() => registerActivateText(activateText), [registerActivateText, activateText]);
 
   useEffect(
-    () => registerRestoreNote((noteId) => setPendingRestoreId(noteId)),
+    () =>
+      registerRestoreNote((noteId) => {
+        setRestoreExpired(false);
+        setPendingRestoreId(noteId);
+      }),
     [registerRestoreNote],
   );
+
+  /** The single way the note viewer is opened. `editing` is part of opening
+   *  it, not sticky state — without this, using the hover popup's Edit and
+   *  then opening some other note by its marker would open *that* note in
+   *  edit mode too. */
+  const openViewer = useCallback((noteId: string, editing = false) => {
+    setComposer(null);
+    setError(null);
+    setViewerEditing(editing);
+    setViewerId(noteId);
+  }, []);
 
   // Seeking the active video from a JSX-triggered handler (marker/cluster
   // click, or the Open Note restore flow below) is declared here and
@@ -617,6 +829,24 @@ export function HameshApp({
         setViewerId(pendingRestoreId);
         setVideoSeekRequest({ timestamp: videoAnchor.timestamp, nonce: pendingRestoreId });
       }
+    } else if (pendingNote?.anchor.type === 'text') {
+      // Waits for the text to turn up (content can still be loading), but
+      // only for `TEXT_RESTORE_GRACE_MS` — after that the note opens anyway,
+      // honestly showing that its text couldn't be found rather than
+      // pretending the navigation worked.
+      const target = textResolved.find((r) => r.note.id === pendingRestoreId);
+      const resolvedNow = !!target && target.quality !== ResolutionQuality.Unresolved;
+      if (target && (resolvedNow || restoreExpired)) {
+        setRestoredFor(pendingRestoreId);
+        setComposer(null);
+        setError(null);
+        setViewerEditing(false);
+        setViewerId(pendingRestoreId);
+        if (target.range) {
+          setFlashTextId(pendingRestoreId);
+          setScrollToTextId(pendingRestoreId);
+        }
+      }
     } else {
       const target = resolved.find((r) => r.note.id === pendingRestoreId);
       if (target) {
@@ -654,6 +884,122 @@ export function HameshApp({
     }, 1400);
     return () => clearTimeout(timer);
   }, [highlightElement]);
+
+  // ---- Selection watching: show the action chip, and only the chip ----
+  // A completed selection is detected on mouseup/keyup, never on
+  // `selectionchange` — that fires continuously while the pointer is still
+  // dragging, and a chip appearing mid-drag would be exactly the
+  // "interfering with normal selection" this must not do. `selectionchange`
+  // is used only to take the chip *away* again.
+  useEffect(() => {
+    if (!textNotes.enabled || !textNotes.selectionAction) return;
+
+    const host = hameshHost();
+    let raf = 0;
+
+    const insideHamesh = (event: Event): boolean =>
+      event
+        .composedPath()
+        .some(
+          (node) =>
+            node instanceof HTMLElement &&
+            (node === host ||
+              node.classList?.contains('hm-card') ||
+              node.classList?.contains('hm-marker')),
+        );
+
+    const offerSelection = () => {
+      if (raf) cancelAnimationFrame(raf);
+      // One frame later: the browser finalizes the selection after mouseup,
+      // and a same-tick read can still see the previous one.
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        setPendingSelection(captureTextSelection(host));
+      });
+    };
+
+    const onMouseUp = (e: MouseEvent) => {
+      if (insideHamesh(e)) return;
+      offerSelection();
+    };
+
+    const onMouseDown = (e: MouseEvent) => {
+      // A new press means a new selection is starting (or the user is
+      // dismissing this one) — the chip goes away either way, unless the
+      // press *is* the chip.
+      if (insideHamesh(e)) return;
+      if (raf) {
+        cancelAnimationFrame(raf);
+        raf = 0;
+      }
+      setPendingSelection(null);
+    };
+
+    const SELECTION_KEYS = new Set([
+      'Shift',
+      'ArrowLeft',
+      'ArrowRight',
+      'ArrowUp',
+      'ArrowDown',
+      'Home',
+      'End',
+      'PageUp',
+      'PageDown',
+      'a',
+      'A',
+    ]);
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (!SELECTION_KEYS.has(e.key)) return;
+      offerSelection();
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setPendingSelection(null);
+    };
+
+    const onSelectionChange = () => {
+      const selection = window.getSelection?.();
+      if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+        setPendingSelection(null);
+      }
+    };
+
+    document.addEventListener('mouseup', onMouseUp, true);
+    document.addEventListener('mousedown', onMouseDown, true);
+    document.addEventListener('keyup', onKeyUp, true);
+    document.addEventListener('keydown', onKeyDown, true);
+    document.addEventListener('selectionchange', onSelectionChange);
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      document.removeEventListener('mouseup', onMouseUp, true);
+      document.removeEventListener('mousedown', onMouseDown, true);
+      document.removeEventListener('keyup', onKeyUp, true);
+      document.removeEventListener('keydown', onKeyDown, true);
+      document.removeEventListener('selectionchange', onSelectionChange);
+    };
+  }, [textNotes.enabled, textNotes.selectionAction, hameshHost]);
+
+  // ---- Painting the highlights ----
+  // Rebuilt from the current resolution each time rather than diffed, so a
+  // repaint can't leave a stale highlight behind (see `paintTextHighlights`).
+  useEffect(() => {
+    if (!textNotes.enabled) {
+      clearTextHighlights();
+      return;
+    }
+    ensureHighlightStyles(theme);
+    const ranges: Range[] = [];
+    const flash: Range[] = [];
+    for (const item of textResolved) {
+      if (!item.range) continue;
+      if (item.note.id === flashTextId) flash.push(item.range);
+      else ranges.push(item.range);
+    }
+    paintTextHighlights(ranges, flash);
+  }, [textResolved, textNotes.enabled, theme, flashTextId]);
+
+  // Leave the page exactly as found when the content script UI goes away.
+  useEffect(() => () => clearTextHighlights(), []);
 
   // Escape exits selection mode
   useEffect(() => {
@@ -703,12 +1049,15 @@ export function HameshApp({
       setSelecting(false);
       setHover(null);
       setError(null);
-      setComposer({ element: el, anchor: buildElementAnchor(el) });
+      setComposer({ kind: 'element', element: el, anchor: buildElementAnchor(el) });
     },
     [elementUnderCursor],
   );
 
   // ---- Persistence ----
+  // One create path for element and contextual text notes alike — same
+  // repository, same `CreateNoteInput`, same page key. The only difference
+  // between them by this point is which anchor the composer is carrying.
   const handleSave = useCallback(
     async (content: string) => {
       if (!composer) return;
@@ -722,7 +1071,14 @@ export function HameshApp({
           anchor: composer.anchor,
           pageContext: document.title ? { title: document.title } : undefined,
         });
+        // Seeds the new note's range so its highlight appears immediately
+        // and exactly over the captured text, instead of waiting for the
+        // resolution pass below to re-derive it.
+        if (composer.kind === 'text') {
+          previousTextRangesRef.current.set(note.id, composer.range);
+        }
         setComposer(null);
+        setPendingSelection(null);
         commitNotes([...notesRef.current, note]);
       } catch {
         setError(strings.saveError);
@@ -766,6 +1122,7 @@ export function HameshApp({
   // become another hover-stealing overlay).
   const handleVideoMarkerOpen = useCallback((noteId: string, timestamp: number) => {
     setVideoOpenClusterKey(null);
+    setViewerEditing(false);
     setViewerId(noteId);
     videoSeekNonceRef.current += 1;
     setVideoSeekRequest({ timestamp, nonce: videoSeekNonceRef.current });
@@ -777,6 +1134,7 @@ export function HameshApp({
 
   const handleVideoClusterSelect = useCallback((item: VideoMarkerClusterItem) => {
     setVideoOpenClusterKey(null);
+    setViewerEditing(false);
     setViewerId(item.note.id);
     videoSeekNonceRef.current += 1;
     setVideoSeekRequest({ timestamp: item.anchor.timestamp, nonce: videoSeekNonceRef.current });
@@ -825,6 +1183,7 @@ export function HameshApp({
       try {
         await repo.delete(noteId, pageKey);
         setViewerId(null);
+        previousTextRangesRef.current.delete(noteId);
         commitNotes(notesRef.current.filter((n) => n.id !== noteId));
       } catch {
         setError(strings.saveError);
@@ -1054,6 +1413,155 @@ export function HameshApp({
     return () => window.removeEventListener('pointerdown', onPointerDown, true);
   }, []);
 
+  // ---- Derived: where each highlight currently is on screen ----
+  // Highlights are painted by the Custom Highlight API, which produces no
+  // DOM node — so hovering and clicking them is coordinate work against
+  // their range rects, recomputed per viewport frame (the same rAF-coalesced
+  // `frame` the markers use). Only computed while there is something to
+  // compute.
+  const textHitTargets = useMemo(() => {
+    void frame;
+    if (!textNotes.enabled || textResolved.length === 0) return [];
+    const targets: { id: string; rects: DOMRect[] }[] = [];
+    for (const item of textResolved) {
+      if (!item.range) continue;
+      const rects = visibleRangeRects(item.range);
+      if (rects.length > 0) targets.push({ id: item.note.id, rects });
+    }
+    return targets;
+  }, [textResolved, textNotes.enabled, frame]);
+
+  useEffect(() => {
+    textHitTargetsRef.current = textHitTargets;
+  }, [textHitTargets]);
+
+  useEffect(() => {
+    textResolvedRef.current = textResolved;
+  }, [textResolved]);
+
+  // ---- Hover over highlighted text ----
+  // Hover *intent*, not raw hover: leaving the text starts a short grace
+  // period rather than closing the popup, so the pointer can cross the gap
+  // into the card. Entering the card cancels it outright.
+  useEffect(() => {
+    if (!textNotes.enabled) return;
+    let raf = 0;
+    let last: { x: number; y: number } | null = null;
+
+    const clearPopupTimer = () => {
+      if (textPopupTimerRef.current) {
+        clearTimeout(textPopupTimerRef.current);
+        textPopupTimerRef.current = 0;
+      }
+    };
+
+    const recompute = () => {
+      raf = 0;
+      const pos = last;
+      if (!pos) return;
+      const hit = textHitTargetsRef.current.find((target) =>
+        rectsContainPoint(target.rects, pos.x, pos.y),
+      );
+      // Highlighted text is clickable, so it should say so. A highlight has
+      // no element of its own to put `cursor` on (and `::highlight()` can't
+      // carry it), so the page-level stylesheet Hamesh already injects
+      // supplies the rule and this toggles the attribute that switches it
+      // on — see `setTextHoverCursor`.
+      setTextHoverCursor(!!hit);
+      if (hit) {
+        clearPopupTimer();
+        setHoverTextId(hit.id);
+        return;
+      }
+      if (textPopupHoveredRef.current || textPopupTimerRef.current) return;
+      textPopupTimerRef.current = window.setTimeout(() => {
+        textPopupTimerRef.current = 0;
+        if (!textPopupHoveredRef.current) setHoverTextId(null);
+      }, TEXT_POPUP_GRACE_MS);
+    };
+
+    const onPointerMove = (e: PointerEvent) => {
+      last = { x: e.clientX, y: e.clientY };
+      if (!raf) raf = requestAnimationFrame(recompute);
+    };
+
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      clearPopupTimer();
+      setTextHoverCursor(false);
+      window.removeEventListener('pointermove', onPointerMove);
+    };
+  }, [textNotes.enabled]);
+
+  // ---- Click on highlighted text opens its note ----
+  // On `click`, not `pointerdown`, and never `preventDefault`-ed: pressing
+  // inside highlighted text must still start a normal selection, and a
+  // highlight that happens to sit on a link must still let the link win.
+  // A click that produced a selection, or that landed on something
+  // interactive, is left entirely alone.
+  useEffect(() => {
+    if (!textNotes.enabled) return;
+    const onClick = (e: MouseEvent) => {
+      if (e.button !== 0 || e.defaultPrevented) return;
+      const path = e.composedPath();
+      const insideHameshUi = path.some(
+        (node) =>
+          node instanceof HTMLElement &&
+          (node.classList?.contains('hm-card') || node.classList?.contains('hm-marker')),
+      );
+      if (insideHameshUi) return;
+      const onInteractive = path.some(
+        (node) =>
+          node instanceof HTMLElement &&
+          ['a', 'button', 'input', 'select', 'textarea', 'label', 'summary'].includes(
+            node.tagName.toLowerCase(),
+          ),
+      );
+      if (onInteractive) return;
+      const selection = window.getSelection?.();
+      if (selection && selection.rangeCount > 0 && !selection.isCollapsed) return;
+
+      const hit = textHitTargetsRef.current.find((target) =>
+        rectsContainPoint(target.rects, e.clientX, e.clientY),
+      );
+      if (!hit) return;
+      openViewer(hit.id);
+    };
+    window.addEventListener('click', onClick);
+    return () => window.removeEventListener('click', onClick);
+  }, [textNotes.enabled, openViewer]);
+
+  // ---- Open Note flow: scroll a restored contextual note into view ----
+  // Kept separate from the state adjustment that requests it, and keyed on
+  // an id that only changes when explicitly set — same reasoning as the
+  // element restore's own scroll effect above.
+  useEffect(() => {
+    if (!scrollToTextId) return;
+    const target = textResolvedRef.current.find((item) => item.note.id === scrollToTextId);
+    const anchorElement = target?.range?.startContainer.parentElement ?? null;
+    if (anchorElement) {
+      const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+      anchorElement.scrollIntoView({
+        behavior: reduceMotion ? 'auto' : 'smooth',
+        block: 'center',
+      });
+    }
+    const timer = window.setTimeout(() => {
+      setFlashTextId(null);
+      setScrollToTextId(null);
+    }, TEXT_FLASH_MS);
+    return () => clearTimeout(timer);
+  }, [scrollToTextId]);
+
+  // A pending contextual restore that hasn't resolved yet gets one bounded
+  // wait — see TEXT_RESTORE_GRACE_MS.
+  useEffect(() => {
+    if (!pendingRestoreId) return;
+    const timer = window.setTimeout(() => setRestoreExpired(true), TEXT_RESTORE_GRACE_MS);
+    return () => clearTimeout(timer);
+  }, [pendingRestoreId]);
+
   // ---- Derived: transient highlight rect for the Open Note flow ----
   const highlightRect = useMemo(() => {
     void frame; // track the anchor element as the page scrolls into place
@@ -1069,10 +1577,41 @@ export function HameshApp({
     };
   }, [highlightId, resolved, frame]);
 
+  // Placed just past the end of the selection's last line, clamped into the
+  // viewport, and re-derived from the live range each frame so it tracks the
+  // text while the page scrolls. Never over the selection itself — it must
+  // not cover the words the user is still reading.
+  const selectionActionStyle = useMemo((): React.CSSProperties | null => {
+    void frame;
+    if (!pendingSelection) return null;
+    const rects = visibleRangeRects(pendingSelection.range);
+    const rect = rects[rects.length - 1];
+    if (!rect) return null;
+    const SIZE = 24;
+    const GAP = 6;
+    const rawLeft = dir === 'rtl' ? rect.left - SIZE - GAP : rect.right + GAP;
+    const left = Math.max(2, Math.min(rawLeft, window.innerWidth - SIZE - 2));
+    const top = Math.max(2, Math.min(rect.top - 2, window.innerHeight - 30));
+    return { top, left, pointerEvents: 'auto' };
+  }, [pendingSelection, dir, frame]);
+
+  // Suppressed while the composer is open (it would sit over the card the
+  // user is typing into) and for whichever note's viewer is already open
+  // (the viewer is the popup's own destination — showing both is noise).
+  const hoveredTextNote =
+    hoverTextId && hoverTextId !== viewerId && !composer
+      ? textResolved.find((item) => item.note.id === hoverTextId)
+      : undefined;
+
   const viewerNote = viewerId ? notes.find((n) => n.id === viewerId) : null;
   const viewerIsVideo = viewerNote?.anchor.type === 'video';
+  const viewerIsText = viewerNote?.anchor.type === 'text';
+  const viewerTextResolved =
+    viewerId && viewerIsText ? textResolved.find((r) => r.note.id === viewerId) : null;
   const viewerResolved =
-    viewerId && !viewerIsVideo ? resolved.find((r) => r.note.id === viewerId) : null;
+    viewerId && !viewerIsVideo && !viewerIsText
+      ? resolved.find((r) => r.note.id === viewerId)
+      : null;
   const viewerVideoResolved =
     viewerId && viewerIsVideo ? videoResolved.find((r) => r.note.id === viewerId) : null;
   // The viewer's own marker group — so it anchors above the dot on the
@@ -1103,7 +1642,7 @@ export function HameshApp({
   );
 
   return (
-    <div className="hm-scope" data-hm-theme={theme} dir={dir}>
+    <div className="hm-scope" data-hm-theme={theme} dir={dir} ref={scopeRef}>
       {selecting && (
         <div
           ref={captureRef}
@@ -1134,11 +1673,7 @@ export function HameshApp({
           label={strings.viewNote}
           flip={dir === 'rtl'}
           style={{ top: m.top, left: m.left, pointerEvents: 'auto' }}
-          onOpen={() => {
-            setComposer(null);
-            setError(null);
-            setViewerId(m.note.id);
-          }}
+          onOpen={() => openViewer(m.note.id)}
         />
       ))}
 
@@ -1193,11 +1728,41 @@ export function HameshApp({
         />
       )}
 
+      {textNotes.enabled && textNotes.selectionAction && selectionActionStyle && (
+        <TextSelectionAction
+          label={strings.textNoteAction}
+          flip={dir === 'rtl'}
+          style={selectionActionStyle}
+          onActivate={() => {
+            if (pendingSelection) startTextNote(pendingSelection);
+          }}
+        />
+      )}
+
+      {hoveredTextNote?.range && (
+        <FloatingTextPopup
+          range={hoveredTextNote.range}
+          preview={firstLineOf(hoveredTextNote.note.content)}
+          strings={strings}
+          onOpen={() => {
+            setHoverTextId(null);
+            openViewer(hoveredTextNote.note.id);
+          }}
+          onPointerEnter={() => {
+            textPopupHoveredRef.current = true;
+          }}
+          onPointerLeave={() => {
+            textPopupHoveredRef.current = false;
+            setHoverTextId(null);
+          }}
+        />
+      )}
+
       {highlightRect && <div className="hm-restore-highlight" style={highlightRect} />}
 
       {composer && (
         <FloatingComposer
-          element={composer.element}
+          target={composer}
           strings={strings}
           busy={busy}
           error={error}
@@ -1216,10 +1781,18 @@ export function HameshApp({
       )}
 
       {viewerNote && !viewerIsVideo && (
+        // Keyed so the viewer starts from a clean state per note, and so
+        // opening an already-open note straight into edit mode (the hover
+        // popup's Edit) actually re-initializes it.
         <FloatingViewer
+          key={`${viewerNote.id}:${viewerEditing ? 'edit' : 'view'}`}
           note={viewerNote}
           element={viewerResolved?.element ?? null}
-          anchorAvailable={!!viewerResolved?.element}
+          range={viewerTextResolved?.range ?? null}
+          anchorAvailable={viewerIsText ? !!viewerTextResolved?.range : !!viewerResolved?.element}
+          unavailableLabel={viewerIsText ? strings.textAnchorUnavailable : undefined}
+          attachedText={viewerNote.anchor.type === 'text' ? viewerNote.anchor.exact : undefined}
+          initialEditing={viewerEditing}
           strings={strings}
           lang={lang}
           busy={busy}
@@ -1253,26 +1826,72 @@ export function HameshApp({
   );
 }
 
+/** One composer for both anchor kinds — it only differs in what it anchors
+ *  to (an element's rect or the selected text's rect) and whether it shows
+ *  the attached text above the textarea. */
 function FloatingComposer({
-  element,
+  target,
   strings,
   busy,
   error,
   onSave,
   onCancel,
 }: {
-  element: Element;
+  target: ComposerTarget;
   strings: Strings;
   busy: boolean;
   error: string | null;
   onSave: (content: string) => void;
   onCancel: () => void;
 }) {
-  const getRect = useCallback(() => toAnchorRect(element), [element]);
+  const getRect = useCallback(
+    (): AnchorRect =>
+      target.kind === 'element' ? toAnchorRect(target.element) : rangeAnchorRect(target.range),
+    [target],
+  );
   const { cardRef, style } = useFloating(getRect, { autoFocus: true });
   return (
     <div ref={cardRef} className="hm-floating" style={{ ...style, width: 300 }}>
-      <Composer strings={strings} saving={busy} error={error} onSave={onSave} onCancel={onCancel} />
+      <Composer
+        strings={strings}
+        attachedText={target.kind === 'text' ? target.anchor.exact : undefined}
+        saving={busy}
+        error={error}
+        onSave={onSave}
+        onCancel={onCancel}
+      />
+    </div>
+  );
+}
+
+/** The hover preview for highlighted text, anchored above the highlight so
+ *  it never covers the words it is about. */
+function FloatingTextPopup({
+  range,
+  preview,
+  strings,
+  onOpen,
+  onPointerEnter,
+  onPointerLeave,
+}: {
+  range: Range;
+  preview: string;
+  strings: Strings;
+  onOpen: () => void;
+  onPointerEnter: () => void;
+  onPointerLeave: () => void;
+}) {
+  const getRect = useCallback((): AnchorRect => rangeAnchorRect(range), [range]);
+  const { cardRef, style } = useFloatingAbove(getRect);
+  return (
+    <div ref={cardRef} className="hm-floating" style={style}>
+      <TextNotePopup
+        preview={preview}
+        strings={strings}
+        onOpen={onOpen}
+        onPointerEnter={onPointerEnter}
+        onPointerLeave={onPointerLeave}
+      />
     </div>
   );
 }
@@ -1403,7 +2022,11 @@ function FloatingVideoViewer({
 function FloatingViewer({
   note,
   element,
+  range,
   anchorAvailable,
+  unavailableLabel,
+  attachedText,
+  initialEditing,
   strings,
   lang,
   busy,
@@ -1415,7 +2038,14 @@ function FloatingViewer({
 }: {
   note: Note;
   element: Element | null;
+  /** A contextual text note's resolved range, when it has one — preferred
+   *  over `element` so the viewer opens beside the highlighted words rather
+   *  than beside their whole paragraph. */
+  range?: Range | null;
   anchorAvailable: boolean;
+  unavailableLabel?: string;
+  attachedText?: string;
+  initialEditing?: boolean;
   strings: Strings;
   lang: Lang;
   busy: boolean;
@@ -1426,6 +2056,7 @@ function FloatingViewer({
   onClose: () => void;
 }) {
   const getRect = useCallback((): AnchorRect | null => {
+    if (range) return rangeAnchorRect(range);
     if (element) return toAnchorRect(element);
     return {
       left: window.innerWidth / 2 - 150,
@@ -1433,7 +2064,7 @@ function FloatingViewer({
       width: 0,
       height: 0,
     };
-  }, [element]);
+  }, [element, range]);
   const { cardRef, style } = useFloating(getRect);
   return (
     <div ref={cardRef} className="hm-floating" style={{ ...style, width: 300 }}>
@@ -1442,6 +2073,9 @@ function FloatingViewer({
         strings={strings}
         lang={lang}
         anchorAvailable={anchorAvailable}
+        unavailableLabel={unavailableLabel}
+        attachedText={attachedText}
+        initialEditing={initialEditing}
         saving={busy}
         error={error}
         onUpdate={onUpdate}

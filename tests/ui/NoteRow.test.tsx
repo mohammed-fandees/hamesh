@@ -40,6 +40,22 @@ function makeElementNote(overrides: Partial<Note> = {}): Note {
   };
 }
 
+function makeTextNote(overrides: Partial<Note> = {}): Note {
+  return {
+    ...makeElementNote(),
+    id: 'n3',
+    content: 'A note on some text',
+    anchor: {
+      type: 'text',
+      version: 1,
+      exact: 'Performance is extremely important',
+      context: { prefix: 'intro: ', suffix: ' in large applications.' },
+      textPosition: { start: 7, end: 41 },
+    },
+    ...overrides,
+  };
+}
+
 function makeVideoNote(overrides: Partial<Note> = {}): Note {
   return {
     id: 'n2',
@@ -63,6 +79,20 @@ function makeVideoNote(overrides: Partial<Note> = {}): Note {
 describe('NoteRow', () => {
   beforeEach(() => {
     cleanup();
+  });
+
+  it('shows a contextual note as attached to its page text', async () => {
+    const NoteRow = await importNoteRow();
+    render(<NoteRow note={makeTextNote()} strings={strings} lang="en" />);
+
+    expect(screen.getByText('A note on some text')).toBeInTheDocument();
+    expect(screen.getByText('Performance is extremely important')).toBeInTheDocument();
+  });
+
+  it('shows no attached-text quote for a note that is not contextual', async () => {
+    const NoteRow = await importNoteRow();
+    const { container } = render(<NoteRow note={makeElementNote()} strings={strings} lang="en" />);
+    expect(container.querySelector('.hm-attached')).toBeNull();
   });
 
   it('shows no video timestamp badge for an element note', async () => {

@@ -532,6 +532,14 @@
   font-size: 11px;
   color: var(--hm-ink-40);
 }
+/* A contextual note's attached page text, above its own text in the row.
+   Sits between the page title and the note preview — the same reading order
+   the in-page viewer uses, and the same in the Pinned list. */
+.hm-note-row .hm-attached,
+.hm-pinned__item .hm-attached {
+  margin: 2px 0 4px;
+}
+
 .hm-note-row__video-badge {
   display: inline-flex;
   align-items: center;

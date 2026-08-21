@@ -1,4 +1,9 @@
-import type { AppearanceMode, Preferences, SupportedLanguage } from '@/domain/preferences';
+import type {
+  AppearanceMode,
+  Preferences,
+  SupportedLanguage,
+  TextNotePreferences,
+} from '@/domain/preferences';
 import { parsePreferences } from '@/domain/preferences';
 
 const STORAGE_KEY = 'local:hamesh:preferences';
@@ -7,6 +12,10 @@ export interface PreferencesRepository {
   get(): Promise<Preferences>;
   setLanguage(language: SupportedLanguage | null): Promise<Preferences>;
   setAppearance(appearance: AppearanceMode): Promise<Preferences>;
+  /** Patches the contextual-text-note settings, leaving the rest of the
+   *  nested object (and the rest of `Preferences`) alone. One setter for the
+   *  group rather than one per flag — the group is the unit that grows. */
+  setTextNotes(patch: Partial<TextNotePreferences>): Promise<Preferences>;
   /** Fires on changes from any extension context — popup, other tabs' content
    *  scripts, background — backed by `chrome.storage.onChanged`. Lets open
    *  tabs pick up a preference change made elsewhere without extra messaging. */
@@ -30,6 +39,13 @@ export function createPreferencesRepository(): PreferencesRepository {
     async setAppearance(appearance: AppearanceMode): Promise<Preferences> {
       const current = await this.get();
       const next: Preferences = { ...current, appearance };
+      await storage.setItem(STORAGE_KEY, next);
+      return next;
+    },
+
+    async setTextNotes(patch: Partial<TextNotePreferences>): Promise<Preferences> {
+      const current = await this.get();
+      const next: Preferences = { ...current, textNotes: { ...current.textNotes, ...patch } };
       await storage.setItem(STORAGE_KEY, next);
       return next;
     },

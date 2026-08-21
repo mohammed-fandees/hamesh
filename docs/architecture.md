@@ -12,8 +12,9 @@ The heart of the extension. Injected on `<all_urls>` at `document_idle`. It:
 - owns all note CRUD directly through `NotesRepository` (it has the page context
   and page key, so no background round-trip is needed);
 - restores markers on load and re-evaluates on SPA navigation;
-- listens for a runtime `ENABLE_SELECTION` message (from popup/shortcut) and a
-  `GET_PAGE_STATE` request (note count for the popup);
+- listens for a runtime `ENABLE_SELECTION` / `ENABLE_VIDEO_NOTE` /
+  `ENABLE_TEXT_NOTE` message (from popup/shortcut) and a `GET_PAGE_STATE`
+  request (note count for the popup);
 - broadcasts a runtime `CONTENT_READY` message at the same point it dispatches
   `hamesh:ready` (see below), and handles an incoming `RESTORE_NOTE` message —
   together these drive the Notes Library's Open Note flow (see below);
@@ -22,11 +23,12 @@ The heart of the extension. Injected on `<all_urls>` at `document_idle`. It:
 
 ### 2. Background service worker (`src/entrypoints/background.ts`)
 
-Minimal. Its only job is to listen for two keyboard commands and forward the
-matching message to the active tab's content script: `activate-hamesh`
-(**Alt+H**, default) → `ENABLE_SELECTION`, and `activate-hamesh-video`
-(**Alt+V**, default) → `ENABLE_VIDEO_NOTE`. No DOM, no storage, no note
-logic. Both bindings are user-customizable only via Chrome's own
+Minimal. Its only job is to listen for three keyboard commands and forward
+the matching message to the active tab's content script: `activate-hamesh`
+(**Alt+H**, default) → `ENABLE_SELECTION`, `activate-hamesh-video`
+(**Alt+V**, default) → `ENABLE_VIDEO_NOTE`, and `activate-hamesh-text`
+(**Alt+T**, default) → `ENABLE_TEXT_NOTE`. No DOM, no storage, no note
+logic. All three bindings are user-customizable only via Chrome's own
 `chrome://extensions/shortcuts` page — see "Notes Library, Settings &
 Shortcuts" below for why that's the _only_ place they can be changed.
 
@@ -151,6 +153,12 @@ below, which watches the whole subtree for content changes.
 `repo.getForPage` → `domain/anchor-resolution.resolveAnchor` per note → markers
 for resolved notes.
 
+**Contextual text note write:** finished selection (or Alt+T) →
+`content/text-selection.captureTextSelection` → the action chip → an explicit
+click → `domain/text-anchor.buildTextAnchor` → the same composer → `repo.create`
+→ `chrome.storage.local` → note added to state → resolved via
+`resolveTextAnchors` → highlight painted (see "Contextual text notes" below).
+
 **Video note write:** Alt+V → `getActiveAdapterMatch` → quick-note popup →
 `domain/video-anchor.buildVideoAnchor` → `repo.create` → `chrome.storage.local`
 → note added to state → resolved via `resolveVideoAnchor` → marker rendered
@@ -249,10 +257,138 @@ Multi-signal, deterministic, priority-ordered (`resolveAnchor`):
 | 6 Fallback | document position                       | `elementFromPoint`          |
 | —          | none                                    | Unresolved                  |
 
+Text anchors have their own, deliberately stricter resolver — see "Contextual
+text notes" below. It never returns `Fallback`: there is no equivalent of
+"probably about here" for a run of text.
+
 Resolution never throws on a changed page; it returns a quality
 (`exact | probable | fallback | unresolved`). When a note's anchor can't be
 resolved while its viewer is open, the viewer shows an "anchor unavailable" state
 with a dashed connector. Anchors never store input/password values.
+
+## Contextual text notes ("هوامش")
+
+A note can also anchor to an exact run of text (`TextAnchor`) — the third
+member of the `Anchor` union, and the case the union was designed for. A
+contextual note is an ordinary `Note` in every other respect: same
+repository, same `pageKey`, same viewer, same edit/delete/pin/folder/search,
+same Open Note flow. Nothing about it is a parallel system; the only new
+storage is the anchor itself.
+
+### Two entry points, one flow
+
+`content/text-selection.ts` owns _reading_ selections and nothing else:
+`captureTextSelection()` decides whether there is an anchorable selection and
+returns a **cloned range**. Cloning matters — clicking any external UI can
+collapse the live selection, so the note must be built from what was
+captured, not from what the selection has become.
+
+Both entry points call the same `startTextNote(capture)` in `HameshApp`:
+
+- the **selection action chip** (`ui/TextSelectionAction.tsx`), shown after a
+  finished selection — detected on `mouseup`/`keyup`, never on
+  `selectionchange` (which fires continuously mid-drag). `selectionchange` is
+  used only to take the chip away, alongside Escape, a new mousedown, and a
+  cleared selection. The chip opens nothing by itself; selecting text to read
+  or copy stays completely ordinary.
+- the **Alt+T shortcut**, which reads the live selection through the same
+  function and is a no-op without one.
+
+Neither carries any note logic. Saving goes through the same `handleSave` and
+`repo.create` as an element note — the composer just carries a different
+anchor.
+
+### The anchor
+
+`domain/text-anchor.ts` builds everything against **one normalized view of
+the page's text** (`buildTextIndex`): whitespace runs collapse to a single
+space, inline elements join without a separator, block boundaries and `<br>`
+contribute one, and script/style/form-field/Hamesh subtrees are skipped. The
+same index maps offsets back to DOM positions, so `exact`, `context`,
+`textPosition`, and the highlighted range always describe the same
+characters — including the range drawn immediately after saving.
+
+| Field          | Purpose                                                                                                                                                                                                                                                       |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `exact`        | The selected text, normalized. Also the user-facing "attached text".                                                                                                                                                                                          |
+| `context`      | Up to 32 characters either side — how repeated text is told apart.                                                                                                                                                                                            |
+| `textPosition` | Where it sat in the page's text. A tiebreak only, never sufficient alone.                                                                                                                                                                                     |
+| `path`         | Element paths + offsets into each parent's own direct text — the fast path. Offsets are per-parent, not per-text-node, so ordinary text-node splitting by a re-render doesn't invalidate them.                                                                |
+| `container`    | The nearest **id-bearing** ancestor, when there is one. Deliberately not a positional selector: a container is used to break ties between identical occurrences, and `p:nth-of-type(2)` starts pointing somewhere else the moment the page gains a paragraph. |
+| `version`      | Anchor-format version, independent of `Note.schemaVersion`.                                                                                                                                                                                                   |
+
+### Restoration (`domain/text-anchor-resolution.ts`)
+
+`resolveTextAnchors` takes a **batch**, because the expensive step — building
+the page-text index — should happen at most once per pass, and only if
+needed:
+
+1. **Revalidate** last pass's range (still connected, still the same text) —
+   one string compare, no DOM walk. The common case.
+2. **Fast path**: follow `path` to a range, then _validate_ its text.
+3. Otherwise, build the index once and, for each remaining anchor, score
+   every occurrence of `exact` by context similarity, original position, and
+   whether it still sits inside the original container.
+4. **Ambiguity protection**: with more than one candidate the winner must
+   beat the runner-up by a clear margin _and_ have strong context. Otherwise
+   the result is `Unresolved` — the note keeps its data and simply has no
+   location on this page right now. A single short match with unrecognizable
+   surroundings is refused too; a long distinctive quote is accepted even if
+   everything around it changed.
+
+The rule this exists to enforce: **never silently highlight the wrong
+occurrence.** "Not found" is always a better answer than a plausible guess,
+and it is a normal, non-destructive state — the viewer says the text couldn't
+be found, exactly as an element note reports an unavailable anchor.
+
+### Highlights (`content/text-highlights.ts`)
+
+Painted with the **CSS Custom Highlight API** (`CSS.highlights` +
+`::highlight()`), not wrapped `<mark>` elements. Nothing in the page is
+inserted, split, or moved: no framework's virtual DOM is invalidated, no
+event handler detached, no link covered, and cleanup is dropping a
+registration. Ranges crossing nested inline elements and overlapping
+highlights from two notes both work for free. The one cost is that a
+highlight has no DOM node, so hover and click are hit-tested against
+`range.getClientRects()` — the same coordinate approach the video timeline
+markers already use. The `::highlight()` rules must live in the host page's
+own stylesheet (a shadow-root rule would never reach the page), so a single
+`<style data-hamesh>` element is injected into `document.head` and rewritten
+in place when the theme changes; it is the only mark Hamesh leaves on the
+page's DOM, and it is removed on teardown.
+
+Clicking highlighted text opens the note, but only on `click`, never
+`preventDefault`-ed, and never when the click produced a selection or landed
+on a link/button — so selecting and copying highlighted text, and following a
+link inside it, both keep working. Because a highlight is clickable, the
+pointer says so: `::highlight()` carries no `cursor` property and there is no
+element to put one on, so the injected page stylesheet also holds a
+`cursor: pointer` rule gated on a `data-hamesh-text-hover` attribute that
+`setTextHoverCursor` toggles on `<html>` only while the pointer is actually
+over a highlight.
+
+Hovering shows `ui/TextNotePopup.tsx`, which is not a lookalike of the video
+marker's preview but literally carries `.hm-video-preview`: an accent dot and
+the note's first line. It drops the timestamp (a video note is a moment; a
+contextual note's text is already right there under the pill) and adds
+interactivity — the read-only video preview is `pointer-events: none` so it
+can't steal hover from the player, whereas this one must be reachable, since
+the pointer has to travel from the words into it (hence the hover-intent
+grace period) and clicking it opens the ordinary `NoteViewer`, where reading,
+editing, deleting and pinning happen for this note exactly as for every
+other one.
+
+### Settings
+
+`Preferences.textNotes` (`{ enabled, selectionAction }`, both default `true`)
+— one nested object, in the same single preferences record as language and
+appearance. `enabled` off stops new contextual notes and drops their
+highlights; `selectionAction` off removes only the chip, leaving Alt+T. Both
+are purely presentational as far as data goes: **no stored note or anchor is
+ever written or deleted by toggling them**, and highlights return on
+re-enabling. Changing `enabled` re-identifies `commitNotes`, which re-runs the
+load effect and so re-resolves (or drops) every contextual highlight — no
+separate "the setting changed" trigger.
 
 ## Video Notes
 
@@ -544,6 +680,16 @@ re-attach markers as content mounts.
   even for a small fully-buffered file). YouTube's own adapter is
   unit/fixture-tested instead (a saved player DOM shape), consistent with
   this project's no-live-network testing policy.
+- **Contextual text notes:** anchor generation and the whole restoration
+  ladder are unit-tested against a real (jsdom) DOM — including repeated
+  text, context disambiguation, changed/removed text, and the safety cases
+  that must resolve to _nothing_ rather than to the wrong occurrence.
+  `tests/content/HameshApp.text-notes.test.tsx` covers the interaction rules
+  (selection alone opens nothing; the chip must be clicked; cancelling
+  creates nothing; both settings; the shortcut with and without a selection).
+  `e2e/text-notes.spec.ts` drives the real flow in Chromium — it is the only
+  place `CSS.highlights` can actually be asserted, since jsdom has neither
+  the Highlight API nor layout.
 - **Notes Library E2E (`e2e/library-settings.spec.ts`, `e2e/library-folders.spec.ts`):**
   drive `notes.html` directly (no content-script fixture page needed) —
   sidebar/Settings navigation, the Chrome-shortcuts link-out,
@@ -574,12 +720,15 @@ re-attach markers as content mounts.
   future multi-workspace pass is additive (filter by an already-present
   field) rather than another schema migration.
 - The video timestamp badge (`▶ 13:27`) only appears on `NoteRow` (inside an
-  expanded website group, or a folder in folder mode) — the Continue and
+  expanded website group, or a folder in folder mode). The Continue and
   Pinned sections' projections (`ContinueWebsite`, `PinnedNoteItem` in
-  `notes-grouping.ts`) don't carry anchor info today, so a pinned or
-  recently-active video note doesn't show its timestamp in those two places.
-  Would need extending those projection functions, not just the row
-  components.
+  `notes-grouping.ts`) carry no anchor info, so a recently-active video note
+  doesn't show its timestamp there. `PinnedSection` is the exception that
+  shows the way: it already looks the full `Note` up by id (it needs one for
+  `NoteActionsMenu`), so it reads `anchor` from that to show a contextual
+  note's attached text — no projection reshaping required. The same trick
+  would give it the video badge; Continue, being per-website rather than
+  per-note, would need a real projection change.
 - The `Anchor` union (`ElementAnchor | VideoAnchor`) is designed so a future
   anchor kind (PDF page/region, image, audio timestamp, document range) is
   another union member plus another `resolve*Anchor` function — nothing
@@ -593,7 +742,20 @@ re-attach markers as content mounts.
   cycle-prevention when reparenting into one of the folder's own
   descendants — `getDescendantFolderIds` already provides exactly that
   check).
-- Keyboard shortcuts (Alt+H/Alt+V) can only be rebound via Chrome's own
+- Contextual text notes deliberately don't anchor into `input`, `textarea`,
+  or `contenteditable` regions, or across Shadow DOM boundaries — content
+  Hamesh can't make promises about. Text hidden by CSS is indexed like any
+  other (no per-node visibility check, which would be far too expensive for a
+  whole-page index); at worst it makes a match ambiguous, which resolves to
+  "not found" rather than to something wrong.
+- A page whose text is entirely rewritten on every render (some virtualized
+  lists) will resolve contextual notes by context matching on each settle
+  pass rather than by the fast path. That is bounded — one index build per
+  debounced pass, shared by every note — but it is the least efficient case.
+- The UI creates one contextual note per selection. The data model has no such
+  limit: several notes may anchor to the same or overlapping text, and
+  storage, resolution, and highlighting all already handle it.
+- Keyboard shortcuts (Alt+H/Alt+V/Alt+T) can only be rebound via Chrome's own
   `chrome://extensions/shortcuts` page, linked from Settings — see "Notes
   Library, Settings & Shortcuts" above for why there's no in-app editor.
 

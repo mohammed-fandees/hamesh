@@ -27,6 +27,7 @@ function makePrefsRepo(): PreferencesRepository {
     watch: vi.fn().mockReturnValue(() => {}),
     setLanguage: vi.fn(),
     setAppearance: vi.fn(),
+    setTextNotes: vi.fn(),
   };
 }
 
@@ -91,6 +92,7 @@ describe('HameshApp — Open Note restore flow', () => {
         initialLang="en"
         registerActivate={() => {}}
         registerActivateVideo={() => {}}
+        registerActivateText={() => {}}
         registerRestoreNote={(fn) => {
           restoreNote = fn;
         }}
@@ -128,6 +130,7 @@ describe('HameshApp — Open Note restore flow', () => {
         initialLang="en"
         registerActivate={() => {}}
         registerActivateVideo={() => {}}
+        registerActivateText={() => {}}
         registerRestoreNote={(fn) => {
           restoreNote = fn;
         }}
@@ -163,6 +166,7 @@ describe('HameshApp — Open Note restore flow', () => {
         initialLang="en"
         registerActivate={() => {}}
         registerActivateVideo={() => {}}
+        registerActivateText={() => {}}
         registerRestoreNote={(fn) => {
           restoreNote = fn;
         }}
@@ -198,6 +202,7 @@ describe('HameshApp — Open Note restore flow', () => {
         initialLang="en"
         registerActivate={() => {}}
         registerActivateVideo={() => {}}
+        registerActivateText={() => {}}
         registerRestoreNote={(fn) => {
           restoreNote = fn;
         }}
@@ -240,6 +245,7 @@ describe('HameshApp — pin toggle', () => {
         initialLang="en"
         registerActivate={() => {}}
         registerActivateVideo={() => {}}
+        registerActivateText={() => {}}
         registerRestoreNote={(fn) => {
           restoreNote = fn;
         }}

@@ -13,7 +13,7 @@ const KEEP_ALIVE_ALARM = 'hamesh-keep-alive';
 
 /**
  * Forwards a keyboard command to the active tab's content script. This is a
- * *secondary* path for the Alt+H / Alt+V shortcuts — the primary path is a
+ * *secondary* path for the Alt+H / Alt+V / Alt+T shortcuts — the primary path is a
  * `keydown` listener directly in the content script (content.ts), added
  * after direct testing showed `chrome.commands.onCommand` can fail to fire
  * at all in real usage (confirmed correctly registered via
@@ -22,7 +22,7 @@ const KEEP_ALIVE_ALARM = 'hamesh-keep-alive';
  * fallback for contexts where no content script runs (e.g. chrome:// pages),
  * and costs nothing to leave in place.
  *
- * Two separate commands, two separate messages — no hover/focus guessing
+ * Three separate commands, three separate messages — no hover/focus guessing
  * about "is the user looking at a video" happens here or in the content
  * script's dispatch; that heuristic proved unreliable on real sites (real
  * players layer overlay UI that defeats DOM-based and even coordinate-based
@@ -34,13 +34,19 @@ const KEEP_ALIVE_ALARM = 'hamesh-keep-alive';
  */
 export default defineBackground(() => {
   browser.commands?.onCommand.addListener(async (command) => {
-    if (command !== 'activate-hamesh' && command !== 'activate-hamesh-video') return;
+    const messageType =
+      command === 'activate-hamesh-video'
+        ? 'ENABLE_VIDEO_NOTE'
+        : command === 'activate-hamesh-text'
+          ? 'ENABLE_TEXT_NOTE'
+          : command === 'activate-hamesh'
+            ? 'ENABLE_SELECTION'
+            : null;
+    if (!messageType) return;
     const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
     if (tab?.id != null) {
       try {
-        await browser.tabs.sendMessage(tab.id, {
-          type: command === 'activate-hamesh-video' ? 'ENABLE_VIDEO_NOTE' : 'ENABLE_SELECTION',
-        });
+        await browser.tabs.sendMessage(tab.id, { type: messageType });
       } catch {
         /* content script not present on this page (e.g. chrome:// URLs) */
       }
@@ -63,10 +69,18 @@ export default defineBackground(() => {
             addNote: commands.find((c) => c.name === 'activate-hamesh')?.shortcut || null,
             addVideoNote:
               commands.find((c) => c.name === 'activate-hamesh-video')?.shortcut || null,
+            addTextNote: commands.find((c) => c.name === 'activate-hamesh-text')?.shortcut || null,
           };
           sendResponse(response);
         })
-        .catch(() => sendResponse({ type: 'SHORTCUTS', addNote: null, addVideoNote: null }));
+        .catch(() =>
+          sendResponse({
+            type: 'SHORTCUTS',
+            addNote: null,
+            addVideoNote: null,
+            addTextNote: null,
+          }),
+        );
       return true; // async response
     },
   );

@@ -63,15 +63,44 @@ test.describe('Notes Library — sidebar + Settings', () => {
     await expect(page.locator('h1')).toHaveText('Notes Library');
   });
 
-  test('Settings shows both shortcuts with their manifest-declared bindings', async () => {
+  test('Settings shows every shortcut with its manifest-declared binding', async () => {
     const extensionId = await getExtensionId(context);
     const page = await context.newPage();
     await page.goto(`chrome-extension://${extensionId}/notes.html`);
     await page.getByRole('button', { name: 'Settings' }).click();
 
     const rows = page.locator('.hm-setting-row');
-    await expect(rows.filter({ hasText: 'Add a note' })).toContainText('Alt+H');
+    // Exact text: "Add a note" is a prefix of "Add a note to selected text".
+    await expect(rows.filter({ hasText: /^Add a note/ }).first()).toContainText('Alt+H');
     await expect(rows.filter({ hasText: 'Add a video note' })).toContainText('Alt+V');
+    await expect(rows.filter({ hasText: 'Add a note to selected text' })).toContainText('Alt+T');
+  });
+
+  test('Settings exposes the contextual text note toggles, both on by default', async () => {
+    const extensionId = await getExtensionId(context);
+    const page = await context.newPage();
+    await page.goto(`chrome-extension://${extensionId}/notes.html`);
+    await page.getByRole('button', { name: 'Settings' }).click();
+
+    const feature = page.getByRole('radiogroup', { name: 'Notes on selected text' });
+    const chip = page.getByRole('radiogroup', { name: 'Show icon after selecting' });
+    await expect(feature.getByRole('radio', { name: 'On' })).toBeChecked();
+    await expect(chip.getByRole('radio', { name: 'On' })).toBeChecked();
+
+    // Turning the automatic chip off is persisted, not just local state.
+    await chip.getByRole('radio', { name: 'Off' }).check();
+    await page.reload();
+    await page.getByRole('button', { name: 'Settings' }).click();
+    await expect(
+      page.getByRole('radiogroup', { name: 'Show icon after selecting' }).getByRole('radio', {
+        name: 'Off',
+      }),
+    ).toBeChecked();
+    await expect(
+      page.getByRole('radiogroup', { name: 'Notes on selected text' }).getByRole('radio', {
+        name: 'On',
+      }),
+    ).toBeChecked();
   });
 
   test('the Chrome settings link opens chrome://extensions/shortcuts in a new tab', async () => {

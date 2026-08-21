@@ -2,6 +2,7 @@ import type { Note } from '@/domain/note';
 import { derivePageLabel, extractDomain } from '@/domain/notes-grouping';
 import { formatVideoTimestamp } from '@/domain/video-markers';
 import { isPlainLeftClick, openNoteAndRestore } from '@/entrypoints/notes/openNote';
+import { AttachedText } from './AttachedText';
 import { Favicon } from './Favicon';
 import { PinIcon } from './PinIcon';
 import { PlayIcon } from './PlayIcon';
@@ -26,7 +27,9 @@ interface NoteRowProps {
  *  generic "Untitled page" when there's no captured title), note text
  *  (clamped, not truncated in JS so it stays reflow-friendly), and a
  *  relative last-edited timestamp — plus, for a video note, a small
- *  timestamp badge (e.g. "▶ 13:27") next to it.
+ *  timestamp badge (e.g. "▶ 13:27") next to it, or for a contextual text
+ *  note, the page text it's attached to shown as a compact quote above the
+ *  note itself.
  *
  *  A real `<a target="_blank">` to the note's original URL — right-click,
  *  ctrl/cmd-click, and middle-click all work natively. A plain left-click is
@@ -63,6 +66,7 @@ export function NoteRow({ note, strings, lang, showDomain }: NoteRowProps) {
         {note.pinned && <PinIcon filled size={10} />}
         {derivePageLabel(note)}
       </p>
+      {note.anchor.type === 'text' && <AttachedText label="" text={note.anchor.exact} compact />}
       <p className="hm-note-row__preview" dir="auto">
         {note.content}
       </p>

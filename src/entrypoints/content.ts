@@ -30,6 +30,7 @@ export default defineContentScript({
     // once this tab is ready (see registerRestoreNote below).
     let activate: (() => void) | null = null;
     let activateVideo: (() => void) | null = null;
+    let activateText: (() => void) | null = null;
     let restoreNote: ((noteId: string) => void) | null = null;
 
     const ui = await createShadowRootUi<Root>(ctx, {
@@ -77,6 +78,9 @@ export default defineContentScript({
             registerActivateVideo: (fn: () => void) => {
               activateVideo = fn;
             },
+            registerActivateText: (fn: () => void) => {
+              activateText = fn;
+            },
             registerRestoreNote: (fn: (noteId: string) => void) => {
               restoreNote = fn;
             },
@@ -94,14 +98,16 @@ export default defineContentScript({
     // Deterministic activation hooks for E2E automation. Dispatching a custom
     // DOM event is far more reliable in headless Chrome than simulating the
     // toolbar click or OS-level command. `hamesh:activate` only *starts
-    // selection mode* and `hamesh:activate-video` only *opens the video
-    // quick-note* — the same things the toolbar/shortcuts do — so neither
-    // grants a capability the user doesn't already have, and carries no
-    // payload. Production activation remains the toolbar icon and the
-    // Alt+H / Alt+V shortcuts (both customizable from the Notes Library's
-    // Settings view).
+    // selection mode*, `hamesh:activate-video` only *opens the video
+    // quick-note*, and `hamesh:activate-text` only *opens the composer for
+    // text the user has already selected* — the same things the toolbar/
+    // shortcuts do — so none of them grants a capability the user doesn't
+    // already have, and none carries a payload. Production activation remains the toolbar icon and the
+    // Alt+H / Alt+V / Alt+T shortcuts (all customizable from Chrome's own
+    // shortcuts page, linked from the Notes Library's Settings view).
     window.addEventListener('hamesh:activate', () => activate?.());
     window.addEventListener('hamesh:activate-video', () => activateVideo?.());
+    window.addEventListener('hamesh:activate-text', () => activateText?.());
 
     // Primary keyboard-shortcut path. `chrome.commands.onCommand` (handled in
     // background.ts) is the "official" mechanism, but it has a well-documented,
@@ -117,6 +123,7 @@ export default defineContentScript({
     // runs), but this is what real usage should rely on.
     let addNoteShortcut = 'Alt+H';
     let videoNoteShortcut = 'Alt+V';
+    let textNoteShortcut = 'Alt+T';
     // `chrome.commands` itself is not available in a content script's
     // execution context (Chrome restricts it to background/extension pages)
     // — asking the background for the actual bindings instead. This message
@@ -124,13 +131,15 @@ export default defineContentScript({
     // `runtime.onMessage` (unlike `commands.onCommand`) is the standard,
     // well-supported wake path for an MV3 service worker, and is exactly
     // what already carries ENABLE_SELECTION/ENABLE_VIDEO_NOTE the other way.
-    // A failure here (or an unset custom shortcut) just keeps the Alt+H/Alt+V
-    // defaults above, which match this extension's actual manifest defaults.
+    // A failure here (or an unset custom shortcut) just keeps the
+    // Alt+H/Alt+V/Alt+T defaults above, which match this extension's actual
+    // manifest defaults.
     browser.runtime
       .sendMessage({ type: 'GET_SHORTCUTS' })
       .then((res: ShortcutsResponse | undefined) => {
         if (res?.addNote) addNoteShortcut = res.addNote;
         if (res?.addVideoNote) videoNoteShortcut = res.addVideoNote;
+        if (res?.addTextNote) textNoteShortcut = res.addTextNote;
       })
       .catch(() => {});
 
@@ -143,6 +152,14 @@ export default defineContentScript({
         } else if (matchesShortcut(e, videoNoteShortcut)) {
           e.preventDefault();
           activateVideo?.();
+        } else if (matchesShortcut(e, textNoteShortcut)) {
+          // Deliberately not preventDefault-ed up front: `activateText` is a
+          // no-op unless there's a valid text selection right now (and the
+          // feature is on), and swallowing the key for a page that binds it
+          // to something of its own would be wrong when Hamesh isn't going
+          // to act. `HameshApp` reads the live selection itself — see
+          // `captureTextSelection`.
+          activateText?.();
         }
       },
       true,
@@ -156,6 +173,9 @@ export default defineContentScript({
             return undefined;
           case 'ENABLE_VIDEO_NOTE':
             activateVideo?.();
+            return undefined;
+          case 'ENABLE_TEXT_NOTE':
+            activateText?.();
             return undefined;
           case 'GET_PAGE_STATE': {
             const pageKey = generatePageKey(location.href);

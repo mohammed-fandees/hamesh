@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import type { Note } from '@/domain/note';
+import { AttachedText } from './AttachedText';
 import { PinIcon } from './PinIcon';
 import type { Lang, Strings } from './i18n';
 import { relativeTime } from './i18n';
@@ -9,6 +10,17 @@ interface NoteViewerProps {
   strings: Strings;
   lang: Lang;
   anchorAvailable: boolean;
+  /** Overrides the "anchor unavailable" wording — a contextual text note
+   *  can't find its *text*, which is a different thing to say than an
+   *  element note showing its last known position. */
+  unavailableLabel?: string;
+  /** For a contextual text note: the page text it's attached to, shown
+   *  above the note itself. Absent for every other kind of note. */
+  attachedText?: string;
+  /** Opens straight into edit mode. Used by the hover popup's Edit button,
+   *  so editing a contextual note goes through this exact component (and
+   *  therefore this exact update flow) rather than a second editor. */
+  initialEditing?: boolean;
   saving?: boolean;
   error?: string | null;
   onUpdate: (content: string) => void;
@@ -31,6 +43,9 @@ export function NoteViewer({
   strings,
   lang,
   anchorAvailable,
+  unavailableLabel,
+  attachedText,
+  initialEditing = false,
   saving = false,
   error,
   onUpdate,
@@ -38,7 +53,7 @@ export function NoteViewer({
   onClose,
   onTogglePin,
 }: NoteViewerProps) {
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(initialEditing);
   const [editContent, setEditContent] = useState(note.content);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -88,9 +103,11 @@ export function NoteViewer({
       {!anchorAvailable && (
         <div className="hm-status hm-status--warning" role="status">
           <span className="hm-dot" />
-          {strings.anchorUnavailable}
+          {unavailableLabel ?? strings.anchorUnavailable}
         </div>
       )}
+
+      {attachedText && <AttachedText label={strings.attachedText} text={attachedText} />}
 
       {isEditing ? (
         <textarea
