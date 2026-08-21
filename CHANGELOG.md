@@ -10,6 +10,35 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Hawamesh — notes attached to exact text on a page.** Select any text, click the small Hamesh
+  mark that appears beside it, and write an ordinary note: the selected words are highlighted in the
+  brand accent, and hovering them brings the note back. Selecting text on its own still does nothing
+  but select text — the mark is only an offer, and nothing opens until it's clicked. Contextual notes
+  are ordinary Hamesh notes throughout: same storage, same viewer, same edit/delete/pin/folders, same
+  Notes Library rows (now showing the attached text), same search (which also matches that text), and
+  the same Open Note flow, which scrolls to the anchored words and flashes them. Hovering highlighted
+  text shows the very same pill a video marker shows — a dot and the note's first line, without the
+  timestamp — and the pointer turns into a hand over it; clicking opens the full note.
+
+- **Text anchors survive page changes, and refuse to guess.** An anchor stores the exact text, the
+  words either side of it, its original position, and DOM paths for instant restoration. On a later
+  visit Hamesh tries the fast path first, then recovers by context. When it can't tell two candidate
+  occurrences apart, it highlights neither: the note keeps its text and simply reports that its
+  location couldn't be found this time. Highlights are painted with the CSS Custom Highlight API, so
+  nothing on the page is wrapped, moved, or modified.
+
+- **Settings → Text notes**, with the feature and its automatic selection mark switchable
+  independently. Turning either off never touches stored notes or anchors — highlights come straight
+  back when it's switched on again. With the mark off, the new **Alt+T** shortcut (rebindable in
+  Chrome's own shortcuts page, alongside Alt+H and Alt+V) creates a contextual note from the current
+  selection, and does nothing when there is no valid selection.
+
+- **What's New.** A page of Hamesh's own history, in English and Arabic, at the foot of the Notes
+  Library's sidebar. Every version gets a couple of lines about what changed for you — not the
+  developer changelog. Hamesh opens it once, in a background tab, the first time it runs after
+  updating itself; a dot marks it in the sidebar until it's read. It never opens itself on a fresh
+  install, on a browser update, or on a reload of the same version.
+
 - **Local backup.** Settings → Backup exports every note and folder to a dated JSON file on your
   own device, and imports one back. Importing **never deletes anything**: it adds what's missing,
   refreshes anything the file has a newer copy of, and leaves everything else alone — so restoring
@@ -25,34 +54,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   creates (the margin mark, the play triangle, the text-note lines), so the rows are tellable apart
   at a glance rather than by reading each one. Appearance now shows the same three icon choices in
   the Notes Library's Settings page that the popup's Settings pane already used.
-
-### Added
-
-- **Hawamesh — notes attached to exact text on a page.** Select any text, click the small Hamesh
-  mark that appears beside it, and write an ordinary note: the selected words are highlighted in the
-  brand accent, and hovering them brings the note back. Selecting text on its own still does nothing
-  but select text — the mark is only an offer, and nothing opens until it's clicked. Contextual notes
-  are ordinary Hamesh notes throughout: same storage, same viewer, same edit/delete/pin/folders, same
-  Notes Library rows (now showing the attached text), same search (which also matches that text), and
-  the same Open Note flow, which scrolls to the anchored words and flashes them. Hovering highlighted
-  text shows the very same pill a video marker shows — a dot and the note's first line, without the
-  timestamp — and the pointer turns into a hand over it; clicking opens the full note.
-- **Text anchors survive page changes, and refuse to guess.** An anchor stores the exact text, the
-  words either side of it, its original position, and DOM paths for instant restoration. On a later
-  visit Hamesh tries the fast path first, then recovers by context. When it can't tell two candidate
-  occurrences apart, it highlights neither: the note keeps its text and simply reports that its
-  location couldn't be found this time. Highlights are painted with the CSS Custom Highlight API, so
-  nothing on the page is wrapped, moved, or modified.
-- **Settings → Text notes**, with the feature and its automatic selection mark switchable
-  independently. Turning either off never touches stored notes or anchors — highlights come straight
-  back when it's switched on again. With the mark off, the new **Alt+T** shortcut (rebindable in
-  Chrome's own shortcuts page, alongside Alt+H and Alt+V) creates a contextual note from the current
-  selection, and does nothing when there is no valid selection.
-- **What's New.** A page of Hamesh's own history, in English and Arabic, at the foot of the Notes
-  Library's sidebar. Every version gets a couple of lines about what changed for you — not the
-  developer changelog. Hamesh opens it once, in a background tab, the first time it runs after
-  updating itself; a dot marks it in the sidebar until it's read. It never opens itself on a fresh
-  install, on a browser update, or on a reload of the same version.
 
 ### Fixed
 
