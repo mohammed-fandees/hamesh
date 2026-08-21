@@ -27,6 +27,13 @@
   --hm-accent: #b5502f;
   --hm-accent-strong: #8f3e22;
   --hm-accent-tint: #f1dccc;
+  /* The hover fill for chips that sit directly over a host page. It must be
+     opaque in BOTH themes: `--hm-accent-tint` is a translucent overlay in
+     dark, which is correct on top of one of Hamesh's own surfaces but makes
+     an over-the-page chip see-through — see `.hm-marker:hover`. Light's
+     value is the tint itself, already opaque; dark's is that same tint
+     flattened onto `--hm-surface`. */
+  --hm-marker-hover: #f1dccc;
   --hm-border: rgba(30, 27, 24, 0.14);
 
   /* Semantic */
@@ -89,6 +96,8 @@
   --hm-accent: #e08b5c;
   --hm-accent-strong: #f0a578;
   --hm-accent-tint: rgba(224, 139, 92, 0.16);
+  /* rgba(224,139,92,0.16) composited over --hm-surface (#262219). */
+  --hm-marker-hover: #443324;
   --hm-border: rgba(243, 237, 227, 0.16);
   --hm-info: #7fa0be;
   --hm-success: #8fb894;
@@ -537,13 +546,31 @@
 .hm-marker .hm-mark {
   color: currentColor;
 }
+/* Lifts and warms, never thins out. This deliberately does NOT use
+   `--hm-accent-tint`: that token is translucent in dark theme, so hovering
+   used to replace the opaque chip with a 16%-alpha wash and the host page
+   showed straight through it — breaking the very invariant the base rule
+   above exists to keep. The hover fill is opaque in both themes, the
+   hairline goes accent, and the chip rises 1px on a deeper shadow, so the
+   feedback reads as "this is a real, pressable thing" rather than as the
+   chip fading away. */
 .hm-marker:hover {
-  background: var(--hm-accent-tint);
+  background: var(--hm-marker-hover);
+  color: var(--hm-accent-strong);
+  box-shadow:
+    0 0 0 1px var(--hm-accent),
+    var(--hm-shadow-md);
+  transform: translateY(-1px);
 }
+/* Pressed: the lift collapses and the chip fills solid — the one state
+   where the mark inverts to paper, so a click always looks like it landed. */
 .hm-marker:active {
   background: var(--hm-accent);
   color: var(--hm-paper);
-  transform: scale(0.94);
+  box-shadow:
+    0 0 0 1px var(--hm-accent-strong),
+    var(--hm-shadow-sm);
+  transform: translateY(0) scale(0.94);
 }
 .hm-marker:focus-visible {
   outline: none;
