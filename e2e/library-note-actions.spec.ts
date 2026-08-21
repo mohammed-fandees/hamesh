@@ -281,6 +281,29 @@ test.describe('Notes Library — note actions menu', () => {
       );
     });
 
+    test('survives an ancestor container scrolling the trigger into view', async () => {
+      // Regression: the menu closed on *any* outside scroll. Clicking the
+      // trigger focuses it, and the browser then scrolls whichever ancestor
+      // it must to reveal it — including the `overflow: hidden` containers
+      // the collapse animation relies on — so the panel could close the
+      // instant it opened, depending purely on timing. Scrolling such a
+      // container while the panel is open reproduces it deterministically.
+      const trigger = library.locator('.hm-folder-menu__trigger').first();
+      await trigger.click();
+      await expect(library.locator('.hm-folder-menu__panel')).toBeVisible();
+
+      await library.evaluate(() => {
+        for (const el of document.querySelectorAll('.hm-folder-tree, .hm-folder-node__body')) {
+          el.dispatchEvent(new Event('scroll', { bubbles: false }));
+        }
+      });
+
+      // Still open, still anchored — not dismissed by a scroll that never
+      // moved the trigger off screen.
+      await expect(library.locator('.hm-folder-menu__panel')).toBeVisible();
+      await expect(library.getByRole('menuitemradio', { name: 'No folder' })).toBeVisible();
+    });
+
     test('pins a note from folder mode', async () => {
       const row = library.locator('.hm-note-row').first();
       await library.locator('.hm-folder-menu__trigger').first().click();

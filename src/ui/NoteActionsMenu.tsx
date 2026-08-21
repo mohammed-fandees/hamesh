@@ -122,7 +122,7 @@ function findScopeRoot(trigger: HTMLElement): Element {
  * containers (see `notes-library.css`), which would otherwise clip this
  * panel too. Closed on outside-click, Escape (one level at a time —
  * editing/confirming-delete first return to the menu, only then close),
- * or scroll.
+ * or the page scrolling out from under it.
  */
 export function NoteActionsMenu({
   note,
@@ -199,15 +199,37 @@ export function NoteActionsMenu({
     }
     function onScroll(e: Event) {
       // Capture-phase, so this also sees scroll events from *inside* the
-      // panel — its own `<textarea>` while editing, most notably — not just
-      // the page scrolling underneath it. Only the latter should close the
-      // menu (a stale-positioned popup left behind by the page moving);
-      // scrolling within the panel itself is normal interaction and would
-      // otherwise abruptly discard an in-progress edit.
+      // panel — its own `<textarea>` while editing, most notably — which
+      // are normal interaction and must never disturb the panel.
       const target = e.target as Node;
       if (panelRef.current?.contains(target)) return;
-      if (triggerRef.current?.contains(target)) return;
-      close();
+
+      const trigger = triggerRef.current;
+      if (!trigger) return;
+
+      // The page moved under the panel. Follow the trigger rather than
+      // closing: this used to `close()` on *any* outside scroll, which
+      // looks right until you notice what actually fires one. Clicking the
+      // trigger focuses it, and the browser then scrolls whatever ancestor
+      // it must to reveal it — including the `overflow: hidden` containers
+      // the folder tree's collapse animation relies on, which are still
+      // programmatic scroll containers. The menu was therefore closing the
+      // instant it opened, entirely depending on whether that scroll
+      // landed before or after the panel rendered: intermittently, "click
+      // ⋮ and nothing happens", and a long-standing source of flaky E2E
+      // runs (the folder specs carry a comment blaming exactly this).
+      const rect = trigger.getBoundingClientRect();
+      const offScreen =
+        rect.bottom < 0 ||
+        rect.top > window.innerHeight ||
+        rect.right < 0 ||
+        rect.left > window.innerWidth;
+      // Gone from view entirely — there is nothing left to anchor to.
+      if (offScreen) {
+        close();
+        return;
+      }
+      setPosition(computePosition(trigger));
     }
     document.addEventListener('pointerdown', onPointerDown);
     document.addEventListener('keydown', onKeyDown);

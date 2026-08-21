@@ -54,6 +54,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **The note actions menu ("⋮") could open and vanish immediately.** It closed on _any_ scroll
+  outside itself — and clicking the trigger focuses it, which makes the browser scroll whichever
+  ancestor it must to reveal it, including the hidden-overflow containers the folder tree's collapse
+  animation relies on. Whether the menu stayed open came down to whether that scroll landed before
+  or after the panel rendered, so it intermittently looked like clicking "⋮" did nothing. The menu
+  now follows its trigger when the page moves instead of closing, and only closes when the trigger
+  actually leaves the viewport.
+
 - **Hovering a Hamesh mark on a page made it see-through.** Markers are drawn as an opaque chip
   precisely so they stay legible over any host content, but the hover state filled them with
   `--hm-accent-tint` — a token that is opaque in light appearance and a 16%-alpha overlay in dark, so
