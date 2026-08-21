@@ -45,7 +45,10 @@ test.beforeAll(async () => {
         res.end('not found');
         return;
       }
-      res.setHeader('Content-Type', CONTENT_TYPES[path.extname(file)] ?? 'application/octet-stream');
+      res.setHeader(
+        'Content-Type',
+        CONTENT_TYPES[path.extname(file)] ?? 'application/octet-stream',
+      );
       res.end(data);
     });
   });
