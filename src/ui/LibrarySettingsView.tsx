@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { browser } from 'wxt/browser';
 import { SettingRow } from './SettingRow';
 import { SegmentedControl } from './SegmentedControl';
+import { BackupSection, type BackupHandlers } from './BackupSection';
 import {
   AppearanceIcon,
   DarkIcon,
@@ -28,6 +29,10 @@ interface LibrarySettingsViewProps {
   onLanguageChange: (lang: Lang) => void;
   onAppearanceChange: (appearance: AppearanceMode) => void;
   onTextNotesChange: (patch: Partial<TextNotePreferences>) => void;
+  /** Export/import of every note and folder — see `BackupSection`. Passed in
+   *  rather than reached for here, so this view keeps knowing nothing about
+   *  storage. */
+  backup: BackupHandlers;
 }
 
 /**
@@ -54,6 +59,7 @@ export function LibrarySettingsView({
   onLanguageChange,
   onAppearanceChange,
   onTextNotesChange,
+  backup,
 }: LibrarySettingsViewProps) {
   const [commands, setCommands] = useState<Record<string, string | null>>({});
 
@@ -202,6 +208,8 @@ export function LibrarySettingsView({
         >
           {strings.shortcutOpenChromeSettings}
         </button>
+
+        <BackupSection strings={strings} handlers={backup} />
       </div>
     </div>
   );

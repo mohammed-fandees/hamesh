@@ -15,6 +15,10 @@ export interface FoldersRepository {
    *  other, so that orchestration lives one level up (see `App.tsx`'s
    *  `handleDeleteFolder`). */
   remove(folderId: string): Promise<{ removedFolderIds: string[] }>;
+  /** Replaces the whole folder list — the restore half of local backup.
+   *  Same division of labour as `NotesRepository.saveAll`: the merge policy
+   *  lives in `domain/backup.ts`, this only persists the result. */
+  saveAll(folders: Folder[]): Promise<void>;
   /** Fires on changes from any extension context, backed by
    *  `chrome.storage.onChanged` — same pattern as `PreferencesRepository`. */
   watch(cb: (folders: Folder[]) => void): () => void;
@@ -52,6 +56,10 @@ export function createFoldersRepository(): FoldersRepository {
       const remaining = existing.filter((f) => !toRemove.has(f.id));
       await storage.setItem(STORAGE_KEY, remaining);
       return { removedFolderIds: [...toRemove] };
+    },
+
+    async saveAll(folders: Folder[]): Promise<void> {
+      await storage.setItem(STORAGE_KEY, folders);
     },
 
     watch(cb: (folders: Folder[]) => void): () => void {

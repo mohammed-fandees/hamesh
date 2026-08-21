@@ -226,6 +226,10 @@ browser's native handling — they just skip the restore.
   partially-written storage never throws.
 - No external APIs, no network, no sync. A future backend can implement the same
   interface.
+- **Bulk writes** exist only for local backup: `NotesRepository.saveAll` and
+  `FoldersRepository.saveAll` (see "Local backup" below). They persist an
+  already-merged result and never delete, so no other flow needs to reason
+  about them.
 - **Preferences** (`src/storage/preferences-repository.ts`) follow the same
   pattern at a single key, `hamesh:preferences` → `Preferences`
   (`src/domain/preferences.ts`: `{ schemaVersion, language, appearance }`) —
@@ -562,6 +566,48 @@ calling out explicitly here (confirmed by direct probing against a real
 Chromium build, not assumed from the types). The popup's own shortcut badge
 is fetched live from the same `commands.getAll()` call rather than
 hardcoded, so it can't go stale if a user rebinds Alt+H there.
+
+## Local backup (`src/domain/backup.ts`, `src/ui/BackupSection.tsx`)
+
+Export every note and folder to a JSON file, and merge one back in — from
+Settings, in one click each. Two rules define the whole feature:
+
+- **Import never deletes.** A backup file is something people reach for when
+  they are already worried about their data; a restore that can remove notes
+  is worse than none. `mergeNotes`/`mergeFolders` merge by id: records
+  missing here are added, records present on both sides keep whichever copy
+  has the newer `updatedAt`, and anything on this machine that isn't in the
+  file is left alone. That makes an old backup unable to undo newer edits,
+  makes a repeat import a no-op, and means there is no destructive "replace
+  everything" mode to get wrong. It also happens to make the same file
+  usable to carry notes between two machines.
+- **A file is guilty until proven innocent.** It comes off a disk, not out
+  of Hamesh, so `parseBackup` re-validates the envelope (`format`,
+  `formatVersion`) and every record before anything is written — the same
+  defensive stance `parseStoredNotes` takes toward storage itself. A file
+  from a _newer_ Hamesh is refused rather than imported with unknown fields
+  silently dropped. Individual malformed records are skipped so a partly
+  readable backup still gives back what's readable, but a file with nothing
+  readable at all is refused by name, so "imported 0 notes" can never be
+  mistaken for success.
+
+Everything above is pure and unit-tested. The storage side is deliberately
+thin: `NotesRepository.saveAll` groups notes into the per-page buckets they
+live in and writes those, and `FoldersRepository.saveAll` replaces the single
+folder record — neither decides anything. `saveAll` never clears a page it
+wasn't given, so even a bug in the caller can't turn a restore into a wipe.
+Orchestration (read both, merge, write folders before notes so no note is
+ever momentarily pointing at a folder that doesn't exist yet) lives in
+`notes/App.tsx`, the same level that already coordinates the two
+repositories for folder deletion.
+
+Preferences are deliberately **not** in the backup: they're three toggles,
+and importing someone else's language and appearance is a surprise, not a
+restore. The file is plain indented JSON on purpose — a backup people can
+open and read is a backup they can trust.
+
+E2E (`e2e/backup.spec.ts`) drives the real download and the real file
+picker, since neither exists in jsdom.
 
 ## What's New (`src/domain/release-notes.ts`, `src/ui/WhatsNewView.tsx`)
 
