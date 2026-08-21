@@ -594,6 +594,63 @@
   text-align: center;
 }
 
+/* ---- Contextual text notes ---- */
+/* The action chip offered beside a finished text selection. A .hm-marker
+   one size down — same opaque chip, same margin-mark glyph, so it reads as
+   Hamesh at a glance — and interactive (pointer-events: auto, set by the
+   caller) because unlike every other marker here it is meant to be clicked
+   directly. It appears *beside* the selection, never over it. */
+.hm-text-action {
+  width: 22px;
+  height: 24px;
+  animation: hm-text-action-in var(--hm-dur-fast) var(--hm-ease-settle);
+}
+@keyframes hm-text-action-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* The page text a contextual note is attached to. An accent rule down the
+   inline-start edge — the margin mark's vertical stroke, in prose form. */
+.hm-attached {
+  margin-bottom: var(--hm-space-2);
+}
+.hm-attached__label {
+  display: block;
+  margin-bottom: var(--hm-space-1);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--hm-ink-40);
+}
+.hm-attached__quote {
+  margin: 0;
+  padding-inline-start: var(--hm-space-2);
+  border-inline-start: 2px solid var(--hm-accent);
+  font-family: var(--hm-serif);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--hm-ink-60);
+  overflow-wrap: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.hm-scope[dir='rtl'] .hm-attached__quote {
+  font-family: var(--hm-arabic);
+}
+.hm-attached--compact .hm-attached__quote {
+  -webkit-line-clamp: 1;
+  font-size: 12.5px;
+}
+
 /* ---- Video timeline marker ---- */
 /* A tiny tick, not the branded margin-mark chip — a video timeline (often
    a site's own UI, e.g. YouTube's progress bar) needs to blend in, not
@@ -713,6 +770,44 @@
   color: var(--hm-ink-40);
   font-family: var(--hm-mono);
   font-size: 11px;
+}
+
+/* Hover preview for highlighted text. It *is* .hm-video-preview (see
+   TextNotePopup.tsx) — same dot, same single line, no timestamp — and this
+   rule only carries the differences: it lives inside a .hm-floating wrapper
+   that already positions it, and unlike the read-only video preview it
+   takes pointer events, because the pointer has to be able to reach it and
+   clicking it opens the note. */
+.hm-text-popup {
+  position: static;
+  pointer-events: auto;
+  cursor: pointer;
+  font: inherit;
+  text-align: start;
+  max-width: 280px;
+  transition: background var(--hm-dur-fast) var(--hm-ease-out);
+}
+.hm-text-popup:hover {
+  background: var(--hm-paper-dim);
+}
+.hm-text-popup:focus-visible {
+  outline: none;
+  box-shadow:
+    var(--hm-shadow-md),
+    0 0 0 2px var(--hm-accent);
+}
+.hm-text-popup__text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--hm-ink);
+  font-family: var(--hm-serif);
+  font-size: 13px;
+}
+.hm-scope[dir='rtl'] .hm-text-popup__text {
+  font-family: var(--hm-arabic);
 }
 
 /* ---- Video marker cluster list — click-opened, unlike the preview above ---- */
@@ -931,7 +1026,8 @@
   .hm-scope *,
   .hm-hover-outline,
   .hm-card,
-  .hm-marker {
+  .hm-marker,
+  .hm-text-action {
     animation: none !important;
     transition: none !important;
   }

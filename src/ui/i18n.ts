@@ -76,6 +76,15 @@ export interface Strings {
   noFolderOption: string;
   addSubfolder: string;
   noteActions: string;
+  textNoteAction: string;
+  attachedText: string;
+  textAnchorUnavailable: string;
+  addTextNote: string;
+  settingsTextNotes: string;
+  settingsTextNotesEnabled: string;
+  settingsTextSelectionAction: string;
+  settingsOn: string;
+  settingsOff: string;
 }
 
 const en: Strings = {
@@ -147,6 +156,15 @@ const en: Strings = {
   noFolderOption: 'No folder',
   addSubfolder: 'Add sub-folder',
   noteActions: 'Note actions',
+  textNoteAction: 'Add a note to the selected text',
+  attachedText: 'Attached text',
+  textAnchorUnavailable: "Page changed — couldn't find this text",
+  addTextNote: 'Add a note to selected text',
+  settingsTextNotes: 'Text notes',
+  settingsTextNotesEnabled: 'Notes on selected text',
+  settingsTextSelectionAction: 'Show icon after selecting',
+  settingsOn: 'On',
+  settingsOff: 'Off',
 };
 
 const ar: Strings = {
@@ -218,6 +236,15 @@ const ar: Strings = {
   noFolderOption: 'بدون فولدر',
   addSubfolder: 'إضافة فولدر فرعي',
   noteActions: 'خيارات الملاحظة',
+  textNoteAction: 'أضف ملاحظة على النص المحدد',
+  attachedText: 'النص المرتبط',
+  textAnchorUnavailable: 'تغيّرت الصفحة — تعذّر العثور على هذا النص',
+  addTextNote: 'ملاحظة على النص المحدد',
+  settingsTextNotes: 'ملاحظات النص',
+  settingsTextNotesEnabled: 'ملاحظات على النص المحدد',
+  settingsTextSelectionAction: 'إظهار الأيقونة بعد التحديد',
+  settingsOn: 'مفعّل',
+  settingsOff: 'معطّل',
 };
 
 export function resolveLang(uiLanguage?: string): Lang {

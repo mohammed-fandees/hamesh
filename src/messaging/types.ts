@@ -7,6 +7,7 @@
 export type HameshMessage =
   | { type: 'ENABLE_SELECTION' }
   | { type: 'ENABLE_VIDEO_NOTE' }
+  | { type: 'ENABLE_TEXT_NOTE' }
   | { type: 'GET_PAGE_STATE' }
   | { type: 'CONTENT_READY' }
   | { type: 'RESTORE_NOTE'; noteId: string }
@@ -25,4 +26,8 @@ export interface ShortcutsResponse {
   type: 'SHORTCUTS';
   addNote: string | null;
   addVideoNote: string | null;
+  /** Creates a contextual note from whatever text is selected right now —
+   *  the keyboard half of the two entry points into that flow (the other
+   *  being the selection action chip). */
+  addTextNote: string | null;
 }

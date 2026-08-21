@@ -21,7 +21,8 @@ import {
   type GroupSortMode,
 } from '@/domain/notes-grouping';
 import { buildFolderTree } from '@/domain/folder-grouping';
-import type { AppearanceMode } from '@/domain/preferences';
+import type { AppearanceMode, TextNotePreferences } from '@/domain/preferences';
+import { DEFAULT_TEXT_NOTE_PREFERENCES } from '@/domain/preferences';
 import type { Note } from '@/domain/note';
 import type { Folder } from '@/domain/folder';
 import '@/ui/tokens.css';
@@ -47,6 +48,7 @@ export function App() {
   const [view, setView] = useState<LibraryView>(initialView);
   const [lang, setLang] = useState<Lang>(initialLang);
   const [appearance, setAppearance] = useState<AppearanceMode>('match-website');
+  const [textNotes, setTextNotes] = useState<TextNotePreferences>(DEFAULT_TEXT_NOTE_PREFERENCES);
   /** `null` while the initial load is in flight; distinguishes "loading" from
    *  "loaded, zero notes" so the empty state doesn't flash before data arrives. */
   const [notes, setNotes] = useState<Note[] | null>(null);
@@ -75,11 +77,13 @@ export function App() {
       if (!cancelled) {
         setLang(prefs.language ?? initialLang);
         setAppearance(prefs.appearance);
+        setTextNotes(prefs.textNotes);
       }
     })();
     const unwatch = prefsRepo.watch((prefs) => {
       setLang(prefs.language ?? initialLang);
       setAppearance(prefs.appearance);
+      setTextNotes(prefs.textNotes);
     });
     return () => {
       cancelled = true;
@@ -163,6 +167,11 @@ export function App() {
   function handleAppearanceChange(next: AppearanceMode) {
     setAppearance(next); // immediate feedback; persisted below, and re-confirmed by watch()
     void prefsRepo.setAppearance(next);
+  }
+
+  function handleTextNotesChange(patch: Partial<TextNotePreferences>) {
+    setTextNotes((prev) => ({ ...prev, ...patch })); // re-confirmed by watch()
+    void prefsRepo.setTextNotes(patch);
   }
 
   function toggleGroup(domain: string) {
@@ -260,8 +269,10 @@ export function App() {
           strings={strings}
           lang={lang}
           appearance={appearance}
+          textNotes={textNotes}
           onLanguageChange={handleLanguageChange}
           onAppearanceChange={handleAppearanceChange}
+          onTextNotesChange={handleTextNotesChange}
         />
       ) : (
         <div className="hm-notes-main">

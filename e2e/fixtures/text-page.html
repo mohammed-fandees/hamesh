@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Hamesh Text Notes Fixture</title>
+    <style>
+      body {
+        font-family: Georgia, serif;
+        max-width: 640px;
+        margin: 40px auto;
+        padding: 0 24px;
+        color: #1a1a1a;
+        line-height: 1.9;
+        font-size: 18px;
+      }
+      .spacer {
+        height: 600px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1 data-testid="page-title">Notes on Rendering</h1>
+    <article id="post">
+      <p data-testid="para-one">
+        Performance is extremely important in large applications. Measuring it honestly is harder
+        than improving it.
+      </p>
+      <p data-testid="para-two">
+        The same phrase appears twice on purpose: performance is extremely important in small ones
+        too, which is what makes anchoring interesting.
+      </p>
+      <p data-testid="para-inline">
+        A sentence with <b>bold text and <i>nested italics</i></b> running through the middle of it.
+      </p>
+      <p data-testid="para-link">
+        A paragraph containing <a id="a-link" href="#stay">a real link</a> that must keep working.
+      </p>
+    </article>
+    <div class="spacer"></div>
+    <p data-testid="para-far">A paragraph far down the page, well below the fold.</p>
+  </body>
+</html>

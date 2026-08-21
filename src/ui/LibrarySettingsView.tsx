@@ -2,15 +2,21 @@ import { useEffect, useState } from 'react';
 import { browser } from 'wxt/browser';
 import { SettingRow } from './SettingRow';
 import { SegmentedControl } from './SegmentedControl';
-import type { AppearanceMode } from '@/domain/preferences';
+import type { AppearanceMode, TextNotePreferences } from '@/domain/preferences';
 import type { Lang, Strings } from './i18n';
+
+/** On/off rendered through the same segmented control every other choice in
+ *  Settings uses, rather than introducing a switch component for two flags. */
+type Toggle = 'on' | 'off';
 
 interface LibrarySettingsViewProps {
   strings: Strings;
   lang: Lang;
   appearance: AppearanceMode;
+  textNotes: TextNotePreferences;
   onLanguageChange: (lang: Lang) => void;
   onAppearanceChange: (appearance: AppearanceMode) => void;
+  onTextNotesChange: (patch: Partial<TextNotePreferences>) => void;
 }
 
 /**
@@ -22,13 +28,21 @@ interface LibrarySettingsViewProps {
  * addition), so this reads the current bindings for display and links out
  * to `chrome://extensions/shortcuts`, the only place they can actually be
  * changed.
+ *
+ * Contextual text notes get their own section here rather than in the
+ * popup's compact Settings pane, which is deliberately only Language and
+ * Appearance. Turning the feature off stops new contextual notes and hides
+ * highlights; it never deletes a note or its anchor, and everything comes
+ * back when it's turned on again.
  */
 export function LibrarySettingsView({
   strings,
   lang,
   appearance,
+  textNotes,
   onLanguageChange,
   onAppearanceChange,
+  onTextNotesChange,
 }: LibrarySettingsViewProps) {
   const [commands, setCommands] = useState<Record<string, string | null>>({});
 
@@ -95,6 +109,40 @@ export function LibrarySettingsView({
           />
         </div>
 
+        <h2 className="hm-settings__subheading">{strings.settingsTextNotes}</h2>
+        <div className="hm-settings__body">
+          <SettingRow
+            label={strings.settingsTextNotesEnabled}
+            value={
+              <SegmentedControl<Toggle>
+                value={textNotes.enabled ? 'on' : 'off'}
+                name="hm-text-notes-enabled"
+                groupLabel={strings.settingsTextNotesEnabled}
+                options={[
+                  { value: 'on', label: strings.settingsOn },
+                  { value: 'off', label: strings.settingsOff },
+                ]}
+                onChange={(next) => onTextNotesChange({ enabled: next === 'on' })}
+              />
+            }
+          />
+          <SettingRow
+            label={strings.settingsTextSelectionAction}
+            value={
+              <SegmentedControl<Toggle>
+                value={textNotes.selectionAction ? 'on' : 'off'}
+                name="hm-text-selection-action"
+                groupLabel={strings.settingsTextSelectionAction}
+                options={[
+                  { value: 'on', label: strings.settingsOn },
+                  { value: 'off', label: strings.settingsOff },
+                ]}
+                onChange={(next) => onTextNotesChange({ selectionAction: next === 'on' })}
+              />
+            }
+          />
+        </div>
+
         <h2 className="hm-settings__subheading">{strings.settingsShortcuts}</h2>
         <div className="hm-settings__body">
           <SettingRow
@@ -110,6 +158,14 @@ export function LibrarySettingsView({
             value={
               <kbd className="hm-shortcut-badge">
                 {commands['activate-hamesh-video'] || strings.shortcutNotSet}
+              </kbd>
+            }
+          />
+          <SettingRow
+            label={strings.addTextNote}
+            value={
+              <kbd className="hm-shortcut-badge">
+                {commands['activate-hamesh-text'] || strings.shortcutNotSet}
               </kbd>
             }
           />

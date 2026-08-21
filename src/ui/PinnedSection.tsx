@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { AttachedText } from './AttachedText';
 import { Favicon } from './Favicon';
 import { PinIcon } from './PinIcon';
 import { NoteActionsMenu } from './NoteActionsMenu';
@@ -37,6 +38,12 @@ interface PinnedSectionProps {
  * `openNoteAndRestore`. Each item also gets a sibling `NoteActionsMenu` —
  * pin/unpin, edit, delete — but not "Move to folder" (see that component's
  * own doc comment for why it's folder-tree-only).
+ *
+ * A contextual text note shows the page text it's attached to here, exactly
+ * as `NoteRow` does — pinning a note must not cost it its identity. That
+ * comes from the full note looked up below rather than from
+ * `PinnedNoteItem`, which stays the slim display projection its other
+ * callers and tests expect (same reasoning as `allNotes` itself).
  */
 export function PinnedSection({
   notes,
@@ -78,6 +85,9 @@ export function PinnedSection({
                   <Favicon domain={note.domain} size={14} />
                   {note.domain}
                 </span>
+                {fullNote?.anchor.type === 'text' && (
+                  <AttachedText label="" text={fullNote.anchor.exact} compact />
+                )}
                 <p className="hm-pinned__preview" dir="auto">
                   {note.preview}
                 </p>

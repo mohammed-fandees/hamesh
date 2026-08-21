@@ -34,6 +34,7 @@ describe('PreferencesRepository', () => {
       schemaVersion: 1,
       language: null,
       appearance: 'match-website',
+      textNotes: { enabled: true, selectionAction: true },
     });
   });
 
@@ -61,10 +62,20 @@ describe('PreferencesRepository', () => {
   it('setting appearance does not clobber a previously set language, and vice versa', async () => {
     await repo.setLanguage('ar');
     await repo.setAppearance('dark');
-    expect(await repo.get()).toEqual({ schemaVersion: 1, language: 'ar', appearance: 'dark' });
+    expect(await repo.get()).toEqual({
+      schemaVersion: 1,
+      language: 'ar',
+      appearance: 'dark',
+      textNotes: { enabled: true, selectionAction: true },
+    });
 
     await repo.setLanguage('en');
-    expect(await repo.get()).toEqual({ schemaVersion: 1, language: 'en', appearance: 'dark' });
+    expect(await repo.get()).toEqual({
+      schemaVersion: 1,
+      language: 'en',
+      appearance: 'dark',
+      textNotes: { enabled: true, selectionAction: true },
+    });
   });
 
   it('recovers from a malformed stored value instead of throwing', async () => {
@@ -73,6 +84,7 @@ describe('PreferencesRepository', () => {
       schemaVersion: 1,
       language: null,
       appearance: 'match-website',
+      textNotes: { enabled: true, selectionAction: true },
     });
   });
 

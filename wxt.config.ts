@@ -36,6 +36,10 @@ export default defineConfig({
         suggested_key: { default: 'Alt+V' },
         description: 'Add a video note with Hamesh',
       },
+      'activate-hamesh-text': {
+        suggested_key: { default: 'Alt+T' },
+        description: 'Add a note to the selected text',
+      },
     },
   },
 });

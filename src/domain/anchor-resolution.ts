@@ -147,11 +147,16 @@ function findByDataAttributes(anchor: ElementAnchor): Element | null {
 }
 
 export function resolveAnchor(note: Note): ResolutionResult {
-  if (note.anchor.type === 'video') {
+  if (note.anchor.type === 'video' || note.anchor.type === 'text') {
     // Video anchors resolve via `resolveVideoAnchor` (needs a
     // `VideoPlayerAdapter` registry, which this DOM-only element resolver
-    // has no business depending on). Defensive guard, not the real path —
-    // HameshApp branches on `anchor.type` before calling either resolver.
+    // has no business depending on) and text anchors via
+    // `resolveTextAnchors` (`domain/text-anchor-resolution.ts`, which
+    // resolves to a `Range`, not an `Element`). Defensive guard, not the
+    // real path — HameshApp branches on `anchor.type` before calling any
+    // of the three resolvers. Returning Unresolved here is also what keeps
+    // a text note from ever drawing a margin marker: its highlight is its
+    // on-page presence.
     return { quality: ResolutionQuality.Unresolved, element: null, note };
   }
   const anchor = note.anchor;

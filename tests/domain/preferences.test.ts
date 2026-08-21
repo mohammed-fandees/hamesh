@@ -69,6 +69,7 @@ describe('parsePreferences', () => {
       schemaVersion: 1,
       language: 'ar',
       appearance: 'match-website',
+      textNotes: { enabled: true, selectionAction: true },
     });
   });
 
@@ -77,11 +78,13 @@ describe('parsePreferences', () => {
       schemaVersion: 1,
       language: 'ar',
       appearance: 'dark',
+      textNotes: { enabled: true, selectionAction: true },
     });
     expect(parsePreferences({ language: 'en', appearance: 'light' })).toEqual({
       schemaVersion: 1,
       language: 'en',
       appearance: 'light',
+      textNotes: { enabled: true, selectionAction: true },
     });
   });
 

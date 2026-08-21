@@ -170,15 +170,24 @@ export function derivePageLabel(note: Note): string {
 }
 
 /** Live search filter — matches note text, the page label (captured title,
- *  or the same pathname fallback `derivePageLabel` shows in the UI), and the
- *  website domain. Case-insensitive substring match; an empty/whitespace-only
- *  query matches everything (the "not searching" state). */
+ *  or the same pathname fallback `derivePageLabel` shows in the UI), the
+ *  website domain, and — for a contextual text note — the page text it's
+ *  attached to, which the row already shows and which is often what someone
+ *  actually remembers about the note. Case-insensitive substring match; an
+ *  empty/whitespace-only query matches everything (the "not searching"
+ *  state). */
 export function filterNotesByQuery(notes: Note[], query: string): Note[] {
   const q = query.trim().toLowerCase();
   if (!q) return notes;
   return notes.filter((note) => {
     const domain = extractDomain(note.originalUrl).toLowerCase();
     const label = derivePageLabel(note).toLowerCase();
-    return note.content.toLowerCase().includes(q) || label.includes(q) || domain.includes(q);
+    const attached = note.anchor.type === 'text' ? note.anchor.exact.toLowerCase() : '';
+    return (
+      note.content.toLowerCase().includes(q) ||
+      label.includes(q) ||
+      domain.includes(q) ||
+      (attached !== '' && attached.includes(q))
+    );
   });
 }

@@ -1,9 +1,14 @@
 import { useCallback, useState } from 'react';
+import { AttachedText } from './AttachedText';
 import { MarginMark } from './MarginMark';
 import type { Strings } from './i18n';
 
 interface ComposerProps {
   strings: Strings;
+  /** For a contextual text note: the exact page text this note will be
+   *  attached to, shown above the textarea so what's about to be anchored
+   *  is never a guess. Absent when composing an ordinary element note. */
+  attachedText?: string;
   saving?: boolean;
   error?: string | null;
   onSave: (content: string) => void;
@@ -11,10 +16,18 @@ interface ComposerProps {
 }
 
 /**
- * The note composer — a small card attached to the selected element by a short
- * connector stub. Handles empty/typing/validation/saving/error states.
+ * The note composer — a small card attached to the selected element (or the
+ * selected text) by a short connector stub. Handles empty/typing/validation/
+ * saving/error states.
  */
-export function Composer({ strings, saving = false, error, onSave, onCancel }: ComposerProps) {
+export function Composer({
+  strings,
+  attachedText,
+  saving = false,
+  error,
+  onSave,
+  onCancel,
+}: ComposerProps) {
   const [content, setContent] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
 
@@ -57,6 +70,7 @@ export function Composer({ strings, saving = false, error, onSave, onCancel }: C
         <MarginMark size={11} strokeWidth={4} />
         {strings.note}
       </div>
+      {attachedText && <AttachedText label={strings.attachedText} text={attachedText} />}
       <textarea
         className="hm-textarea"
         dir="auto"

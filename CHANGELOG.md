@@ -6,6 +6,29 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **Hawamesh — notes attached to exact text on a page.** Select any text, click the small Hamesh
+  mark that appears beside it, and write an ordinary note: the selected words are highlighted in the
+  brand accent, and hovering them brings the note back. Selecting text on its own still does nothing
+  but select text — the mark is only an offer, and nothing opens until it's clicked. Contextual notes
+  are ordinary Hamesh notes throughout: same storage, same viewer, same edit/delete/pin/folders, same
+  Notes Library rows (now showing the attached text), same search (which also matches that text), and
+  the same Open Note flow, which scrolls to the anchored words and flashes them. Hovering highlighted
+  text shows the very same pill a video marker shows — a dot and the note's first line, without the
+  timestamp — and the pointer turns into a hand over it; clicking opens the full note.
+- **Text anchors survive page changes, and refuse to guess.** An anchor stores the exact text, the
+  words either side of it, its original position, and DOM paths for instant restoration. On a later
+  visit Hamesh tries the fast path first, then recovers by context. When it can't tell two candidate
+  occurrences apart, it highlights neither: the note keeps its text and simply reports that its
+  location couldn't be found this time. Highlights are painted with the CSS Custom Highlight API, so
+  nothing on the page is wrapped, moved, or modified.
+- **Settings → Text notes**, with the feature and its automatic selection mark switchable
+  independently. Turning either off never touches stored notes or anchors — highlights come straight
+  back when it's switched on again. With the mark off, the new **Alt+T** shortcut (rebindable in
+  Chrome's own shortcuts page, alongside Alt+H and Alt+V) creates a contextual note from the current
+  selection, and does nothing when there is no valid selection.
+
 ### Fixed
 
 - **Hovering a Hamesh mark on a page made it see-through.** Markers are drawn as an opaque chip

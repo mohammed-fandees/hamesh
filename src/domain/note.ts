@@ -46,7 +46,68 @@ export interface VideoAnchor {
   duration?: number;
 }
 
-export type Anchor = ElementAnchor | VideoAnchor;
+/**
+ * A note anchored to an exact run of text on the page ("هوامش" — contextual
+ * text notes) rather than to a whole element or a video moment. Everything
+ * here is measured against one normalized view of the page's text (see
+ * `domain/text-anchor.ts`), so `exact`, `context`, and `textPosition` always
+ * agree with each other and with what the user actually selected.
+ *
+ * Deliberately hybrid: `path` is a fast, exact restoration route, and
+ * `context`/`textPosition`/`container` are what let the same text be found
+ * again after the DOM has moved on. No single one of them is trusted alone —
+ * see `domain/text-anchor-resolution.ts` for the layered strategy and, more
+ * importantly, for the rule that a low-confidence match resolves to
+ * *nothing* rather than to a plausible-looking wrong occurrence.
+ *
+ * Nothing here ties a text range to one note: two notes may carry anchors
+ * over the same or overlapping text, and the storage, resolution, and
+ * highlight layers all handle that already (only the create-time UI exposes
+ * one note per selection today).
+ */
+export interface TextAnchor {
+  type: 'text';
+  /** Anchor-format version, independent of `Note.schemaVersion` — the note
+   *  envelope and this anchor's internals can evolve separately, and a
+   *  future anchor format can be migrated by reading this alone. */
+  version: 1;
+  /** The selected text, whitespace-normalized. Also what the UI shows as
+   *  "attached text", so it's the user-facing string too. */
+  exact: string;
+  /** Surrounding text, used to tell repeated occurrences of `exact` apart. */
+  context: {
+    prefix: string;
+    suffix: string;
+  };
+  /** Where `exact` sat in the page's normalized text at capture time — a
+   *  tiebreak signal for `context`, never sufficient on its own. */
+  textPosition: {
+    start: number;
+    end: number;
+  };
+  /** Fast path: element-child index paths to the boundary text nodes'
+   *  parent elements, plus character offsets into those elements' own direct
+   *  text. Offsets are into the parent's concatenated direct text rather
+   *  than into one text node, so ordinary text-node splitting/merging (any
+   *  framework re-render) doesn't invalidate them. Optional: a selection
+   *  whose boundaries can't be expressed this way still gets a fully usable
+   *  context-based anchor. */
+  path?: {
+    startPath: number[];
+    startOffset: number;
+    endPath: number[];
+    endOffset: number;
+  };
+  /** The nearest stable ancestor, when one could be identified — used to
+   *  scope recovery to the original region of the page before considering
+   *  the document at large. */
+  container?: {
+    selector?: string;
+    path?: number[];
+  };
+}
+
+export type Anchor = ElementAnchor | VideoAnchor | TextAnchor;
 
 /**
  * Metadata about the page a note was created on, kept separate from the note
@@ -166,7 +227,12 @@ export function validateNote(note: Note): NoteValidationError[] {
   if (!note.pageKey) errors.push({ field: 'pageKey', message: 'Page key is required' });
   if (!note.originalUrl) errors.push({ field: 'originalUrl', message: 'Original URL is required' });
   const anchorValid =
-    !!note.anchor && (note.anchor.type === 'video' ? !!note.anchor.videoId : !!note.anchor.signals);
+    !!note.anchor &&
+    (note.anchor.type === 'video'
+      ? !!note.anchor.videoId
+      : note.anchor.type === 'text'
+        ? !!note.anchor.exact
+        : !!note.anchor.signals);
   if (!anchorValid) {
     errors.push({ field: 'anchor', message: 'Anchor is required' });
   }
