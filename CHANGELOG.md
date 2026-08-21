@@ -6,6 +6,18 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **The landing page shows the product instead of describing it.** A user reported having to read
+  and scroll before they could find the install link. The first screen is now one line, the install
+  link, and Hamesh already working. Below it, each feature gets its own section with a live demo
+  beside it: a note on selected text, a note on a whole element, a note on a moment in a video, the
+  Notes Library, and filing a note into a folder. Every demo is built from real elements and driven
+  by GSAP — an animated cursor selects, clicks and types through the actual UI — so the site cannot
+  show something the extension does not do. Rebuilt as separate HTML, CSS and JS modules under
+  `landing/`, with GSAP vendored locally rather than fetched from a CDN, every scene paused while
+  off screen, and the whole thing reduced to still, finished states under `prefers-reduced-motion`.
+
 ## [1.3.0] — 2026-08-21
 
 ### Added

@@ -1,0 +1,743 @@
+/* The product demos.
+ *
+ * Every demo is built from real elements — a window, a paragraph, a note
+ * card, a cursor — so GSAP animates actual UI states rather than replaying a
+ * recording. The vocabulary below mirrors the extension's own: clay marks,
+ * surface cards docked to what they belong to, no modals, nothing dimmed.
+ *
+ * Only `transform` and `opacity` are animated. Where something must appear to
+ * grow — a selection sweeping across words, text being typed — it is a mask
+ * scaled on X, never a width. */
+
+.demo {
+  position: relative;
+  /* The hero centres its own copy; the page inside this window is an
+     article and must not inherit that. */
+  text-align: start;
+  width: min(100%, 620px);
+  transform-style: preserve-3d;
+  /* Reveals sweep with the reading direction; flipped for RTL below. */
+  --reveal-origin: right;
+  --sweep-origin: left;
+}
+
+:root[dir='rtl'] .demo {
+  --reveal-origin: left;
+  --sweep-origin: right;
+}
+
+/* ---- Window --------------------------------------------------------- */
+
+.ui-window {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-scene);
+  overflow: hidden;
+  transform-style: preserve-3d;
+}
+
+.ui-window__chrome {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--surface-2);
+}
+
+.ui-window__dots {
+  display: flex;
+  gap: 5px;
+}
+
+.ui-window__dots i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ink-20);
+}
+
+.ui-window__url {
+  flex: 1;
+  height: 20px;
+  border-radius: var(--radius-pill);
+  background: var(--paper-dim);
+  display: flex;
+  align-items: center;
+  padding-inline: 10px;
+  font-size: 0.64rem;
+  color: var(--ink-40);
+  letter-spacing: 0.02em;
+}
+
+.ui-page {
+  padding: 26px 30px 30px;
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  line-height: 1.95;
+  color: var(--ink);
+}
+
+.ui-page__title {
+  font-family: var(--serif);
+  font-size: 1.18rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-bottom: 14px;
+}
+
+.ui-page p + p {
+  margin-top: 12px;
+}
+
+/* ---- Text selection, and the highlight it leaves behind --------------- */
+
+.ui-target {
+  position: relative;
+  display: inline;
+  border-radius: 2px;
+}
+
+/* The sweep: a tinted band scaled across the words, as a drag would. */
+.ui-sel {
+  position: absolute;
+  inset: -2px -3px;
+  background: var(--accent-tint);
+  border-radius: 2px;
+  transform: scaleX(0);
+  transform-origin: var(--sweep-origin);
+  z-index: -1;
+}
+
+/* What stays afterwards: the extension underlines a contextual note's text
+   in clay rather than filling it, so the page still reads as the page. */
+.ui-underline {
+  position: absolute;
+  inset-inline: -1px;
+  bottom: -2px;
+  height: 1.5px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: var(--sweep-origin);
+}
+
+/* Floating pieces are placed by measurement — the demos compute where each
+   belongs from the real elements — so they all start at the demo's origin and
+   are moved from there on `x`/`y`. */
+.ui-action,
+.ui-margin-mark,
+.ui-card,
+.ui-pill,
+.ui-quick,
+.ui-hint {
+  top: 0;
+  left: 0;
+}
+
+/* ---- Marks ----------------------------------------------------------- */
+
+/* The action that appears beside a selection. */
+.ui-action {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 9px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--ink-60);
+  opacity: 0;
+  transform-origin: center bottom;
+  white-space: nowrap;
+}
+
+.ui-action.is-hover {
+  border-color: var(--accent);
+  color: var(--ink);
+}
+
+/* The quiet mark left in the margin of an annotated element. */
+.ui-margin-mark {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-tint);
+  color: var(--accent);
+  opacity: 0;
+}
+
+/* ---- Note card ------------------------------------------------------- */
+
+.ui-card {
+  position: absolute;
+  width: 244px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 12px;
+  opacity: 0;
+  transform-origin: top center;
+}
+
+.ui-card__label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-40);
+}
+
+.ui-card__attached {
+  margin-top: 8px;
+  padding-inline-start: 8px;
+  border-inline-start: 2px solid var(--accent);
+  font-family: var(--serif);
+  font-size: 0.7rem;
+  color: var(--ink-60);
+  line-height: 1.5;
+}
+
+.ui-field {
+  position: relative;
+  margin-top: 10px;
+  min-height: 52px;
+  padding: 8px 9px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-md);
+  background: var(--accent-tint);
+  font-family: var(--serif);
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: var(--ink);
+  overflow: hidden;
+}
+
+.ui-field--plain {
+  border-color: var(--border);
+  background: var(--surface-2);
+}
+
+/* Typing: a mask the colour of the field, scaled off the text. */
+.ui-reveal {
+  position: absolute;
+  inset: 0;
+  background: var(--accent-tint);
+  transform-origin: var(--reveal-origin);
+  pointer-events: none;
+}
+
+.ui-field--plain .ui-reveal {
+  background: var(--surface-2);
+}
+
+.ui-caret {
+  position: absolute;
+  top: 9px;
+  inset-inline-start: 9px;
+  z-index: 1;
+  width: 1.5px;
+  height: 15px;
+  background: var(--accent);
+  opacity: 0;
+}
+
+.ui-caret--search {
+  top: 6px;
+  inset-inline-start: 9px;
+  height: 13px;
+}
+
+.ui-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.ui-btn {
+  padding: 4px 11px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--ink-60);
+  background: var(--surface);
+}
+
+.ui-btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+@media (prefers-color-scheme: dark) {
+  .ui-btn--primary {
+    color: #16140f;
+  }
+}
+
+.ui-btn.is-hover {
+  filter: brightness(1.08);
+}
+
+/* The note, restored: a small pill on hover rather than a panel. */
+.ui-pill {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 262px;
+  padding: 7px 11px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  font-family: var(--serif);
+  font-size: 0.74rem;
+  color: var(--ink);
+  opacity: 0;
+}
+
+.ui-pill::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex: none;
+}
+
+/* ---- Whole-element selection ----------------------------------------- */
+
+.ui-target-el {
+  position: relative;
+}
+
+/* The outline Hamesh draws around whatever is under the pointer: a clay edge
+   and a tinted ring, exactly what the extension puts on screen. Each
+   candidate owns its overlay and they cross-fade, rather than one box being
+   resized between them — resizing would stretch the border. */
+.ui-hl {
+  position: absolute;
+  inset: -5px -8px;
+  border: 1.5px solid var(--accent);
+  border-radius: 4px;
+  box-shadow: 0 0 0 3px var(--accent-tint);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ui-code {
+  margin-top: 12px;
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  color: var(--ink-60);
+  direction: ltr;
+}
+
+.ui-card__attached code {
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-size: 0.66rem;
+  direction: ltr;
+  display: inline-block;
+}
+
+/* ---- Video ----------------------------------------------------------- */
+
+.ui-video {
+  position: relative;
+  /* A player's timeline is a physical axis: it runs left-to-right in Arabic
+     too, exactly as every video player does. Without this the progress fill
+     and the marker disagree about which end is the beginning. */
+  direction: ltr;
+  --sweep-origin: left;
+  margin-top: 4px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: linear-gradient(150deg, #241f18 0%, #3a2f22 58%, #1b1712 100%);
+  aspect-ratio: 16 / 8.4;
+}
+
+.ui-video__glow {
+  position: absolute;
+  inset: -30%;
+  background: radial-gradient(circle at 38% 42%, rgba(224, 139, 92, 0.24), transparent 58%);
+  will-change: transform;
+}
+
+.ui-video__bar {
+  position: absolute;
+  inset-inline: 12px;
+  bottom: 12px;
+  height: 3px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.ui-video__played {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.72);
+  transform: scaleX(0.1);
+  transform-origin: var(--sweep-origin);
+}
+
+.ui-video__marker {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 9px;
+  height: 9px;
+  margin-top: -4.5px;
+  margin-left: -4.5px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+}
+
+.ui-video__time {
+  position: absolute;
+  inset-inline-start: 12px;
+  bottom: 22px;
+  font-size: 0.6rem;
+  color: rgba(255, 255, 255, 0.72);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The quick note: one field, no chrome, saved on Enter. */
+.ui-quick {
+  position: absolute;
+  width: 230px;
+  padding: 9px;
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  transform-origin: bottom center;
+}
+
+.ui-quick__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-40);
+  margin-bottom: 6px;
+}
+
+.ui-quick__stamp {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.ui-hint {
+  position: absolute;
+  direction: ltr;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 0.66rem;
+  font-weight: 500;
+  opacity: 0;
+  white-space: nowrap;
+}
+
+.ui-hint kbd {
+  background: rgba(128, 128, 128, 0.28);
+  border: none;
+  color: inherit;
+  padding: 1px 5px;
+  font-size: 0.62rem;
+}
+
+/* ---- Notes Library --------------------------------------------------- */
+
+.ui-library {
+  display: grid;
+  grid-template-columns: 138px 1fr;
+  min-height: 236px;
+}
+
+.ui-library__side {
+  border-inline-end: 1px solid var(--border-soft);
+  background: var(--surface-2);
+  padding: 12px 10px;
+}
+
+.ui-site {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 8px;
+  border-radius: var(--radius-md);
+  font-size: 0.7rem;
+  color: var(--ink-60);
+}
+
+.ui-site + .ui-site {
+  margin-top: 2px;
+}
+
+.ui-site i {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: var(--accent-tint);
+  flex: none;
+}
+
+.ui-site.is-active {
+  background: var(--accent-tint);
+  color: var(--ink);
+}
+
+.ui-library__main {
+  padding: 12px 14px;
+}
+
+.ui-search {
+  position: relative;
+  height: 26px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  display: flex;
+  align-items: center;
+  padding-inline: 9px;
+  font-size: 0.68rem;
+  color: var(--ink-40);
+  overflow: hidden;
+}
+
+.ui-search__typed {
+  position: relative;
+  color: var(--ink);
+}
+
+.ui-search__typed .ui-reveal {
+  background: var(--surface-2);
+}
+
+.ui-note-row {
+  position: relative;
+  margin-top: 8px;
+  padding: 9px 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.ui-note-row__text {
+  font-family: var(--serif);
+  font-size: 0.74rem;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.ui-note-row__meta {
+  margin-top: 5px;
+  font-size: 0.6rem;
+  color: var(--ink-40);
+}
+
+.ui-note-row.is-focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-tint);
+}
+
+.ui-note-row__pin {
+  position: absolute;
+  top: 8px;
+  inset-inline-end: 9px;
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  color: var(--accent);
+  opacity: 0;
+}
+
+/* ---- Folders --------------------------------------------------------- */
+
+.ui-folder {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 8px;
+  border-radius: var(--radius-md);
+  font-size: 0.7rem;
+  color: var(--ink-60);
+}
+
+.ui-folder svg {
+  flex: none;
+  opacity: 0.75;
+}
+
+/* Nesting is the point — a folder holds folders, so the children are simply
+   indented under their parent. */
+.ui-folder--child {
+  margin-inline-start: 14px;
+  font-size: 0.66rem;
+  color: var(--ink-40);
+}
+
+.ui-folder__count {
+  margin-inline-start: auto;
+  font-size: 0.62rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-40);
+}
+
+/* The acknowledgement when a note lands in a folder. */
+.ui-folder__glow {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--accent-tint);
+  opacity: 0;
+}
+
+/* The row's own menu button. */
+.ui-note-row__more {
+  position: absolute;
+  top: 7px;
+  inset-inline-end: 8px;
+  width: 16px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  color: var(--ink-40);
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+/* Where a filed note says where it lives. */
+.ui-note-row__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-tint);
+  color: var(--accent);
+  font-size: 0.58rem;
+  font-weight: 600;
+}
+
+/* The note actions menu, hanging from the button that opened it. */
+.ui-menu {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 152px;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  z-index: 5;
+}
+
+.ui-menu__label {
+  padding: 3px 8px 5px;
+  font-size: 0.56rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-40);
+}
+
+.ui-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 0.68rem;
+  color: var(--ink);
+}
+
+.ui-menu__item::before {
+  content: '';
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink-20);
+  flex: none;
+}
+
+.ui-menu__item.is-hover {
+  background: var(--accent-tint);
+}
+
+.ui-menu__item.is-hover::before {
+  border-color: var(--accent);
+}
+
+/* ---- The cursor ------------------------------------------------------ */
+
+/* Not the visitor's pointer — the one in the story. A real element, so GSAP
+   can put it on a curved path, hold it still before a click, and let it
+   react to what it is over. */
+.demo-cursor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 20px;
+  height: 20px;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 6;
+  will-change: transform;
+}
+
+.demo-cursor__arrow {
+  width: 100%;
+  height: 100%;
+  color: var(--ink);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.28));
+}
+
+.demo-cursor__ring {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid var(--accent);
+  opacity: 0;
+  transform: scale(0.4);
+}

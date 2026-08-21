@@ -1,0 +1,80 @@
+/* The hero. One screen: what it is, how to get it, and the thing itself
+   already working. Nothing here should require a scroll to reach. */
+
+.hero {
+  position: relative;
+  padding-top: clamp(44px, 7vh, 84px);
+  /* Room for the composer, which opens below the words it is attached to and
+     therefore reaches past the window it belongs to. The section deliberately
+     does not clip: `overflow: hidden` here was cutting the note card in half
+     the moment it crossed the hero's edge. */
+  padding-bottom: clamp(96px, 14vh, 168px);
+}
+
+/* A single soft clay wash behind the scene. It is one element, animated on
+   transform only, rather than a field of decorative blobs. */
+.hero__glow {
+  position: absolute;
+  /* The wash is the only thing that needed clipping; it is contained here
+     rather than by hiding the section's overflow. */
+  contain: paint;
+  top: -18%;
+  left: 50%;
+  width: min(920px, 100vw);
+  aspect-ratio: 1;
+  translate: -50% 0;
+  background: radial-gradient(circle, var(--accent-glow) 0%, transparent 62%);
+  opacity: 0.55;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.hero__inner {
+  position: relative;
+  text-align: center;
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+}
+
+.hero h1 {
+  max-width: 16ch;
+}
+
+.hero .lede {
+  max-width: 52ch;
+}
+
+.hero__cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.hero__note {
+  font-size: 0.82rem;
+  color: var(--ink-40);
+}
+
+/* Every glyph the intro timeline animates in is wrapped so the transform
+   lands on the wrapper and never on a text node. */
+.reveal-line {
+  display: block;
+  overflow: hidden;
+}
+
+.hero__scene {
+  margin-top: clamp(30px, 5vh, 58px);
+  width: 100%;
+  display: grid;
+  justify-items: center;
+  transform-style: preserve-3d;
+}
+
+/* Wider than the showcase's scenes: this one is not sharing a row with a
+   column of copy, and it is the first thing anyone sees working. */
+.hero .demo {
+  width: min(100%, 720px);
+}
