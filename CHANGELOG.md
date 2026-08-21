@@ -6,6 +6,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Hovering a Hamesh mark on a page made it see-through.** Markers are drawn as an opaque chip
+  precisely so they stay legible over any host content, but the hover state filled them with
+  `--hm-accent-tint` — a token that is opaque in light appearance and a 16%-alpha overlay in dark, so
+  in dark appearance hovering dissolved the chip and the page showed straight through it. Hover now
+  uses a fill that is opaque in both appearances, and does more than recolor: the hairline turns
+  accent and the chip lifts 1px onto a deeper shadow, so it reads as something pressable. Pressing it
+  collapses the lift and fills solid.
+
 ## [1.2.3] — 2026-08-13
 
 ### Added
