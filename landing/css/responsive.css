@@ -1,0 +1,139 @@
+/* Small screens are not a scaled-down desktop.
+ *
+ * The demos stay — they are how the product explains itself, and a touch
+ * visitor needs them more than a mouse one, not less. What goes is the depth:
+ * the pinned scroll story becomes an ordinary stack of scenes, the parallax
+ * stops, and the 3D is flattened to a hint. */
+
+@media (max-width: 900px) {
+  /* One column, copy above its own demo — the sections already alternate
+     sides on desktop, so there is nothing to interleave here. */
+  .feature__inner {
+    grid-template-columns: 1fr;
+    gap: 26px;
+  }
+
+  .feature--flip .feature__copy {
+    order: 0;
+  }
+
+  .feature__copy {
+    max-width: none;
+  }
+
+  .feature__stage {
+    perspective: none;
+  }
+
+  .scene {
+    padding-block: 8px;
+    transform: none !important;
+  }
+
+  /* Depth sheets are decoration that costs layers; drop them entirely. */
+  .scene__layer {
+    display: none;
+  }
+
+  .split {
+    grid-template-columns: 1fr;
+  }
+
+  .site-nav {
+    gap: 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Narrower than the viewport by enough to absorb the ambient scale: a
+     decorative wash must never be the reason a phone scrolls sideways. */
+  .hero__glow {
+    width: min(920px, 74vw);
+  }
+
+  /* The three nav links cost more than they give on a phone: they crowd the
+     lockup, wrap onto a second line, and push the language toggle out of
+     reach. Everything they point at is a short scroll away. */
+  .site-nav {
+    display: none;
+  }
+
+  /* With the nav gone, the toggle takes over holding the end of the row. */
+  .lang-toggle {
+    margin-inline-start: auto;
+  }
+}
+
+@media (max-width: 620px) {
+  .ui-page {
+    padding: 20px 18px 24px;
+    font-size: 0.86rem;
+    line-height: 1.85;
+  }
+
+  .ui-card,
+  .ui-quick {
+    width: 200px;
+  }
+
+  .ui-library {
+    grid-template-columns: 104px 1fr;
+    min-height: 240px;
+  }
+
+  .ui-pill {
+    max-width: 200px;
+    font-size: 0.7rem;
+  }
+
+  .hero__cta {
+    width: 100%;
+  }
+
+  .hero__cta .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+}
+
+/* Coarse pointers get no hover-driven parallax, so the tilt listener is not
+   even attached (see js/animations/scroll.js) — this is the visual half. */
+@media (hover: none) {
+  .stage__tilt {
+    transform: none !important;
+  }
+}
+
+/* ---- Reduced motion --------------------------------------------------
+ *
+ * CSS handles the transitions it owns; the JavaScript checks the same query
+ * and builds the demos as still, finished states instead of loops, so nothing
+ * animates behind the scenes either. Every scene stays reachable. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .hero__glow {
+    opacity: 0.35;
+  }
+
+  /* Unpinned and stacked, exactly like the small-screen layout. */
+  .scene {
+    padding-block: 8px;
+    transform: none !important;
+  }
+
+  .scene__layer {
+    display: none;
+  }
+
+  .demo-cursor {
+    display: none;
+  }
+}

@@ -1,0 +1,85 @@
+/* Hamesh brand tokens.
+ *
+ * These are the extension's own tokens (src/ui/tokens.css), not a separate
+ * marketing palette — the site and the product must not drift apart. Clay
+ * (`--accent`) is the only saturated colour in the system and is reserved for
+ * the mark, focus rings and calls to action. */
+
+:root {
+  color-scheme: light dark;
+
+  /* Ink & paper */
+  --ink: #1e1b18;
+  --ink-60: rgba(30, 27, 24, 0.62);
+  --ink-40: rgba(30, 27, 24, 0.42);
+  --ink-20: rgba(30, 27, 24, 0.16);
+  --paper: #f7f3ec;
+  --paper-dim: #efe7d8;
+  --surface: #ffffff;
+  --surface-2: #fbf9f5;
+
+  /* Clay */
+  --accent: #b5502f;
+  --accent-strong: #8f3e22;
+  --accent-tint: #f1dccc;
+  --accent-glow: rgba(181, 80, 47, 0.22);
+
+  --border: rgba(30, 27, 24, 0.14);
+  --border-soft: rgba(30, 27, 24, 0.08);
+  --success: #4b6b4e;
+
+  /* Type */
+  --sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --arabic: 'IBM Plex Sans Arabic', 'IBM Plex Sans', 'Segoe UI', Tahoma, sans-serif;
+  --serif: 'IBM Plex Serif', Georgia, 'Times New Roman', serif;
+
+  /* Shape */
+  --radius-sm: 3px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 16px;
+  --radius-pill: 999px;
+
+  /* Depth. The scenes float, so shadows carry real information about how far
+     from the page a layer is meant to be. */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.16);
+  --shadow-scene: 0 40px 90px -30px rgba(30, 27, 24, 0.42);
+
+  /* Motion. `--ease-out` is the extension's own easing curve. */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 320ms;
+
+  /* Layout */
+  --maxw: 1120px;
+  --gutter: clamp(20px, 5vw, 56px);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #f3ede3;
+    --ink-60: rgba(243, 237, 227, 0.64);
+    --ink-40: rgba(243, 237, 227, 0.46);
+    --ink-20: rgba(243, 237, 227, 0.18);
+    --paper: #16140f;
+    --paper-dim: #211e18;
+    --surface: #262219;
+    --surface-2: #1d1a14;
+
+    --accent: #e08b5c;
+    --accent-strong: #f0a578;
+    --accent-tint: rgba(224, 139, 92, 0.16);
+    --accent-glow: rgba(224, 139, 92, 0.26);
+
+    --border: rgba(243, 237, 227, 0.16);
+    --border-soft: rgba(243, 237, 227, 0.08);
+    --success: #8fb894;
+
+    --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.5);
+    --shadow-scene: 0 40px 90px -30px rgba(0, 0, 0, 0.75);
+  }
+}

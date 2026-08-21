@@ -1,0 +1,132 @@
+/* Features — one per section.
+ *
+ * There is no pinned scroll story here, on purpose. Tying a demo to the wheel
+ * makes the visitor responsible for pacing something they have not read yet,
+ * and it stalls mid-gesture the moment they stop scrolling. Each feature gets
+ * its own section instead: copy beside its scene, sides alternating down the
+ * page, and the scene runs on its own clock once it is on screen.
+ *
+ * Scroll decides only *when* a scene begins.
+ */
+
+.feature {
+  position: relative;
+}
+
+.feature__inner {
+  display: grid;
+  grid-template-columns: 0.92fr 1.08fr;
+  align-items: center;
+  gap: clamp(28px, 5vw, 72px);
+}
+
+/* Alternating sides give the page a rhythm without a single feature having to
+   behave differently from the others. */
+.feature--flip .feature__copy {
+  order: 2;
+}
+
+.feature__copy {
+  max-width: 46ch;
+}
+
+.feature__index {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--ink-40);
+  margin-bottom: 14px;
+}
+
+.feature__index b {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.feature__copy h3 {
+  font-size: clamp(1.5rem, 2.8vw, 2.1rem);
+  margin-bottom: 12px;
+}
+
+.feature__copy p {
+  color: var(--ink-60);
+}
+
+.feature__keys {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+  font-size: 0.85rem;
+  color: var(--ink-40);
+}
+
+/* Alt+T is Alt+T in Arabic too — the shortcut keeps its own direction while
+   the sentence around it flips. */
+.keys {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+kbd {
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  background: var(--surface);
+  color: var(--ink-60);
+}
+
+/* ---- The 3D stage ---------------------------------------------------- */
+
+.feature__stage {
+  position: relative;
+  perspective: 1600px;
+  perspective-origin: 50% 46%;
+}
+
+/* The element the pointer parallax writes to, kept separate from the scene so
+   tilt and the entrance never fight over one transform. */
+.stage__tilt {
+  position: relative;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.scene {
+  position: relative;
+  display: grid;
+  place-items: center;
+  transform-style: preserve-3d;
+  padding-block: 26px;
+}
+
+/* Depth is carried by the sheets behind the window, not by the scene. */
+.scene__layer {
+  position: absolute;
+  border-radius: var(--radius-lg);
+  pointer-events: none;
+}
+
+.scene__layer--sheet {
+  inset: 14% -3% 4% 7%;
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  transform: translateZ(-90px) rotate(-1.6deg);
+  opacity: 0.7;
+}
+
+.scene__layer--sheet-2 {
+  inset: 20% 5% -2% -5%;
+  background: var(--paper-dim);
+  border: 1px solid var(--border-soft);
+  transform: translateZ(-160px) rotate(2.2deg);
+  opacity: 0.45;
+}
