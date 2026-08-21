@@ -77,14 +77,9 @@ test.describe("Notes Library — What's New", () => {
     await page.getByRole('button', { name: "What's New" }).click();
 
     await expect(page.locator('h1')).toHaveText("What's New");
+    // The newest entry is whatever the build ships as; asserting a literal
+    // here would mean editing this test at every release.
     const versions = page.locator('.hm-whats-new__version');
-    await expect(versions.first()).toHaveText('1.2.3');
-    await expect(versions.last()).toHaveText('0.1.0');
-    await expect(page.getByText('Video notes and folders')).toBeVisible();
-
-    // The installed build is marked, and it is a real manifest version.
-    const installed = page.locator('.hm-whats-new__badge--installed');
-    await expect(installed).toHaveCount(1);
     const manifestVersion = await page.evaluate(
       () =>
         (
@@ -93,6 +88,13 @@ test.describe("Notes Library — What's New", () => {
           }
         ).chrome.runtime.getManifest().version,
     );
+    await expect(versions.first()).toHaveText(manifestVersion);
+    await expect(versions.last()).toHaveText('0.1.0');
+    await expect(page.getByText('Video notes and folders')).toBeVisible();
+
+    // The installed build is marked, and it is that same manifest version.
+    const installed = page.locator('.hm-whats-new__badge--installed');
+    await expect(installed).toHaveCount(1);
     const marked = await installed
       .locator('xpath=../*[contains(@class,"hm-whats-new__version")]')
       .textContent();
@@ -110,7 +112,7 @@ test.describe("Notes Library — What's New", () => {
     await expect(page.getByText('ملاحظات الفيديو والفولدرات')).toBeVisible();
     await expect(page.locator('.hm-scope')).toHaveAttribute('dir', 'rtl');
     // Version numbers stay Latin digits — they're identifiers, not prose.
-    await expect(page.locator('.hm-whats-new__version').first()).toHaveText('1.2.3');
+    await expect(page.locator('.hm-whats-new__version').first()).toHaveText(/^\d+\.\d+\.\d+$/);
   });
 
   test('the URL the background opens after an update lands directly on the page', async () => {

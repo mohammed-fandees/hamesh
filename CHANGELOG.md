@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.3.0] — 2026-08-21
+
 ### Added
 
 - **Local backup.** Settings → Backup exports every note and folder to a dated JSON file on your
