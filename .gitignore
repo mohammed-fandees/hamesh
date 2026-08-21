@@ -47,9 +47,3 @@ hm-*.mjs
 
 # Generated recording artifacts (large binaries — never commit video output)
 artifacts/
-
-# Scratch notes kept at the repo root while drafting store copy. The real,
-# reviewed permission justifications live in
-# docs/chrome-web-store/PERMISSION_JUSTIFICATIONS.md — a working draft
-# beside them should never be committed by a stray `git add -A`.
-/hamesh-*-permission-justification.md
