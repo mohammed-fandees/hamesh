@@ -74,21 +74,55 @@ async function waitForHameshReady(page: Page): Promise<void> {
 }
 
 /**
- * Selects `needle` inside the given paragraph with a real mouse drag, so the
- * content script sees genuine mousedown/mousemove/mouseup — the sequence the
- * "only after the drag finishes" rule depends on. Falls back to setting the
- * selection programmatically and dispatching a trusted-shaped mouseup only
- * for the multi-element case, where dragging by coordinates is unreliable.
+ * Selects exactly `needle`, then fires the mouseup that ends a drag.
+ *
+ * The content script reads the live selection on mouseup, so this drives the
+ * very same path a real drag does — but without depending on glyph metrics.
+ * Dragging to `rect.right - 1` is not reproducible across machines: on CI's
+ * fonts the caret snapped one character further and swallowed the sentence's
+ * closing period, which is invisible in the interaction and fatal to any
+ * assertion about the anchored text. A genuine pointer drag is covered by
+ * its own test below, where the drag itself is what's under test.
  */
 async function selectPhrase(page: Page, testId: string, needle: string): Promise<void> {
+  await page.evaluate(
+    ([id, text]) => {
+      const el = document.querySelector(`[data-testid="${id}"]`);
+      if (!el) throw new Error(`no element ${id}`);
+      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        const at = (node as Text).data.indexOf(text);
+        if (at === -1) continue;
+        // Scrolled into view first, because a real user can only select
+        // text they can see — and the action chip is positioned from the
+        // selection's *visible* rects, so it never appears for a selection
+        // below the fold.
+        el.scrollIntoView({ block: 'center' });
+        const range = document.createRange();
+        range.setStart(node, at);
+        range.setEnd(node, at + text.length);
+        const selection = window.getSelection();
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+        el.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+        return;
+      }
+      throw new Error(`"${text}" not found in ${id}`);
+    },
+    [testId, needle] as const,
+  );
+}
+
+/** Drags across `needle` with the real mouse — pixel-imprecise by nature, so
+ *  only ever used to prove that genuine pointer input reaches the feature. */
+async function dragAcross(page: Page, testId: string, needle: string): Promise<void> {
   const box = await page.evaluate(
     ([id, text]) => {
       const el = document.querySelector(`[data-testid="${id}"]`);
       if (!el) throw new Error(`no element ${id}`);
       const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
       for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-        const data = (node as Text).data;
-        const at = data.indexOf(text);
+        const at = (node as Text).data.indexOf(text);
         if (at === -1) continue;
         const range = document.createRange();
         range.setStart(node, at);
@@ -157,6 +191,25 @@ test.describe('Hamesh contextual text notes', () => {
     await page.reload();
     await waitForHameshReady(page);
     await expect.poll(() => highlightCount(page)).toBe(1);
+
+    await page.close();
+  });
+
+  test('a real mouse drag offers the mark and anchors the dragged words', async () => {
+    const page = await context.newPage();
+    await installReadinessHook(page);
+    await page.goto(server.url);
+    await waitForHameshReady(page);
+
+    await dragAcross(page, 'para-one', 'Measuring it honestly');
+    await expect(actionChip(page)).toBeVisible();
+    await actionChip(page).click();
+
+    // Asserted as a substring, not an exact match: where a drag stops is a
+    // function of the machine's font metrics, so the surrounding punctuation
+    // may or may not come along. What matters is that the words the pointer
+    // crossed are what got anchored.
+    await expect(page.locator('.hm-attached__quote')).toContainText('Measuring it honestly');
 
     await page.close();
   });
