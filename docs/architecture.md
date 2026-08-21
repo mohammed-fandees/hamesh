@@ -546,9 +546,14 @@ pane uses `?view=settings`, and the background's post-update tab uses
 bottom-docked entry stays reachable however long the page's content runs.
 
 `LibrarySettingsView.tsx` reuses the same Language/Appearance controls as
-the popup's `SettingsView`, plus a Shortcuts section showing both commands'
-current bindings (read via `browser.commands.getAll()`) and a link to
-`chrome://extensions/shortcuts`. That link is the _only_ way to change
+the popup's `SettingsView`, plus Text notes and Shortcuts sections. Every row
+carries a small glyph before its label (`ui/SettingsIcons.tsx`, also the home
+of the three Appearance marks that used to live inside `SettingsView.tsx`) so
+a setting can be found by shape rather than by reading each label; each
+shortcut row shows the mark of the thing it creates — the margin mark, the
+play triangle, the text-note lines — rather than a generic key cap. The
+Shortcuts rows show each command's current binding (read via
+`browser.commands.getAll()`) and link to `chrome://extensions/shortcuts`. That link is the _only_ way to change
 either binding: Chrome's `commands` API exposes only `getAll`/`onCommand` at
 runtime — `update`/`reset`/`openShortcutSettings` are a Firefox-only
 WebExtensions addition that happens to still appear in the cross-browser
