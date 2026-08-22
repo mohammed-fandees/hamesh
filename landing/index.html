@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" class="is-loading">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -8,6 +8,10 @@
       name="description"
       content="Hamesh is a margin for the web — attach a note to the exact sentence, line of code, or moment in a video that matters, and find it there when you return. Local-first, no account."
     />
+    <link rel="icon" href="./assets/favicon.ico" sizes="32x32" />
+    <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png" />
+
     <link rel="canonical" href="https://hamesh.fandees.tech/" />
     <meta name="theme-color" content="#f7f3ec" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#16140f" media="(prefers-color-scheme: dark)" />
@@ -35,6 +39,64 @@
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400&display=swap"
     />
 
+    <style>
+      /* Inline on purpose: this has to be in force at the first paint, and a
+         linked stylesheet is a round trip too late. */
+      html.is-loading body > *:not(.loader) {
+        /* `visibility`, not `display`: layout is still computed, so the
+           demos can measure real positions while hidden, and nothing shifts
+           when the page is revealed. */
+        visibility: hidden;
+      }
+
+      .loader {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: grid;
+        place-items: center;
+        background: #f7f3ec;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .loader {
+          background: #16140f;
+        }
+      }
+
+      html.is-ready .loader {
+        pointer-events: none;
+      }
+    </style>
+
+    <!-- Without JavaScript there is no animation to wait for, and no script
+         to take the loader away — so the content is simply shown. -->
+    <noscript>
+      <style>
+        html.is-loading body > *:not(.loader) {
+          visibility: visible;
+        }
+
+        .loader {
+          display: none;
+        }
+      </style>
+    </noscript>
+
+    <script>
+      /* Releases the page even if the animation engine or the module graph
+         never loads. `main.js` clears this the moment it takes over, so in
+         the normal case it never fires. Animations are an enhancement; being
+         able to read the page is not. */
+      window.__hameshFailsafe = window.setTimeout(function () {
+        var root = document.documentElement;
+        root.classList.remove('is-loading');
+        root.classList.add('is-ready');
+        var loader = document.querySelector('.loader');
+        if (loader) loader.remove();
+      }, 4000);
+    </script>
+
     <link rel="stylesheet" href="./css/reset.css" />
     <link rel="stylesheet" href="./css/variables.css" />
     <link rel="stylesheet" href="./css/base.css" />
@@ -42,10 +104,28 @@
     <link rel="stylesheet" href="./css/hero.css" />
     <link rel="stylesheet" href="./css/features.css" />
     <link rel="stylesheet" href="./css/feature-demos.css" />
+    <link rel="stylesheet" href="./css/loader.css" />
     <link rel="stylesheet" href="./css/responsive.css" />
   </head>
 
   <body>
+    <!-- Shown until the animation engine has loaded, its plugins are
+         registered, every timeline is built and the initial states are
+         applied. The mark draws itself rather than spinning: the glyph is a
+         rule with a tick reaching off it, and that is the gesture. -->
+    <div class="loader" role="status">
+      <span class="loader__inner">
+        <svg class="loader__mark" viewBox="0 0 32 32" aria-hidden="true">
+          <g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+            <path class="loader__stroke loader__stroke--rule" d="M10 5V27" />
+            <path class="loader__stroke loader__stroke--tick" d="M10 14H20" />
+            <path class="loader__stroke loader__stroke--end" d="M20 10.5V17.5" />
+          </g>
+        </svg>
+        <span class="loader__line"></span>
+        <span class="visually-hidden" data-ar="جارٍ التحميل" data-en="Loading">جارٍ التحميل</span>
+      </span>
+    </div>
     <a class="skip-link" href="#main" data-ar="تخطَّ إلى المحتوى" data-en="Skip to content"
       >تخطَّ إلى المحتوى</a
     >

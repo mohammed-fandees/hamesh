@@ -193,6 +193,7 @@ p {
   color: var(--ink);
 }
 
+.visually-hidden,
 .skip-link {
   position: absolute;
   width: 1px;

@@ -8,6 +8,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **The landing page loads behind its own loading screen, and has a favicon.** The page used to
+  paint the finished hero, then snatch every element back to the start of its entrance and play it —
+  a flash followed by a jump. It now opens hidden, builds its timelines behind a Hamesh-marked
+  loader, and hands over in one continuous movement with the hero already arriving as the loader
+  leaves. If the animation engine never loads, an inline failsafe reveals the page anyway; without
+  JavaScript at all, a `<noscript>` rule does. The favicon is generated from the same brand glyph as
+  the extension's icons — `index.html` previously linked none at all, which is why no icon appeared.
+
 - **The landing page shows the product instead of describing it.** A user reported having to read
   and scroll before they could find the install link. The first screen is now one line, the install
   link, and Hamesh already working. Below it, each feature gets its own section with a live demo
