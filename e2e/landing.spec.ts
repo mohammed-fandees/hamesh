@@ -246,9 +246,21 @@ test.describe('Landing page', () => {
       .toBe(true);
   });
 
-  test('animations never widen the document', async ({ page }) => {
-    for (const width of [320, 390, 768]) {
+  test('animations never widen the document, in either language', async ({ page }) => {
+    // Five combinations, each of which has to sit through a full demo cycle.
+    test.setTimeout(120000);
+    // Both languages: the hero's wash used to drift 4% to the right, which
+    // extends the document in LTR and not in RTL, so an Arabic-only test saw
+    // nothing while English grew a little further every cycle.
+    for (const [lang, width] of [
+      ['ar', 320],
+      ['ar', 390],
+      ['en', 390],
+      ['en', 768],
+      ['en', 1280],
+    ] as const) {
       await page.setViewportSize({ width, height: 800 });
+      await page.addInitScript((value) => localStorage.setItem('hamesh-lang', value), lang);
       await page.goto(origin);
       await page.waitForTimeout(1500);
 
@@ -266,14 +278,104 @@ test.describe('Landing page', () => {
 
       for (const id of ['#feature-1', '#feature-3', '#feature-5']) {
         await page.evaluate((sel) => document.querySelector(sel)!.scrollIntoView(), id);
-        await page.waitForTimeout(2200);
+        await page.waitForTimeout(1800);
       }
 
       const { max, vw } = await page.evaluate(() => ({
         max: (window as unknown as { __max: number }).__max,
         vw: window.innerWidth,
       }));
-      expect(max, `document grew sideways at ${width}px`).toBeLessThanOrEqual(vw);
+      expect(max, `document grew sideways at ${width}px in ${lang}`).toBeLessThanOrEqual(vw);
     }
+  });
+
+  test('the annotated phrase never breaks across lines', async ({ page }) => {
+    // An inline box that wraps hands its absolutely positioned children a
+    // containing block spanning every fragment, so the selection sweep
+    // becomes a rectangle over the whole paragraph rather than a band across
+    // the words. It showed up on a real phone and not in a desktop window of
+    // the same width, because the wrap point depends on font metrics.
+    for (const [lang, width] of [
+      ['ar', 320],
+      ['ar', 375],
+      ['en', 320],
+      ['en', 390],
+    ] as const) {
+      await page.setViewportSize({ width, height: 800 });
+      await page.addInitScript((value) => localStorage.setItem('hamesh-lang', value), lang);
+      await page.goto(origin);
+      await page.waitForTimeout(1200);
+
+      const target = await page.evaluate(() => {
+        const el = document.querySelector('.hero [data-el="target"]') as HTMLElement;
+        const style = getComputedStyle(el);
+        return {
+          fragments: el.getClientRects().length,
+          height: el.getBoundingClientRect().height,
+          lineHeight: parseFloat(style.lineHeight) || 20,
+        };
+      });
+
+      expect(target.fragments, `phrase wrapped at ${width}px in ${lang}`).toBe(1);
+      expect(target.height).toBeLessThan(target.lineHeight * 1.6);
+    }
+  });
+
+  test('the margin mark stays inside the page it annotates', async ({ page }) => {
+    test.setTimeout(90000);
+    // It is docked in the page's own margin, the way the extension docks it.
+    // Placed outside the window it gets cut in half by the containment that
+    // stops demos widening the document.
+    for (const lang of ['ar', 'en'] as const) {
+      await page.setViewportSize({ width: 390, height: 860 });
+      await page.addInitScript((value) => localStorage.setItem('hamesh-lang', value), lang);
+      await page.goto(origin);
+
+      const mark = await page.evaluate(async () => {
+        const el = document.querySelector('.hero [data-el="margin-mark"]') as HTMLElement;
+        const win = document.querySelector('.hero .ui-window') as HTMLElement;
+        const began = Date.now();
+        while (Date.now() - began < 25000) {
+          if (Number(getComputedStyle(el).opacity) > 0.6) {
+            const m = el.getBoundingClientRect();
+            const w = win.getBoundingClientRect();
+            return { left: m.left - w.left, right: w.right - m.right };
+          }
+          await new Promise((r) => setTimeout(r, 100));
+        }
+        return null;
+      });
+
+      expect(mark, `the mark never appeared in ${lang}`).not.toBeNull();
+      expect(mark!.left, `mark escaped the window's start edge in ${lang}`).toBeGreaterThan(-1);
+      expect(mark!.right, `mark escaped the window's end edge in ${lang}`).toBeGreaterThan(-1);
+    }
+  });
+
+  test('the hero demo starts once, rather than starting again after the loader', async ({
+    page,
+  }) => {
+    await page.goto(origin, { waitUntil: 'commit' });
+
+    // The visibility observer used to start the demo behind the loading
+    // screen, and the intro then restarted it in front of the visitor — which
+    // reads as the animation glitching and beginning again.
+    const starts = await page.evaluate(async () => {
+      const seen: number[] = [];
+      let previous = 1;
+      const began = Date.now();
+      while (Date.now() - began < 8000) {
+        const cursor = document.querySelector('.hero .demo-cursor') as HTMLElement | null;
+        const now = cursor ? Number(getComputedStyle(cursor).opacity) : 0;
+        // The cursor fades in at the top of each cycle; two rises this early
+        // means it was restarted, not resumed.
+        if (previous < 0.05 && now > 0.2) seen.push(Date.now() - began);
+        previous = now;
+        await new Promise((r) => setTimeout(r, 60));
+      }
+      return seen;
+    });
+
+    expect(starts.length, `the story began ${starts.length} times`).toBe(1);
   });
 });
