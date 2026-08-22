@@ -3,8 +3,11 @@
  *
  * One timeline, not a chain of timeouts: the copy resolves, the scene arrives
  * from depth and settles, ambient drift takes over, and only then does the
- * demo start telling its story. Each beat is anchored to the one before it,
- * so the whole opening can be slowed, paused or replayed as a unit.
+ * demo start telling its story.
+ *
+ * The timeline is built paused and handed to the intro, which plays it while
+ * the loading screen is still on its way out — so the page arrives as one
+ * movement rather than as a loader that leaves and a hero that then begins.
  *
  * The install link is in the first beat. Whatever else the page does, it must
  * not make someone wait through an animation to find out how to get the
@@ -28,7 +31,7 @@ export function createHeroIntro(hero) {
 
   let demo = null;
   let ambient = null;
-  let visible = false;
+  let visible = true;
 
   function buildDemo() {
     demo?.kill();
@@ -42,20 +45,40 @@ export function createHeroIntro(hero) {
   }
 
   buildDemo();
-
   createHeroGlowDrift(glow);
+
+  const api = {
+    timeline: null,
+    rebuild: buildDemo,
+    pause: () => {
+      demo?.pause();
+      ambient?.pause();
+    },
+    resume: () => {
+      if (!visible) return;
+      demo?.play();
+      ambient?.resume();
+    },
+  };
 
   if (prefersReducedMotion()) {
     gsap.set([...lines, ...fades], { opacity: 1, y: 0 });
     gsap.set(scene, { opacity: 1 });
-    return null;
+    return api;
   }
 
-  const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+  /* How far the scene travels in from depth, by screen size. A 420px push on
+     a phone is most of the viewport's width in perspective terms: it reads as
+     a lurch, and it is the kind of value that only ever looked right on the
+     machine it was written on. */
+  const depth = window.matchMedia('(max-width: 768px)').matches ? -150 : -420;
+  const lift = window.matchMedia('(max-width: 768px)').matches ? 26 : 54;
+
+  const tl = gsap.timeline({ paused: true, defaults: { ease: 'power3.out' } });
 
   /* 1 — the words. Each line is masked by its own wrapper, so the transform
      lands on a box and never on a text node. */
-  tl.from(lines, { yPercent: 118, opacity: 0, duration: 0.8, stagger: 0.075 }, 0.1).from(
+  tl.from(lines, { yPercent: 118, opacity: 0, duration: 0.8, stagger: 0.075 }, 0.05).from(
     fades,
     { opacity: 0, y: 14, duration: 0.6, stagger: 0.08 },
     '>-0.45',
@@ -65,14 +88,14 @@ export function createHeroIntro(hero) {
   if (scene) {
     tl.from(
       scene,
-      { opacity: 0, z: -420, y: 54, rotateX: 9, duration: 1.15, ease: 'power3.out' },
-      '<+0.25',
+      { opacity: 0, z: depth, y: lift, rotateX: 7, duration: 1.05, ease: 'power3.out' },
+      '<+0.2',
     );
   }
 
   /* 3 — it is alive before it is busy: drift first, story second. */
   tl.call(() => ambient?.resume(), null, '>-0.35');
-  tl.call(() => visible && demo?.play(), null, '>-0.1');
+  tl.call(() => visible && demo?.restart(), null, '>-0.1');
 
   /* Off screen it stops; back on screen it picks the story up from the top. */
   whenVisible(hero, {
@@ -91,16 +114,6 @@ export function createHeroIntro(hero) {
 
   window.addEventListener('resize', debounce(buildDemo, 220));
 
-  return {
-    rebuild: buildDemo,
-    pause: () => {
-      demo?.pause();
-      ambient?.pause();
-    },
-    resume: () => {
-      if (!visible) return;
-      demo?.play();
-      ambient?.resume();
-    },
-  };
+  api.timeline = tl;
+  return api;
 }

@@ -23,6 +23,7 @@ export default [
         console: 'readonly',
         setTimeout: 'readonly',
         clearTimeout: 'readonly',
+        CSS: 'readonly',
       },
     },
     rules: {

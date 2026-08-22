@@ -5,10 +5,17 @@
  * intro, each scene owns its story, scroll owns when things start, and this
  * file only introduces them to each other.
  *
- * Order matters in exactly one place. The language is applied *before*
- * anything is built, because every demo measures real elements to place its
- * cursor and cards — and in Arabic all of that mirrors. Building first and
- * switching afterwards leaves each demo pointing at where things used to be.
+ * Order matters in two places.
+ *
+ * The language is applied before anything is built, because every demo
+ * measures real elements to place its cursor and cards — and in Arabic all of
+ * that mirrors. Building first and switching afterwards leaves each demo
+ * reaching for where things used to be.
+ *
+ * Everything else is built inside `runIntro`, while the loading screen still
+ * covers the page. Building is when GSAP snaps a dozen elements back to their
+ * starting positions; done in the open, that is a visible flash followed by a
+ * jump.
  */
 
 import { qs } from './lib/dom.js';
@@ -20,10 +27,11 @@ import {
   createPointerTilt,
   createSectionReveals,
 } from './animations/scroll.js';
+import { runIntro } from './animations/intro.js';
 import { ScrollTrigger } from './lib/gsap.js';
 import { onTabVisibilityChange, onMotionPreferenceChange } from './lib/motion.js';
 
-function boot() {
+async function boot() {
   let heroIntro = null;
   let scenes = null;
 
@@ -37,13 +45,23 @@ function boot() {
     },
   });
 
-  const hero = qs('.hero');
-  heroIntro = hero ? createHeroIntro(hero) : null;
-  scenes = createFeatureScenes();
+  await runIntro({
+    build: () => {
+      const hero = qs('.hero');
+      heroIntro = hero ? createHeroIntro(hero) : null;
+      scenes = createFeatureScenes();
 
-  createSceneEntrances();
-  createPointerTilt();
-  createSectionReveals();
+      createSceneEntrances();
+      createPointerTilt();
+      createSectionReveals();
+
+      return heroIntro?.timeline ?? null;
+    },
+  });
+
+  /* The loader was covering a page whose fonts may have settled underneath
+     it; every trigger position is measured against the layout that resulted. */
+  ScrollTrigger.refresh();
 
   /* A background tab should cost nothing. */
   onTabVisibilityChange((visible) => {

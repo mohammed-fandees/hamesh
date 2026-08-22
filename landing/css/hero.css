@@ -71,6 +71,10 @@
   display: grid;
   justify-items: center;
   transform-style: preserve-3d;
+  /* Same containment as the feature stages: the composer may hang below the
+     window, but nothing may reach past the page's edge. */
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 /* Wider than the showcase's scenes: this one is not sharing a row with a

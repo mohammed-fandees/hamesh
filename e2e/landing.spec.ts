@@ -159,4 +159,121 @@ test.describe('Landing page', () => {
     );
     expect(overflows).toBe(false);
   });
+  test('serves a favicon in every form it links', async ({ page }) => {
+    await page.goto(origin);
+
+    const links = await page.locator('link[rel*="icon"]').evaluateAll((els) =>
+      els.map((el) => ({
+        rel: el.getAttribute('rel')!,
+        href: (el as HTMLLinkElement).getAttribute('href')!,
+      })),
+    );
+    expect(links.map((l) => l.rel).sort()).toEqual(['apple-touch-icon', 'icon', 'icon']);
+
+    // Linking a file that 404s is the same as having no favicon at all, which
+    // is how this page shipped: it linked none, while privacy.html carried an
+    // inline data URI nobody else could share.
+    for (const { href } of links) {
+      const response = await page.request.get(new URL(href, origin).href);
+      expect(response.status(), href).toBe(200);
+    }
+
+    // A bare request never consults the document.
+    expect((await page.request.get(new URL('./favicon.ico', origin).href)).status()).toBe(200);
+  });
+
+  test('never shows the page before its animations are ready', async ({ page }) => {
+    await page.goto(origin, { waitUntil: 'commit' });
+
+    // Sampled from the first commit until the page hands over, rather than
+    // for a fixed window: on a cold start the hand-over can happen later than
+    // any window worth hard-coding, and a test that fails for being early is
+    // worse than no test.
+    //
+    // The invariant is not *when* the heading appears but that it never
+    // appears while the page still calls itself loading — painted in its
+    // finished position, then yanked back to the start of its entrance.
+    // Opacity as well as visibility: an element parked at the start of its
+    // own `from` tween is `visibility: visible` and completely invisible.
+    const read = () =>
+      page
+        .evaluate(() => {
+          const h1 = document.querySelector('h1');
+          if (!h1) return null;
+          const style = getComputedStyle(h1);
+          return {
+            loading: document.documentElement.classList.contains('is-loading'),
+            shown: style.visibility === 'visible' && Number(style.opacity) > 0.9,
+          };
+        })
+        .catch(() => null);
+
+    const samples: Array<{ loading: boolean; shown: boolean }> = [];
+    const deadline = Date.now() + 15000;
+    let settled = false;
+    while (Date.now() < deadline && !settled) {
+      const state = await read();
+      if (state) {
+        samples.push(state);
+        settled = !state.loading && state.shown;
+      }
+      if (!settled) await page.waitForTimeout(60);
+    }
+
+    expect(samples.length).toBeGreaterThan(2);
+    expect(settled, 'the page never finished loading').toBe(true);
+    expect(samples.filter((s) => s.loading && s.shown)).toEqual([]);
+
+    await expect(page.locator('.loader')).toHaveCount(0);
+  });
+
+  test('still shows the page when the animation engine fails to load', async ({ page }) => {
+    // Animations are an enhancement. A visitor left staring at a loading
+    // screen because one script did not arrive has been given the worst
+    // possible version of one.
+    await page.route('**/vendor/gsap.min.js', (route) => route.abort());
+    await page.goto(origin);
+
+    await expect
+      .poll(
+        async () =>
+          page.evaluate(() => {
+            const style = getComputedStyle(document.querySelector('h1')!);
+            return style.visibility === 'visible' && Number(style.opacity) > 0.9;
+          }),
+        { timeout: 8000 },
+      )
+      .toBe(true);
+  });
+
+  test('animations never widen the document', async ({ page }) => {
+    for (const width of [320, 390, 768]) {
+      await page.setViewportSize({ width, height: 800 });
+      await page.goto(origin);
+      await page.waitForTimeout(1500);
+
+      // The page guards itself with `overflow-x: hidden`; lifting it here is
+      // the difference between testing the fix and testing the guard.
+      await page.evaluate(() => {
+        document.body.style.overflowX = 'visible';
+        const w = window as unknown as { __max: number };
+        w.__max = window.innerWidth;
+        setInterval(() => {
+          const sw = document.documentElement.scrollWidth;
+          if (sw > w.__max) w.__max = sw;
+        }, 100);
+      });
+
+      for (const id of ['#feature-1', '#feature-3', '#feature-5']) {
+        await page.evaluate((sel) => document.querySelector(sel)!.scrollIntoView(), id);
+        await page.waitForTimeout(2200);
+      }
+
+      const { max, vw } = await page.evaluate(() => ({
+        max: (window as unknown as { __max: number }).__max,
+        vw: window.innerWidth,
+      }));
+      expect(max, `document grew sideways at ${width}px`).toBeLessThanOrEqual(vw);
+    }
+  });
 });

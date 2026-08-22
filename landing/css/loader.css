@@ -1,0 +1,126 @@
+/* The loading screen.
+ *
+ * Its job is to exist before any JavaScript does. The critical half of this
+ * file is duplicated inline in the document head — see `index.html` — because
+ * by the time an external stylesheet has been fetched the page has already
+ * had a chance to paint the hero un-animated, which is the exact flash this
+ * is here to prevent.
+ *
+ * The mark draws itself: a vertical rule, then the tick reaching off it,
+ * which is what the glyph means. Nothing spins.
+ */
+
+.loader {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: var(--paper, #f7f3ec);
+  /* The page underneath is inert until this lifts. */
+  cursor: progress;
+}
+
+.loader__mark {
+  width: 46px;
+  height: 46px;
+  color: var(--accent, #b5502f);
+  overflow: visible;
+}
+
+/* Each stroke is drawn by running its own dash through it. The lengths are
+   the strokes' real lengths in the 32-unit viewBox — 22, 10 and 7 — so the
+   three draw at speeds that look deliberate rather than uniform. */
+.loader__stroke {
+  stroke-dasharray: var(--len);
+  stroke-dashoffset: var(--len);
+  animation: loader-draw 1.5s var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)) infinite;
+}
+
+.loader__stroke--rule {
+  --len: 22;
+}
+
+.loader__stroke--tick {
+  --len: 10;
+  animation-delay: 0.18s;
+}
+
+.loader__stroke--end {
+  --len: 7;
+  animation-delay: 0.3s;
+}
+
+@keyframes loader-draw {
+  0% {
+    stroke-dashoffset: var(--len);
+  }
+  45%,
+  70% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: calc(var(--len) * -1);
+  }
+}
+
+/* The note the mark is holding: one line that writes itself alongside. */
+.loader__line {
+  width: 74px;
+  height: 2px;
+  margin-top: 18px;
+  border-radius: 2px;
+  background: var(--border, rgba(30, 27, 24, 0.14));
+  overflow: hidden;
+}
+
+.loader__line::after {
+  content: '';
+  display: block;
+  height: 100%;
+  width: 100%;
+  border-radius: inherit;
+  background: var(--accent, #b5502f);
+  transform-origin: left;
+  animation: loader-line 1.5s var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)) infinite;
+}
+
+:root[dir='rtl'] .loader__line::after {
+  transform-origin: right;
+}
+
+@keyframes loader-line {
+  0% {
+    transform: scaleX(0);
+  }
+  55%,
+  75% {
+    transform: scaleX(1);
+  }
+  100% {
+    transform: scaleX(1);
+    opacity: 0;
+  }
+}
+
+.loader__inner {
+  display: grid;
+  justify-items: center;
+}
+
+/* Anyone who asked for less movement gets the mark, still, and a page that
+   arrives without a performance. */
+@media (prefers-reduced-motion: reduce) {
+  .loader__stroke,
+  .loader__line::after {
+    animation: none;
+  }
+
+  .loader__stroke {
+    stroke-dashoffset: 0;
+  }
+
+  .loader__line::after {
+    transform: scaleX(1);
+  }
+}
