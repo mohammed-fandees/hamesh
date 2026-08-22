@@ -90,6 +90,17 @@ kbd {
   position: relative;
   perspective: 1600px;
   perspective-origin: 50% 46%;
+  /* Containment at the source rather than at the page.
+   *
+   * Everything that moves in a scene is absolutely positioned and driven by
+   * transforms, and a transform is free to leave its parent's box. Clipping
+   * the stage horizontally means no demo — present or future — can widen the
+   * document, without the page-level `overflow-x: hidden` that only hides
+   * the evidence. `clip` rather than `hidden` because `hidden` would make
+   * this a scroll container and trap the composer that deliberately hangs
+   * below the window. */
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 /* The element the pointer parallax writes to, kept separate from the scene so

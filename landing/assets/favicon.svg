@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <style>
+    .glyph { stroke: #B5502F; }
+    @media (prefers-color-scheme: dark) { .glyph { stroke: #E08B5C; } }
+  </style>
+  <g class="glyph" fill="none" stroke-width="3.4" stroke-linecap="round">
+    <path d="M10 5V27" />
+    <path d="M10 14H20" />
+    <path d="M20 10.5V17.5" />
+  </g>
+</svg>
