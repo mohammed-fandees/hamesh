@@ -357,25 +357,35 @@ test.describe('Landing page', () => {
   }) => {
     await page.goto(origin, { waitUntil: 'commit' });
 
-    // The visibility observer used to start the demo behind the loading
-    // screen, and the intro then restarted it in front of the visitor — which
-    // reads as the animation glitching and beginning again.
-    const starts = await page.evaluate(async () => {
-      const seen: number[] = [];
+    // Sampled from page load for a full cycle's worth of time, rather than
+    // from an anchor part-way through: the story starts a couple of seconds
+    // after the hand-over, and anchoring the window to the hand-over made the
+    // test depend on machine speed rather than on behaviour.
+    //
+    // The demo's cursor fades in at the top of each cycle, and a cycle is
+    // ~11s, so inside 12s exactly one rise is correct and two mean it was
+    // restarted rather than resumed.
+    const trace = await page.evaluate(async () => {
+      const rises: number[] = [];
+      const samples: number[] = [];
       let previous = 1;
       const began = Date.now();
-      while (Date.now() - began < 8000) {
+      while (Date.now() - began < 12000) {
         const cursor = document.querySelector('.hero .demo-cursor') as HTMLElement | null;
-        const now = cursor ? Number(getComputedStyle(cursor).opacity) : 0;
-        // The cursor fades in at the top of each cycle; two rises this early
-        // means it was restarted, not resumed.
-        if (previous < 0.05 && now > 0.2) seen.push(Date.now() - began);
+        const now = cursor ? Number(getComputedStyle(cursor).opacity) : -1;
+        samples.push(Math.round(now * 10) / 10);
+        if (previous < 0.05 && now > 0.2) rises.push(Math.round((Date.now() - began) / 100) / 10);
         previous = now;
-        await new Promise((r) => setTimeout(r, 60));
+        await new Promise((r) => setTimeout(r, 80));
       }
-      return seen;
+      return { rises, samples };
     });
+    const starts = trace.rises;
 
-    expect(starts.length, `the story began ${starts.length} times`).toBe(1);
+    expect(
+      starts.length,
+      `the story began ${starts.length} times (rises at ${starts.join(', ')}s; ` +
+        `opacity trace ${trace.samples.join('')})`,
+    ).toBe(1);
   });
 });

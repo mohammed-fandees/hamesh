@@ -87,14 +87,15 @@
       /* Releases the page even if the animation engine or the module graph
          never loads. `main.js` clears this the moment it takes over, so in
          the normal case it never fires. Animations are an enhancement; being
-         able to read the page is not. */
+         able to read the page is not. Deliberately longer than the intro's
+         own patience, so this only ever fires when nothing else can. */
       window.__hameshFailsafe = window.setTimeout(function () {
         var root = document.documentElement;
         root.classList.remove('is-loading');
         root.classList.add('is-ready');
         var loader = document.querySelector('.loader');
         if (loader) loader.remove();
-      }, 4000);
+      }, 6000);
     </script>
 
     <link rel="stylesheet" href="./css/reset.css" />
