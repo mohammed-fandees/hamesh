@@ -12,7 +12,7 @@
  */
 
 import { qs, qsa } from '../lib/dom.js';
-import { createAmbientDrift } from './ambient.js';
+import { createPlaybackDrift } from './ambient.js';
 import { whenVisible, debounce } from '../lib/motion.js';
 import { createContextualNoteDemo } from '../demos/contextual-note.js';
 import { createElementNoteDemo } from '../demos/element-note.js';
@@ -45,7 +45,7 @@ export function createFeatureScenes(scope = document) {
     const builder = BUILDERS[item.name];
     if (!builder || !item.demo) return;
     item.timeline = builder(item.demo) ?? null;
-    item.ambient = createAmbientDrift(item.scene);
+    item.ambient = createPlaybackDrift(item.scene);
     if (item.visible) resume(item);
     else halt(item);
   }

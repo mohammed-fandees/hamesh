@@ -80,8 +80,12 @@ export function createFoldersDemo(root) {
   tl.to(menu, { opacity: 1, scale: 1, duration: 0.26, ease: 'power3.out' }, '>-0.08');
 
   /* 2 — choosing where it belongs. */
-  cursor?.moveTo(tl, { x: targetBox.x + 30, y: targetBox.centerY }, { at: '>+0.25', bend: -0.6 });
-  cursor?.hover(tl, target, true, {});
+  cursor?.moveTo(
+    tl,
+    { x: targetBox.x + 30, y: targetBox.centerY },
+    { at: '>+0.25', bend: -0.6, label: 'overItem' },
+  );
+  cursor?.hover(tl, target, true, { at: 'overItem-=0.08' });
   cursor?.settle(tl, {});
   cursor?.press(tl, { target });
 

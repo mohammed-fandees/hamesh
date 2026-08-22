@@ -96,7 +96,13 @@
 
 .ui-target {
   position: relative;
-  display: inline;
+  /* Atomic on purpose: an inline box that breaks across lines hands its
+     absolutely positioned children a containing block covering every
+     fragment, and the selection sweep becomes a rectangle over the whole
+     paragraph. As an inline-block the phrase moves to the next line whole,
+     and the sweep stays a band across the words. */
+  display: inline-block;
+  max-width: 100%;
   border-radius: 2px;
 }
 
@@ -624,6 +630,13 @@
   border-radius: inherit;
   background: var(--accent-tint);
   opacity: 0;
+}
+
+/* The tint is a backdrop, not a cover. Positioned siblings outrank
+   non-positioned ones in paint order, so without this the row's own label and
+   count disappear underneath it the moment a note lands in the folder. */
+.ui-folder > *:not(.ui-folder__glow) {
+  position: relative;
 }
 
 /* The row's own menu button. */

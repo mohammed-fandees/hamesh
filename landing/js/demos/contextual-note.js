@@ -67,7 +67,15 @@ export function createContextualNoteDemo(root) {
       y: cardY,
     },
     marginMark: {
-      x: rtl ? paraBox.x + paraBox.width + 4 : paraBox.x - 27,
+      /* Docked in the page's own margin, and kept inside the window it
+         belongs to: on a narrow screen the page's padding is smaller than the
+         mark's offset, which used to push it past the edge where it was
+         clipped in half. */
+      x: gsap.utils.clamp(
+        windowBox.x + 3,
+        windowBox.x + windowBox.width - 25,
+        rtl ? paraBox.x + paraBox.width + 4 : paraBox.x - 27,
+      ),
       y: targetBox.y - 2,
     },
     pill: {
