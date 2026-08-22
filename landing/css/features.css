@@ -101,6 +101,10 @@ kbd {
    * below the window. */
   overflow-x: clip;
   overflow-y: visible;
+  /* Room for what is meant to sit just outside the window — a mark in the
+     margin, a card's shadow — while still containing anything that tries to
+     run away with the page width. */
+  overflow-clip-margin: 24px;
 }
 
 /* The element the pointer parallax writes to, kept separate from the scene so

@@ -18,8 +18,10 @@ import { gsap } from '../lib/gsap.js';
 import { qs } from '../lib/dom.js';
 import { prefersReducedMotion } from '../lib/motion.js';
 
-/** Longest the loader may hold the page, whatever else is still pending. */
-const PATIENCE = 2600;
+/** Longest the loader may hold the page, whatever else is still pending.
+ *  Kept below the document's own inline failsafe, so this one wins in every
+ *  case except the module graph failing to load at all. */
+const PATIENCE = 3500;
 
 /**
  * Fonts, but only briefly. A late webfont reflows the hero's text, and doing
@@ -48,33 +50,52 @@ export async function runIntro({ build }) {
   /* However badly the next few lines go, the page must end up usable. A
      visitor stuck behind a loading screen because a script threw has been
      given the worst possible version of an enhancement. */
+  let released = false;
   const release = () => {
+    if (released) return;
+    released = true;
     root.classList.remove('is-loading');
     root.classList.add('is-ready');
+  };
+
+  let intro = null;
+
+  /* Revealing the page is only half of giving up gracefully. The hero's
+     entrance is built from `from` tweens, which apply their start values the
+     moment they are created — so a timeline that is revealed but never played
+     leaves the copy sitting at `opacity: 0`. Whatever else happens, the
+     entrance gets played. */
+  const giveUp = () => {
+    release();
+    loader?.remove();
+    intro?.play(0);
   };
 
   /* The document head starts a failsafe before any of this loads, for the
      case where none of it loads at all. Now that we are running, it is ours
      to cancel — and ours to honour if building takes too long. */
   window.clearTimeout(window.__hameshFailsafe);
-  const failsafe = window.setTimeout(() => {
-    release();
-    loader?.remove();
-  }, PATIENCE);
+  const failsafe = window.setTimeout(giveUp, PATIENCE);
 
-  let intro = null;
   try {
     intro = build();
     await fontsSettled();
   } catch (error) {
     console.error('[hamesh] intro build failed', error);
     window.clearTimeout(failsafe);
-    release();
-    loader?.remove();
+    giveUp();
     return null;
   }
 
   window.clearTimeout(failsafe);
+
+  /* The failsafe got there first — the page is already open, so the entrance
+     simply starts now rather than being choreographed with a loader that has
+     already gone. */
+  if (released) {
+    intro?.play(0);
+    return intro;
+  }
 
   if (!loader) {
     release();

@@ -103,7 +103,7 @@ export function createDemoCursor(root) {
      * `bend` flips sign per call site so consecutive moves do not all bow the
      * same way, which would read as a pattern of its own.
      */
-    moveTo(tl, target, { at, bend = 1, duration, ease = 'power2.inOut' } = {}) {
+    moveTo(tl, target, { at, bend = 1, duration, ease = 'power2.inOut', label } = {}) {
       const path = arcThrough(point, target, bend);
       tl.to(
         el,
@@ -114,6 +114,13 @@ export function createDemoCursor(root) {
         },
         at,
       );
+      /* A label at the moment the cursor arrives. Whatever the pointer is
+         meant to affect — an outline lighting up, a control reacting — can
+         then be pinned to that instant. Hanging it off `'>'` instead means
+         it fires relative to whichever tween was added last, which drifts as
+         soon as anything else joins the timeline, and reads as lag between
+         the hand and what it is touching. */
+      if (label) tl.addLabel(label);
       point = { x: target.x, y: target.y };
       return api;
     },

@@ -59,7 +59,13 @@ export function createElementNoteDemo(root) {
       y: cardY,
     },
     marginMark: {
-      x: rtl ? secondBox.x + secondBox.width + 8 : secondBox.x - 30,
+      /* Same rule as the contextual demo: the mark lives in the margin of the
+         page it annotates, never outside the window. */
+      x: gsap.utils.clamp(
+        windowBox.x + 3,
+        windowBox.x + windowBox.width - 25,
+        rtl ? secondBox.x + secondBox.width + 8 : secondBox.x - 30,
+      ),
       y: secondBox.y + 2,
     },
     hint: { x: windowBox.x + windowBox.width / 2 - 40, y: windowBox.y + 46 },
@@ -98,18 +104,29 @@ export function createElementNoteDemo(root) {
   /* 2 — moving across the page, the outline follows what is under the
      pointer. This is the whole feature: it picks the element, not a
      rectangle you have to draw. */
-  cursor?.moveTo(tl, { x: firstBox.centerX, y: firstBox.centerY }, { at: '>+0.1', bend: 0.8 });
-  tl.to(hlFirst, { opacity: 1, duration: 0.18 }, '>-0.15').to(
+  cursor?.moveTo(
+    tl,
+    { x: firstBox.centerX, y: firstBox.centerY },
+    { at: '>+0.1', bend: 0.8, label: 'overFirst' },
+  );
+  /* Slightly *before* the arrival, not after it: a real hover fires as the
+     pointer crosses the element's edge, so the outline is already there when
+     the cursor settles. */
+  tl.to(hlFirst, { opacity: 1, duration: 0.16 }, 'overFirst-=0.1').to(
     hint,
     { opacity: 0, y: places.hint.y - 8, duration: 0.24 },
     '<',
   );
 
-  cursor?.moveTo(tl, { x: secondBox.centerX, y: secondBox.centerY }, { at: '>+0.5', bend: -0.9 });
-  tl.to(hlFirst, { opacity: 0, duration: 0.18 }, '>-0.22').to(
+  cursor?.moveTo(
+    tl,
+    { x: secondBox.centerX, y: secondBox.centerY },
+    { at: 'overFirst+=0.55', bend: -0.9, label: 'overSecond' },
+  );
+  tl.to(hlFirst, { opacity: 0, duration: 0.16 }, 'overSecond-=0.14').to(
     hlSecond,
-    { opacity: 1, duration: 0.18 },
-    '<+0.04',
+    { opacity: 1, duration: 0.16 },
+    'overSecond-=0.1',
   );
 
   /* 3 — chosen. */

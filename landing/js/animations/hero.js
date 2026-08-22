@@ -2,8 +2,8 @@
  * The hero.
  *
  * One timeline, not a chain of timeouts: the copy resolves, the scene arrives
- * from depth and settles, ambient drift takes over, and only then does the
- * demo start telling its story.
+ * from depth and settles, and only then does the demo start telling its
+ * story — once.
  *
  * The timeline is built paused and handed to the intro, which plays it while
  * the loading screen is still on its way out — so the page arrives as one
@@ -16,54 +16,48 @@
 
 import { gsap } from '../lib/gsap.js';
 import { qs, qsa } from '../lib/dom.js';
-import { createHeroGlowDrift, createAmbientDrift } from './ambient.js';
 import { prefersReducedMotion, whenVisible, debounce } from '../lib/motion.js';
 import { createContextualNoteDemo } from '../demos/contextual-note.js';
 
 export function createHeroIntro(hero) {
   const scene = qs('.hero__scene', hero);
   const demoRoot = qs('.demo', hero);
-  const glow = qs('.hero__glow', hero);
   const lines = qsa('[data-hero-line]', hero);
   /* Masked lines slide; the call to action only fades, because the mask that
      makes a slide look clean would also clip its focus ring. */
   const fades = qsa('[data-hero-fade]', hero);
 
   let demo = null;
-  let ambient = null;
   let visible = true;
+  /* The demo is started once, by the intro, when the loading screen hands the
+     page over. Without this the visibility observer starts it the moment the
+     page loads — behind the loader — and the intro then restarts it in front
+     of the visitor, which looks exactly like the animation glitching and
+     beginning again. */
+  let handedOver = false;
 
   function buildDemo() {
     demo?.kill();
-    ambient?.kill();
     demo = demoRoot ? createContextualNoteDemo(demoRoot) : null;
-    ambient = scene ? createAmbientDrift(scene) : null;
-    if (!visible) {
-      demo?.pause();
-      ambient?.pause();
-    }
+    if (!handedOver || !visible) demo?.pause();
   }
 
   buildDemo();
-  createHeroGlowDrift(glow);
 
   const api = {
     timeline: null,
     rebuild: buildDemo,
-    pause: () => {
-      demo?.pause();
-      ambient?.pause();
-    },
+    pause: () => demo?.pause(),
     resume: () => {
-      if (!visible) return;
+      if (!visible || !handedOver) return;
       demo?.play();
-      ambient?.resume();
     },
   };
 
   if (prefersReducedMotion()) {
     gsap.set([...lines, ...fades], { opacity: 1, y: 0 });
     gsap.set(scene, { opacity: 1 });
+    handedOver = true;
     return api;
   }
 
@@ -93,22 +87,29 @@ export function createHeroIntro(hero) {
     );
   }
 
-  /* 3 — it is alive before it is busy: drift first, story second. */
-  tl.call(() => ambient?.resume(), null, '>-0.35');
-  tl.call(() => visible && demo?.restart(), null, '>-0.1');
+  /* 3 — and only now does the story begin, once, as the scene settles. */
+  tl.call(
+    () => {
+      handedOver = true;
+      if (visible) demo?.restart();
+    },
+    null,
+    '>-0.25',
+  );
 
   /* Off screen it stops; back on screen it picks the story up from the top. */
   whenVisible(hero, {
     threshold: 0.15,
     onEnter: () => {
       visible = true;
-      ambient?.resume();
-      if (demo && !demo.isActive()) demo.restart();
+      /* Resumed, not restarted: coming back to the hero should not rewind a
+         story that is halfway through, and before the hand-over there is
+         nothing to resume yet. */
+      if (handedOver) demo?.play();
     },
     onLeave: () => {
       visible = false;
       demo?.pause();
-      ambient?.pause();
     },
   });
 
