@@ -28,3 +28,18 @@ authorized contributors.
 Semantic Versioning. The version lives in `package.json` and `wxt.config.ts`
 (kept in sync). Releases are cut from `main` by pushing a `vMAJOR.MINOR.PATCH`
 tag — see [docs/RELEASING.md](docs/RELEASING.md).
+
+## Contributions and licensing
+
+These terms apply to every contribution submitted to this repository, whether or
+not it is accepted.
+
+Any contribution submitted to this repository is submitted voluntarily and
+without expectation of payment or compensation of any kind. By submitting a
+contribution, you grant Mohammed Fandees a perpetual, worldwide, irrevocable,
+royalty-free, sublicensable, and transferable license to use, reproduce, modify,
+distribute, sell, and otherwise exploit that contribution, on its own or as part
+of Hamesh, under any terms, including commercial terms, and without any
+obligation to seek your further permission, to account to you, or to make any
+payment to you. You confirm you have the right to grant this license. You retain
+your own copyright in the contribution.

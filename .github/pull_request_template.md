@@ -37,3 +37,13 @@
 ## Follow-up work
 
 <!-- Anything intentionally left for a later PR. -->
+
+## Contribution licensing
+
+<!-- Required. See "Contributions and licensing" in CONTRIBUTING.md for the full terms. -->
+
+- [ ] I have read the contribution licensing terms in
+      [CONTRIBUTING.md](https://github.com/mohammed-fandees/hamesh/blob/main/CONTRIBUTING.md) and I grant the license described
+      there for this contribution. I am submitting it voluntarily, with no
+      expectation of payment or compensation, and I confirm I have the right to
+      grant that license.
