@@ -156,5 +156,13 @@ tag, which builds and publishes the packaged extension via GitHub Actions. See
 
 ## License
 
-Proprietary — all rights reserved. See [LICENSE](LICENSE). This is **not**
-open-source software.
+[PolyForm Noncommercial License 1.0.0](LICENSE). You may use, modify, and
+redistribute Hamesh for any noncommercial purpose: personal use, study, hobby
+projects, research, education, charities, and government or public-interest
+organizations. Commercial use needs a separate license, so get in touch at
+mohammed.fandees@gmail.com.
+
+The source is public so that anyone can check the privacy claims above instead
+of taking them on trust. Note that public source is not the same as open source:
+because the license restricts the field of use, Hamesh is source-available
+rather than open source under the OSI definition.

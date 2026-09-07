@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Contextual notes for the web — leave thoughts attached to the pages and elements they belong to.",
   "author": "Mohammed Fandees",
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "packageManager": "pnpm@11.9.0",
   "engines": {
     "node": ">=20"
