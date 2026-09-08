@@ -1,8 +1,7 @@
 # Contributing to Hamesh
 
-Contributions are welcome. Hamesh is released under the
-[PolyForm Noncommercial License 1.0.0](LICENSE), which lets anyone use, change,
-and redistribute it for noncommercial purposes.
+Hamesh is proprietary software (see [LICENSE](LICENSE)); this guide is for
+authorized contributors.
 
 ## Workflow
 
@@ -30,18 +29,17 @@ Semantic Versioning. The version lives in `package.json` and `wxt.config.ts`
 (kept in sync). Releases are cut from `main` by pushing a `vMAJOR.MINOR.PATCH`
 tag — see [docs/RELEASING.md](docs/RELEASING.md).
 
-## Licensing your contribution
+## Contributions and licensing
 
-By opening a pull request you confirm that:
+These terms apply to every contribution submitted to this repository, whether or
+not it is accepted.
 
-1. You wrote the contribution yourself, or you otherwise have the right to submit it.
-2. Your contribution goes out to everyone under the same PolyForm Noncommercial
-   License 1.0.0 that covers the rest of Hamesh.
-3. You also grant Mohammed Fandees a perpetual, worldwide, irrevocable,
-   royalty-free right to use your contribution and to relicense it under other
-   terms, including commercial ones.
-
-Point 3 is there so Hamesh can sell a commercial license later without having to
-track down every past contributor for permission. It does not take your copyright
-away: you keep it, and your work stays available to everyone under the
-noncommercial license.
+Any contribution submitted to this repository is submitted voluntarily and
+without expectation of payment or compensation of any kind. By submitting a
+contribution, you grant Mohammed Fandees a perpetual, worldwide, irrevocable,
+royalty-free, sublicensable, and transferable license to use, reproduce, modify,
+distribute, sell, and otherwise exploit that contribution, on its own or as part
+of Hamesh, under any terms, including commercial terms, and without any
+obligation to seek your further permission, to account to you, or to make any
+payment to you. You confirm you have the right to grant this license. You retain
+your own copyright in the contribution.
