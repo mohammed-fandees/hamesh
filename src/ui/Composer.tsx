@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { AttachedText } from './AttachedText';
+import { FolderPicker, type FolderPickerSource } from './FolderPicker';
 import { MarginMark } from './MarginMark';
 import type { Strings } from './i18n';
 
@@ -9,9 +10,18 @@ interface ComposerProps {
    *  attached to, shown above the textarea so what's about to be anchored
    *  is never a guess. Absent when composing an ordinary element note. */
   attachedText?: string;
+  /** Folders to file the note into, plus the page/global defaults the
+   *  selector's star manages. Omitted, the composer has no folder selector
+   *  and every note it saves is unfiled. */
+  folderPicker?: FolderPickerSource & {
+    /** Where the selector starts — the resolved default for this page (see
+     *  `resolveDefaultFolderId`), or `null` for "No folder". */
+    initialFolderId: string | null;
+  };
   saving?: boolean;
   error?: string | null;
-  onSave: (content: string) => void;
+  /** `folderId` is `undefined` for an unfiled note. */
+  onSave: (content: string, folderId: string | undefined) => void;
   onCancel: () => void;
 }
 
@@ -23,6 +33,7 @@ interface ComposerProps {
 export function Composer({
   strings,
   attachedText,
+  folderPicker,
   saving = false,
   error,
   onSave,
@@ -30,6 +41,19 @@ export function Composer({
 }: ComposerProps) {
   const [content, setContent] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
+  // `undefined` until the user picks a folder themselves. Until then the
+  // selector follows the resolved default — which can still arrive after
+  // the composer opens (folders and preferences load asynchronously) — and
+  // after that it never moves under them.
+  const [chosenFolderId, setChosenFolderId] = useState<string | null | undefined>(undefined);
+  const requestedFolderId =
+    chosenFolderId === undefined ? (folderPicker?.initialFolderId ?? null) : chosenFolderId;
+  // A folder deleted elsewhere while this note is being written is no
+  // longer somewhere it can go.
+  const folderId =
+    requestedFolderId && folderPicker?.folders.some((f) => f.id === requestedFolderId)
+      ? requestedFolderId
+      : null;
 
   const handleSave = useCallback(() => {
     const trimmed = content.trim();
@@ -38,8 +62,8 @@ export function Composer({
       return;
     }
     setValidationError(null);
-    onSave(trimmed);
-  }, [content, onSave, strings.emptyError]);
+    onSave(trimmed, folderId ?? undefined);
+  }, [content, folderId, onSave, strings.emptyError]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -85,6 +109,19 @@ export function Composer({
           if (validationError) setValidationError(null);
         }}
       />
+      {folderPicker && (
+        <FolderPicker
+          strings={strings}
+          folders={folderPicker.folders}
+          value={folderId}
+          onChange={setChosenFolderId}
+          pageDefaultId={folderPicker.pageDefaultId}
+          globalDefaultId={folderPicker.globalDefaultId}
+          onSetPageDefault={folderPicker.onSetPageDefault}
+          onSetGlobalDefault={folderPicker.onSetGlobalDefault}
+          onCreateFolder={folderPicker.onCreateFolder}
+        />
+      )}
       {displayError && (
         <p id="hm-composer-error" className="hm-error" role="alert">
           {displayError}

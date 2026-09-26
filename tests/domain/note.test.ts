@@ -47,6 +47,30 @@ describe('createNote', () => {
     expect(a.id).not.toBe(b.id);
   });
 
+  it('files the new note into the folder chosen at creation', () => {
+    const note = createNote({
+      content: 'x',
+      pageKey: 'p',
+      originalUrl: 'u',
+      anchor: makeAnchor(),
+      folderId: 'folder-1',
+    });
+    expect(note.folderId).toBe('folder-1');
+  });
+
+  it('writes no folderId key at all for an unfiled note', () => {
+    const note = createNote({ content: 'x', pageKey: 'p', originalUrl: 'u', anchor: makeAnchor() });
+    expect(note).not.toHaveProperty('folderId');
+    const blank = createNote({
+      content: 'x',
+      pageKey: 'p',
+      originalUrl: 'u',
+      anchor: makeAnchor(),
+      folderId: '',
+    });
+    expect(blank).not.toHaveProperty('folderId');
+  });
+
   it('carries an optional pageContext through unchanged', () => {
     const anchor = makeAnchor();
     const note = createNote({

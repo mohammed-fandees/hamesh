@@ -294,6 +294,95 @@ test.describe('Video Notes — capture + timeline markers', () => {
     await expect(page.locator('.hm-video-marker')).toHaveCount(0);
   });
 
+  test.describe('the video waits while its note is written', () => {
+    const isPaused = () =>
+      page.evaluate(() => (document.querySelector('video') as HTMLVideoElement).paused);
+    const currentTime = () =>
+      page.evaluate(() => (document.querySelector('video') as HTMLVideoElement).currentTime);
+
+    async function playFrom(t: number): Promise<void> {
+      await page.evaluate(async (at) => {
+        const video = document.querySelector('video') as HTMLVideoElement;
+        video.currentTime = at;
+        await video.play();
+      }, t);
+      expect(await isPaused()).toBe(false);
+    }
+
+    async function openQuickNote(): Promise<void> {
+      await page.evaluate(() => window.dispatchEvent(new CustomEvent('hamesh:activate-video')));
+      await expect(page.locator('.hm-video-quick-note')).toBeVisible();
+    }
+
+    test('opening the quick note pauses a playing video, and saving plays it again', async () => {
+      await playFrom(2);
+      await openQuickNote();
+      await expect.poll(isPaused).toBe(true);
+
+      // Held still while typing: the moment being noted doesn't run on.
+      const heldAt = await currentTime();
+      await page.locator('.hm-video-quick-note textarea').fill('Paused to write this');
+      expect(await currentTime()).toBeCloseTo(heldAt, 1);
+
+      await page.keyboard.press('Enter');
+      await expect(page.locator('.hm-video-quick-note')).toHaveCount(0);
+      await expect.poll(isPaused).toBe(false);
+      await expect.poll(currentTime).toBeGreaterThan(heldAt);
+
+      // Markers stay hidden over a playing, unhovered video (by design), so
+      // hover it to see the one just saved.
+      await page.locator('[data-testid="test-video"]').hover();
+      await expect(page.locator('.hm-video-marker')).toHaveCount(1);
+
+      // …and the note is stamped with the moment it was opened on.
+      await moveToVideoMarker(page);
+      const expected = `${Math.floor(heldAt / 60)}:${String(Math.floor(heldAt % 60)).padStart(2, '0')}`;
+      await expect(page.locator('.hm-video-preview')).toContainText(expected);
+    });
+
+    test('closing it without saving plays the video again too — Escape or a double click outside', async () => {
+      await playFrom(1);
+      await openQuickNote();
+      await expect.poll(isPaused).toBe(true);
+      await page.locator('.hm-video-quick-note textarea').press('Escape');
+      await expect(page.locator('.hm-video-quick-note')).toHaveCount(0);
+      await expect.poll(isPaused).toBe(false);
+
+      await openQuickNote();
+      await expect.poll(isPaused).toBe(true);
+      await page.mouse.dblclick(8, 8);
+      await expect(page.locator('.hm-video-quick-note')).toHaveCount(0);
+      await expect.poll(isPaused).toBe(false);
+    });
+
+    test('a video that was already paused is left paused when the note closes', async () => {
+      expect(await isPaused()).toBe(true);
+      await openQuickNote();
+      await page.locator('.hm-video-quick-note textarea').fill('Written on a paused video');
+      await page.keyboard.press('Enter');
+      await expect(page.locator('.hm-video-marker')).toHaveCount(1);
+      // Give a (wrong) resume every chance to happen before asserting it didn't.
+      await page.waitForTimeout(300);
+      expect(await isPaused()).toBe(true);
+    });
+
+    test('if the user plays and pauses it themselves while writing, their choice stands', async () => {
+      await playFrom(1);
+      await openQuickNote();
+      await expect.poll(isPaused).toBe(true);
+      await page.evaluate(async () => {
+        const video = document.querySelector('video') as HTMLVideoElement;
+        await video.play();
+        video.pause();
+      });
+
+      await page.locator('.hm-video-quick-note textarea').press('Escape');
+      await expect(page.locator('.hm-video-quick-note')).toHaveCount(0);
+      await page.waitForTimeout(300);
+      expect(await isPaused()).toBe(true);
+    });
+  });
+
   test('clicking a marker seeks the video without forcing play or pause', async () => {
     await page.evaluate(() => {
       (document.querySelector('video') as HTMLVideoElement).currentTime = 6;

@@ -5,6 +5,7 @@ import '@testing-library/jest-dom/vitest';
 import { HameshApp } from '@/content/HameshApp';
 import type { NotesRepository } from '@/storage/notes-repository';
 import type { PreferencesRepository } from '@/storage/preferences-repository';
+import type { FoldersRepository } from '@/storage/folders-repository';
 import type { Note, TextAnchor } from '@/domain/note';
 import { DEFAULT_PREFERENCES, type Preferences } from '@/domain/preferences';
 import { buildTextAnchor } from '@/domain/text-anchor';
@@ -40,6 +41,19 @@ function makePrefsRepo(prefs: Preferences = DEFAULT_PREFERENCES): PreferencesRep
     setAppearance: vi.fn(),
     setTextNotes: vi.fn(),
     setLastSeenReleaseVersion: vi.fn(),
+    setPageDefaultFolder: vi.fn(),
+    setGlobalDefaultFolder: vi.fn(),
+  };
+}
+
+function makeFoldersRepo(): FoldersRepository {
+  return {
+    getAll: vi.fn().mockResolvedValue([]),
+    create: vi.fn(),
+    rename: vi.fn(),
+    remove: vi.fn(),
+    saveAll: vi.fn(),
+    watch: vi.fn().mockReturnValue(() => {}),
   };
 }
 
@@ -71,6 +85,7 @@ function renderApp(
     <HameshApp
       repo={repo}
       prefsRepo={prefsRepo}
+      foldersRepo={makeFoldersRepo()}
       initialLang="en"
       registerActivate={() => {}}
       registerActivateVideo={() => {}}

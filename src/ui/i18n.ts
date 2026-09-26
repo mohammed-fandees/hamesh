@@ -105,6 +105,17 @@ export interface Strings {
   backupErrorUnsupported: string;
   backupErrorEmpty: string;
   backupErrorFailed: string;
+  composerFolder: string;
+  composerNoFolders: string;
+  composerCreateFolder: string;
+  composerCreateFolderSubmit: string;
+  composerNewFolderOption: string;
+  defaultFolderMenu: string;
+  defaultFolderForPage: string;
+  defaultFolderForAllPages: string;
+  defaultFolderCaption: (page: boolean, global: boolean) => string;
+  showMore: string;
+  showLess: string;
 }
 
 const en: Strings = {
@@ -211,6 +222,22 @@ const en: Strings = {
   backupErrorUnsupported: 'That backup was made by a newer version of Hamesh.',
   backupErrorEmpty: 'That backup has no notes or folders in it.',
   backupErrorFailed: "Couldn't finish — your existing notes are untouched.",
+  composerFolder: 'Folder',
+  composerNoFolders: 'No folders yet.',
+  composerCreateFolder: 'Create folder',
+  composerCreateFolderSubmit: 'Create',
+  composerNewFolderOption: '+ New folder…',
+  defaultFolderMenu: 'Default folder',
+  defaultFolderForPage: 'Default for this page',
+  defaultFolderForAllPages: 'Default for all pages',
+  defaultFolderCaption: (page, global) =>
+    page && global
+      ? 'Default here and on every page'
+      : page
+        ? 'Default for this page'
+        : 'Default for all pages',
+  showMore: 'Show more',
+  showLess: 'Show less',
 };
 
 const ar: Strings = {
@@ -311,6 +338,22 @@ const ar: Strings = {
   backupErrorUnsupported: 'هذه النسخة الاحتياطية من إصدار أحدث من هامش.',
   backupErrorEmpty: 'لا توجد ملاحظات أو فولدرات في هذه النسخة.',
   backupErrorFailed: 'تعذّر إكمال العملية — ملاحظاتك الحالية لم تتأثّر.',
+  composerFolder: 'الفولدر',
+  composerNoFolders: 'لا توجد فولدرات بعد.',
+  composerCreateFolder: 'إنشاء فولدر',
+  composerCreateFolderSubmit: 'إنشاء',
+  composerNewFolderOption: '+ فولدر جديد…',
+  defaultFolderMenu: 'الفولدر الافتراضي',
+  defaultFolderForPage: 'افتراضي لهذه الصفحة',
+  defaultFolderForAllPages: 'افتراضي لكل الصفحات',
+  defaultFolderCaption: (page, global) =>
+    page && global
+      ? 'افتراضي هنا وفي كل الصفحات'
+      : page
+        ? 'افتراضي لهذه الصفحة'
+        : 'افتراضي لكل الصفحات',
+  showMore: 'عرض المزيد',
+  showLess: 'عرض أقل',
 };
 
 export function resolveLang(uiLanguage?: string): Lang {

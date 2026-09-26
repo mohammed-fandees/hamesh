@@ -4,6 +4,10 @@ import {
   isAppearanceMode,
   isSupportedLanguage,
   parsePreferences,
+  resolveDefaultFolderId,
+  withGlobalDefaultFolder,
+  withPageDefaultFolder,
+  type FolderDefaultPreferences,
 } from '@/domain/preferences';
 
 describe('isSupportedLanguage', () => {
@@ -71,6 +75,7 @@ describe('parsePreferences', () => {
       appearance: 'match-website',
       textNotes: { enabled: true, selectionAction: true },
       releaseNotes: { lastSeenVersion: null },
+      folderDefaults: { global: null, pages: {} },
     });
   });
 
@@ -81,6 +86,7 @@ describe('parsePreferences', () => {
       appearance: 'dark',
       textNotes: { enabled: true, selectionAction: true },
       releaseNotes: { lastSeenVersion: null },
+      folderDefaults: { global: null, pages: {} },
     });
     expect(parsePreferences({ language: 'en', appearance: 'light' })).toEqual({
       schemaVersion: 1,
@@ -88,6 +94,7 @@ describe('parsePreferences', () => {
       appearance: 'light',
       textNotes: { enabled: true, selectionAction: true },
       releaseNotes: { lastSeenVersion: null },
+      folderDefaults: { global: null, pages: {} },
     });
   });
 
@@ -115,5 +122,113 @@ describe('parsePreferences — release notes state', () => {
     expect(parsePreferences({ releaseNotes: 'nope' }).releaseNotes).toEqual({
       lastSeenVersion: null,
     });
+  });
+});
+
+describe('parsePreferences — folder defaults', () => {
+  it('has no default folder anywhere for preferences saved before folder defaults existed', () => {
+    expect(parsePreferences({ schemaVersion: 1, language: 'ar' }).folderDefaults).toEqual({
+      global: null,
+      pages: {},
+    });
+  });
+
+  it('round-trips a global default and per-page defaults', () => {
+    const parsed = parsePreferences({
+      folderDefaults: {
+        global: 'f-global',
+        pages: { 'https://a.com/x': 'f-a', 'https://b.com/y': 'f-b' },
+      },
+    });
+    expect(parsed.folderDefaults).toEqual({
+      global: 'f-global',
+      pages: { 'https://a.com/x': 'f-a', 'https://b.com/y': 'f-b' },
+    });
+  });
+
+  it('drops malformed entries instead of trusting them', () => {
+    const parsed = parsePreferences({
+      folderDefaults: {
+        global: 42,
+        pages: { 'https://a.com/x': 'f-a', 'https://b.com/y': 7, 'https://c.com/z': '' },
+      },
+    });
+    expect(parsed.folderDefaults).toEqual({ global: null, pages: { 'https://a.com/x': 'f-a' } });
+    expect(parsePreferences({ folderDefaults: 'nope' }).folderDefaults).toEqual({
+      global: null,
+      pages: {},
+    });
+    expect(parsePreferences({ folderDefaults: { pages: ['f-a'] } }).folderDefaults).toEqual({
+      global: null,
+      pages: {},
+    });
+  });
+});
+
+describe('resolveDefaultFolderId', () => {
+  const PAGE = 'https://example.com/article';
+  const existing = new Set(['f-page', 'f-global', 'f-other']);
+  const both: FolderDefaultPreferences = {
+    global: 'f-global',
+    pages: { [PAGE]: 'f-page', 'https://example.com/other': 'f-other' },
+  };
+
+  it("prefers the page's own default over the global one", () => {
+    expect(resolveDefaultFolderId(both, PAGE, existing)).toBe('f-page');
+  });
+
+  it('falls back to the global default on a page with none of its own', () => {
+    expect(resolveDefaultFolderId(both, 'https://example.com/new', existing)).toBe('f-global');
+  });
+
+  it('selects nothing when neither is set', () => {
+    expect(resolveDefaultFolderId({ global: null, pages: {} }, PAGE, existing)).toBeNull();
+  });
+
+  it('skips a page default whose folder no longer exists, falling through to the global one', () => {
+    const stale = { ...both, pages: { [PAGE]: 'f-deleted' } };
+    expect(resolveDefaultFolderId(stale, PAGE, existing)).toBe('f-global');
+  });
+
+  it('skips a global default whose folder no longer exists', () => {
+    expect(resolveDefaultFolderId({ global: 'f-deleted', pages: {} }, PAGE, existing)).toBeNull();
+  });
+
+  it('never reads an inherited property as a page default', () => {
+    expect(resolveDefaultFolderId({ global: null, pages: {} }, 'constructor', existing)).toBeNull();
+  });
+});
+
+describe('withPageDefaultFolder / withGlobalDefaultFolder', () => {
+  const start: FolderDefaultPreferences = {
+    global: 'f-global',
+    pages: { 'https://a.com/x': 'f-a', 'https://b.com/y': 'f-b' },
+  };
+
+  it("sets one page's default without touching other pages or the global default", () => {
+    expect(withPageDefaultFolder(start, 'https://a.com/x', 'f-new')).toEqual({
+      global: 'f-global',
+      pages: { 'https://a.com/x': 'f-new', 'https://b.com/y': 'f-b' },
+    });
+  });
+
+  it("clears one page's default and nothing else", () => {
+    expect(withPageDefaultFolder(start, 'https://a.com/x', null)).toEqual({
+      global: 'f-global',
+      pages: { 'https://b.com/y': 'f-b' },
+    });
+  });
+
+  it('sets and clears the global default without touching any page default', () => {
+    expect(withGlobalDefaultFolder(start, 'f-new')).toEqual({ ...start, global: 'f-new' });
+    expect(withGlobalDefaultFolder(start, null)).toEqual({ ...start, global: null });
+  });
+
+  it('never mutates the defaults it was given', () => {
+    const snapshot = structuredClone(start);
+    withPageDefaultFolder(start, 'https://c.com/z', 'f-c');
+    withPageDefaultFolder(start, 'https://a.com/x', null);
+    withGlobalDefaultFolder(start, null);
+    expect(start).toEqual(snapshot);
   });
 });

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import type { Note } from '@/domain/note';
 import { getStrings } from '@/ui/i18n';
@@ -133,6 +133,15 @@ describe('NoteRow', () => {
     expect(document.querySelector('.hm-note-row__domain')).not.toBeInTheDocument();
   });
 
+  it('opens the note from anywhere on the card through one link — the toggle is not inside it', async () => {
+    const NoteRow = await importNoteRow();
+    render(<NoteRow note={makeElementNote()} strings={strings} lang="en" />);
+    const link = screen.getByRole('link');
+    expect(link).toHaveClass('hm-note-row__link');
+    expect(link.closest('.hm-note-row')).not.toBeNull();
+    expect(link.querySelector('button')).toBeNull();
+  });
+
   it('shows a favicon + domain kicker when showDomain is set (the folder view, which mixes sites)', async () => {
     const NoteRow = await importNoteRow();
     render(<NoteRow note={makeElementNote()} strings={strings} lang="en" showDomain />);
@@ -140,5 +149,105 @@ describe('NoteRow', () => {
     expect(kicker).toBeInTheDocument();
     expect(kicker).toHaveTextContent('example.com');
     expect(kicker?.querySelector('.hm-favicon')).toBeInTheDocument();
+  });
+});
+
+describe('NoteRow — long notes', () => {
+  /** jsdom does no layout, so "is the clamped preview cutting text off" is
+   *  stood in for here: each preview reports a clamped box `clientHeight`
+   *  tall and content `scrollHeight` tall, and `ResizeObserver` reports once
+   *  on `observe` the way the real one does. */
+  function stubLayout({
+    scrollHeight,
+    clientHeight,
+  }: {
+    scrollHeight: number;
+    clientHeight: number;
+  }) {
+    vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockImplementation(function (
+      this: HTMLElement,
+    ) {
+      return this.dataset.expanded === 'true' ? clientHeight : scrollHeight;
+    });
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(clientHeight);
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(private readonly cb: ResizeObserverCallback) {}
+        observe() {
+          this.cb([], this as unknown as ResizeObserver);
+        }
+        disconnect() {}
+        unobserve() {}
+      },
+    );
+  }
+
+  const LONG = 'A long thought.\n\nIt keeps going, paragraph after paragraph. '.repeat(20);
+
+  beforeEach(() => {
+    cleanup();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('offers no toggle for a note that fits in its clamped lines', async () => {
+    stubLayout({ scrollHeight: 40, clientHeight: 40 });
+    const NoteRow = await importNoteRow();
+    render(<NoteRow note={makeElementNote()} strings={strings} lang="en" />);
+    expect(screen.queryByRole('button', { name: /Show more/ })).toBeNull();
+  });
+
+  it('offers "Show more" when the note is cut off, and expands it in place', async () => {
+    stubLayout({ scrollHeight: 400, clientHeight: 40 });
+    const NoteRow = await importNoteRow();
+    render(<NoteRow note={makeElementNote({ content: LONG })} strings={strings} lang="en" />);
+
+    const toggle = await screen.findByRole('button', { name: /Show more/ });
+    const preview = document.querySelector('.hm-note-row__preview')!;
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(toggle).toHaveAttribute('aria-controls', preview.id);
+    expect(preview).toHaveAttribute('data-expanded', 'false');
+
+    fireEvent.click(toggle);
+
+    expect(preview).toHaveAttribute('data-expanded', 'true');
+    // Still offered once expanded (nothing is clamped now), to collapse again.
+    const less = screen.getByRole('button', { name: /Show less/ });
+    expect(less).toHaveAttribute('aria-expanded', 'true');
+
+    fireEvent.click(less);
+    expect(preview).toHaveAttribute('data-expanded', 'false');
+    expect(screen.getByRole('button', { name: /Show more/ })).toBeInTheDocument();
+  });
+
+  it('keeps the full text in the row — the clamp is visual, never a truncated string', async () => {
+    stubLayout({ scrollHeight: 400, clientHeight: 40 });
+    const NoteRow = await importNoteRow();
+    render(<NoteRow note={makeElementNote({ content: LONG })} strings={strings} lang="en" />);
+    expect(document.querySelector('.hm-note-row__preview')!.textContent).toBe(LONG);
+  });
+
+  it('toggling never opens the note', async () => {
+    stubLayout({ scrollHeight: 400, clientHeight: 40 });
+    const { browser } = await import('wxt/browser');
+    const NoteRow = await importNoteRow();
+    render(<NoteRow note={makeElementNote({ content: LONG })} strings={strings} lang="en" />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /Show more/ }));
+    expect(browser.tabs.create).not.toHaveBeenCalled();
+    expect(screen.getByRole('link').contains(screen.getByRole('button'))).toBe(false);
+  });
+
+  it('speaks the reader’s language', async () => {
+    stubLayout({ scrollHeight: 400, clientHeight: 40 });
+    const NoteRow = await importNoteRow();
+    render(
+      <NoteRow note={makeElementNote({ content: LONG })} strings={getStrings('ar')} lang="ar" />,
+    );
+    expect(await screen.findByRole('button', { name: /عرض المزيد/ })).toBeInTheDocument();
   });
 });

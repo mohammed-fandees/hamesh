@@ -6,6 +6,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import type { HameshMessage, ShortcutsResponse } from '@/messaging/types';
 import { createNotesRepository } from '@/storage/notes-repository';
 import { createPreferencesRepository } from '@/storage/preferences-repository';
+import { createFoldersRepository } from '@/storage/folders-repository';
 import { generatePageKey } from '@/domain/page-key';
 import { HameshApp } from '@/content/HameshApp';
 import { resolveLang } from '@/ui/i18n';
@@ -19,6 +20,7 @@ export default defineContentScript({
   async main(ctx) {
     const repo = createNotesRepository();
     const prefsRepo = createPreferencesRepository();
+    const foldersRepo = createFoldersRepository();
     // Resolved once, synchronously, from the browser's UI language — the
     // initial paint before the (async) stored preference loads, and exactly
     // today's behavior for users who never open Settings. HameshApp takes it
@@ -53,6 +55,7 @@ export default defineContentScript({
           createElement(HameshApp, {
             repo,
             prefsRepo,
+            foldersRepo,
             initialLang,
             registerActivate: (fn: () => void) => {
               activate = fn;

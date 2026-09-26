@@ -3,6 +3,7 @@ import type { Folder } from '@/domain/folder';
 import type { FolderNode } from '@/domain/folder-grouping';
 import { flattenFolderTreeForMenu } from '@/domain/folder-grouping';
 import type { Note } from '@/domain/note';
+import { FolderGlyph } from './FolderGlyph';
 import { NoteRow } from './NoteRow';
 import { NoteActionsMenu } from './NoteActionsMenu';
 import type { Lang, Strings } from './i18n';
@@ -289,7 +290,7 @@ function FolderNodeItem({ node, depth }: { node: FolderNode; depth: number }) {
         >
           <ChevronIcon expanded={expanded} />
         </button>
-        <FolderGlyph />
+        <FolderGlyph className="hm-folder-node__glyph" />
         {isEditing ? (
           <FolderNameForm
             initialValue={folder.name}
@@ -521,26 +522,6 @@ function ChevronIcon({ expanded }: { expanded: boolean }): ReactNode {
         strokeLinecap="round"
         strokeLinejoin="round"
         fill="none"
-      />
-    </svg>
-  );
-}
-
-function FolderGlyph() {
-  return (
-    <svg
-      width="13"
-      height="13"
-      viewBox="0 0 14 14"
-      aria-hidden="true"
-      className="hm-folder-node__glyph"
-    >
-      <path
-        d="M1.5 3.5 A1 1 0 0 1 2.5 2.5 H5.5 L6.8 4 H11.5 A1 1 0 0 1 12.5 5 V10.5 A1 1 0 0 1 11.5 11.5 H2.5 A1 1 0 0 1 1.5 10.5 Z"
-        stroke="currentColor"
-        strokeWidth="1.1"
-        fill="none"
-        strokeLinejoin="round"
       />
     </svg>
   );
