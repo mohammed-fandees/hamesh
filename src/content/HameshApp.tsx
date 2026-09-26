@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { NotesRepository } from '@/storage/notes-repository';
 import type { PreferencesRepository } from '@/storage/preferences-repository';
+import type { FoldersRepository } from '@/storage/folders-repository';
+import type { Folder } from '@/domain/folder';
 import type { Note, ElementAnchor, TextAnchor, VideoAnchor } from '@/domain/note';
 import { buildElementAnchor } from '@/domain/anchor';
 import { buildVideoAnchor } from '@/domain/video-anchor';
@@ -17,8 +19,19 @@ import { generatePageKey } from '@/domain/page-key';
 import { getDeepestEligibleElement } from '@/utils/dom';
 import { onNavigationChange } from '@/content/navigation';
 import { detectHostTheme, type HostTheme } from '@/content/theme';
-import type { AppearanceMode, TextNotePreferences } from '@/domain/preferences';
-import { DEFAULT_TEXT_NOTE_PREFERENCES } from '@/domain/preferences';
+import type {
+  AppearanceMode,
+  FolderDefaultPreferences,
+  Preferences,
+  TextNotePreferences,
+} from '@/domain/preferences';
+import {
+  DEFAULT_FOLDER_DEFAULT_PREFERENCES,
+  DEFAULT_TEXT_NOTE_PREFERENCES,
+  resolveDefaultFolderId,
+  withGlobalDefaultFolder,
+  withPageDefaultFolder,
+} from '@/domain/preferences';
 import {
   captureTextSelection,
   rectsContainPoint,
@@ -32,10 +45,12 @@ import {
   setTextHoverCursor,
 } from '@/content/text-highlights';
 import { useFloating, useFloatingAbove, type AnchorRect } from '@/content/useFloating';
+import { holdPlayback } from '@/content/video-playback';
 import { getVideoAdapters, getActiveAdapterMatch } from '@/content/video-adapters/registry';
 import type { VideoPlayerAdapter } from '@/content/video-adapters/types';
 import type { AdapterVideoMatch } from '@/content/video-adapters/registry';
 import { Composer } from '@/ui/Composer';
+import type { FolderPickerSource } from '@/ui/FolderPicker';
 import { NoteViewer } from '@/ui/NoteViewer';
 import { Marker } from '@/ui/Marker';
 import { SelectionHint } from '@/ui/SelectionHint';
@@ -128,6 +143,9 @@ type ComposerTarget =
 interface HameshAppProps {
   repo: NotesRepository;
   prefsRepo: PreferencesRepository;
+  /** Read for the composer's folder selector, and written to only when the
+   *  user creates a folder from it. */
+  foldersRepo: FoldersRepository;
   /** The language to render before the stored preference (if any) has
    *  loaded — already resolved from the browser's UI language, so this is
    *  exactly today's behavior for users with no saved choice. */
@@ -151,6 +169,20 @@ interface HameshAppProps {
 function toAnchorRect(el: Element): AnchorRect {
   const r = el.getBoundingClientRect();
   return { left: r.left, top: r.top, width: r.width, height: r.height };
+}
+
+/** Whether an event landed on Hamesh's own UI — a card (composer, viewer,
+ *  quick note, cluster list) or an element marker — rather than on the
+ *  page. Reads `composedPath()`, since a window listener only ever sees the
+ *  target retargeted to the shadow host. */
+function isOnHameshUi(e: Event): boolean {
+  return e
+    .composedPath()
+    .some(
+      (n) =>
+        n instanceof HTMLElement &&
+        (n.classList?.contains('hm-card') || n.classList?.contains('hm-marker')),
+    );
 }
 
 /** A live rect for a text range — recomputed on every scroll/resize by
@@ -246,6 +278,7 @@ function useViewportFrame(active: boolean): number {
 export function HameshApp({
   repo,
   prefsRepo,
+  foldersRepo,
   initialLang,
   registerActivate,
   registerActivateVideo,
@@ -255,6 +288,10 @@ export function HameshApp({
   const [lang, setLang] = useState<Lang>(initialLang);
   const [appearance, setAppearance] = useState<AppearanceMode>('match-website');
   const [textNotes, setTextNotes] = useState<TextNotePreferences>(DEFAULT_TEXT_NOTE_PREFERENCES);
+  const [folderDefaults, setFolderDefaults] = useState<FolderDefaultPreferences>(
+    DEFAULT_FOLDER_DEFAULT_PREFERENCES,
+  );
+  const [folders, setFolders] = useState<Folder[]>([]);
   const strings = getStrings(lang);
   const dir = dirForLang(lang);
 
@@ -270,18 +307,40 @@ export function HameshApp({
         setLang(prefs.language ?? initialLang);
         setAppearance(prefs.appearance);
         setTextNotes(prefs.textNotes);
+        setFolderDefaults(prefs.folderDefaults);
       }
     })();
     const unwatch = prefsRepo.watch((prefs) => {
       setLang(prefs.language ?? initialLang);
       setAppearance(prefs.appearance);
       setTextNotes(prefs.textNotes);
+      setFolderDefaults(prefs.folderDefaults);
     });
     return () => {
       cancelled = true;
       unwatch();
     };
   }, [prefsRepo, initialLang]);
+
+  // Folders for the composer's selector — kept live the same way, so a
+  // folder created or deleted in the Notes Library shows up in a composer
+  // that's already open in another tab.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const all = await foldersRepo.getAll();
+        if (!cancelled) setFolders(all);
+      } catch {
+        if (!cancelled) setFolders([]);
+      }
+    })();
+    const unwatch = foldersRepo.watch(setFolders);
+    return () => {
+      cancelled = true;
+      unwatch();
+    };
+  }, [foldersRepo]);
 
   // `hostTheme` is always kept up to date regardless of `appearance`, so
   // switching back to "Match website" is instant rather than needing a
@@ -438,6 +497,12 @@ export function HameshApp({
   useEffect(() => {
     videoMatchRef.current = videoMatch;
   }, [videoMatch]);
+  /** Whether a note is being written (composer or video quick note) — read
+   *  by the once-registered double-click listener below. */
+  const writingOpenRef = useRef(false);
+  useEffect(() => {
+    writingOpenRef.current = composer !== null || videoComposer !== null;
+  }, [composer, videoComposer]);
 
   const hasFloating =
     notes.length > 0 || composer !== null || viewerId !== null || videoComposer !== null;
@@ -694,6 +759,22 @@ export function HameshApp({
     setSelecting(false);
     setVideoComposer(videoMatch);
   }, [videoMatch]);
+
+  // The video waits while its note is written: paused as the quick note
+  // opens, and resumed however it closes — saved, cancelled, double-clicked
+  // away, or replaced by another Hamesh action — if it was playing to begin
+  // with (see `holdPlayback` for exactly what is and isn't resumed). Keyed
+  // on the element, not the match object, so re-pressing the shortcut over
+  // an open note doesn't resume and re-pause the same video.
+  //
+  // It also makes the note's timestamp the moment it was opened on: the
+  // anchor is read from `currentTime` at save, and the video no longer runs
+  // on while the note is typed.
+  const videoComposerVideo = videoComposer?.video ?? null;
+  useEffect(() => {
+    if (!videoComposerVideo) return;
+    return holdPlayback(videoComposerVideo);
+  }, [videoComposerVideo]);
 
   // ---- Contextual text notes: one creation flow, two entry points ----
 
@@ -1054,12 +1135,58 @@ export function HameshApp({
     [elementUnderCursor],
   );
 
+  // ---- Folders for new notes ----
+  const defaultFolderId = useMemo(
+    () => resolveDefaultFolderId(folderDefaults, pageKey, new Set(folders.map((f) => f.id))),
+    [folderDefaults, pageKey, folders],
+  );
+
+  // Each default setter applies its change locally first — the checkbox it
+  // came from is controlled by these values, and would otherwise spring
+  // back until the storage write resolves — then adopts what was actually
+  // written. A failed write puts back whatever storage really holds.
+  // `prefsRepo.watch` carries changes made from any other tab.
+  const folderPicker = useMemo((): FolderPickerSource => {
+    const persist = (write: Promise<Preferences>) => {
+      write
+        .then((prefs) => setFolderDefaults(prefs.folderDefaults))
+        .catch(() => {
+          setError(strings.saveError);
+          prefsRepo
+            .get()
+            .then((prefs) => setFolderDefaults(prefs.folderDefaults))
+            .catch(() => {});
+        });
+    };
+    return {
+      folders,
+      pageDefaultId: folderDefaults.pages[pageKey] ?? null,
+      globalDefaultId: folderDefaults.global,
+      onSetPageDefault: (folderId) => {
+        setFolderDefaults((prev) => withPageDefaultFolder(prev, pageKey, folderId));
+        persist(prefsRepo.setPageDefaultFolder(pageKey, folderId));
+      },
+      onSetGlobalDefault: (folderId) => {
+        setFolderDefaults((prev) => withGlobalDefaultFolder(prev, folderId));
+        persist(prefsRepo.setGlobalDefaultFolder(folderId));
+      },
+      onCreateFolder: async (name) => {
+        const folder = await foldersRepo.create({ name });
+        // Added here as well as by `foldersRepo.watch`, so the selector can
+        // show the new folder the moment it's chosen — deduplicated by id,
+        // since the watch may already have delivered it.
+        setFolders((prev) => (prev.some((f) => f.id === folder.id) ? prev : [...prev, folder]));
+        return folder.id;
+      },
+    };
+  }, [folders, folderDefaults, pageKey, prefsRepo, foldersRepo, strings.saveError]);
+
   // ---- Persistence ----
   // One create path for element and contextual text notes alike — same
   // repository, same `CreateNoteInput`, same page key. The only difference
   // between them by this point is which anchor the composer is carrying.
   const handleSave = useCallback(
-    async (content: string) => {
+    async (content: string, folderId: string | undefined) => {
       if (!composer) return;
       setBusy(true);
       setError(null);
@@ -1070,6 +1197,7 @@ export function HameshApp({
           originalUrl: location.href,
           anchor: composer.anchor,
           pageContext: document.title ? { title: document.title } : undefined,
+          folderId,
         });
         // Seeds the new note's range so its highlight appears immediately
         // and exactly over the captured text, instead of waiting for the
@@ -1106,13 +1234,17 @@ export function HameshApp({
           originalUrl: location.href,
           anchor,
           pageContext: document.title ? { title: document.title } : undefined,
+          // No selector here — the quick note stays a bare textarea — but a
+          // page or global default still applies, so a video note lands
+          // where every other new note on this page does.
+          folderId: defaultFolderId ?? undefined,
         });
         commitNotes([...notesRef.current, note]);
       } catch {
         /* dropped — see comment above */
       }
     },
-    [videoComposer, repo, pageKey, commitNotes],
+    [videoComposer, repo, pageKey, commitNotes, defaultFolderId],
   );
 
   // Clicking a marker both seeks *and* opens the note's viewer — the only
@@ -1391,26 +1523,42 @@ export function HameshApp({
       }
 
       // No marker/cluster hit: fall through to "click outside closes the
-      // non-modal composer/viewer/cluster-list." A click inside any
-      // .hm-card (composer, viewer, quick-note, or the cluster list — its
-      // own row selection is a real DOM click, not this coordinate hack)
-      // is exempted, same as it already was before this handler merge.
-      const path = e.composedPath();
-      const insideCard = path.some(
-        (n) => n instanceof HTMLElement && n.classList?.contains('hm-card'),
-      );
-      const onElementMarker = path.some(
-        (n) => n instanceof HTMLElement && n.classList?.contains('hm-marker'),
-      );
-      if (!insideCard && !onElementMarker) {
-        setComposer(null);
+      // viewer/cluster-list." A click inside any .hm-card (composer,
+      // viewer, quick-note, or the cluster list — its own row selection is
+      // a real DOM click, not this coordinate hack) is exempted, same as it
+      // already was before this handler merge.
+      //
+      // The composer and the video quick note are deliberately *not*
+      // closed here: they hold a note that hasn't been saved yet, and a
+      // stray click on the page — or a deliberate one, to copy something
+      // into the note — must not throw it away. They close on Cancel,
+      // Escape, or a double-click outside (below).
+      if (!isOnHameshUi(e)) {
         setViewerId(null);
-        setVideoComposer(null);
         setVideoOpenClusterKey(null);
       }
     };
+
+    // A double-click outside is the deliberate "I'm done here" for the
+    // note-writing cards — two clicks don't happen by accident the way one
+    // does. Nothing else needs closing: the viewer and cluster list were
+    // already closed by the first click.
+    const onDoubleClick = (e: MouseEvent) => {
+      if (!writingOpenRef.current || isOnHameshUi(e)) return;
+      setComposer(null);
+      setVideoComposer(null);
+      // A double-click also selects the word under it. That word was never
+      // what the user meant to select — they were closing the composer —
+      // so it's cleared rather than left to summon the selection action.
+      window.getSelection?.()?.removeAllRanges();
+    };
+
     window.addEventListener('pointerdown', onPointerDown, true);
-    return () => window.removeEventListener('pointerdown', onPointerDown, true);
+    window.addEventListener('dblclick', onDoubleClick, true);
+    return () => {
+      window.removeEventListener('pointerdown', onPointerDown, true);
+      window.removeEventListener('dblclick', onDoubleClick, true);
+    };
   }, []);
 
   // ---- Derived: where each highlight currently is on screen ----
@@ -1763,6 +1911,8 @@ export function HameshApp({
       {composer && (
         <FloatingComposer
           target={composer}
+          folderPicker={folderPicker}
+          initialFolderId={defaultFolderId}
           strings={strings}
           busy={busy}
           error={error}
@@ -1831,6 +1981,8 @@ export function HameshApp({
  *  the attached text above the textarea. */
 function FloatingComposer({
   target,
+  folderPicker,
+  initialFolderId,
   strings,
   busy,
   error,
@@ -1838,10 +1990,12 @@ function FloatingComposer({
   onCancel,
 }: {
   target: ComposerTarget;
+  folderPicker: FolderPickerSource;
+  initialFolderId: string | null;
   strings: Strings;
   busy: boolean;
   error: string | null;
-  onSave: (content: string) => void;
+  onSave: (content: string, folderId: string | undefined) => void;
   onCancel: () => void;
 }) {
   const getRect = useCallback(
@@ -1855,6 +2009,7 @@ function FloatingComposer({
       <Composer
         strings={strings}
         attachedText={target.kind === 'text' ? target.anchor.exact : undefined}
+        folderPicker={{ ...folderPicker, initialFolderId }}
         saving={busy}
         error={error}
         onSave={onSave}

@@ -39,6 +39,9 @@ On every page you visit, Hamesh also computes a normalized version of that page'
 - **Your Settings choices** (interface language and appearance/theme, if you set them from the Settings screen) — not personal information, just your own configuration of how Hamesh looks and reads.
 - **Folder names you create**, and which folder (if any) each note is filed into, if you use the Folders
   feature to organize your notes.
+- **Default folders you choose**, if you star one while writing a note: which folder is the default
+  for every page, and — only for pages where you chose a page default yourself — that page's
+  normalized URL alongside its folder. Nothing is recorded for a page you never set one on.
 - **For a video note:** which video it belongs to (the platform's own identifier for that video, e.g. a
   YouTube video ID) and the timestamp within it, so Hamesh can seek back to that moment later.
 - **For a note attached to selected text:** a copy of exactly the text you selected, plus a short run
