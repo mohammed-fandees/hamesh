@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.4.0] — 2026-09-26
+
 ### Added
 
 - **Choose a note's folder while writing it.** The composer now has a folder selector under the
