@@ -85,7 +85,14 @@ source of truth and one Shadow DOM root:
   and hide when the anchor scrolls out of view.
 - **Composer / Viewer** — floating cards positioned by `useFloating` (prefers
   below the anchor, flips above near the bottom edge, clamps into the viewport,
-  follows scroll). Outside-click (via `composedPath`) and Escape close them.
+  follows scroll). Escape closes either. A single click outside (via
+  `composedPath`) closes the viewer and the video cluster list, but **not** the
+  cards that hold an unsaved note — the composer and the video quick note —
+  which close only on Cancel, Escape, or a `dblclick` outside them. A stray
+  click (or a deliberate one, to copy something from the page into the note)
+  must never throw a draft away; two clicks don't happen by accident. The
+  closing double-click's own word selection is cleared so it doesn't summon the
+  text-note selection action.
 - **Theme** — `hostTheme` state holds what `detectHostTheme` (see below)
   currently detects on the page; the rendered `theme` is
   `appearance === 'match-website' ? hostTheme : appearance` (`appearance` is
@@ -241,6 +248,13 @@ browser's native handling — they just skip the restore.
   with no `appearance` field at all — see no behavior change.
   `parsePreferences` defensively falls back to the default for missing,
   malformed, or unrecognized values in either field, same as notes.
+- **Default folders** live in `Preferences.folderDefaults` —
+  `{ global: string | null; pages: Record<pageKey, folderId> }`, nested for the
+  same reason `textNotes` is. A page's entry is written only when the user
+  stars a folder for that page, so it records nothing about pages they merely
+  visit. Defaults are pointers and can outlive their folder (deleted in the
+  library, or not restored from a backup); readers never trust them blindly —
+  see "Filing a note as it's written" under Folders.
 - **Folders** (`src/storage/folders-repository.ts`) follow the same
   single-global-key pattern as preferences (`local:hamesh:folders` →
   `Folder[]`, not per-page), with a `watch()` subscription too. Each `Note`
@@ -471,6 +485,22 @@ buttons or error state, positioned _above_ the video (`useFloatingAbove` in
 `content/useFloating.ts` — below-first placement, which the element composer
 uses, would sit on top of a video that's most of the viewport).
 
+While it's open the video waits: `holdPlayback` (`content/video-playback.ts`)
+pauses a playing video as the popup opens and resumes it however the popup
+closes (saved, Escape, double-click outside, replaced by another action),
+driven by one effect keyed on the popup's `<video>` element. It works on the
+element itself, not a site API — every adapter resolves to a real
+`HTMLVideoElement`, and players built on one (YouTube's included, verified
+against the live site) sync their own controls from its `pause`/`play`
+events — so a new adapter needs nothing extra. It only undoes its own pause:
+a video that was already paused is never started, a user who presses play
+themselves while writing keeps control (a `play` event counts as theirs only
+if the video is actually playing when it arrives — a stale one from the
+previous resume arrives to a paused video), and a different video now in the
+same element (YouTube reuses one across navigations) or a detached element
+is left alone. A side benefit: the note's timestamp, read from `currentTime`
+at save, is now the moment the note was opened on.
+
 Markers render with `pointer-events: none` — deliberately not hit-testable
 by the browser at all. A real, on-top, `pointer-events: auto` marker sitting
 over a video steals mouse hover from the actual player element beneath it:
@@ -700,6 +730,16 @@ mode. Filing a note into a folder works two ways, both calling the same
 actions menu" below) and native HTML5 drag-and-drop of a note onto a folder
 node (a mouse-only progressive enhancement, folder-tree view only).
 
+A note row clamps its text to two lines. When that actually cuts text off —
+measured with a `ResizeObserver` (`scrollHeight > clientHeight`), because the
+same note is two lines in a wide window and six in a narrow one — the row
+offers "Show more", which expands the note in place with its line breaks kept
+and its height capped (`min(22rem, 55vh)`, scrolling inside the card), so the
+list around it barely moves. The toggle is a real `<button>`, so the row is no
+longer itself the `<a>`: its link is stretched over the card with `::after`,
+and the toggle (and an expanded preview, so the wheel scrolls it) are raised
+above that layer.
+
 Because a folder can mix notes from several different sites (unlike a
 website group, which by definition doesn't), `NoteRow` also grew an opt-in
 `showDomain` prop — off by default, since the domain-grouped view already
@@ -707,6 +747,43 @@ shows one favicon per group header — that shows a small favicon + domain
 line above the title, reusing `Favicon` the same way `PinnedSection`
 already does for its own flat, cross-site list. `FolderTree` is the only
 caller that passes it.
+
+### Filing a note as it's written
+
+The composer carries a folder selector (`FolderPicker.tsx`) under its
+textarea, so filing a note doesn't wait for a trip to the Notes Library.
+`HameshApp` owns the data — folders (loaded and `watch()`ed from
+`FoldersRepository`, the same as the library does) and `folderDefaults` (from
+`PreferencesRepository`) — and hands the composer a `FolderPickerSource`; the
+composer owns only which folder is currently chosen, and passes it to
+`onSave(content, folderId)`, which becomes `CreateNoteInput.folderId`.
+
+- **The selector is a native `<select>`**, nested folders indented, with "No
+  folder" first and "New folder…" last. Inside a floating card on someone
+  else's page, the browser's own popup is the one dropdown that can never be
+  clipped by the card or covered by the page.
+- **Where it starts** is `resolveDefaultFolderId(defaults, pageKey,
+existingIds)` (`domain/preferences.ts`): the page's default, else the global
+  default, else nothing — skipping any default whose folder no longer exists,
+  so a stale page default falls through to the global one instead of hiding
+  it. Until the user touches the selector it keeps following that value (it
+  can arrive after the composer opens); once they choose, it never moves under
+  them.
+- **The star** beside the selector opens two checkboxes for the chosen
+  folder — "Default for this page" and "Default for all pages" — which call
+  `setPageDefaultFolder(pageKey, id | null)` / `setGlobalDefaultFolder(id |
+null)`. Pure updaters (`withPageDefaultFolder` / `withGlobalDefaultFolder`)
+  guarantee that changing one page's default never touches another page's or
+  the global one. It's disabled on "No folder": there is nothing to make
+  default.
+- **No folders yet** replaces the selector with a one-line empty state and a
+  "Create folder" button that names a folder inline, without leaving the
+  composer; the new folder is selected at once (added to local state as well
+  as arriving via `watch()`, deduplicated by id). None of this is ever
+  required — a note with no folder saves exactly as before.
+- **The video quick note** has no selector (it stays a bare textarea), but a
+  page or global default still applies to it, so a video note lands where
+  every other new note on that page does.
 
 ## Note actions menu
 
@@ -795,6 +872,15 @@ re-attach markers as content mounts.
   (`NoteActionsMenu` and real drag-and-drop via Playwright's `dragTo`, which
   dispatches genuine HTML5 DnD events — raw mouse-move simulation does not),
   search within folder mode, and RTL.
+- **Writing a note (`tests/content/HameshApp.composer.test.tsx`,
+  `tests/ui/Composer.test.tsx`, `e2e/composer-folders.spec.ts`):** that a
+  single click outside keeps the composer and its draft while a double click
+  closes it (and that the viewer still closes on one click); the folder
+  selector, the page → global → none default order, a page default never
+  leaking onto another page, and creating a folder from the empty state; and
+  long notes expanding in the library at wide and phone widths. Whether a
+  preview is really cut off depends on layout, so the Vitest side stubs
+  `ResizeObserver`/`scrollHeight` and the E2E side checks real heights.
 - **CI:** typecheck, lint, format check, unit tests, build. E2E is run locally
   (needs real Chromium + `--headless=new`).
 

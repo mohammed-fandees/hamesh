@@ -70,6 +70,32 @@ export const DEFAULT_RELEASE_NOTES_PREFERENCES: ReleaseNotesPreferences = {
   lastSeenVersion: null,
 };
 
+/**
+ * Which folder a new note is filed into without the user having to pick
+ * one — the composer's folder selector starts on it. Two levels, resolved
+ * page first (see `resolveDefaultFolderId`):
+ *
+ * - `pages` — a default for one page, keyed by the same `pageKey` notes are
+ *   stored under. Setting or clearing one never touches another page's, or
+ *   the global default.
+ * - `global` — the default everywhere a page has none of its own.
+ *
+ * Nested for the same reason `textNotes` is: the unit that grows is the
+ * group, not a flat field per setting. A default is only a pointer — it can
+ * outlive the folder it names (deleted from the Notes Library, or never
+ * restored from a backup), so every reader resolves it against the folders
+ * that actually exist rather than trusting it.
+ */
+export interface FolderDefaultPreferences {
+  global: string | null;
+  pages: Record<string, string>;
+}
+
+export const DEFAULT_FOLDER_DEFAULT_PREFERENCES: FolderDefaultPreferences = {
+  global: null,
+  pages: {},
+};
+
 export interface Preferences {
   schemaVersion: SchemaVersion;
   /** No explicit choice yet — callers fall back to the browser's UI language.
@@ -79,6 +105,7 @@ export interface Preferences {
   appearance: AppearanceMode;
   textNotes: TextNotePreferences;
   releaseNotes: ReleaseNotesPreferences;
+  folderDefaults: FolderDefaultPreferences;
 }
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -87,6 +114,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   appearance: 'match-website',
   textNotes: DEFAULT_TEXT_NOTE_PREFERENCES,
   releaseNotes: DEFAULT_RELEASE_NOTES_PREFERENCES,
+  folderDefaults: DEFAULT_FOLDER_DEFAULT_PREFERENCES,
 };
 
 function parseTextNotes(value: unknown): TextNotePreferences {
@@ -110,6 +138,60 @@ function parseReleaseNotes(value: unknown): ReleaseNotesPreferences {
   };
 }
 
+function parseFolderDefaults(value: unknown): FolderDefaultPreferences {
+  if (!value || typeof value !== 'object') return DEFAULT_FOLDER_DEFAULT_PREFERENCES;
+  const record = value as Record<string, unknown>;
+  const pages: Record<string, string> = {};
+  if (record.pages && typeof record.pages === 'object' && !Array.isArray(record.pages)) {
+    for (const [pageKey, folderId] of Object.entries(record.pages)) {
+      if (typeof folderId === 'string' && folderId) pages[pageKey] = folderId;
+    }
+  }
+  return {
+    global: typeof record.global === 'string' && record.global ? record.global : null,
+    pages,
+  };
+}
+
+/** The folder a new note on `pageKey` should start in: the page's own
+ *  default, else the global one, else none. A default naming a folder that
+ *  no longer exists is skipped rather than returned — so a stale page
+ *  default falls through to the global one instead of hiding it. */
+export function resolveDefaultFolderId(
+  defaults: FolderDefaultPreferences,
+  pageKey: string,
+  existingFolderIds: ReadonlySet<string>,
+): string | null {
+  const pageDefault = Object.prototype.hasOwnProperty.call(defaults.pages, pageKey)
+    ? defaults.pages[pageKey]
+    : null;
+  if (pageDefault && existingFolderIds.has(pageDefault)) return pageDefault;
+  if (defaults.global && existingFolderIds.has(defaults.global)) return defaults.global;
+  return null;
+}
+
+/** Sets (or, with `null`, clears) one page's default — every other page's,
+ *  and the global default, are carried over untouched. */
+export function withPageDefaultFolder(
+  defaults: FolderDefaultPreferences,
+  pageKey: string,
+  folderId: string | null,
+): FolderDefaultPreferences {
+  const pages = { ...defaults.pages };
+  if (folderId) pages[pageKey] = folderId;
+  else delete pages[pageKey];
+  return { ...defaults, pages };
+}
+
+/** Sets (or, with `null`, clears) the global default, leaving every page's
+ *  own default in place. */
+export function withGlobalDefaultFolder(
+  defaults: FolderDefaultPreferences,
+  folderId: string | null,
+): FolderDefaultPreferences {
+  return { ...defaults, global: folderId };
+}
+
 /** Defensively parses stored preferences — missing, malformed, or unknown
  *  values fall back to the default rather than throwing. Also the migration
  *  path: preferences saved by Phase 2 (no `appearance` field at all) parse
@@ -125,5 +207,6 @@ export function parsePreferences(data: unknown): Preferences {
     appearance: isAppearanceMode(record.appearance) ? record.appearance : 'match-website',
     textNotes: parseTextNotes(record.textNotes),
     releaseNotes: parseReleaseNotes(record.releaseNotes),
+    folderDefaults: parseFolderDefaults(record.folderDefaults),
   };
 }

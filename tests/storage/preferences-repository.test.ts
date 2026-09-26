@@ -36,6 +36,7 @@ describe('PreferencesRepository', () => {
       appearance: 'match-website',
       textNotes: { enabled: true, selectionAction: true },
       releaseNotes: { lastSeenVersion: null },
+      folderDefaults: { global: null, pages: {} },
     });
   });
 
@@ -69,6 +70,7 @@ describe('PreferencesRepository', () => {
       appearance: 'dark',
       textNotes: { enabled: true, selectionAction: true },
       releaseNotes: { lastSeenVersion: null },
+      folderDefaults: { global: null, pages: {} },
     });
 
     await repo.setLanguage('en');
@@ -78,6 +80,7 @@ describe('PreferencesRepository', () => {
       appearance: 'dark',
       textNotes: { enabled: true, selectionAction: true },
       releaseNotes: { lastSeenVersion: null },
+      folderDefaults: { global: null, pages: {} },
     });
   });
 
@@ -89,6 +92,7 @@ describe('PreferencesRepository', () => {
       appearance: 'match-website',
       textNotes: { enabled: true, selectionAction: true },
       releaseNotes: { lastSeenVersion: null },
+      folderDefaults: { global: null, pages: {} },
     });
   });
 
@@ -105,5 +109,69 @@ describe('PreferencesRepository', () => {
 
     await storage.setItem('local:hamesh:preferences', { schemaVersion: 1, language: 'en' });
     expect(seen).toEqual(['ar']); // no further notifications after unwatch
+  });
+
+  describe('default folders', () => {
+    const PAGE_A = 'https://a.example/article';
+    const PAGE_B = 'https://b.example/post';
+
+    it('persists a page default and reads it back', async () => {
+      await repo.setPageDefaultFolder(PAGE_A, 'folder-1');
+      expect((await repo.get()).folderDefaults).toEqual({
+        global: null,
+        pages: { [PAGE_A]: 'folder-1' },
+      });
+    });
+
+    it("keeps each page's default independent of every other page's and of the global one", async () => {
+      await repo.setGlobalDefaultFolder('folder-g');
+      await repo.setPageDefaultFolder(PAGE_A, 'folder-a');
+      await repo.setPageDefaultFolder(PAGE_B, 'folder-b');
+      await repo.setPageDefaultFolder(PAGE_A, 'folder-a2');
+
+      expect((await repo.get()).folderDefaults).toEqual({
+        global: 'folder-g',
+        pages: { [PAGE_A]: 'folder-a2', [PAGE_B]: 'folder-b' },
+      });
+    });
+
+    it("clears one page's default without touching the rest", async () => {
+      await repo.setGlobalDefaultFolder('folder-g');
+      await repo.setPageDefaultFolder(PAGE_A, 'folder-a');
+      await repo.setPageDefaultFolder(PAGE_B, 'folder-b');
+
+      await repo.setPageDefaultFolder(PAGE_A, null);
+
+      expect((await repo.get()).folderDefaults).toEqual({
+        global: 'folder-g',
+        pages: { [PAGE_B]: 'folder-b' },
+      });
+    });
+
+    it('sets and clears the global default without touching page defaults', async () => {
+      await repo.setPageDefaultFolder(PAGE_A, 'folder-a');
+      await repo.setGlobalDefaultFolder('folder-g');
+      expect((await repo.get()).folderDefaults.global).toBe('folder-g');
+
+      await repo.setGlobalDefaultFolder(null);
+      expect((await repo.get()).folderDefaults).toEqual({
+        global: null,
+        pages: { [PAGE_A]: 'folder-a' },
+      });
+    });
+
+    it('does not disturb any other preference', async () => {
+      await repo.setLanguage('ar');
+      await repo.setAppearance('dark');
+      await repo.setPageDefaultFolder(PAGE_A, 'folder-a');
+      const prefs = await repo.get();
+      expect(prefs.language).toBe('ar');
+      expect(prefs.appearance).toBe('dark');
+    });
+
+    it('returns the preferences it wrote', async () => {
+      const next = await repo.setPageDefaultFolder(PAGE_A, 'folder-a');
+      expect(next).toEqual(await repo.get());
+    });
   });
 });

@@ -6,7 +6,33 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **Choose a note's folder while writing it.** The composer now has a folder selector under the
+  text, so a note can be filed as it's written rather than moved later from the Notes Library. The
+  star beside it makes the chosen folder the default **for this page** or **for all pages** (or
+  both); a new note starts in the page's default, else the global default, else no folder. Each
+  page's default is independent of every other page's and of the global one, and unchecking clears
+  it. With no folders yet, the selector becomes a one-line empty state with a **Create folder**
+  button that names one inline, without leaving the note — and a folder is never required. Video
+  quick notes have no selector, but follow the same defaults.
+- **The video waits while you write about it.** Opening a video quick note pauses the video, and
+  saving or closing the note plays it again — on YouTube and on any HTML5 player alike, with the
+  player's own controls following along. A video that was already paused stays paused, and if you
+  start it yourself while writing, Hamesh leaves it however you left it. The note is now stamped
+  with the moment it was opened on, rather than wherever the video had played on to by the time it
+  was saved.
+- **Long notes can be read in full in the Notes Library.** A note cut off by its two-line preview
+  gets a **Show more** toggle — only when the text is actually cut off at the current width — that
+  expands it in place with its line breaks kept, capped in height so the rest of the list stays
+  within reach. The rest of the card still opens the note.
+
 ### Changed
+
+- **Clicking outside the composer no longer throws the note away.** A single click on the page
+  leaves the composer (and the video quick note) open with the draft intact — so it's also possible
+  to click around the page, or copy from it, mid-note. **Cancel**, **Escape**, or a **double-click**
+  outside close it. The note viewer and the video cluster list still close on a single click.
 
 - **The landing page loads behind its own loading screen, and has a favicon.** The page used to
   paint the finished hero, then snatch every element back to the start of its entrance and play it —

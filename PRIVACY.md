@@ -30,6 +30,11 @@ side of them. It needs both to find those same words again when you return to
 the page. This is stored locally with the note, like everything else, and is
 only ever the text you yourself selected — never the rest of the page.
 
+**When you make a folder the default for a page**, Hamesh stores that page's
+normalized URL next to the folder's id, so notes you write there start in that
+folder. It is stored only for pages you chose a default on yourself, locally,
+like everything else; a default for all pages stores no URL at all.
+
 ## What Hamesh Does NOT Do
 
 - Does not collect personal information

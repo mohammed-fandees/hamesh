@@ -483,6 +483,126 @@
   padding-top: 36px;
 }
 
+/* ---- Composer folder selector (FolderPicker.tsx) ----
+   One compact line under the textarea: folder glyph, a native select, and
+   the default-folder star. Sized to sit quietly beside the textarea rather
+   than compete with it — the note is the point of the card. */
+.hm-folder-picker {
+  margin-top: var(--hm-space-2);
+}
+.hm-folder-picker__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+}
+.hm-folder-picker__glyph {
+  flex: none;
+  color: var(--hm-ink-40);
+}
+.hm-folder-picker__select,
+.hm-folder-picker__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 28px;
+  padding: 0 var(--hm-space-2);
+  font-family: var(--hm-sans);
+  font-size: 12.5px;
+  color: var(--hm-ink);
+  background: var(--hm-paper);
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-md);
+  transition: border-color var(--hm-dur-fast) var(--hm-ease-out);
+}
+.hm-folder-picker__select {
+  cursor: pointer;
+}
+/* The select's own popup is drawn by the browser — tell it which scheme
+   the card is in, or a dark card opens a glaring white list. */
+.hm-scope[data-hm-theme='dark'] .hm-folder-picker__select {
+  color-scheme: dark;
+}
+.hm-folder-picker__select:focus-visible,
+.hm-folder-picker__input:focus-visible {
+  outline: none;
+  border-color: var(--hm-accent);
+  box-shadow: 0 0 0 3px var(--hm-accent-tint);
+}
+.hm-folder-picker__input::placeholder {
+  color: var(--hm-ink-40);
+}
+.hm-folder-picker__empty-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--hm-ink-60);
+}
+.hm-folder-picker__icon-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: var(--hm-radius-sm);
+  cursor: pointer;
+  color: var(--hm-ink-40);
+  transition:
+    background var(--hm-dur-fast) var(--hm-ease-out),
+    color var(--hm-dur-fast) var(--hm-ease-out);
+}
+.hm-folder-picker__icon-btn:hover:not(:disabled) {
+  background: var(--hm-paper-dim);
+  color: var(--hm-ink);
+}
+.hm-folder-picker__icon-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--hm-accent);
+}
+.hm-folder-picker__star[data-default='true'],
+.hm-folder-picker__star[data-default='true']:hover {
+  color: var(--hm-accent);
+}
+.hm-folder-picker__star:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+/* Indented past the glyph so the caption and the default toggles line up
+   under the folder name they describe. */
+.hm-folder-picker__caption {
+  margin: 2px 0 0;
+  padding-inline-start: 19px;
+  font-size: 11px;
+  color: var(--hm-ink-40);
+}
+.hm-folder-picker__defaults {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 6px 0 0;
+  margin-inline-start: 19px;
+  padding: 6px var(--hm-space-2);
+  background: var(--hm-paper);
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-md);
+}
+.hm-folder-picker__default {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+  font-size: 12px;
+  color: var(--hm-ink);
+  cursor: pointer;
+}
+.hm-folder-picker__default input {
+  margin: 0;
+  accent-color: var(--hm-accent);
+}
+
 /* ---- Feedback ---- */
 .hm-error {
   display: flex;

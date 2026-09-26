@@ -160,6 +160,9 @@ export type CreateNoteInput = {
   /** Defaults to `DEFAULT_WORKSPACE_ID` when omitted — every caller today
    *  omits it; a future workspace picker would pass the active workspace. */
   workspaceId?: WorkspaceId;
+  /** The folder to file the new note into — what the composer's folder
+   *  selector was set to. Omitted (or empty) leaves the note unfiled. */
+  folderId?: string;
 };
 
 export type UpdateNoteInput = {
@@ -182,6 +185,9 @@ export function createNote(input: CreateNoteInput): Note {
     anchor: input.anchor,
     workspaceId: input.workspaceId ?? DEFAULT_WORKSPACE_ID,
     pageContext: input.pageContext,
+    // Only written when there is one, so an unfiled note is stored exactly
+    // as it was before notes could be filed at creation time.
+    ...(input.folderId ? { folderId: input.folderId } : {}),
     createdAt: now,
     updatedAt: now,
   };

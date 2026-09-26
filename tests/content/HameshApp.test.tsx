@@ -5,6 +5,7 @@ import '@testing-library/jest-dom/vitest';
 import { HameshApp } from '@/content/HameshApp';
 import type { NotesRepository } from '@/storage/notes-repository';
 import type { PreferencesRepository } from '@/storage/preferences-repository';
+import type { FoldersRepository } from '@/storage/folders-repository';
 import type { Note } from '@/domain/note';
 import { DEFAULT_PREFERENCES } from '@/domain/preferences';
 import { generatePageKey } from '@/domain/page-key';
@@ -30,6 +31,19 @@ function makePrefsRepo(): PreferencesRepository {
     setAppearance: vi.fn(),
     setTextNotes: vi.fn(),
     setLastSeenReleaseVersion: vi.fn(),
+    setPageDefaultFolder: vi.fn(),
+    setGlobalDefaultFolder: vi.fn(),
+  };
+}
+
+function makeFoldersRepo(): FoldersRepository {
+  return {
+    getAll: vi.fn().mockResolvedValue([]),
+    create: vi.fn(),
+    rename: vi.fn(),
+    remove: vi.fn(),
+    saveAll: vi.fn(),
+    watch: vi.fn().mockReturnValue(() => {}),
   };
 }
 
@@ -91,6 +105,7 @@ describe('HameshApp — Open Note restore flow', () => {
       <HameshApp
         repo={repo}
         prefsRepo={prefsRepo}
+        foldersRepo={makeFoldersRepo()}
         initialLang="en"
         registerActivate={() => {}}
         registerActivateVideo={() => {}}
@@ -129,6 +144,7 @@ describe('HameshApp — Open Note restore flow', () => {
       <HameshApp
         repo={repo}
         prefsRepo={prefsRepo}
+        foldersRepo={makeFoldersRepo()}
         initialLang="en"
         registerActivate={() => {}}
         registerActivateVideo={() => {}}
@@ -166,6 +182,7 @@ describe('HameshApp — Open Note restore flow', () => {
       <HameshApp
         repo={repo}
         prefsRepo={prefsRepo}
+        foldersRepo={makeFoldersRepo()}
         initialLang="en"
         registerActivate={() => {}}
         registerActivateVideo={() => {}}
@@ -202,6 +219,7 @@ describe('HameshApp — Open Note restore flow', () => {
       <HameshApp
         repo={repo}
         prefsRepo={prefsRepo}
+        foldersRepo={makeFoldersRepo()}
         initialLang="en"
         registerActivate={() => {}}
         registerActivateVideo={() => {}}
@@ -245,6 +263,7 @@ describe('HameshApp — pin toggle', () => {
       <HameshApp
         repo={repo}
         prefsRepo={prefsRepo}
+        foldersRepo={makeFoldersRepo()}
         initialLang="en"
         registerActivate={() => {}}
         registerActivateVideo={() => {}}
