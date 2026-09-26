@@ -37,6 +37,33 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    version: '1.4.0',
+    date: '2026-09-26',
+    title: { en: 'Write first, file as you go', ar: 'اكتب أولًا، ورتّب وأنت تكتب' },
+    items: [
+      {
+        en: 'Choose a folder right in the note you are writing. Star it to make it the default for this page, or for every page, and new notes will start there.',
+        ar: 'اختر الفولدر من داخل الملاحظة وأنت تكتبها. ميّزه بنجمة ليصبح الافتراضي لهذه الصفحة أو لكل الصفحات، فتبدأ ملاحظاتك الجديدة فيه.',
+      },
+      {
+        en: 'No folders yet? Create one from the note itself, without leaving what you are writing. A folder is never required.',
+        ar: 'ليس لديك فولدرات بعد؟ أنشئ واحدًا من الملاحظة نفسها دون أن تترك ما تكتبه. والفولدر ليس شرطًا أبدًا.',
+      },
+      {
+        en: 'A stray click on the page no longer throws your draft away. Close the note with Cancel, Escape, or a double click outside it.',
+        ar: 'نقرة عابرة على الصفحة لم تعد تضيّع ما كتبته. أغلق الملاحظة بزر الإلغاء، أو Esc، أو بنقرتين خارجها.',
+      },
+      {
+        en: 'The video waits while you write about it: it pauses when you open a video note and plays again when you save or close it, on YouTube and other players alike.',
+        ar: 'الفيديو ينتظرك وأنت تكتب عنه: يتوقف عند فتح ملاحظة الفيديو، ويعود للتشغيل عند الحفظ أو الإغلاق، على يوتيوب وغيره من المشغّلات.',
+      },
+      {
+        en: 'Long notes can be read in full in the Notes Library with Show more, without losing your place in the list.',
+        ar: 'اقرأ الملاحظات الطويلة كاملة في مكتبة الملاحظات من «عرض المزيد»، دون أن تفقد مكانك في القائمة.',
+      },
+    ],
+  },
+  {
     version: '1.3.0',
     date: '2026-08-21',
     title: { en: 'Notes on the words themselves', ar: 'ملاحظات على الكلمات نفسها' },
