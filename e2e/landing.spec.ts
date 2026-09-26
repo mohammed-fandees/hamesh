@@ -67,7 +67,7 @@ test.describe('Landing page', () => {
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
     await expect(page.locator('html')).toHaveAttribute('lang', 'ar');
     await expect(page.locator('h1')).toHaveCount(1);
-    await expect(page.locator('h1')).toHaveText('اترك السياق حيث ينتمي.');
+    await expect(page.locator('h1')).toHaveText('اترك أفكارك حيثُما أنارت.');
   });
 
   test('language toggle switches to English (LTR) and back', async ({ page }) => {
@@ -77,12 +77,12 @@ test.describe('Landing page', () => {
     await toggle.click();
     await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-    await expect(page.locator('h1')).toHaveText('Leave context where it belongs.');
+    await expect(page.locator('h1')).toHaveText('Leave your thoughts where they lit up.');
     await expect(toggle).toHaveAttribute('aria-pressed', 'true');
 
     await toggle.click();
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
-    await expect(page.locator('h1')).toHaveText('اترك السياق حيث ينتمي.');
+    await expect(page.locator('h1')).toHaveText('اترك أفكارك حيثُما أنارت.');
     await expect(toggle).toHaveAttribute('aria-pressed', 'false');
   });
 

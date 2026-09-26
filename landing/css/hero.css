@@ -62,7 +62,23 @@
    lands on the wrapper and never on a text node. */
 .reveal-line {
   display: block;
-  overflow: hidden;
+  /* `clip`, not `hidden`, so the mask can reach past its own box: at a
+     heading's tight line-height, Arabic marks above and below the letters
+     (the damma on «حيثُما») sit outside the line box and were being cut off.
+     The margin only lets ink show; the slide-up is still masked, and the
+     text fades in from nothing anyway. */
+  overflow: clip;
+  overflow-clip-margin: 0.35em;
+}
+
+/* Browsers without `overflow-clip-margin`: grow the mask itself instead, and
+   take the growth back out of the layout so nothing moves. */
+@supports not (overflow-clip-margin: 1px) {
+  .reveal-line {
+    overflow: hidden;
+    padding-block: 0.35em;
+    margin-block: -0.35em;
+  }
 }
 
 .hero__scene {
