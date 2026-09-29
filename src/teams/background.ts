@@ -1,6 +1,7 @@
 import { browser } from 'wxt/browser';
 import { teamsConfig } from './config';
 import {
+  isTeamsCacheRequest,
   isTeamsOperationRequest,
   isTeamsRequest,
   type TeamsReply,
@@ -28,6 +29,15 @@ export function isExtensionPageSender(
   }
 }
 
+/**
+ * How often the worker catches up on its own. The realtime socket is what
+ * usually brings a change in, but a service worker the browser shut down has no
+ * socket — so a pull on a timer is what makes a missed poke a delay rather than
+ * a note nobody ever sees.
+ */
+const SYNC_ALARM = 'hamesh-teams-sync';
+const SYNC_EVERY_MINUTES = 5;
+
 /** Wires Teams into the background service worker. A no-op in builds without Teams. */
 export function registerTeams(): void {
   const config = teamsConfig();
@@ -43,15 +53,19 @@ export function registerTeams(): void {
 
   browser.runtime.onMessage.addListener((message, sender, sendResponse): true | undefined => {
     const account = isTeamsRequest(message);
-    if (!account && !isTeamsOperationRequest(message)) return undefined;
-    // The same gate for both kinds: only Hamesh's own pages, never a content
-    // script and never another extension.
+    const cache = !account && isTeamsCacheRequest(message);
+    if (!account && !cache && !isTeamsOperationRequest(message)) return undefined;
+    // The same gate for all three kinds: only Hamesh's own pages, never a
+    // content script and never another extension. The content script reads the
+    // team notes it draws straight from storage instead (see ./page-cache.ts).
     if (!isExtensionPageSender(sender, browser.runtime.id, browser.runtime.getURL('/'))) {
       return undefined;
     }
     const work = (async (): Promise<TeamsReply | TeamsResult<unknown>> => {
       const service = await getService();
-      return account ? service.handle(message.op) : service.perform(message.op, message.params);
+      if (account) return service.handle(message.op);
+      if (cache) return service.readCache(message.op, message.teamId);
+      return service.perform(message.op, message.params);
     })();
     work.then(sendResponse, (err: unknown) =>
       sendResponse(
@@ -65,5 +79,15 @@ export function registerTeams(): void {
 
   browser.permissions?.onRemoved.addListener(() => {
     void getService().then((service) => service.permissionsRemoved());
+  });
+
+  // Re-creating an alarm with the same name just resets its schedule, so this is
+  // idempotent across worker restarts. Nothing here reaches the network unless
+  // the user has turned Teams on and signed in: `tick` asks the service, which
+  // checks both first.
+  browser.alarms?.create(SYNC_ALARM, { periodInMinutes: SYNC_EVERY_MINUTES });
+  browser.alarms?.onAlarm.addListener((alarm) => {
+    if (alarm.name !== SYNC_ALARM) return;
+    void getService().then((service) => service.tick());
   });
 }

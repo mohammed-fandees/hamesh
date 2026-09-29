@@ -65,6 +65,7 @@ import {
   type VideoMarkerClusterItem,
 } from '@/ui/video/VideoMarkerClusterList';
 import { getStrings, dirForLang, type Lang, type Strings } from '@/ui/i18n';
+import type { TeamNotesSource } from '@/teams/page-notes';
 
 interface Resolved {
   note: Note;
@@ -164,6 +165,11 @@ interface HameshAppProps {
    *  id — wired to the content-script controller's `RESTORE_NOTE` handler,
    *  which fires from the Notes Library's Open Note flow. */
   registerRestoreNote: (fn: (noteId: string) => void) => void;
+  /** The notes this page's teams have shared, read from what the background
+   *  worker cached for it. Absent in builds without Teams, and in those builds
+   *  nothing under it is bundled at all. Read-only here: a team note lives on
+   *  the server, and only Hamesh's own pages may ask the worker to change one. */
+  teamNotes?: TeamNotesSource;
 }
 
 function toAnchorRect(el: Element): AnchorRect {
@@ -284,6 +290,7 @@ export function HameshApp({
   registerActivateVideo,
   registerActivateText,
   registerRestoreNote,
+  teamNotes,
 }: HameshAppProps) {
   const [lang, setLang] = useState<Lang>(initialLang);
   const [appearance, setAppearance] = useState<AppearanceMode>('match-website');
@@ -463,6 +470,11 @@ export function HameshApp({
   const captureRef = useRef<HTMLDivElement>(null);
   const scopeRef = useRef<HTMLDivElement>(null);
   const notesRef = useRef<Note[]>([]);
+  /** The team notes currently drawn on this page. Kept apart from the personal
+   *  ones so either side can be reloaded without the other: `notesRef` holds
+   *  both (that is what resolves and renders), and a note carrying `team` is
+   *  never one this device stored. */
+  const teamNotesRef = useRef<Note[]>([]);
   /** Last pass's resolved ranges, keyed by note id. Feeding these back into
    *  the next pass turns the common case into one string compare per note —
    *  no DOM walk, no page-text index. Rebuilt every pass, never a cache with
@@ -603,9 +615,9 @@ export function HameshApp({
     const key = generatePageKey(location.href);
     try {
       const list = await repo.getForPage(key);
-      commitNotes(list);
+      commitNotes([...list, ...teamNotesRef.current]);
     } catch {
-      commitNotes([]);
+      commitNotes([...teamNotesRef.current]);
     }
   }, [repo, commitNotes]);
 
@@ -615,15 +627,51 @@ export function HameshApp({
     (async () => {
       try {
         const list = await repo.getForPage(generatePageKey(location.href));
-        if (!cancelled) commitNotes(list);
+        if (!cancelled) commitNotes([...list, ...teamNotesRef.current]);
       } catch {
-        if (!cancelled) commitNotes([]);
+        if (!cancelled) commitNotes([...teamNotesRef.current]);
       }
     })();
     return () => {
       cancelled = true;
     };
   }, [repo, commitNotes]);
+
+  /** Replaces the team half of the list, leaving the personal half as it is. */
+  const commitTeamNotes = useCallback(
+    (next: Note[]) => {
+      teamNotesRef.current = next;
+      commitNotes([...notesRef.current.filter((n) => !n.team), ...next]);
+    },
+    [commitNotes],
+  );
+
+  // ---- Team notes: whatever the worker cached for this page ----
+  // Nothing is fetched here. The background worker pulls a team's notes once
+  // and files them by page, so this reads its own page's shelf and redraws
+  // when the worker writes to it. No request is made for the page the reader
+  // is on, so the server never learns which pages they visit.
+  useEffect(() => {
+    // The build-time constant as well as the source: with it folded away there
+    // is nothing left in here, so a build without Teams carries none of this.
+    const source = import.meta.env.WXT_TEAMS_API_ORIGIN ? teamNotes : undefined;
+    if (!source) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const list = await source.read(pageKey);
+        if (!cancelled) commitTeamNotes(list);
+      } catch {
+        if (!cancelled) commitTeamNotes([]);
+      }
+    };
+    void load();
+    const unwatch = source.watch(pageKey, () => void load());
+    return () => {
+      cancelled = true;
+      unwatch();
+    };
+  }, [teamNotes, pageKey, commitTeamNotes]);
 
   // ---- SPA navigation: reload for the new effective page ----
   useEffect(() => {
@@ -635,6 +683,9 @@ export function HameshApp({
           setViewerId(null);
           setVideoComposer(null);
           setVideoOpenClusterKey(null);
+          // The previous page's team notes belong to the previous page. The
+          // effect keyed on `pageKey` refills this with the new one's.
+          teamNotesRef.current = [];
         }
         return key;
       });
@@ -1272,8 +1323,19 @@ export function HameshApp({
     setVideoSeekRequest({ timestamp: item.anchor.timestamp, nonce: videoSeekNonceRef.current });
   }, []);
 
+  /**
+   * A team note is not this device's to change. Every local write goes through
+   * this first: the marker, the card and the viewer already hide the controls,
+   * and this is what makes hiding them beside the point.
+   */
+  const isLocal = useCallback(
+    (noteId: string) => !notesRef.current.find((n) => n.id === noteId)?.team,
+    [],
+  );
+
   const handleUpdate = useCallback(
     async (noteId: string, content: string) => {
+      if (!isLocal(noteId)) return;
       setBusy(true);
       setError(null);
       try {
@@ -1287,7 +1349,7 @@ export function HameshApp({
         setBusy(false);
       }
     },
-    [repo, pageKey, commitNotes, strings.saveError],
+    [repo, pageKey, commitNotes, strings.saveError, isLocal],
   );
 
   // Pinning is a metadata toggle, not a save — deliberately doesn't touch
@@ -1296,7 +1358,7 @@ export function HameshApp({
   const handleTogglePin = useCallback(
     async (noteId: string) => {
       const current = notesRef.current.find((n) => n.id === noteId);
-      if (!current) return;
+      if (!current || current.team) return;
       try {
         const updated = await repo.setPinned(noteId, pageKey, !current.pinned);
         if (updated) {
@@ -1311,6 +1373,7 @@ export function HameshApp({
 
   const handleDelete = useCallback(
     async (noteId: string) => {
+      if (!isLocal(noteId)) return;
       setBusy(true);
       try {
         await repo.delete(noteId, pageKey);
@@ -1323,7 +1386,7 @@ export function HameshApp({
         setBusy(false);
       }
     },
-    [repo, pageKey, commitNotes, strings.saveError],
+    [repo, pageKey, commitNotes, strings.saveError, isLocal],
   );
 
   // ---- Derived: marker placements ----
@@ -1752,6 +1815,12 @@ export function HameshApp({
       : undefined;
 
   const viewerNote = viewerId ? notes.find((n) => n.id === viewerId) : null;
+  // "Shared with <team>", and only in a build that has Teams: the constant folds
+  // away in every other build, and with it the module this comes from.
+  const viewerSharedLabel =
+    import.meta.env.WXT_TEAMS_API_ORIGIN && viewerNote && teamNotes
+      ? teamNotes.label(viewerNote, lang)
+      : undefined;
   const viewerIsVideo = viewerNote?.anchor.type === 'video';
   const viewerIsText = viewerNote?.anchor.type === 'text';
   const viewerTextResolved =
@@ -1943,6 +2012,7 @@ export function HameshApp({
           unavailableLabel={viewerIsText ? strings.textAnchorUnavailable : undefined}
           attachedText={viewerNote.anchor.type === 'text' ? viewerNote.anchor.exact : undefined}
           initialEditing={viewerEditing}
+          sharedLabel={viewerSharedLabel}
           strings={strings}
           lang={lang}
           busy={busy}
@@ -1962,6 +2032,7 @@ export function HameshApp({
             viewerVideoGroup ? { left: viewerVideoGroup.left, top: viewerVideoGroup.top } : null
           }
           anchorAvailable={viewerVideoResolved?.quality === ResolutionQuality.Exact}
+          sharedLabel={viewerSharedLabel}
           strings={strings}
           lang={lang}
           busy={busy}
@@ -2120,6 +2191,7 @@ function FloatingVideoViewer({
   video,
   markerRect,
   anchorAvailable,
+  sharedLabel,
   strings,
   lang,
   busy,
@@ -2136,6 +2208,7 @@ function FloatingVideoViewer({
    *  right above the dot the user clicked, not above the whole player. */
   markerRect: { left: number; top: number } | null;
   anchorAvailable: boolean;
+  sharedLabel?: string;
   strings: Strings;
   lang: Lang;
   busy: boolean;
@@ -2163,6 +2236,7 @@ function FloatingVideoViewer({
         strings={strings}
         lang={lang}
         anchorAvailable={anchorAvailable}
+        sharedLabel={sharedLabel}
         saving={busy}
         error={error}
         onUpdate={onUpdate}
@@ -2182,6 +2256,7 @@ function FloatingViewer({
   unavailableLabel,
   attachedText,
   initialEditing,
+  sharedLabel,
   strings,
   lang,
   busy,
@@ -2201,6 +2276,7 @@ function FloatingViewer({
   unavailableLabel?: string;
   attachedText?: string;
   initialEditing?: boolean;
+  sharedLabel?: string;
   strings: Strings;
   lang: Lang;
   busy: boolean;
@@ -2231,6 +2307,7 @@ function FloatingViewer({
         unavailableLabel={unavailableLabel}
         attachedText={attachedText}
         initialEditing={initialEditing}
+        sharedLabel={sharedLabel}
         saving={busy}
         error={error}
         onUpdate={onUpdate}

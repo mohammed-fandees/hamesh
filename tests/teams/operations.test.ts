@@ -4,6 +4,14 @@ import { operations } from '@/teams/operations';
 
 const TEAM = '01J0000000000000000000000A';
 const USER = '01J0000000000000000000000B';
+const NOTE = '01J0000000000000000000000D';
+
+/** A minimal element anchor, as the extension's own notes carry one. */
+const ANCHOR = {
+  primarySelector: 'main > p:nth-child(2)',
+  signals: { tagName: 'p' },
+  fallbackDocumentPosition: { x: 10, y: 20 },
+};
 
 describe('the operation table', () => {
   it('recognises only the operations it lists', () => {
@@ -29,6 +37,21 @@ describe('the operation table', () => {
     'invites.revoke': { teamId: TEAM, invitationId: TEAM },
     'invites.preview': { token: 'a'.repeat(43) },
     'invites.accept': { token: 'a'.repeat(43) },
+    'notes.changes': { teamId: TEAM },
+    'notes.share': {
+      teamId: TEAM,
+      requestId: 'a-personal-note-id',
+      originalUrl: 'https://example.test/page',
+      content: 'A thought',
+      anchor: ANCHOR,
+    },
+    'notes.update': { teamId: TEAM, noteId: NOTE, version: 2, content: 'Changed' },
+    'notes.delete': { teamId: TEAM, noteId: NOTE },
+    'notes.unshare': { teamId: TEAM, noteId: NOTE },
+    'folders.create': { teamId: TEAM, name: 'Reading' },
+    'folders.rename': { teamId: TEAM, folderId: NOTE, name: 'Reading' },
+    'folders.delete': { teamId: TEAM, folderId: NOTE },
+    'realtime.ticket': { teamId: TEAM },
     'billing.plans': {},
     'billing.payments': {},
     'billing.submit': {
@@ -90,6 +113,58 @@ describe('the operation table', () => {
       expect(request.path).not.toContain(token);
       expect(request.body).toEqual({ token });
     }
+  });
+
+  it('never names the page anyone is on: a sync asks only for the cursor it holds', () => {
+    const changes = operations()['notes.changes'];
+    expect(changes.request({ teamId: TEAM }).path).toBe(`/v1/teams/${TEAM}/changes`);
+    expect(changes.request({ teamId: TEAM, since: 'abc-123_XYZ' }).path).toBe(
+      `/v1/teams/${TEAM}/changes?since=abc-123_XYZ`,
+    );
+    // The cursor is opaque, but it still has to be a cursor before it reaches a
+    // URL — nothing else may be smuggled into the query string.
+    for (const since of ['a b', 'x?y=1', '../../admin', '&limit=9999', 'a'.repeat(65), '']) {
+      expect(changes.params.safeParse({ teamId: TEAM, since }).success, since).toBe(false);
+    }
+  });
+
+  it('refuses an edit that changes nothing, and one that quotes no version', () => {
+    const update = operations()['notes.update'];
+    expect(update.params.safeParse({ teamId: TEAM, noteId: NOTE, version: 1 }).success).toBe(false);
+    expect(update.params.safeParse({ teamId: TEAM, noteId: NOTE, content: 'x' }).success).toBe(
+      false,
+    );
+    expect(
+      update.params.safeParse({ teamId: TEAM, noteId: NOTE, version: 1, folderId: null }).success,
+      'unfiling a note is a change',
+    ).toBe(true);
+  });
+
+  it('refuses a note whose page is not a web page, or whose anchor is not one', () => {
+    const share = operations()['notes.share'];
+    const base = {
+      teamId: TEAM,
+      requestId: 'a-personal-note-id',
+      content: 'A thought',
+      anchor: ANCHOR,
+    };
+    for (const originalUrl of [
+      'javascript:alert(1)',
+      'file:///etc/passwd',
+      'chrome-extension://abc/notes.html',
+      'data:text/html,<p>',
+    ]) {
+      expect(share.params.safeParse({ ...base, originalUrl }).success, originalUrl).toBe(false);
+    }
+    expect(share.params.safeParse({ ...base, originalUrl: 'https://ok.test/' }).success).toBe(true);
+    expect(
+      share.params.safeParse({
+        ...base,
+        originalUrl: 'https://ok.test/',
+        anchor: { ...ANCHOR, signals: { tagName: 'p', nope: 1 } },
+      }).success,
+      'an anchor the contract does not describe is not sent',
+    ).toBe(false);
   });
 
   it('mints a request id the server will accept', () => {

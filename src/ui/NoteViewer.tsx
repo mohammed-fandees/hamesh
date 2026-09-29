@@ -17,6 +17,11 @@ interface NoteViewerProps {
   /** For a contextual text note: the page text it's attached to, shown
    *  above the note itself. Absent for every other kind of note. */
   attachedText?: string;
+  /** "Shared with <team>" for a note that belongs to a team rather than to
+   *  this device — supplied by the content script only in builds that have
+   *  Teams. Its note is shown read-only: edit, delete and pin all belong to
+   *  Hamesh's own pages, which are the only place allowed to ask the server. */
+  sharedLabel?: string;
   /** Opens straight into edit mode. Used by the hover popup's Edit button,
    *  so editing a contextual note goes through this exact component (and
    *  therefore this exact update flow) rather than a second editor. */
@@ -45,6 +50,7 @@ export function NoteViewer({
   anchorAvailable,
   unavailableLabel,
   attachedText,
+  sharedLabel,
   initialEditing = false,
   saving = false,
   error,
@@ -53,7 +59,9 @@ export function NoteViewer({
   onClose,
   onTogglePin,
 }: NoteViewerProps) {
-  const [isEditing, setIsEditing] = useState(initialEditing);
+  // A note that lives in a team is read to here and changed elsewhere.
+  const shared = !!note.team;
+  const [isEditing, setIsEditing] = useState(initialEditing && !shared);
   const [editContent, setEditContent] = useState(note.content);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -90,15 +98,17 @@ export function NoteViewer({
     >
       <span className="hm-connector" data-unavailable={!anchorAvailable} aria-hidden="true" />
 
-      <button
-        type="button"
-        className="hm-pin-toggle"
-        aria-pressed={!!note.pinned}
-        aria-label={note.pinned ? strings.unpinNote : strings.pinNote}
-        onClick={onTogglePin}
-      >
-        <PinIcon filled={!!note.pinned} />
-      </button>
+      {!shared && (
+        <button
+          type="button"
+          className="hm-pin-toggle"
+          aria-pressed={!!note.pinned}
+          aria-label={note.pinned ? strings.unpinNote : strings.pinNote}
+          onClick={onTogglePin}
+        >
+          <PinIcon filled={!!note.pinned} />
+        </button>
+      )}
 
       {!anchorAvailable && (
         <div className="hm-status hm-status--warning" role="status">
@@ -167,6 +177,15 @@ export function NoteViewer({
             </button>
           </div>
         </>
+      ) : shared ? (
+        <div className="hm-row hm-row--between">
+          <span className="hm-meta">{strings.editedAgo(relativeTime(note.updatedAt, lang))}</span>
+          {sharedLabel && (
+            <span className="hm-shared-with">
+              <bdi>{sharedLabel}</bdi>
+            </span>
+          )}
+        </div>
       ) : (
         <div className="hm-row hm-row--between">
           <span className="hm-meta">{strings.editedAgo(relativeTime(note.updatedAt, lang))}</span>

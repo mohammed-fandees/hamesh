@@ -11,6 +11,7 @@ import { generatePageKey } from '@/domain/page-key';
 import { HameshApp } from '@/content/HameshApp';
 import { resolveLang } from '@/ui/i18n';
 import { matchesShortcut } from '@/domain/shortcut';
+import { createTeamNotesSource } from '@/teams/page-notes';
 import '@/ui/tokens.css';
 
 export default defineContentScript({
@@ -21,6 +22,12 @@ export default defineContentScript({
     const repo = createNotesRepository();
     const prefsRepo = createPreferencesRepository();
     const foldersRepo = createFoldersRepository();
+    // Only in a build that has Teams — a build-time constant, so every other
+    // build drops this and the module behind it. Even here it reaches nothing
+    // but the notes the background worker already cached for this page: no
+    // session, no request, and no message to the worker (which refuses a
+    // content script anyway).
+    const teamNotes = import.meta.env.WXT_TEAMS_API_ORIGIN ? createTeamNotesSource() : undefined;
     // Resolved once, synchronously, from the browser's UI language — the
     // initial paint before the (async) stored preference loads, and exactly
     // today's behavior for users who never open Settings. HameshApp takes it
@@ -87,6 +94,7 @@ export default defineContentScript({
             registerRestoreNote: (fn: (noteId: string) => void) => {
               restoreNote = fn;
             },
+            teamNotes,
           }),
         );
         return root;

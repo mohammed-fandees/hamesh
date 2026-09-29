@@ -26,8 +26,23 @@ anything else, including fields it does not expect.
   and `GET /v1/me`, so they can change without a release.
 - Secrets of any kind.
 
-## How the extension uses it
+## How both sides use it
 
-The extension imports **types only** (`import type`), so zod — and the schemas
-themselves — never reach the extension bundle. The server imports the schemas
-and validates with them.
+The server validates every request against these schemas. The extension does
+the same in the other direction: it parses each answer — and each realtime
+frame — before anything uses it, so a response that does not match the contract
+is refused outright rather than half-trusted, and it checks a page's own
+parameters against them before building a request.
+
+Both sides therefore import the schemas, not only the types. Two things follow:
+
+- **Reach a module directly, never the barrel** (`@hamesh/teams-contract/errors`,
+  not `@hamesh/teams-contract`) from anywhere that must stay light: importing the
+  barrel pulls every sibling module, and with them zod.
+- **Keep the schemas out of module scope in the extension**, behind a function
+  that builds them on first use (see `src/teams/operations.ts`). A schema built
+  while a module loads is a call a bundler must assume does something, so it
+  survives into builds that have no Teams at all.
+
+The extension's build is what proves this: with no Teams configuration, none of
+this package reaches the bundle (see `docs/teams-client.md`).

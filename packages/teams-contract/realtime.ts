@@ -35,17 +35,26 @@ export type RevokeReason = (typeof REVOKE_REASONS)[number];
 export const CLOSE_REVOKED = 4003;
 export const CLOSE_PROTOCOL = 1008;
 
-export type ServerMessage =
+const Seq = z.number().int().min(0);
+
+/**
+ * Every frame the server may send, as a schema rather than a bare type: a
+ * socket frame is server input like any other, so a client parses it strictly
+ * and ignores anything that does not match, instead of trusting the shape.
+ */
+export const ServerMessage = z.discriminatedUnion('t', [
   /** Sent once on connect: the team's current sequence, so the client knows whether to pull. */
-  | { t: 'hello'; teamId: string; seq: number }
+  z.strictObject({ t: z.literal('hello'), teamId: Ulid, seq: Seq }),
   /** Notes or folders changed; pull `/changes?since=<cursor>`. */
-  | { t: 'changed'; seq: number }
+  z.strictObject({ t: z.literal('changed'), seq: Seq }),
   /** Membership or roles changed; refetch the member list. */
-  | { t: 'members' }
+  z.strictObject({ t: z.literal('members') }),
   /** Comment activity on one note; refetch that note's comments if it is open. */
-  | { t: 'comments'; noteId: string }
+  z.strictObject({ t: z.literal('comments'), noteId: Ulid }),
   /** Access ended; the socket closes with 4003 right after. */
-  | { t: 'revoked'; reason: RevokeReason };
+  z.strictObject({ t: z.literal('revoked'), reason: z.enum(REVOKE_REASONS) }),
+]);
+export type ServerMessage = z.infer<typeof ServerMessage>;
 
 /** The only frame a client may send. The server auto-responds "pong". */
 export const CLIENT_PING = 'ping';

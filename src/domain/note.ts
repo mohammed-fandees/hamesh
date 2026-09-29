@@ -119,6 +119,33 @@ export interface PageContext {
   title?: string;
 }
 
+/**
+ * What marks a note as belonging to a team rather than to this device.
+ *
+ * Present only on notes projected from the team cache (see
+ * `teams/page-cache.ts`); every note Hamesh stores locally has none, and
+ * nothing in `notes-repository.ts` ever writes one. A note carrying this is
+ * read-only wherever it is shown on a page: it lives on the server, the server
+ * decides who may change it, and the only paths that may try go through the
+ * background worker from one of Hamesh's own pages.
+ *
+ * A nested object rather than a field per property, for the same reason as
+ * `pageContext`: everything a shared note carries belongs together and will
+ * grow (comment counts, who last edited it) without reshaping `Note` again.
+ */
+export interface NoteTeam {
+  /** The team's id, as the server issued it. */
+  id: string;
+  /** The team's name as the server last reported it — what "Shared with …" shows. */
+  name: string;
+  /** The server's version of this note; an edit must quote the one it saw. */
+  version: number;
+  /** Who shared it, or null once they have left the team. */
+  authorId: string | null;
+  /** The team folder it is filed into, if any — a team's folders, not the local ones. */
+  folderId: string | null;
+}
+
 export interface Note {
   id: string;
   schemaVersion: SchemaVersion;
@@ -140,6 +167,10 @@ export interface Note {
    *  pinning a note shouldn't make it jump to the top of a "most recently
    *  edited" sort. */
   pinned?: boolean;
+  /** Set only on a note that lives in a team (never stored locally) — see
+   *  `NoteTeam`. Its presence is what every caller checks before offering to
+   *  edit, delete, pin or file a note. */
+  team?: NoteTeam;
   /** The folder this note is filed into, if any. Optional — absent means
    *  unfiled, same treatment as `pinned`'s absent-means-false convention, so
    *  no backfill is needed for notes written before folders existed. A

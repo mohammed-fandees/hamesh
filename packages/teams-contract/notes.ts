@@ -106,14 +106,23 @@ export const CreateNoteRequest = z.strictObject({
 });
 export type CreateNoteRequest = z.infer<typeof CreateNoteRequest>;
 
+/**
+ * The fields a note edit may carry, before the "at least one of them" rule
+ * below. Exported on its own so a client can compose them with the ids the
+ * path needs without restating the bounds the server enforces.
+ */
+export const UpdateNoteFields = z.strictObject({
+  version: z.number().int().min(1),
+  content: NoteContent.optional(),
+  folderId: Ulid.nullable().optional(),
+});
+
+/** An edit must change something. */
+export const changesSomething = (b: { content?: unknown; folderId?: unknown }): boolean =>
+  b.content !== undefined || b.folderId !== undefined;
+
 /** PATCH /v1/teams/:teamId/notes/:noteId — `version` is the one the client last saw. */
-export const UpdateNoteRequest = z
-  .strictObject({
-    version: z.number().int().min(1),
-    content: NoteContent.optional(),
-    folderId: Ulid.nullable().optional(),
-  })
-  .refine((b) => b.content !== undefined || b.folderId !== undefined, 'nothing to change');
+export const UpdateNoteRequest = UpdateNoteFields.refine(changesSomething, 'nothing to change');
 export type UpdateNoteRequest = z.infer<typeof UpdateNoteRequest>;
 
 export const TeamNote = z.strictObject({
@@ -130,8 +139,20 @@ export const TeamNote = z.strictObject({
 });
 export type TeamNote = z.infer<typeof TeamNote>;
 
-/** POST /v1/teams/:teamId/notes/:noteId/unshare — the note, handed back to its author. */
-export const UnshareResponse = z.strictObject({ note: TeamNote });
+/**
+ * POST /v1/teams/:teamId/notes and PATCH /v1/teams/:teamId/notes/:noteId — the
+ * note as the server now holds it, including the `version` the next edit must
+ * quote.
+ */
+export const NoteResponse = z.strictObject({ note: TeamNote });
+export type NoteResponse = z.infer<typeof NoteResponse>;
+
+/**
+ * POST /v1/teams/:teamId/notes/:noteId/unshare — the same shape: the note,
+ * handed back to its author as it was last shared, so the client can keep a
+ * personal copy of what it is about to stop seeing.
+ */
+export const UnshareResponse = NoteResponse;
 
 export const CreateFolderRequest = z.strictObject({
   name: z
@@ -158,7 +179,18 @@ export const TeamFolder = z.strictObject({
 });
 export type TeamFolder = z.infer<typeof TeamFolder>;
 
+/** POST /v1/teams/:teamId/folders and PATCH /v1/teams/:teamId/folders/:folderId */
+export const FolderResponse = z.strictObject({ folder: TeamFolder });
+export type FolderResponse = z.infer<typeof FolderResponse>;
+
 export const Tombstone = z.strictObject({ id: z.string(), deleted: z.literal(true) });
+
+/**
+ * A sync cursor as it travels back to the server. Opaque, but bounded and
+ * base64url, so a client can check the shape of what it stored before putting
+ * it in a query string.
+ */
+export const SyncCursor = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/);
 
 /**
  * GET /v1/teams/:teamId/changes?since=<cursor>&limit=<n>

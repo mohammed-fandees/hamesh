@@ -1,3 +1,5 @@
+import { createKvStore, type KvStoreOptions } from './idb';
+
 /**
  * Where the Teams session token lives on this device.
  *
@@ -23,7 +25,6 @@ export interface SessionStore {
   clear(): Promise<void>;
 }
 
-const STORE = 'kv';
 const KEY = 'session';
 
 function isStoredSession(value: unknown): value is StoredSession {
@@ -38,50 +39,15 @@ function isStoredSession(value: unknown): value is StoredSession {
   );
 }
 
-function promisify<T>(request: IDBRequest<T>): Promise<T> {
-  return new Promise((resolve, reject) => {
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-}
-
 export function createIdbSessionStore(
-  opts: { dbName?: string; now?: () => number; indexedDB?: IDBFactory } = {},
+  opts: KvStoreOptions & { now?: () => number } = {},
 ): SessionStore {
-  const dbName = opts.dbName ?? 'hamesh-teams';
+  const kv = createKvStore(opts);
   const now = opts.now ?? Date.now;
-  let db: Promise<IDBDatabase> | null = null;
-
-  function open(): Promise<IDBDatabase> {
-    if (!db) {
-      const factory = opts.indexedDB ?? indexedDB;
-      const request = factory.open(dbName, 1);
-      request.onupgradeneeded = () => request.result.createObjectStore(STORE);
-      db = promisify(request).catch((err) => {
-        db = null; // let the next call try again
-        throw err;
-      });
-    }
-    return db;
-  }
-
-  async function run<T>(
-    mode: IDBTransactionMode,
-    op: (store: IDBObjectStore) => IDBRequest<T>,
-  ): Promise<T> {
-    const tx = (await open()).transaction(STORE, mode);
-    const result = promisify(op(tx.objectStore(STORE)));
-    await new Promise<void>((resolve, reject) => {
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-      tx.onabort = () => reject(tx.error);
-    });
-    return result;
-  }
 
   const store: SessionStore = {
     async get() {
-      const value = await run('readonly', (s) => s.get(KEY));
+      const value = await kv.get(KEY);
       if (!isStoredSession(value)) {
         if (value !== undefined) await store.clear();
         return null;
@@ -94,12 +60,10 @@ export function createIdbSessionStore(
     },
     async set(session) {
       if (!isStoredSession(session)) throw new Error('refusing to store a malformed session');
-      await run('readwrite', (s) =>
-        s.put({ token: session.token, expiresAt: session.expiresAt }, KEY),
-      );
+      await kv.put(KEY, { token: session.token, expiresAt: session.expiresAt });
     },
     async clear() {
-      await run('readwrite', (s) => s.delete(KEY));
+      await kv.del(KEY);
     },
   };
   return store;

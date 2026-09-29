@@ -71,6 +71,35 @@ export interface TeamsStrings {
   deleteConfirm: (team: string) => string;
   dangerZone: string;
 
+  sharedNotes: string;
+  sharedNotesHint: string;
+  noSharedNotes: string;
+  shareWithTeam: string;
+  sharingNote: string;
+  noteShared: (team: string) => string;
+  refreshNotes: string;
+  syncedAgo: (when: string) => string;
+  neverSynced: string;
+  noteEdited: (when: string) => string;
+  editNote: string;
+  saveNote: string;
+  unshareNote: string;
+  unshareConfirm: string;
+  deleteSharedNote: string;
+  deleteSharedConfirm: string;
+  openPage: string;
+
+  teamFolders: string;
+  newTeamFolder: string;
+  folderNamePlaceholder: string;
+  renameFolder: string;
+  deleteFolder: string;
+  deleteFolderConfirm: (name: string) => string;
+  noTeamFolders: string;
+  unfiled: string;
+  moveToFolder: string;
+  noFolderOption: string;
+
   billing: string;
   planActive: (until: string) => string;
   planNone: string;
@@ -156,6 +185,36 @@ const en: TeamsStrings = {
   deleteTeam: 'Delete team',
   deleteConfirm: (team) => `Delete ${team} and everything in it? This cannot be undone.`,
   dangerZone: 'Team',
+
+  sharedNotes: 'Shared notes',
+  sharedNotesHint:
+    'These appear on the pages they belong to, for everyone in the team. Your own notes stay on this device until you share them.',
+  noSharedNotes: 'Nothing has been shared with this team yet.',
+  shareWithTeam: 'Share with team',
+  sharingNote: 'Sharing…',
+  noteShared: (team) => `Shared with ${team}.`,
+  refreshNotes: 'Check for changes',
+  syncedAgo: (when) => `Up to date as of ${when}`,
+  neverSynced: 'Not loaded on this device yet',
+  noteEdited: (when) => `Edited ${when}`,
+  editNote: 'Edit',
+  saveNote: 'Save',
+  unshareNote: 'Stop sharing',
+  unshareConfirm: 'Take this note out of the team? It stays yours, on your device.',
+  deleteSharedNote: 'Delete',
+  deleteSharedConfirm: 'Delete this note for everyone in the team?',
+  openPage: 'Open the page',
+
+  teamFolders: 'Folders',
+  newTeamFolder: 'New folder',
+  folderNamePlaceholder: 'Folder name…',
+  renameFolder: 'Rename',
+  deleteFolder: 'Delete',
+  deleteFolderConfirm: (name) => `Delete ${name}? The notes in it stay, unfiled.`,
+  noTeamFolders: 'No folders yet.',
+  unfiled: 'Unfiled',
+  moveToFolder: 'Move to',
+  noFolderOption: 'No folder',
 
   billing: 'Plan',
   planActive: (until) => `Active until ${until}`,
@@ -291,6 +350,36 @@ const ar: TeamsStrings = {
   deleteTeam: 'حذف الفريق',
   deleteConfirm: (team) => `حذف ${team} وكل ما فيه؟ لا يمكن التراجع عن هذا.`,
   dangerZone: 'الفريق',
+
+  sharedNotes: 'الملاحظات المشتركة',
+  sharedNotesHint:
+    'تظهر هذه على الصفحات التي تنتمي إليها، لكل من في الفريق. وملاحظاتك الخاصة تبقى على جهازك حتى تشاركها.',
+  noSharedNotes: 'لم تُشارَك أي ملاحظة مع هذا الفريق بعد.',
+  shareWithTeam: 'مشاركة مع فريق',
+  sharingNote: 'جارٍ المشاركة…',
+  noteShared: (team) => `شُوركت مع ${team}.`,
+  refreshNotes: 'تحقق من التغييرات',
+  syncedAgo: (when) => `محدَّثة حتى ${when}`,
+  neverSynced: 'لم تُحمَّل على هذا الجهاز بعد',
+  noteEdited: (when) => `عُدِّلت ${when}`,
+  editNote: 'تعديل',
+  saveNote: 'حفظ',
+  unshareNote: 'إيقاف المشاركة',
+  unshareConfirm: 'إخراج هذه الملاحظة من الفريق؟ تبقى لك على جهازك.',
+  deleteSharedNote: 'حذف',
+  deleteSharedConfirm: 'حذف هذه الملاحظة لكل من في الفريق؟',
+  openPage: 'فتح الصفحة',
+
+  teamFolders: 'المجلدات',
+  newTeamFolder: 'مجلد جديد',
+  folderNamePlaceholder: 'اسم المجلد…',
+  renameFolder: 'إعادة تسمية',
+  deleteFolder: 'حذف',
+  deleteFolderConfirm: (name) => `حذف ${name}؟ الملاحظات التي فيه تبقى، دون مجلد.`,
+  noTeamFolders: 'لا توجد مجلدات بعد.',
+  unfiled: 'دون مجلد',
+  moveToFolder: 'نقل إلى',
+  noFolderOption: 'دون مجلد',
 
   billing: 'الاشتراك',
   planActive: (until) => `فعّال حتى ${until}`,

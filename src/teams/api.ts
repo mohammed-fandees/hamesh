@@ -116,13 +116,24 @@ export function createTeamsApi(deps: TeamsApiDeps) {
       return call('GET', '/v1/me', { schema: MeResponse });
     },
     /**
-     * Performs one listed operation. The params have already been validated
-     * against the operation's own schema (see ./service.ts), so the request
-     * built here is made only of values that passed it.
+     * Performs one listed operation.
+     *
+     * The params are checked against that operation's own schema here, in the
+     * one place a request is ever built — so a path or body is only ever made
+     * of values that passed it, whichever caller asked: a page through the
+     * service, or the worker's own sync. Anything else is `invalid_request`
+     * with the offending field names, and nothing is sent.
      */
     async run<K extends TeamsOpName>(name: K, params: ParamsOf<K>): Promise<ResultOf<K>> {
       const operation = operations()[name];
-      const { method, path, body } = operation.request(params as never);
+      const checked = operation.params.safeParse(params);
+      if (!checked.success) {
+        throw new TeamsError(
+          'invalid_request',
+          checked.error.issues.map((i) => i.path.join('.')).filter(Boolean),
+        );
+      }
+      const { method, path, body } = operation.request(checked.data as never);
       const result = await call(method, path, {
         schema: operation.result,
         ...(body === undefined ? {} : { body }),

@@ -68,14 +68,22 @@ worker sees `permissions.onRemoved` and forgets the session on this device.
 ## Where things run
 
 ```
-Settings page (notes.html)          Background service worker
-──────────────────────────          ─────────────────────────────────────
-TeamsSection  ── TEAMS message ──▶  registerTeams()  (src/teams/background.ts)
+Hamesh's own pages (notes.html)     Background service worker
+───────────────────────────────     ─────────────────────────────────────
+TeamsSection  ─ TEAMS ─────────▶    registerTeams()  (src/teams/background.ts)
   requestPermissions()                ├─ sender check: extension pages only
-  (needs the click, so it             ├─ TeamsService   (status / signIn / signOut)
+  (needs the click, so it             ├─ TeamsService  (status / signIn / signOut)
    runs in the page)                  ├─ Google sign-in (PKCE, state, nonce)
-                                      ├─ TeamsApi       (fetch + contract checks)
-                                      └─ session store  (IndexedDB, token)
+TeamsView     ─ TEAMS_OP ──────▶    ├─ TeamsApi      (fetch + contract checks)
+  teams, members, invitations,        ├─ operation table (operations.ts)
+  the plan, shared notes, folders     ├─ delta sync    (sync.ts)
+              ─ TEAMS_CACHE ───▶    ├─ realtime      (realtime.ts)
+                                      ├─ session store (IndexedDB, token)
+                                      └─ sync state    (IndexedDB, cursor)
+                                              │
+Content script (any web page)                 │ writes
+─────────────────────────────                 ▼
+HameshApp ◀─── reads ─────────  storage.local: team notes, filed by page
 ```
 
 - **The session token lives only in the background worker.** It is kept in
@@ -117,6 +125,78 @@ redirect URI. An unpacked development build gets a new extension id unless it
 is pinned, so its `https://<id>.chromiumapp.org/` must be added to the
 server's allowed redirect URIs as well.
 
+## Every request goes through one table
+
+`src/teams/operations.ts` is the whole list of things a page may ask the worker
+to do: what each one accepts (a zod schema), the request it becomes, and the
+shape its answer must have. An operation that is not in the table cannot be asked
+for at all — `src/teams/operation-names.ts` is a plain list of strings, so the
+worker can reject a name without loading the table (and so a build without Teams
+carries neither).
+
+`api.run` checks the params against that operation's schema in the one place a
+request is ever built, so a path or body is only ever made of values that passed
+it — whichever caller asked, a page or the worker's own sync. An id reaches a URL
+only after matching the ULID pattern, a sync cursor only after matching its own,
+so a page cannot steer a request somewhere else by putting a path in an id.
+
+## Shared notes
+
+A team's notes live on the server. This is how they reach a page without the
+server ever learning which pages anyone visits.
+
+**The worker pulls; it never asks about a page.** `GET /v1/teams/:id/changes`
+answers one question — what changed since this cursor — and the worker files
+everything it gets by page, under `hamesh:team-notes:<pageKey>`, exactly the way
+personal notes are stored. Matching a note to a page happens on this device.
+
+**The content script only reads.** It opens its own page's shelf in
+`chrome.storage.local` and watches it, and that is all: no session, no request,
+and no message to the worker, which refuses a content script anyway. A cached
+note becomes an ordinary `Note` carrying `team` (`src/domain/note.ts`), so every
+marker, anchor resolver and card works on it unchanged — and everything that
+writes checks for `team` first. On the page, a shared note is read-only and says
+**Shared with <team>**; it is changed from Hamesh's own pages, the only ones
+allowed to ask the server.
+
+**Sharing moves a note.** The personal note's own id travels as the idempotency
+key, so sharing the same note twice is one share, and the local copy is then
+forgotten — the team's copy is what the page shows from then on, and keeping both
+would draw the same note twice. Unsharing is the reverse: the server hands the
+note back, and it is kept as a personal note again.
+
+**A cursor that is too old** comes back as `410 cursor_expired`. Nothing can be
+reconciled from there, so the team's cache is dropped and pulled again from
+nothing. Applying a round is only ever upserts and deletes keyed by note id, so
+repeating one changes nothing — which is why the notes are written before the
+cursor: a worker that dies in between repeats a round rather than skipping one.
+
+**What the account says, the cache follows.** Every answer to `GET /v1/me`
+rewrites the team names a page shows and drops the cache of any team the server no
+longer lists. Signing out, or turning Teams off, leaves nothing behind: every
+cached team note on the device goes.
+
+## Realtime: a poke, never the content
+
+`POST /v1/realtime/tickets` returns a single-use, short-lived ticket and the
+`wss://` URL to open. The client checks that URL against its own configured API
+origin — same host, the matching scheme, an `/v1/` path — before connecting to
+it: the server says where, but it does not get to say somewhere else.
+
+A frame carries only a sequence number or an id, never note text, a name, an
+email or a URL, and every frame is parsed against the contract's own schema;
+anything else is ignored rather than guessed at. `changed` means "pull", and the
+pull goes through the ordinary authorized API — so a socket that lingers for a
+moment after someone's access ends cannot show them anything.
+
+The socket is a convenience, never the source of truth. The server ends each
+connection's authorization lease on a timer (`revoked: expired`), which is a
+reconnection with a fresh ticket rather than a refusal; any other reason stops
+the link and sends the worker back to `GET /v1/me` to find out what is true now.
+An MV3 service worker the browser shut down has no socket at all, so the worker
+pulls on a five-minute alarm as well: a missed poke is a delay, not a note nobody
+ever sees.
+
 ## The contract package
 
 `packages/teams-contract` is the wire contract: request and response schemas,
@@ -129,13 +209,43 @@ imports it for types and for validating answers.
 
 `tests/teams/` covers the client in isolation: config validation, the session
 store (against `fake-indexeddb`), the API client's contract checks and 401
-handling, PKCE (RFC 7636 test vector), state and redirect checking, the
-service's states, and the sender check. `tests/ui/TeamsSection.test.tsx` covers
-the Settings section, including that the permission prompt is requested
-synchronously from the click.
+handling, PKCE (RFC 7636 test vector), state and redirect checking, the service's
+states, the sender check, the operation table (including the ids and cursors it
+refuses), the page cache, delta sync (including an expired cursor and a repeated
+round), the realtime link (including the URLs it will not connect to), and how the
+cache follows the account. `tests/ui/` covers the Settings section — including
+that the permission prompt is requested synchronously from the click — the Teams
+page, sharing a note, and the shared-notes panel.
+`tests/content/HameshApp.team-notes.test.tsx` covers what a team note looks like
+on the page it belongs to.
+
+## Builds without Teams carry none of it
+
+Measured, not assumed — a store build of this work against the same build of
+`main`, both with no Teams configuration at all:
+
+| Entry               |     main | with shared notes |     Δ |
+| ------------------- | -------: | ----------------: | ----: |
+| `background.js`     | 12.43 kB |          12.43 kB |     0 |
+| `chunks/notes-*.js` | 60.31 kB |          60.60 kB | +0.29 |
+| `content.js`        | 318.5 kB |          319.2 kB | +0.72 |
+
+No contract, no zod, no endpoint, no cache key and no Teams wording anywhere in
+it. What is left is the scaffolding that makes the optional part optional: a
+context with nothing in it, an unset prop, and the one check that a note does not
+belong to a team. Every Teams entry point tests
+`import.meta.env.WXT_TEAMS_API_ORIGIN` as the first thing in its own body, so the
+bundler folds the branch away and drops everything it reached.
+
+Measure it the same way, and read the exit code before the sizes: WXT leaves a
+previous `.output` in place when a build fails, so a failed build measures the one
+before it.
 
 ## What comes next
 
-This is the foundation: configuration, permissions, sign-in and the account
-summary. Team management, shared notes and folders, comments, and realtime
-build on it and follow the same rules.
+Comments and mentions (`packages/teams-contract/comments.ts` already describes
+them) are the last part of the client, and the socket already carries their poke.
+Two things are deliberately left out of shared notes for now: an in-page marker
+that looks different for a shared note, which belongs to the design system rather
+than to this code, and any state of a reader's own on a team note — pinning one,
+or filing it into one of their personal folders.

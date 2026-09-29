@@ -1,6 +1,6 @@
 import { browser } from 'wxt/browser';
 import { teamsPermissions, type TeamsConfig } from './config';
-import type { ResultFor, TeamsOp, TeamsReply } from './messages';
+import type { ResultFor, TeamCacheResult, TeamsCacheOp, TeamsOp, TeamsReply } from './messages';
 import type { TeamsOpName } from './operation-names';
 import type { ParamsOf } from './operations';
 
@@ -12,6 +12,11 @@ export interface TeamsClient {
   send(op: TeamsOp): Promise<TeamsReply>;
   /** Performs one listed operation (see ./operations.ts) in the worker. */
   request<K extends TeamsOpName>(op: K, params: ParamsOf<K>): Promise<ResultFor<K>>;
+  /**
+   * Reads the team-note cache this device already holds — `'notes'` for what is
+   * there now, `'sync'` to have the worker pull first.
+   */
+  cache(op: TeamsCacheOp, teamId: string): Promise<TeamCacheResult>;
   /**
    * Asks the user for the Teams permissions. Must be called straight from a
    * click: browsers only show the prompt in response to a user gesture.
@@ -34,6 +39,11 @@ export function createTeamsClient(config: TeamsConfig): TeamsClient {
       const reply = (await browser.runtime.sendMessage({ type: 'TEAMS_OP', op, params })) as
         ResultFor<typeof op> | undefined;
       // No answer at all means no Teams handler in this worker.
+      return reply ?? { ok: false, error: 'not_configured' };
+    },
+    async cache(op, teamId) {
+      const reply = (await browser.runtime.sendMessage({ type: 'TEAMS_CACHE', op, teamId })) as
+        TeamCacheResult | undefined;
       return reply ?? { ok: false, error: 'not_configured' };
     },
     requestPermissions() {
