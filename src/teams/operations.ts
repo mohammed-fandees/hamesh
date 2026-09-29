@@ -2,17 +2,29 @@ import { z } from 'zod';
 import type { TeamsOpName } from './operation-names';
 import {
   ChangeRoleRequest,
+  ChangesResponse,
+  CreateFolderRequest,
   CreateInvitationRequest,
+  CreateNoteRequest,
   InvitationCreatedResponse,
   InvitationPreviewResponse,
   InvitationTokenRequest,
   InvitationsResponse,
+  FolderResponse,
   MembersResponse,
+  NoteResponse,
   PaymentsResponse,
   PlansResponse,
+  RealtimeTicketRequest,
+  RealtimeTicketResponse,
+  RenameFolderRequest,
   SubmitPaymentRequest,
   SubmitPaymentResponse,
+  SyncCursor,
   TeamResponse,
+  UnshareResponse,
+  UpdateNoteFields,
+  changesSomething,
 } from '@hamesh/teams-contract';
 
 /**
@@ -142,6 +154,115 @@ function buildOperations() {
       params: InvitationTokenRequest,
       result: TeamResponse,
       request: (p) => ({ method: 'POST', path: '/v1/invitations/accept', body: p }),
+    }),
+
+    /**
+     * Everything that changed in the team since `since` — the only way team
+     * notes are read. The page the reader is on is never named to the server:
+     * the whole team's notes are pulled once and matched to a page locally.
+     *
+     * No `limit`: the server picks the page size, and the client keeps calling
+     * with the cursor it was given while `hasMore`.
+     */
+    'notes.changes': op({
+      params: TeamId.extend({ since: SyncCursor.optional() }),
+      result: ChangesResponse,
+      request: (p) => ({
+        method: 'GET',
+        path:
+          `/v1/teams/${p.teamId}/changes` +
+          (p.since ? `?since=${encodeURIComponent(p.since)}` : ''),
+      }),
+    }),
+    /**
+     * Shares a note with the team. `requestId` is the personal note's own id,
+     * so sharing the same note twice returns the one team note rather than a
+     * second copy of it.
+     */
+    'notes.share': op({
+      params: TeamId.extend(CreateNoteRequest.shape),
+      result: NoteResponse,
+      request: (p) => ({
+        method: 'POST',
+        path: `/v1/teams/${p.teamId}/notes`,
+        body: {
+          requestId: p.requestId,
+          originalUrl: p.originalUrl,
+          ...(p.pageTitle === undefined ? {} : { pageTitle: p.pageTitle }),
+          content: p.content,
+          anchor: p.anchor,
+          ...(p.folderId === undefined ? {} : { folderId: p.folderId }),
+        },
+      }),
+    }),
+    /** `version` is the one this client last saw: a stale edit is refused, not merged. */
+    'notes.update': op({
+      params: TeamId.extend({ noteId: Ulid })
+        .extend(UpdateNoteFields.shape)
+        .refine(changesSomething, 'nothing to change'),
+      result: NoteResponse,
+      request: (p) => ({
+        method: 'PATCH',
+        path: `/v1/teams/${p.teamId}/notes/${p.noteId}`,
+        body: {
+          version: p.version,
+          ...(p.content === undefined ? {} : { content: p.content }),
+          ...(p.folderId === undefined ? {} : { folderId: p.folderId }),
+        },
+      }),
+    }),
+    'notes.delete': op({
+      params: TeamId.extend({ noteId: Ulid }),
+      result: null,
+      request: (p) => ({ method: 'DELETE', path: `/v1/teams/${p.teamId}/notes/${p.noteId}` }),
+    }),
+    /** Takes a note back out of the team; the answer is the note as it was shared. */
+    'notes.unshare': op({
+      params: TeamId.extend({ noteId: Ulid }),
+      result: UnshareResponse,
+      request: (p) => ({
+        method: 'POST',
+        path: `/v1/teams/${p.teamId}/notes/${p.noteId}/unshare`,
+      }),
+    }),
+
+    'folders.create': op({
+      params: TeamId.extend(CreateFolderRequest.shape),
+      result: FolderResponse,
+      request: (p) => ({
+        method: 'POST',
+        path: `/v1/teams/${p.teamId}/folders`,
+        body: { name: p.name, ...(p.parentId === undefined ? {} : { parentId: p.parentId }) },
+      }),
+    }),
+    'folders.rename': op({
+      params: TeamId.extend({ folderId: Ulid }).extend(RenameFolderRequest.shape),
+      result: FolderResponse,
+      request: (p) => ({
+        method: 'PATCH',
+        path: `/v1/teams/${p.teamId}/folders/${p.folderId}`,
+        body: { name: p.name },
+      }),
+    }),
+    'folders.delete': op({
+      params: TeamId.extend({ folderId: Ulid }),
+      result: null,
+      request: (p) => ({
+        method: 'DELETE',
+        path: `/v1/teams/${p.teamId}/folders/${p.folderId}`,
+      }),
+    }),
+
+    /**
+     * A single-use, short-lived ticket for one team's socket. The answer's URL
+     * is still checked against this build's own API origin before anything
+     * connects to it (see ./realtime.ts) — the server says where, but not
+     * somewhere else.
+     */
+    'realtime.ticket': op({
+      params: RealtimeTicketRequest,
+      result: RealtimeTicketResponse,
+      request: (p) => ({ method: 'POST', path: '/v1/realtime/tickets', body: p }),
     }),
 
     'billing.plans': op({

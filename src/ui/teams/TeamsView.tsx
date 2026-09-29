@@ -7,15 +7,19 @@ import { getTeamsStrings } from './strings';
 import { useTeams } from './useTeams';
 import { formatDate } from './format';
 import { TeamMembers } from './TeamMembers';
+import { TeamNotes } from './TeamNotes';
 import { TeamInvitations } from './TeamInvitations';
 import { JoinTeam } from './JoinTeam';
 import { BillingPanel } from './BillingPanel';
+import type { PersonalNotes } from './personal-notes';
 
 interface TeamsViewProps {
   lang: Lang;
   client: TeamsClient;
   /** Sends the reader to Settings, where Teams is turned on and signed into. */
   onOpenSettings: () => void;
+  /** How a note moves between this device and a team — see `PersonalNotes`. */
+  personal: PersonalNotes;
 }
 
 /**
@@ -28,7 +32,7 @@ interface TeamsViewProps {
  * changes. Signing in stays in Settings, so there is one place that holds the
  * account and one that uses it.
  */
-export function TeamsView({ lang, client, onOpenSettings }: TeamsViewProps) {
+export function TeamsView({ lang, client, onOpenSettings, personal }: TeamsViewProps) {
   const strings = getTeamsStrings(lang);
   const page = useTeams(client);
   const [chosenId, setChosenId] = useState<string | null>(null);
@@ -234,6 +238,16 @@ export function TeamsView({ lang, client, onOpenSettings }: TeamsViewProps) {
 
             <h3 className="hm-settings__subheading">{strings.invitations}</h3>
             <TeamInvitations strings={strings} lang={lang} page={page} team={team} />
+
+            <h3 className="hm-settings__subheading">{strings.sharedNotes}</h3>
+            <TeamNotes
+              strings={strings}
+              lang={lang}
+              page={page}
+              team={team}
+              myUserId={me.user.id}
+              personal={personal}
+            />
 
             <h3 className="hm-settings__subheading">{strings.dangerZone}</h3>
             {team.capabilities.includes('team.rename') && (

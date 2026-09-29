@@ -2,6 +2,8 @@ import type { MeResponse } from '@hamesh/teams-contract';
 import type { TeamsErrorCode } from './errors';
 import { isOperationName, type TeamsOpName } from './operation-names';
 import type { ParamsOf, ResultOf } from './operations';
+import type { CachedTeamNote } from './page-cache';
+import type { CachedFolder } from './sync-store';
 
 /**
  * Messages between Hamesh's own pages and the background service worker for
@@ -51,6 +53,46 @@ export interface TeamsReply {
   status: TeamsStatus;
   /** Set when the requested operation failed; `status` is still current. */
   error?: TeamsErrorCode;
+}
+
+/**
+ * The team-note cache, as one of Hamesh's own pages reads it.
+ *
+ * A local read, not a request: `notes` answers from what the last pull left on
+ * this device, and `sync` asks the worker to pull now (after sharing something,
+ * say, so the list does not wait for a poke). The cache itself is written only
+ * by the worker.
+ *
+ * The content script uses none of this — it reads the page's own cached notes
+ * straight from `chrome.storage.local` (see ./page-cache.ts), so the rule that
+ * only extension pages may send Teams messages stays exactly as it was.
+ */
+export const TEAMS_CACHE_OPS = ['notes', 'sync'] as const;
+export type TeamsCacheOp = (typeof TEAMS_CACHE_OPS)[number];
+
+export interface TeamsCacheRequest {
+  type: 'TEAMS_CACHE';
+  op: TeamsCacheOp;
+  teamId: string;
+}
+
+export interface TeamCacheSnapshot {
+  notes: CachedTeamNote[];
+  folders: CachedFolder[];
+  /** When the last complete pull finished, or 0 if there has not been one. */
+  syncedAt: number;
+}
+
+export type TeamCacheResult = TeamsResult<TeamCacheSnapshot>;
+
+export function isTeamsCacheRequest(message: unknown): message is TeamsCacheRequest {
+  if (!message || typeof message !== 'object') return false;
+  const m = message as Record<string, unknown>;
+  return (
+    m.type === 'TEAMS_CACHE' &&
+    (TEAMS_CACHE_OPS as readonly unknown[]).includes(m.op) &&
+    typeof m.teamId === 'string'
+  );
 }
 
 export function isTeamsRequest(message: unknown): message is TeamsRequest {

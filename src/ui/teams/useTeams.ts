@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { MeResponse } from '@hamesh/teams-contract';
 import type { TeamsClient } from '@/teams/client';
-import type { TeamsStatus } from '@/teams/messages';
+import type { TeamCacheSnapshot, TeamsCacheOp, TeamsStatus } from '@/teams/messages';
 import type { TeamsOpName } from '@/teams/operation-names';
 import type { ParamsOf, ResultOf } from '@/teams/operations';
 import type { TeamsErrorCode } from '@/teams/errors';
@@ -23,6 +23,11 @@ export interface TeamsPage {
   clearError: () => void;
   refresh: () => Promise<void>;
   run<K extends TeamsOpName>(op: K, params: ParamsOf<K>): Promise<ResultOf<K> | null>;
+  /**
+   * Reads the team notes this device already holds — no request, unless `sync`
+   * is asked for, which has the worker pull first.
+   */
+  cache(teamId: string, op?: TeamsCacheOp): Promise<TeamCacheSnapshot | null>;
 }
 
 export function useTeams(client: TeamsClient): TeamsPage {
@@ -82,6 +87,25 @@ export function useTeams(client: TeamsClient): TeamsPage {
     [client],
   );
 
+  const cache = useCallback(
+    async (teamId: string, op: TeamsCacheOp = 'notes'): Promise<TeamCacheSnapshot | null> => {
+      setBusy(true);
+      setError(null);
+      try {
+        const result = await client.cache(op, teamId);
+        if (!live.current) return null;
+        if (!result.ok) {
+          setError(result.error);
+          return null;
+        }
+        return result.data;
+      } finally {
+        if (live.current) setBusy(false);
+      }
+    },
+    [client],
+  );
+
   return {
     status,
     me: status?.state === 'signed_in' ? status.me : null,
@@ -90,5 +114,6 @@ export function useTeams(client: TeamsClient): TeamsPage {
     clearError: useCallback(() => setError(null), []),
     refresh,
     run,
+    cache,
   };
 }

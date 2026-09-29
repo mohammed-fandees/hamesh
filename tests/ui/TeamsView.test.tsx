@@ -87,11 +87,18 @@ function fakeClient(overrides: Partial<Record<TeamsOpName, unknown>> = {}, signe
         ? { ok: true, data: answers[op] }
         : { ok: true, data: undefined };
     }),
+    cache: vi.fn(async () => ({
+      ok: true as const,
+      data: { notes: [], folders: [], syncedAt: 0 },
+    })),
     requestPermissions: vi.fn(async () => true),
     removePermissions: vi.fn(async () => {}),
   };
   return { client: client as unknown as TeamsClient & typeof client, calls };
 }
+
+/** Sharing and unsharing, which the page asks the library to carry out. */
+const personal = { forget: vi.fn(async () => {}), keep: vi.fn(async () => {}) };
 
 beforeEach(() => {
   vi.spyOn(window, 'confirm').mockReturnValue(true);
@@ -102,7 +109,9 @@ afterEach(() => {
 });
 
 const render_ = (client: TeamsClient, onOpenSettings = vi.fn()) =>
-  render(<TeamsView lang="en" client={client} onOpenSettings={onOpenSettings} />);
+  render(
+    <TeamsView lang="en" client={client} onOpenSettings={onOpenSettings} personal={personal} />,
+  );
 
 /**
  * Waits for the page to finish its first round of loading. Controls are

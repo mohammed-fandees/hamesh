@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import type { Folder } from '@/domain/folder';
 import type { Note } from '@/domain/note';
 import { PinIcon } from './PinIcon';
+import { useShareAction } from './NoteShareSlot';
 import type { Strings } from './i18n';
 
 interface MoveToFolderOptions {
@@ -132,6 +133,7 @@ export function NoteActionsMenu({
   onDelete,
   moveToFolder,
 }: NoteActionsMenuProps) {
+  const shareAction = useShareAction();
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<PanelView>('menu');
   const [newFolderName, setNewFolderName] = useState('');
@@ -322,6 +324,8 @@ export function NoteActionsMenu({
                 >
                   {strings.edit}
                 </button>
+                {/* Filled by the Notes Library only in a build with Teams. */}
+                {shareAction?.(note, close)}
 
                 {moveToFolder && (
                   <>

@@ -37,6 +37,12 @@ import type { BackupImportOutcome } from '@/ui/BackupSection';
 import { teamsConfig } from '@/teams/config';
 import { createTeamsClient } from '@/teams/client';
 import { TeamsView } from '@/ui/teams/TeamsView';
+import { ShareNoteAction } from '@/ui/teams/ShareNoteAction';
+import { NoteShareSlot } from '@/ui/NoteShareSlot';
+import { generatePageKey } from '@/domain/page-key';
+import { readTeamIndex, watchTeamIndex, type CachedTeam } from '@/teams/page-cache';
+import type { PersonalNotes } from '@/ui/teams/personal-notes';
+import type { TeamNote } from '@hamesh/teams-contract';
 import type { Note } from '@/domain/note';
 import type { Folder } from '@/domain/folder';
 import '@/ui/tokens.css';
@@ -60,6 +66,11 @@ const currentVersion = browser.runtime.getManifest().version;
 // scheme here too.
 const prefersDark =
   typeof matchMedia !== 'undefined' && matchMedia('(prefers-color-scheme: dark)').matches;
+/** What "a note moves between this device and a team" means when there are no
+ *  teams: nothing at all. Named here so the real one below can sit behind this
+ *  build's Teams constant. */
+const NO_SHARING: PersonalNotes = { forget: async () => {}, keep: async () => {} };
+
 const repo = createNotesRepository();
 const prefsRepo = createPreferencesRepository();
 const foldersRepo = createFoldersRepository();
@@ -80,6 +91,9 @@ export function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortMode, setSortMode] = useState<GroupSortMode>('alphabetical');
   const [libraryMode, setLibraryMode] = useState<LibraryMode>('domain');
+  /** The teams this account is in, as the worker last recorded them. Always
+   *  empty in a build without Teams, and while nobody is signed in. */
+  const [teams, setTeams] = useState<CachedTeam[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const strings = getStrings(lang);
@@ -151,6 +165,23 @@ export function App() {
       }
     })();
     const unwatch = foldersRepo.watch((next) => setFolders(next));
+    return () => {
+      cancelled = true;
+      unwatch();
+    };
+  }, []);
+
+  // Which teams a note could be shared with. Read from what the background
+  // worker recorded, not asked for here: it is already on this device, and it
+  // stays current as membership changes.
+  useEffect(() => {
+    if (!import.meta.env.WXT_TEAMS_API_ORIGIN) return;
+    let cancelled = false;
+    (async () => {
+      const index = await readTeamIndex();
+      if (!cancelled) setTeams(index.teams);
+    })();
+    const unwatch = watchTeamIndex((index) => setTeams(index.teams));
     return () => {
       cancelled = true;
       unwatch();
@@ -368,182 +399,241 @@ export function App() {
     }
   }
 
+  /**
+   * How a note crosses between this device and a team. Sharing moves it: the
+   * team's copy is what the page then shows, so keeping a personal one as well
+   * would draw the same note twice. Unsharing moves it back.
+   *
+   * Only built in a build that has Teams — the constant is folded away in every
+   * other one, and with it everything this reaches.
+   */
+  const personalNotes = useMemo<PersonalNotes>(() => {
+    // The build-time constant first, so a build without Teams keeps neither
+    // this nor what it reaches (the page-key helper among it).
+    if (!import.meta.env.WXT_TEAMS_API_ORIGIN) return NO_SHARING;
+    return {
+      forget: (noteId: string) => handleDeleteNote(noteId),
+      keep: async (note: TeamNote) => {
+        const created = await repo.create({
+          content: note.content,
+          pageKey: generatePageKey(note.originalUrl),
+          originalUrl: note.originalUrl,
+          anchor: note.anchor,
+          ...(note.pageTitle ? { pageContext: { title: note.pageTitle } } : {}),
+        });
+        setNotes((prev) => (prev ? [...prev, created] : prev));
+      },
+    };
+    // `handleDeleteNote` closes over `notes`, which is exactly what it needs to
+    // find the note's page; a new identity per render is the point here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notes]);
+
+  /** The "Share with team" item in a note's actions menu. */
+  const shareAction = useMemo(() => {
+    // A build-time constant first: with it folded away, nothing below is
+    // reachable and the Teams module this reaches is dropped from the bundle.
+    if (!import.meta.env.WXT_TEAMS_API_ORIGIN) return null;
+    if (!teamsClient || teams.length === 0) return null;
+    return (note: Note, close: () => void) => (
+      <ShareNoteAction
+        note={note}
+        lang={lang}
+        client={teamsClient}
+        teams={teams}
+        onDone={() => {
+          close();
+          void personalNotes.forget(note.id);
+        }}
+      />
+    );
+  }, [teamsClient, teams, lang, personalNotes]);
+
   const loading = notes === null;
   const hasAnyNotes = !loading && notes.length > 0;
   const noNotesAtAll = !loading && !hasAnyNotes;
   const noSearchResults = !loading && isSearching && hasAnyNotes && filteredNotes.length === 0;
 
   return (
-    <div className="hm-scope hm-notes-page" dir={dir} data-hm-theme={theme}>
-      <Sidebar
-        view={view}
-        strings={strings}
-        onNavigate={setView}
-        whatsNewUnseen={lastSeenVersion !== undefined && hasUnseenReleases(lastSeenVersion)}
-        showTeams={teamsClient !== null}
-      />
-
-      {import.meta.env.WXT_TEAMS_API_ORIGIN && view === 'teams' && teamsClient ? (
-        <TeamsView lang={lang} client={teamsClient} onOpenSettings={() => setView('settings')} />
-      ) : view === 'whats-new' ? (
-        <WhatsNewView
+    <NoteShareSlot.Provider value={shareAction}>
+      <div className="hm-scope hm-notes-page" dir={dir} data-hm-theme={theme}>
+        <Sidebar
+          view={view}
           strings={strings}
-          lang={lang}
-          currentVersion={currentVersion}
-          lastSeenVersion={lastSeenVersion ?? null}
+          onNavigate={setView}
+          whatsNewUnseen={lastSeenVersion !== undefined && hasUnseenReleases(lastSeenVersion)}
+          showTeams={teamsClient !== null}
         />
-      ) : view === 'settings' ? (
-        <LibrarySettingsView
-          strings={strings}
-          lang={lang}
-          appearance={appearance}
-          textNotes={textNotes}
-          onLanguageChange={handleLanguageChange}
-          onAppearanceChange={handleAppearanceChange}
-          onTextNotesChange={handleTextNotesChange}
-          backup={{ onExport: handleExportBackup, onImport: handleImportBackup }}
-          teams={teamsClient}
-        />
-      ) : (
-        <div className="hm-notes-main">
-          <div className="hm-notes-page__inner">
-            <header className="hm-notes-page__header">
-              <MarginMark size={20} strokeWidth={3.5} style={{ color: 'var(--hm-accent)' }} />
-              <h1 className="hm-notes-page__title">{strings.notesLibrary}</h1>
-            </header>
 
-            <span className="hm-visually-hidden" role="status">
-              {loading ? strings.loadingNotes : ''}
-            </span>
+        {import.meta.env.WXT_TEAMS_API_ORIGIN && view === 'teams' && teamsClient ? (
+          <TeamsView
+            lang={lang}
+            client={teamsClient}
+            onOpenSettings={() => setView('settings')}
+            personal={personalNotes}
+          />
+        ) : view === 'whats-new' ? (
+          <WhatsNewView
+            strings={strings}
+            lang={lang}
+            currentVersion={currentVersion}
+            lastSeenVersion={lastSeenVersion ?? null}
+          />
+        ) : view === 'settings' ? (
+          <LibrarySettingsView
+            strings={strings}
+            lang={lang}
+            appearance={appearance}
+            textNotes={textNotes}
+            onLanguageChange={handleLanguageChange}
+            onAppearanceChange={handleAppearanceChange}
+            onTextNotesChange={handleTextNotesChange}
+            backup={{ onExport: handleExportBackup, onImport: handleImportBackup }}
+            teams={teamsClient}
+          />
+        ) : (
+          <div className="hm-notes-main">
+            <div className="hm-notes-page__inner">
+              <header className="hm-notes-page__header">
+                <MarginMark size={20} strokeWidth={3.5} style={{ color: 'var(--hm-accent)' }} />
+                <h1 className="hm-notes-page__title">{strings.notesLibrary}</h1>
+              </header>
 
-            {hasAnyNotes && (
-              <div className="hm-search-wrap">
-                <input
-                  ref={searchInputRef}
-                  type="search"
-                  className="hm-search"
-                  placeholder={strings.searchPlaceholder}
-                  aria-label={strings.searchPlaceholder}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key !== 'Escape' || !searchQuery) return;
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setSearchQuery('');
-                  }}
-                />
-                {!isSearching && (
-                  <kbd className="hm-search__hint" aria-hidden="true">
-                    /
-                  </kbd>
-                )}
-              </div>
-            )}
+              <span className="hm-visually-hidden" role="status">
+                {loading ? strings.loadingNotes : ''}
+              </span>
 
-            {!isSearching && hasAnyNotes && (
-              <ContinueSection websites={continueWebsites} strings={strings} lang={lang} />
-            )}
-
-            {!isSearching && hasAnyNotes && (
-              <PinnedSection
-                notes={pinnedNotes}
-                allNotes={notes ?? []}
-                strings={strings}
-                lang={lang}
-                onTogglePin={handleTogglePin}
-                onEditNote={handleEditNote}
-                onDeleteNote={handleDeleteNote}
-              />
-            )}
-
-            {loading ? (
-              <div className="hm-skeleton" aria-hidden="true">
-                <div className="hm-skeleton__row" />
-                <div className="hm-skeleton__row" />
-                <div className="hm-skeleton__row" />
-              </div>
-            ) : noNotesAtAll ? (
-              <div className="hm-empty hm-fade-in">
-                <MarginMark size={28} strokeWidth={3} />
-                <p className="hm-empty__title">{strings.notesLibraryEmptyTitle}</p>
-                <p className="hm-empty__body">{strings.notesLibraryEmptyBody}</p>
-              </div>
-            ) : noSearchResults ? (
-              <div className="hm-empty hm-fade-in">
-                <MarginMark size={28} strokeWidth={3} />
-                <p className="hm-empty__title">{strings.searchNoResultsTitle}</p>
-                <p className="hm-empty__body">{strings.searchNoResultsBody(searchQuery.trim())}</p>
-              </div>
-            ) : (
-              <>
-                {!isSearching && (
-                  <div className="hm-sort-row">
-                    <SegmentedControl<LibraryMode>
-                      value={libraryMode}
-                      name="hm-library-mode"
-                      groupLabel={strings.libraryModeLabel}
-                      options={[
-                        { value: 'domain', label: strings.modeDomain },
-                        { value: 'folder', label: strings.modeFolder },
-                      ]}
-                      onChange={setLibraryMode}
-                    />
-                    {libraryMode === 'domain' && groups.length > 0 && (
-                      <>
-                        <span className="hm-sort-row__label">{strings.sortLabel}</span>
-                        <SegmentedControl<GroupSortMode>
-                          value={sortMode}
-                          name="hm-notes-sort"
-                          groupLabel={strings.sortLabel}
-                          options={[
-                            { value: 'alphabetical', label: strings.sortAlphabetical },
-                            { value: 'recent', label: strings.sortRecent },
-                          ]}
-                          onChange={setSortMode}
-                        />
-                      </>
-                    )}
-                  </div>
-                )}
-                {libraryMode === 'folder' ? (
-                  <FolderTree
-                    tree={folderTree.tree}
-                    unfiledNotes={folderTree.unfiledNotes}
-                    strings={strings}
-                    lang={lang}
-                    onCreateFolder={handleCreateFolder}
-                    onRenameFolder={handleRenameFolder}
-                    onDeleteFolder={handleDeleteFolder}
-                    onMoveNote={handleMoveNote}
-                    onTogglePin={handleTogglePin}
-                    onEditNote={handleEditNote}
-                    onDeleteNote={handleDeleteNote}
+              {hasAnyNotes && (
+                <div className="hm-search-wrap">
+                  <input
+                    ref={searchInputRef}
+                    type="search"
+                    className="hm-search"
+                    placeholder={strings.searchPlaceholder}
+                    aria-label={strings.searchPlaceholder}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key !== 'Escape' || !searchQuery) return;
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setSearchQuery('');
+                    }}
                   />
-                ) : (
-                  <ul className="hm-groups">
-                    {groups.map((group, i) => (
-                      <li key={group.domain}>
-                        <WebsiteGroup
-                          group={group}
-                          expanded={isSearching || expanded.has(group.domain)}
-                          onToggle={() => toggleGroup(group.domain)}
-                          strings={strings}
-                          lang={lang}
-                          style={{ animationDelay: `${Math.min(i * 30, 240)}ms` }}
-                          onTogglePin={handleTogglePin}
-                          onEditNote={handleEditNote}
-                          onDeleteNote={handleDeleteNote}
-                        />
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </>
-            )}
+                  {!isSearching && (
+                    <kbd className="hm-search__hint" aria-hidden="true">
+                      /
+                    </kbd>
+                  )}
+                </div>
+              )}
+
+              {!isSearching && hasAnyNotes && (
+                <ContinueSection websites={continueWebsites} strings={strings} lang={lang} />
+              )}
+
+              {!isSearching && hasAnyNotes && (
+                <PinnedSection
+                  notes={pinnedNotes}
+                  allNotes={notes ?? []}
+                  strings={strings}
+                  lang={lang}
+                  onTogglePin={handleTogglePin}
+                  onEditNote={handleEditNote}
+                  onDeleteNote={handleDeleteNote}
+                />
+              )}
+
+              {loading ? (
+                <div className="hm-skeleton" aria-hidden="true">
+                  <div className="hm-skeleton__row" />
+                  <div className="hm-skeleton__row" />
+                  <div className="hm-skeleton__row" />
+                </div>
+              ) : noNotesAtAll ? (
+                <div className="hm-empty hm-fade-in">
+                  <MarginMark size={28} strokeWidth={3} />
+                  <p className="hm-empty__title">{strings.notesLibraryEmptyTitle}</p>
+                  <p className="hm-empty__body">{strings.notesLibraryEmptyBody}</p>
+                </div>
+              ) : noSearchResults ? (
+                <div className="hm-empty hm-fade-in">
+                  <MarginMark size={28} strokeWidth={3} />
+                  <p className="hm-empty__title">{strings.searchNoResultsTitle}</p>
+                  <p className="hm-empty__body">
+                    {strings.searchNoResultsBody(searchQuery.trim())}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {!isSearching && (
+                    <div className="hm-sort-row">
+                      <SegmentedControl<LibraryMode>
+                        value={libraryMode}
+                        name="hm-library-mode"
+                        groupLabel={strings.libraryModeLabel}
+                        options={[
+                          { value: 'domain', label: strings.modeDomain },
+                          { value: 'folder', label: strings.modeFolder },
+                        ]}
+                        onChange={setLibraryMode}
+                      />
+                      {libraryMode === 'domain' && groups.length > 0 && (
+                        <>
+                          <span className="hm-sort-row__label">{strings.sortLabel}</span>
+                          <SegmentedControl<GroupSortMode>
+                            value={sortMode}
+                            name="hm-notes-sort"
+                            groupLabel={strings.sortLabel}
+                            options={[
+                              { value: 'alphabetical', label: strings.sortAlphabetical },
+                              { value: 'recent', label: strings.sortRecent },
+                            ]}
+                            onChange={setSortMode}
+                          />
+                        </>
+                      )}
+                    </div>
+                  )}
+                  {libraryMode === 'folder' ? (
+                    <FolderTree
+                      tree={folderTree.tree}
+                      unfiledNotes={folderTree.unfiledNotes}
+                      strings={strings}
+                      lang={lang}
+                      onCreateFolder={handleCreateFolder}
+                      onRenameFolder={handleRenameFolder}
+                      onDeleteFolder={handleDeleteFolder}
+                      onMoveNote={handleMoveNote}
+                      onTogglePin={handleTogglePin}
+                      onEditNote={handleEditNote}
+                      onDeleteNote={handleDeleteNote}
+                    />
+                  ) : (
+                    <ul className="hm-groups">
+                      {groups.map((group, i) => (
+                        <li key={group.domain}>
+                          <WebsiteGroup
+                            group={group}
+                            expanded={isSearching || expanded.has(group.domain)}
+                            onToggle={() => toggleGroup(group.domain)}
+                            strings={strings}
+                            lang={lang}
+                            style={{ animationDelay: `${Math.min(i * 30, 240)}ms` }}
+                            onTogglePin={handleTogglePin}
+                            onEditNote={handleEditNote}
+                            onDeleteNote={handleDeleteNote}
+                          />
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </>
+              )}
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </NoteShareSlot.Provider>
   );
 }

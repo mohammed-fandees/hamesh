@@ -337,6 +337,15 @@
   font-size: 11px;
   color: var(--hm-ink-40);
 }
+/* "Shared with <team>" on a note that lives in a team rather than on this
+   device — the one thing that tells a reader why the card has no Edit or
+   Delete. Reads as provenance, not as a control: the same 11px meta voice as
+   the timestamp it sits opposite, warmed to the accent so the eye finds it. */
+.hm-shared-with {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--hm-accent-strong);
+}
 
 /* ---- Buttons ---- */
 .hm-btn {
