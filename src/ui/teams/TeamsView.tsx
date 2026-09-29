@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { TeamResponse } from '@hamesh/teams-contract';
+import type { TeamMember, TeamResponse } from '@hamesh/teams-contract';
 import type { Lang } from '../i18n';
 import type { TeamsClient } from '@/teams/client';
 import { newRequestId } from '@/teams/operation-names';
 import { getTeamsStrings } from './strings';
+import './styles';
 import { useTeams } from './useTeams';
 import { formatDate } from './format';
 import { TeamMembers } from './TeamMembers';
@@ -11,6 +12,7 @@ import { TeamNotes } from './TeamNotes';
 import { TeamInvitations } from './TeamInvitations';
 import { JoinTeam } from './JoinTeam';
 import { BillingPanel } from './BillingPanel';
+import { MentionsInbox } from './MentionsInbox';
 import type { PersonalNotes } from './personal-notes';
 
 interface TeamsViewProps {
@@ -37,6 +39,9 @@ export function TeamsView({ lang, client, onOpenSettings, personal }: TeamsViewP
   const page = useTeams(client);
   const [chosenId, setChosenId] = useState<string | null>(null);
   const [team, setTeam] = useState<TeamResponse | null>(null);
+  /** Fetched here, not in the panel that lists them: the notes and their
+   *  comments need the same names, and one answer serves all three. */
+  const [members, setMembers] = useState<TeamMember[] | null>(null);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
   const [renaming, setRenaming] = useState('');
@@ -53,11 +58,14 @@ export function TeamsView({ lang, client, onOpenSettings, personal }: TeamsViewP
   const loadTeam = useCallback(async () => {
     if (!selectedId) {
       setTeam(null);
+      setMembers(null);
       return;
     }
     const result = await page.run('team.get', { teamId: selectedId });
     setTeam(result);
     if (result) setRenaming(result.team.name);
+    const who = await page.run('members.list', { teamId: selectedId });
+    setMembers(who?.members ?? null);
     // `page` is rebuilt on every render; the chosen team is what changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId]);
@@ -70,12 +78,16 @@ export function TeamsView({ lang, client, onOpenSettings, personal }: TeamsViewP
     (async () => {
       if (!selectedId) {
         setTeam(null);
+        setMembers(null);
         return;
       }
       const result = await page.run('team.get', { teamId: selectedId });
       if (cancelled) return;
       setTeam(result);
       if (result) setRenaming(result.team.name);
+      const who = await page.run('members.list', { teamId: selectedId });
+      if (cancelled) return;
+      setMembers(who?.members ?? null);
     })();
     return () => {
       cancelled = true;
@@ -233,6 +245,7 @@ export function TeamsView({ lang, client, onOpenSettings, personal }: TeamsViewP
               page={page}
               team={team}
               myUserId={me.user.id}
+              members={members}
               onChanged={() => void reload()}
             />
 
@@ -246,6 +259,7 @@ export function TeamsView({ lang, client, onOpenSettings, personal }: TeamsViewP
               page={page}
               team={team}
               myUserId={me.user.id}
+              members={members}
               personal={personal}
             />
 
@@ -289,6 +303,9 @@ export function TeamsView({ lang, client, onOpenSettings, personal }: TeamsViewP
             </div>
           </section>
         )}
+
+        <h2 className="hm-settings__subheading">{strings.mentions}</h2>
+        <MentionsInbox strings={strings} lang={lang} page={page} myUserId={me.user.id} />
 
         <h2 className="hm-settings__subheading">{strings.joinTeam}</h2>
         <JoinTeam

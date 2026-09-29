@@ -40,6 +40,8 @@ export interface RealtimeDeps {
   onChanged: (teamId: string) => void;
   /** Membership or roles changed: ask the server who this account is now. */
   onMembers: (teamId: string) => void;
+  /** Comment activity on one note: tell whichever page is showing it. */
+  onComments: (teamId: string, noteId: string) => void;
   /**
    * Access to this team ended. `expired` is an ordinary lease rotation and is
    * handled here (a fresh ticket, a new socket); every other reason is the
@@ -180,7 +182,8 @@ export function createRealtime(deps: RealtimeDeps) {
         deps.onMembers(teamId);
         return;
       case 'comments':
-        return; // nothing on a page shows comments yet
+        deps.onComments(teamId, message.data.noteId);
+        return;
       case 'revoked':
         if (message.data.reason === 'expired') {
           // The authorization lease ran out, which happens on a timer. The

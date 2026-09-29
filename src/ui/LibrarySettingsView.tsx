@@ -214,7 +214,11 @@ export function LibrarySettingsView({
           {strings.shortcutOpenChromeSettings}
         </button>
 
-        {teams && <TeamsSection strings={strings} lang={lang} client={teams} />}
+        {/* The build-time constant as well as the client: with it folded away,
+            a build without Teams drops this section and its stylesheet too. */}
+        {import.meta.env.WXT_TEAMS_API_ORIGIN && teams && (
+          <TeamsSection strings={strings} lang={lang} client={teams} />
+        )}
 
         <BackupSection strings={strings} handlers={backup} />
       </div>

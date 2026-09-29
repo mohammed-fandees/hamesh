@@ -100,6 +100,34 @@ export interface TeamsStrings {
   moveToFolder: string;
   noFolderOption: string;
 
+  comments: string;
+  discuss: string;
+  hideComments: string;
+  noComments: string;
+  commentPlaceholder: string;
+  postComment: string;
+  replyTo: string;
+  replyPlaceholder: string;
+  postReply: string;
+  editComment: string;
+  saveComment: string;
+  deleteComment: string;
+  deleteCommentConfirm: string;
+  commentDeleted: string;
+  commentEdited: string;
+  commentedAgo: (when: string) => string;
+  showReplies: (count: number) => string;
+  moreComments: string;
+  formerMember: string;
+  mentionNobody: string;
+  mentionHint: string;
+
+  mentions: string;
+  noMentions: string;
+  mentionIn: (team: string) => string;
+  openNote: string;
+  moreMentions: string;
+
   billing: string;
   planActive: (until: string) => string;
   planNone: string;
@@ -215,6 +243,35 @@ const en: TeamsStrings = {
   unfiled: 'Unfiled',
   moveToFolder: 'Move to',
   noFolderOption: 'No folder',
+
+  comments: 'Comments',
+  discuss: 'Discuss',
+  hideComments: 'Hide the discussion',
+  noComments: 'Nothing said about this one yet.',
+  commentPlaceholder: 'Say something… type @ to name someone',
+  postComment: 'Comment',
+  replyTo: 'Reply',
+  replyPlaceholder: 'Write a reply…',
+  postReply: 'Send the reply',
+  editComment: 'Edit',
+  saveComment: 'Save',
+  deleteComment: 'Delete',
+  deleteCommentConfirm: 'Delete this comment?',
+  commentDeleted: 'This comment was deleted.',
+  commentEdited: 'edited',
+  commentedAgo: (when) => `Said ${when}`,
+  showReplies: (count) => (count === 1 ? 'Show the reply' : `Show all ${count} replies`),
+  moreComments: 'Show more',
+  formerMember: 'someone who has left',
+  mentionNobody: 'Nobody in this team by that name.',
+  mentionHint:
+    'Only people in this team can be named, and they are named by who they are — so a change of name reaches every comment at once.',
+
+  mentions: 'Where you were named',
+  noMentions: 'Nobody has named you yet.',
+  mentionIn: (team) => `in ${team}`,
+  openNote: 'Open the page',
+  moreMentions: 'Show older',
 
   billing: 'Plan',
   planActive: (until) => `Active until ${until}`,
@@ -380,6 +437,35 @@ const ar: TeamsStrings = {
   unfiled: 'دون مجلد',
   moveToFolder: 'نقل إلى',
   noFolderOption: 'دون مجلد',
+
+  comments: 'التعليقات',
+  discuss: 'مناقشة',
+  hideComments: 'إخفاء المناقشة',
+  noComments: 'لا شيء عن هذه بعد.',
+  commentPlaceholder: 'قل شيئًا… اكتب @ لذكر أحدهم',
+  postComment: 'تعليق',
+  replyTo: 'رد',
+  replyPlaceholder: 'اكتب ردًا…',
+  postReply: 'إرسال الرد',
+  editComment: 'تعديل',
+  saveComment: 'حفظ',
+  deleteComment: 'حذف',
+  deleteCommentConfirm: 'حذف هذا التعليق؟',
+  commentDeleted: 'حُذِف هذا التعليق.',
+  commentEdited: 'مُعدّل',
+  commentedAgo: (when) => `قاله ${when}`,
+  showReplies: (count) => (count === 1 ? 'عرض الرد' : `عرض الردود الـ ${count}`),
+  moreComments: 'عرض المزيد',
+  formerMember: 'عضو غادر الفريق',
+  mentionNobody: 'لا أحد في هذا الفريق بهذا الاسم.',
+  mentionHint:
+    'يُذكر أعضاء هذا الفريق وحدهم، ويُذكرون بمن هم — فتغيير الاسم يصل إلى كل التعليقات دفعة واحدة.',
+
+  mentions: 'حيث ذُكِرت',
+  noMentions: 'لم يذكرك أحد بعد.',
+  mentionIn: (team) => `في ${team}`,
+  openNote: 'فتح الصفحة',
+  moreMentions: 'عرض الأقدم',
 
   billing: 'الاشتراك',
   planActive: (until) => `فعّال حتى ${until}`,

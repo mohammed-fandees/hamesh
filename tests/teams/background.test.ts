@@ -3,7 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 vi.mock('wxt/browser', () => ({ browser: {} }));
 
 import { isExtensionPageSender } from '@/teams/background';
-import { isTeamsRequest } from '@/teams/messages';
+import { isTeamsCacheRequest, isTeamsEvent, isTeamsRequest } from '@/teams/messages';
 
 const ID = 'abcdefghijklmnopabcdefghijklmnop';
 const ORIGIN = `chrome-extension://${ID}/`;
@@ -32,6 +32,34 @@ describe('who may drive Teams', () => {
     ).toBe(false);
     expect(isExtensionPageSender({ id: ID }, ID, ORIGIN)).toBe(false);
     expect(isExtensionPageSender({ id: ID, url: 'not a url' }, ID, ORIGIN)).toBe(false);
+  });
+});
+
+describe('the worker’s notice to Hamesh’s own pages', () => {
+  const TEAM = '01J0000000000000000000000A';
+  const NOTE = '01J0000000000000000000000N';
+
+  it('is recognised only in the one shape it has', () => {
+    expect(
+      isTeamsEvent({ type: 'TEAMS_EVENT', event: 'comments', teamId: TEAM, noteId: NOTE }),
+    ).toBe(true);
+    for (const message of [
+      { type: 'TEAMS_EVENT', event: 'comments', teamId: TEAM },
+      { type: 'TEAMS_EVENT', event: 'anything', teamId: TEAM, noteId: NOTE },
+      { type: 'TEAMS', event: 'comments', teamId: TEAM, noteId: NOTE },
+      { type: 'TEAMS_EVENT' },
+      null,
+      'TEAMS_EVENT',
+    ]) {
+      expect(isTeamsEvent(message), JSON.stringify(message)).toBe(false);
+    }
+  });
+
+  it('is not a request, and a request is not it', () => {
+    const event = { type: 'TEAMS_EVENT', event: 'comments', teamId: TEAM, noteId: NOTE };
+    expect(isTeamsRequest(event)).toBe(false);
+    expect(isTeamsCacheRequest(event)).toBe(false);
+    expect(isTeamsEvent({ type: 'TEAMS_CACHE', op: 'notes', teamId: TEAM })).toBe(false);
   });
 });
 

@@ -4,6 +4,7 @@ import { teamsPermissions, type TeamsConfig } from './config';
 import { createIdbSessionStore } from './session-store';
 import { createTeamsApi } from './api';
 import { createTeamsService, type TeamsService } from './service';
+import type { TeamsEvent } from './messages';
 import { clearAllPages, readPageBucket, writePageBucket, writeTeamIndex } from './page-cache';
 import { createSyncStore } from './sync-store';
 import { createTeamSync } from './sync';
@@ -19,6 +20,20 @@ import { createRealtime } from './realtime';
  * message listener itself stays where a service worker needs it, registered
  * the moment the worker starts.
  */
+/**
+ * Tells Hamesh's own pages that a note's discussion moved on. Ids only — the
+ * page fetches the comments themselves through the authorized path, as it would
+ * anyway.
+ *
+ * `runtime.sendMessage` reaches the extension's own pages and never a content
+ * script. It rejects when nothing is listening, which is the ordinary case: no
+ * page of Hamesh's is open. That is not an error.
+ */
+function notifyPages(where: { teamId: string; noteId: string }): void {
+  const event: TeamsEvent = { type: 'TEAMS_EVENT', event: 'comments', ...where };
+  void browser.runtime.sendMessage(event).catch(() => {});
+}
+
 export function createService(config: TeamsConfig): TeamsService {
   const sessions = createIdbSessionStore();
   const api = createTeamsApi({ config, sessions });
@@ -43,6 +58,7 @@ export function createService(config: TeamsConfig): TeamsService {
     open: (url) => new WebSocket(url),
     onChanged: (teamId) => void service?.changed(teamId),
     onMembers: () => void service?.accountChanged(),
+    onComments: (teamId, noteId) => notifyPages({ teamId, noteId }),
     onRevoked: (_teamId, reason) => {
       if (reason === 'signed_out') void service?.revoked();
       else void service?.accountChanged();

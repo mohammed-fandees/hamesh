@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { TeamAction, TeamResponse } from '@hamesh/teams-contract';
+import type { TeamAction, TeamMember, TeamResponse } from '@hamesh/teams-contract';
 import type { CachedTeamNote } from '@/teams/page-cache';
 import type { TeamCacheSnapshot } from '@/teams/messages';
 import type { CachedFolder } from '@/teams/sync-store';
@@ -9,6 +9,7 @@ import { relativeTime } from '../i18n';
 import type { TeamsStrings } from './strings';
 import type { TeamsPage } from './useTeams';
 import type { PersonalNotes } from './personal-notes';
+import { CommentThread } from './CommentThread';
 
 interface TeamNotesProps {
   strings: TeamsStrings;
@@ -16,6 +17,8 @@ interface TeamNotesProps {
   page: TeamsPage;
   team: TeamResponse;
   myUserId: string;
+  /** Who is in the team — what turns the ids in a comment into names. */
+  members: TeamMember[] | null;
   personal: PersonalNotes;
 }
 
@@ -63,12 +66,22 @@ function flatten(folders: readonly CachedFolder[]): { folder: CachedFolder; dept
  * Notes themselves are read on the pages they belong to. This is where they are
  * organised, taken back, or removed for everyone.
  */
-export function TeamNotes({ strings, lang, page, team, myUserId, personal }: TeamNotesProps) {
+export function TeamNotes({
+  strings,
+  lang,
+  page,
+  team,
+  myUserId,
+  members,
+  personal,
+}: TeamNotesProps) {
   const [snapshot, setSnapshot] = useState<TeamCacheSnapshot | null>(null);
   const [newFolder, setNewFolder] = useState('');
   const [addingFolder, setAddingFolder] = useState(false);
   const [renaming, setRenaming] = useState<{ id: string; name: string } | null>(null);
   const [editing, setEditing] = useState<{ id: string; content: string } | null>(null);
+  /** The one note whose discussion is open, if any. */
+  const [discussing, setDiscussing] = useState<string | null>(null);
   const teamId = team.team.id;
   const can = (action: TeamAction) => team.capabilities.includes(action);
 
@@ -266,6 +279,14 @@ export function TeamNotes({ strings, lang, page, team, myUserId, personal }: Tea
                   </select>
                 </label>
               )}
+              <button
+                type="button"
+                className="hm-link"
+                aria-expanded={discussing === note.id}
+                onClick={() => setDiscussing(discussing === note.id ? null : note.id)}
+              >
+                {discussing === note.id ? strings.hideComments : strings.discuss}
+              </button>
               {mayUnshare(note) && (
                 <button type="button" className="hm-link" onClick={() => void unshare(note)}>
                   {strings.unshareNote}
@@ -283,6 +304,19 @@ export function TeamNotes({ strings, lang, page, team, myUserId, personal }: Tea
             </>
           )}
         </div>
+        {discussing === note.id && (
+          <div className="hm-team-note__discussion">
+            <CommentThread
+              strings={strings}
+              lang={lang}
+              page={page}
+              team={team}
+              noteId={note.id}
+              myUserId={myUserId}
+              members={members}
+            />
+          </div>
+        )}
       </li>
     );
   }

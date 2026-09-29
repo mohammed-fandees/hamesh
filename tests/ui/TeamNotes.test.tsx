@@ -86,6 +86,11 @@ const personal = {
   keep: vi.fn(async (_note: { content: string }) => {}),
 };
 
+const members = [
+  { userId: ME, displayName: 'Me', role: 'owner' as const, joinedAt: 1 },
+  { userId: MATE, displayName: 'Sara', role: 'member' as const, joinedAt: 2 },
+];
+
 const view = (page: TeamsPage, capabilities?: TeamAction[]) =>
   render(
     <TeamNotes
@@ -94,6 +99,7 @@ const view = (page: TeamsPage, capabilities?: TeamAction[]) =>
       page={page}
       team={team(capabilities)}
       myUserId={ME}
+      members={members}
       personal={personal}
     />,
   );

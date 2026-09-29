@@ -3,6 +3,9 @@ import type { TeamsOpName } from './operation-names';
 import {
   ChangeRoleRequest,
   ChangesResponse,
+  CommentResponse,
+  CommentsResponse,
+  CreateCommentFields,
   CreateFolderRequest,
   CreateInvitationRequest,
   CreateNoteRequest,
@@ -12,19 +15,23 @@ import {
   InvitationsResponse,
   FolderResponse,
   MembersResponse,
+  MentionsResponse,
   NoteResponse,
   PaymentsResponse,
   PlansResponse,
   RealtimeTicketRequest,
   RealtimeTicketResponse,
   RenameFolderRequest,
+  RepliesResponse,
   SubmitPaymentRequest,
   SubmitPaymentResponse,
   SyncCursor,
   TeamResponse,
   UnshareResponse,
+  UpdateCommentFields,
   UpdateNoteFields,
   changesSomething,
+  mentionsMatchBody,
 } from '@hamesh/teams-contract';
 
 /**
@@ -43,6 +50,12 @@ import {
  */
 const Ulid = z.string().regex(/^[0-7][0-9A-HJKMNP-TV-Z]{25}$/);
 const TeamId = z.strictObject({ teamId: Ulid });
+
+/** What a body says it mentions and what it declares must be the same set. */
+const MENTIONS_MATCH = {
+  message: 'mentions must match the <@id> tokens in the body',
+  path: ['mentions'] as PropertyKey[],
+};
 
 export interface HttpRequest {
   method: 'GET' | 'POST' | 'PATCH' | 'DELETE';
@@ -250,6 +263,88 @@ function buildOperations() {
       request: (p) => ({
         method: 'DELETE',
         path: `/v1/teams/${p.teamId}/folders/${p.folderId}`,
+      }),
+    }),
+
+    /**
+     * One note's discussion: top-level comments oldest first, each carrying its
+     * newest few replies. `after` is the last comment this client already has —
+     * a comment id, so it is checked like any other id before reaching a path.
+     */
+    'comments.list': op({
+      params: TeamId.extend({ noteId: Ulid, after: Ulid.optional() }),
+      result: CommentsResponse,
+      request: (p) => ({
+        method: 'GET',
+        path:
+          `/v1/teams/${p.teamId}/notes/${p.noteId}/comments` + (p.after ? `?after=${p.after}` : ''),
+      }),
+    }),
+    /** The rest of one comment's replies, for a thread with more than fits inline. */
+    'comments.replies': op({
+      params: TeamId.extend({ commentId: Ulid, after: Ulid.optional() }),
+      result: RepliesResponse,
+      request: (p) => ({
+        method: 'GET',
+        path:
+          `/v1/teams/${p.teamId}/comments/${p.commentId}/replies` +
+          (p.after ? `?after=${p.after}` : ''),
+      }),
+    }),
+    /**
+     * A comment, or a reply when `parentId` is given. `mentions` must be exactly
+     * the ids the body's `<@id>` tokens name — checked here as well as by the
+     * server, so a page cannot quietly notify someone the text never mentioned.
+     */
+    'comments.create': op({
+      params: TeamId.extend({ noteId: Ulid })
+        .extend(CreateCommentFields.shape)
+        .refine(mentionsMatchBody, MENTIONS_MATCH),
+      result: CommentResponse,
+      request: (p) => ({
+        method: 'POST',
+        path: `/v1/teams/${p.teamId}/notes/${p.noteId}/comments`,
+        body: {
+          requestId: p.requestId,
+          body: p.body,
+          ...(p.parentId === undefined ? {} : { parentId: p.parentId }),
+          ...(p.mentions === undefined ? {} : { mentions: p.mentions }),
+        },
+      }),
+    }),
+    /** Editing your own comment. The server refuses anyone else's, whatever the role. */
+    'comments.update': op({
+      params: TeamId.extend({ commentId: Ulid })
+        .extend(UpdateCommentFields.shape)
+        .refine(mentionsMatchBody, MENTIONS_MATCH),
+      result: CommentResponse,
+      request: (p) => ({
+        method: 'PATCH',
+        path: `/v1/teams/${p.teamId}/comments/${p.commentId}`,
+        body: {
+          body: p.body,
+          ...(p.mentions === undefined ? {} : { mentions: p.mentions }),
+        },
+      }),
+    }),
+    'comments.delete': op({
+      params: TeamId.extend({ commentId: Ulid }),
+      result: null,
+      request: (p) => ({
+        method: 'DELETE',
+        path: `/v1/teams/${p.teamId}/comments/${p.commentId}`,
+      }),
+    }),
+    /**
+     * Where this account has been mentioned, newest first, across every team.
+     * `before` is the oldest entry already held.
+     */
+    'mentions.list': op({
+      params: z.strictObject({ before: Ulid.optional() }),
+      result: MentionsResponse,
+      request: (p) => ({
+        method: 'GET',
+        path: '/v1/me/mentions' + (p.before ? `?before=${p.before}` : ''),
       }),
     }),
 
