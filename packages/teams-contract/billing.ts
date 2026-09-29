@@ -73,6 +73,10 @@ export const PaymentView = z.strictObject({
 });
 export type PaymentView = z.infer<typeof PaymentView>;
 
+/** POST /v1/billing/payments — the payment as the server recorded it. */
+export const SubmitPaymentResponse = z.strictObject({ payment: PaymentView });
+export type SubmitPaymentResponse = z.infer<typeof SubmitPaymentResponse>;
+
 /** GET /v1/billing/payments — the caller's own payments, newest first. */
 export const PaymentsResponse = z.strictObject({ payments: z.array(PaymentView) });
 export type PaymentsResponse = z.infer<typeof PaymentsResponse>;

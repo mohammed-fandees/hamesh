@@ -1,5 +1,7 @@
 import type { MeResponse } from '@hamesh/teams-contract';
 import type { TeamsErrorCode } from './errors';
+import { isOperationName, type TeamsOpName } from './operation-names';
+import type { ParamsOf, ResultOf } from './operations';
 
 /**
  * Messages between Hamesh's own pages and the background service worker for
@@ -13,6 +15,25 @@ export interface TeamsRequest {
   type: 'TEAMS';
   op: TeamsOp;
 }
+
+/**
+ * Everything else a page can ask for — see ./operations.ts, which is also
+ * what the worker validates `params` against before it calls the server.
+ */
+export interface TeamsOperationRequest<K extends TeamsOpName = TeamsOpName> {
+  type: 'TEAMS_OP';
+  op: K;
+  params: ParamsOf<K>;
+}
+
+/**
+ * An operation's answer. Never an `Error`: only what crosses `sendMessage`
+ * cleanly, and never anything the page didn't ask for.
+ */
+export type TeamsResult<T> =
+  { ok: true; data: T } | { ok: false; error: TeamsErrorCode; fields?: string[] };
+
+export type ResultFor<K extends TeamsOpName> = TeamsResult<ResultOf<K>>;
 
 export type TeamsStatus =
   /** This build has no Teams. */
@@ -36,4 +57,10 @@ export function isTeamsRequest(message: unknown): message is TeamsRequest {
   if (!message || typeof message !== 'object') return false;
   const m = message as Record<string, unknown>;
   return m.type === 'TEAMS' && (TEAMS_OPS as readonly unknown[]).includes(m.op);
+}
+
+export function isTeamsOperationRequest(message: unknown): message is TeamsOperationRequest {
+  if (!message || typeof message !== 'object') return false;
+  const m = message as Record<string, unknown>;
+  return m.type === 'TEAMS_OP' && isOperationName(m.op);
 }

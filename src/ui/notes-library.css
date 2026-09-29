@@ -799,6 +799,155 @@
   white-space: nowrap;
 }
 
+/* ---- Teams page ------------------------------------------------------
+   The same hairline-separated rows as the rest of the library: a team is a
+   list of people, not a dashboard, so nothing here gets a card or a panel. */
+.hm-input {
+  min-width: 0;
+  padding: var(--hm-space-2) var(--hm-space-3);
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-sm);
+  background: var(--hm-surface);
+  color: var(--hm-ink);
+  font: inherit;
+  font-size: 13px;
+}
+.hm-input:focus-visible {
+  outline: 2px solid var(--hm-accent);
+  outline-offset: 1px;
+}
+.hm-input--select {
+  flex: 0 0 auto;
+}
+.hm-input--number {
+  flex: 0 0 5rem;
+}
+
+.hm-team-switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--hm-space-2);
+  margin: var(--hm-space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.hm-team-switcher__item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--hm-space-2);
+  padding: var(--hm-space-2) var(--hm-space-3);
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-sm);
+  background: var(--hm-surface);
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.hm-team-switcher__item[aria-current='true'] {
+  border-color: var(--hm-accent);
+  background: var(--hm-accent-tint);
+}
+
+.hm-team-members,
+.hm-team-invitations {
+  margin: var(--hm-space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.hm-team-member,
+.hm-team-invitation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--hm-space-3);
+  padding: var(--hm-space-3) 0;
+  border-bottom: 1px solid var(--hm-border);
+}
+.hm-team-member:last-child,
+.hm-team-invitation:last-child {
+  border-bottom: none;
+}
+.hm-team-member__who,
+.hm-team-invitation__who {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+.hm-team-member__name {
+  display: flex;
+  gap: var(--hm-space-2);
+  align-items: baseline;
+  font-size: 13.5px;
+}
+.hm-team-member__you {
+  color: var(--hm-ink-40);
+  font-size: 12px;
+}
+.hm-team-member__email {
+  color: var(--hm-ink-60);
+  font-size: 12px;
+}
+.hm-team-member__meta {
+  color: var(--hm-ink-40);
+  font-size: 12px;
+}
+.hm-team-member__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--hm-space-2);
+}
+
+.hm-team-invite {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--hm-space-2);
+  align-items: center;
+  margin: var(--hm-space-3) 0 0;
+}
+.hm-team-invite .hm-input[type='text'],
+.hm-team-invite .hm-input[type='email'] {
+  flex: 1 1 14rem;
+}
+
+/* A new invite link is shown once and never stored, so it is given room to
+   be read and copied rather than truncated into a row. */
+.hm-invite-link {
+  margin: var(--hm-space-3) 0 0;
+  padding: var(--hm-space-3);
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-sm);
+  background: var(--hm-paper-dim);
+}
+.hm-invite-link__title {
+  margin: 0 0 var(--hm-space-2);
+  font-size: 13px;
+}
+.hm-invite-link__value {
+  display: block;
+  overflow-wrap: anywhere;
+  margin-bottom: var(--hm-space-2);
+  font-family: var(--hm-mono);
+  font-size: 12px;
+  user-select: all;
+}
+
+/* The settings body is a column, which would otherwise stretch a lone button
+   across the whole page. */
+.hm-settings__body > .hm-btn {
+  align-self: flex-start;
+}
+
+.hm-team-detail {
+  margin-top: var(--hm-space-4);
+}
+.hm-billing__price {
+  margin: var(--hm-space-3) 0 0;
+  font-size: 15px;
+}
+
 /* ---- Shortcut badge (read-only — Chrome has no API for an extension to
    change its own shortcut; see LibrarySettingsView) ---- */
 .hm-shortcut-badge {
