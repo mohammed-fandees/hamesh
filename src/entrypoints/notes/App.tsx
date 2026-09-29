@@ -34,6 +34,8 @@ import {
   serializeBackup,
 } from '@/domain/backup';
 import type { BackupImportOutcome } from '@/ui/BackupSection';
+import { teamsConfig } from '@/teams/config';
+import { createTeamsClient } from '@/teams/client';
 import type { Note } from '@/domain/note';
 import type { Folder } from '@/domain/folder';
 import '@/ui/tokens.css';
@@ -80,6 +82,13 @@ export function App() {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const strings = getStrings(lang);
+  // Null in builds without Teams, which leaves Settings exactly as it was.
+  const teamsClient = useMemo(() => {
+    // A build-time constant: builds without Teams drop this code entirely.
+    if (!import.meta.env.WXT_TEAMS_API_ORIGIN) return null;
+    const config = teamsConfig();
+    return config ? createTeamsClient(config) : null;
+  }, []);
   const dir = dirForLang(lang);
   const theme =
     appearance === 'light'
@@ -389,6 +398,7 @@ export function App() {
           onAppearanceChange={handleAppearanceChange}
           onTextNotesChange={handleTextNotesChange}
           backup={{ onExport: handleExportBackup, onImport: handleImportBackup }}
+          teams={teamsClient}
         />
       ) : (
         <div className="hm-notes-main">

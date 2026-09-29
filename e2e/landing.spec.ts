@@ -357,20 +357,27 @@ test.describe('Landing page', () => {
   }) => {
     await page.goto(origin, { waitUntil: 'commit' });
 
-    // Sampled from page load for a full cycle's worth of time, rather than
-    // from an anchor part-way through: the story starts a couple of seconds
-    // after the hand-over, and anchoring the window to the hand-over made the
-    // test depend on machine speed rather than on behaviour.
+    // The demo's cursor fades in at the top of each cycle, so each rise is the
+    // story beginning. What the bug looked like is two of them within a second
+    // or two of each other: the visibility observer started the demo behind
+    // the loader, and the hand-over then started it again in front of the
+    // visitor. What healthy looks like is rises a whole cycle apart.
     //
-    // The demo's cursor fades in at the top of each cycle, and a cycle is
-    // ~11s, so inside 12s exactly one rise is correct and two mean it was
-    // restarted rather than resumed.
+    // So this measures the *gap* between rises rather than counting them
+    // inside a fixed window. Counting made the result depend on how quickly
+    // the machine got through the loader — the first rise lands anywhere from
+    // ~2s to ~6s in, and one cycle later is then either side of any window
+    // that is only a cycle wide. That is what flaked in CI, on a runner fast
+    // enough to fit the legitimate second rise inside it.
+    const CYCLE_SECONDS = 8.7; // measured: timeline duration + its repeatDelay
     const trace = await page.evaluate(async () => {
       const rises: number[] = [];
       const samples: number[] = [];
       let previous = 1;
       const began = Date.now();
-      while (Date.now() - began < 12000) {
+      // Long enough that a restart — which follows within a second or two —
+      // always shows up, whenever the loader happens to hand over.
+      while (Date.now() - began < 13000) {
         const cursor = document.querySelector('.hero .demo-cursor') as HTMLElement | null;
         const now = cursor ? Number(getComputedStyle(cursor).opacity) : -1;
         samples.push(Math.round(now * 10) / 10);
@@ -381,11 +388,20 @@ test.describe('Landing page', () => {
       return { rises, samples };
     });
     const starts = trace.rises;
+    const where = `(rises at ${starts.join(', ')}s; opacity trace ${trace.samples.join('')})`;
+
+    expect(starts.length, `the story never began ${where}`).toBeGreaterThan(0);
+
+    const gaps = starts.slice(1).map((rise, i) => rise - starts[i]);
+    // Half a cycle: comfortably below a real repeat and far above a restart's
+    // second or two, so neither a slow runner nor a fast one changes the
+    // verdict.
+    const tooSoon = gaps.filter((gap) => gap <= CYCLE_SECONDS / 2);
 
     expect(
-      starts.length,
-      `the story began ${starts.length} times (rises at ${starts.join(', ')}s; ` +
-        `opacity trace ${trace.samples.join('')})`,
-    ).toBe(1);
+      tooSoon,
+      `the story began again after ${tooSoon.join(', ')}s, sooner than its ` +
+        `${CYCLE_SECONDS}s cycle ${where}`,
+    ).toEqual([]);
   });
 });

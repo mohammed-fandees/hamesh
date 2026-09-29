@@ -145,3 +145,60 @@ export function SelectionActionIcon({ size }: IconProps = {}) {
     </Svg>
   );
 }
+
+/** Teams: two heads, side by side. */
+export function TeamIcon({ size }: IconProps = {}) {
+  return (
+    <Svg size={size}>
+      <circle cx="5" cy="5" r="1.9" stroke="currentColor" strokeWidth="1.3" fill="none" />
+      <circle cx="9.6" cy="5.6" r="1.5" stroke="currentColor" strokeWidth="1.3" fill="none" />
+      <path
+        d="M1.6 11.6 C1.9 9.4 3.3 8.4 5 8.4 C6.7 8.4 8.1 9.4 8.4 11.6 M9 8.6 C10.8 8.6 12 9.5 12.4 11.6"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+        fill="none"
+      />
+    </Svg>
+  );
+}
+
+/** Teams → Account: one head. */
+export function AccountIcon({ size }: IconProps = {}) {
+  return (
+    <Svg size={size}>
+      <circle cx="7" cy="4.8" r="2.2" stroke="currentColor" strokeWidth="1.3" fill="none" />
+      <path
+        d="M2.6 12 C3 9.6 4.8 8.4 7 8.4 C9.2 8.4 11 9.6 11.4 12"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+        fill="none"
+      />
+    </Svg>
+  );
+}
+
+/** Teams → Plan: a calendar page. */
+export function PlanIcon({ size }: IconProps = {}) {
+  return (
+    <Svg size={size}>
+      <rect
+        x="2"
+        y="2.8"
+        width="10"
+        height="9.2"
+        rx="1.4"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        fill="none"
+      />
+      <path
+        d="M2 5.8 H12 M4.8 1.6 V3.8 M9.2 1.6 V3.8"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}

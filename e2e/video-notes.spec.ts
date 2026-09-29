@@ -107,11 +107,34 @@ async function waitForHameshReady(page: Page): Promise<void> {
  *  player beneath, and Hamesh detects them by coordinate proximity
  *  instead, see HameshApp.tsx), so `locator.click()`'s actionability check
  *  would otherwise refuse the click, correctly reporting that the video
- *  "intercepts pointer events". */
+ *  "intercepts pointer events".
+ *
+ *  Points at the marker and waits until it is shown and clickable *before*
+ *  pressing, as a person does. While the video plays, markers are hidden
+ *  (and take no clicks) unless the pointer is over the video or near one,
+ *  and that reveal lands a frame or two after the pointer arrives
+ *  (pointermove → rAF → render → effect, see HameshApp.tsx). A
+ *  `mouse.click` jumps and presses in the same instant, so if the marker
+ *  was hidden it presses on nothing and the video just plays on. The CI
+ *  trace showed exactly that: the marker read its position, then hid as the
+ *  video resumed after its note closed, and the click landed on none. */
 async function clickVideoMarker(page: Page, selector = '.hm-video-marker'): Promise<void> {
   const box = await page.locator(selector).boundingBox();
   if (!box) throw new Error(`no visible ${selector} to click`);
-  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  await page.mouse.move(x, y);
+  await expect(page.locator(selector)).not.toHaveCount(0);
+  // Two frames: one for the hover recompute, one for React to commit it and
+  // run the effect that makes the marker clickable.
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  );
+  await page.mouse.down();
+  await page.mouse.up();
 }
 
 /** Same real-coordinate reasoning as `clickVideoMarker`, for hovering —
@@ -433,6 +456,8 @@ test.describe('Video Notes — capture + timeline markers', () => {
     await page.evaluate(() => {
       (document.querySelector('video') as HTMLVideoElement).currentTime = 8;
     });
+    // Over the playing video its controls, and so its markers, are showing.
+    await page.locator('[data-testid="test-video"]').hover();
     await clickVideoMarker(page);
     await expect
       .poll(() =>

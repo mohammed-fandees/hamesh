@@ -1,0 +1,17 @@
+{
+  "name": "@hamesh/teams-contract",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The wire contract between the Hamesh extension and the Hamesh Teams API: request and response schemas, error codes and realtime messages.",
+  "license": "SEE LICENSE IN ../../LICENSE",
+  "main": "index.ts",
+  "types": "index.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": "./index.ts"
+  },
+  "dependencies": {
+    "zod": "^4.6.5"
+  }
+}

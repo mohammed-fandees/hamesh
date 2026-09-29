@@ -6,7 +6,7 @@
 
 All notes you create are stored exclusively in your browser's local storage using `chrome.storage.local`. This data never leaves your device.
 
-Hamesh has no backend servers, no external APIs, no analytics services, and no telemetry. The extension makes no network requests of any kind.
+Hamesh has no analytics services and no telemetry. Unless you turn on Hamesh Teams (see below), the extension makes no network requests of any kind.
 
 ## Permissions
 
@@ -39,7 +39,7 @@ like everything else; a default for all pages stores no URL at all.
 
 - Does not collect personal information
 - Does not track browsing history
-- Does not send data to any server
+- Does not send data to any server (unless you turn on Teams, and then only what is listed below)
 - Does not use analytics or crash reporting
 - Does not share data with third parties
 - Does not use cookies
@@ -54,3 +54,35 @@ your own device. Hamesh does not upload it, does not send it anywhere, and has
 nowhere to send it to. Once the file exists it is an ordinary file you own — if
 you later put it somewhere shared, that is your choice and outside Hamesh's
 control.
+
+## Hamesh Teams (optional)
+
+Teams is an optional feature for sharing notes with a team. It is **not part of
+the version of Hamesh in the Chrome Web Store yet**, and it is compiled only
+into builds configured for it. In those builds it stays off until you turn it
+on in Settings, and Hamesh asks your browser for two extra permissions at that
+moment, never before:
+
+| Permission            | Purpose                                                       |
+| --------------------- | ------------------------------------------------------------- |
+| `identity`            | Open the "Sign in with Google" window                         |
+| The Teams server only | Talk to Hamesh's Teams server, and no other website or server |
+
+With Teams on and you signed in:
+
+- **Sent to Google:** the sign-in itself, in Google's own window. Hamesh never
+  sees your Google password.
+- **Kept by the Teams server:** your Google account's name, email address and
+  account id (to identify you to your teammates), and your sign-in session,
+  stored only as a one-way hash of the token. Before you are signed in, your
+  IP address is used to limit repeated sign-in attempts; it is not stored.
+- **Kept on this device:** a sign-in token, in the extension's own storage,
+  which web pages and Hamesh's on-page script cannot read. It is deleted when
+  you sign out or turn Teams off.
+- **Not sent:** your personal notes, your folders, your browsing history, or
+  the pages you visit. Personal notes stay in `chrome.storage.local` exactly as
+  described above.
+
+**Turn off Teams** in Settings signs you out, deletes the sign-in token from
+this device, and gives the permissions back. Removing the permissions from the
+browser's own extension settings does the same on this device.
