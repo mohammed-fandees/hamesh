@@ -1,3 +1,6 @@
+packages:
+  # The public wire contract shared with the Teams API (see its README).
+  - packages/*
 allowBuilds:
   esbuild: false
   spawn-sync: false
