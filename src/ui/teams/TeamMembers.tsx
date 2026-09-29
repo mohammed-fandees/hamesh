@@ -1,4 +1,3 @@
-import { useCallback, useEffect, useState } from 'react';
 import type { TeamMember, TeamResponse } from '@hamesh/teams-contract';
 import type { Lang } from '../i18n';
 import type { TeamsStrings } from './strings';
@@ -11,6 +10,11 @@ interface TeamMembersProps {
   page: TeamsPage;
   team: TeamResponse;
   myUserId: string;
+  /** Who is in the team, or null while that is still being asked. Fetched once
+   *  by the page above, because the notes and their comments need the same
+   *  names — a comment names people by id, and this is what turns one into a
+   *  name. */
+  members: TeamMember[] | null;
   /** Called after anything that changes who is in the team, or my own role. */
   onChanged: () => void;
 }
@@ -22,33 +26,20 @@ interface TeamMembersProps {
  * matching capability — and the server checks again on the request itself.
  * Hiding a button here is tidiness, never the thing that stops anyone.
  */
-export function TeamMembers({ strings, lang, page, team, myUserId, onChanged }: TeamMembersProps) {
-  const [members, setMembers] = useState<TeamMember[] | null>(null);
+export function TeamMembers({
+  strings,
+  lang,
+  page,
+  team,
+  myUserId,
+  members,
+  onChanged,
+}: TeamMembersProps) {
   const teamId = team.team.id;
   const can = (action: string) => team.capabilities.includes(action as never);
 
-  const load = useCallback(async () => {
-    const result = await page.run('members.list', { teamId });
-    if (result) setMembers(result.members);
-  }, [page, teamId]);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const result = await page.run('members.list', { teamId });
-      if (!cancelled) setMembers(result?.members ?? null);
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // `page` is rebuilt on every render of the page above; the team is what
-    // actually decides who to fetch.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [teamId]);
-
   async function act(work: Promise<unknown>) {
     await work;
-    await load();
     onChanged();
   }
 

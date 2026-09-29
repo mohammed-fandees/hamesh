@@ -5,6 +5,8 @@ import { operations } from '@/teams/operations';
 const TEAM = '01J0000000000000000000000A';
 const USER = '01J0000000000000000000000B';
 const NOTE = '01J0000000000000000000000D';
+const COMMENT = '01J0000000000000000000000E';
+const SARA = '01J0000000000000000000000S';
 
 /** A minimal element anchor, as the extension's own notes carry one. */
 const ANCHOR = {
@@ -51,6 +53,12 @@ describe('the operation table', () => {
     'folders.create': { teamId: TEAM, name: 'Reading' },
     'folders.rename': { teamId: TEAM, folderId: NOTE, name: 'Reading' },
     'folders.delete': { teamId: TEAM, folderId: NOTE },
+    'comments.list': { teamId: TEAM, noteId: NOTE },
+    'comments.replies': { teamId: TEAM, commentId: COMMENT },
+    'comments.create': { teamId: TEAM, noteId: NOTE, requestId: newRequestId(), body: 'Well put' },
+    'comments.update': { teamId: TEAM, commentId: COMMENT, body: 'Better put' },
+    'comments.delete': { teamId: TEAM, commentId: COMMENT },
+    'mentions.list': {},
     'realtime.ticket': { teamId: TEAM },
     'billing.plans': {},
     'billing.payments': {},
@@ -165,6 +173,43 @@ describe('the operation table', () => {
       }).success,
       'an anchor the contract does not describe is not sent',
     ).toBe(false);
+  });
+
+  it('refuses a comment whose mentions are not the ones its text names', () => {
+    const create = operations()['comments.create'];
+    const base = { teamId: TEAM, noteId: NOTE, requestId: newRequestId() };
+    // Naming someone the text never mentioned would notify them out of nowhere.
+    expect(create.params.safeParse({ ...base, body: 'hello', mentions: [SARA] }).success).toBe(
+      false,
+    );
+    // And a text that names someone must say so, so the server can check they
+    // are in this team.
+    expect(create.params.safeParse({ ...base, body: `hi <@${SARA}>` }).success).toBe(false);
+    expect(
+      create.params.safeParse({ ...base, body: `hi <@${SARA}>`, mentions: [SARA] }).success,
+    ).toBe(true);
+
+    const update = operations()['comments.update'];
+    expect(
+      update.params.safeParse({ teamId: TEAM, commentId: COMMENT, body: 'x', mentions: [SARA] })
+        .success,
+    ).toBe(false);
+  });
+
+  it('puts a paging cursor in the query only after it is an id', () => {
+    const list = operations()['comments.list'];
+    expect(list.request({ teamId: TEAM, noteId: NOTE }).path).toBe(
+      `/v1/teams/${TEAM}/notes/${NOTE}/comments`,
+    );
+    expect(list.request({ teamId: TEAM, noteId: NOTE, after: COMMENT }).path).toBe(
+      `/v1/teams/${TEAM}/notes/${NOTE}/comments?after=${COMMENT}`,
+    );
+    for (const after of ['../../admin', '1 OR 1=1', 'x&limit=9999', '']) {
+      expect(list.params.safeParse({ teamId: TEAM, noteId: NOTE, after }).success, after).toBe(
+        false,
+      );
+    }
+    expect(operations()['mentions.list'].params.safeParse({ before: 'nope' }).success).toBe(false);
   });
 
   it('mints a request id the server will accept', () => {

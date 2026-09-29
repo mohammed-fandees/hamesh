@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { MeResponse } from '@hamesh/teams-contract';
 import type { TeamsClient } from '@/teams/client';
-import type { TeamCacheSnapshot, TeamsCacheOp, TeamsStatus } from '@/teams/messages';
+import type { TeamCacheSnapshot, TeamsCacheOp, TeamsEvent, TeamsStatus } from '@/teams/messages';
 import type { TeamsOpName } from '@/teams/operation-names';
 import type { ParamsOf, ResultOf } from '@/teams/operations';
 import type { TeamsErrorCode } from '@/teams/errors';
@@ -28,6 +28,8 @@ export interface TeamsPage {
    * is asked for, which has the worker pull first.
    */
   cache(teamId: string, op?: TeamsCacheOp): Promise<TeamCacheSnapshot | null>;
+  /** Subscribes to the worker's notices; returns the unsubscribe. */
+  onEvent(listener: (event: TeamsEvent) => void): () => void;
 }
 
 export function useTeams(client: TeamsClient): TeamsPage {
@@ -106,6 +108,11 @@ export function useTeams(client: TeamsClient): TeamsPage {
     [client],
   );
 
+  const onEvent = useCallback(
+    (listener: (event: TeamsEvent) => void) => client.onEvent(listener),
+    [client],
+  );
+
   return {
     status,
     me: status?.state === 'signed_in' ? status.me : null,
@@ -115,5 +122,6 @@ export function useTeams(client: TeamsClient): TeamsPage {
     refresh,
     run,
     cache,
+    onEvent,
   };
 }

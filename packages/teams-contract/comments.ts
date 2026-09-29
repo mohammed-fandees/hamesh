@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { MAX_COMMENT_LENGTH, MAX_MENTIONS, mentionsIn } from './mentions';
 
 /**
  * Comments, replies and mentions.
@@ -7,18 +8,14 @@ import { z } from 'zod';
  * The server checks that the two agree and that every id is a **current member
  * of this team**, so a comment can never reference a stranger — and names are
  * resolved at render time from the member list, never stored in the body.
+ *
+ * The tokens themselves live in `./mentions.ts`, which carries no schemas, so a
+ * client can read and write them without pulling zod in.
  */
 
+export { MAX_COMMENT_LENGTH, MAX_MENTIONS, MENTION_PATTERN, mentionsIn } from './mentions';
+
 const Ulid = z.string().regex(/^[0-7][0-9A-HJKMNP-TV-Z]{25}$/);
-
-export const MENTION_PATTERN = /<@([0-7][0-9A-HJKMNP-TV-Z]{25})>/g;
-export const MAX_COMMENT_LENGTH = 4000;
-export const MAX_MENTIONS = 20;
-
-/** The user ids a body mentions, in first-appearance order, without duplicates. */
-export function mentionsIn(body: string): string[] {
-  return [...new Set(Array.from(body.matchAll(MENTION_PATTERN), (m) => m[1]!))];
-}
 
 const CommentBody = z
   .string()
@@ -32,41 +29,48 @@ const RequestId = z
   .regex(/^[A-Za-z0-9_-]+$/);
 
 /**
+ * Whether what a body mentions and what it declares are the same set. The rule
+ * both requests below carry, on its own so a client can apply it to its own
+ * composed shape rather than restating it.
+ */
+export const mentionsMatchBody = (c: {
+  body: string;
+  mentions?: string[] | undefined;
+}): boolean => {
+  const inBody = mentionsIn(c.body);
+  const declared = [...new Set(c.mentions ?? [])];
+  return inBody.length === declared.length && inBody.every((id) => declared.includes(id));
+};
+
+const MENTIONS_RULE = {
+  message: 'mentions must match the <@id> tokens in the body',
+  path: ['mentions'] as PropertyKey[],
+};
+
+/** The fields a new comment carries, before the rule above. */
+export const CreateCommentFields = z.strictObject({
+  requestId: RequestId,
+  body: CommentBody,
+  parentId: Ulid.nullable().optional(),
+  mentions: z.array(Ulid).max(MAX_MENTIONS).optional(),
+});
+
+/**
  * POST /v1/teams/:teamId/notes/:noteId/comments — a top-level comment, or a
  * reply when `parentId` is given (one level only). No author, team or
  * timestamps: the server sets them.
  */
-export const CreateCommentRequest = z
-  .strictObject({
-    requestId: RequestId,
-    body: CommentBody,
-    parentId: Ulid.nullable().optional(),
-    mentions: z.array(Ulid).max(MAX_MENTIONS).optional(),
-  })
-  .refine(
-    (c) => {
-      const inBody = mentionsIn(c.body);
-      const declared = [...new Set(c.mentions ?? [])];
-      return inBody.length === declared.length && inBody.every((id) => declared.includes(id));
-    },
-    { message: 'mentions must match the <@id> tokens in the body', path: ['mentions'] },
-  );
+export const CreateCommentRequest = CreateCommentFields.refine(mentionsMatchBody, MENTIONS_RULE);
 export type CreateCommentRequest = z.infer<typeof CreateCommentRequest>;
 
+/** The fields an edit carries, before the rule above. */
+export const UpdateCommentFields = z.strictObject({
+  body: CommentBody,
+  mentions: z.array(Ulid).max(MAX_MENTIONS).optional(),
+});
+
 /** PATCH /v1/teams/:teamId/comments/:commentId — editing your own comment. */
-export const UpdateCommentRequest = z
-  .strictObject({
-    body: CommentBody,
-    mentions: z.array(Ulid).max(MAX_MENTIONS).optional(),
-  })
-  .refine(
-    (c) => {
-      const inBody = mentionsIn(c.body);
-      const declared = [...new Set(c.mentions ?? [])];
-      return inBody.length === declared.length && inBody.every((id) => declared.includes(id));
-    },
-    { message: 'mentions must match the <@id> tokens in the body', path: ['mentions'] },
-  );
+export const UpdateCommentRequest = UpdateCommentFields.refine(mentionsMatchBody, MENTIONS_RULE);
 export type UpdateCommentRequest = z.infer<typeof UpdateCommentRequest>;
 
 /** A comment, with up to `INLINE_REPLIES` of its replies nested one level deep. */
@@ -98,6 +102,14 @@ export const Comment: z.ZodType<Comment> = z.strictObject({
   /** Top-level comments only: the latest few replies, oldest first. */
   replies: z.array(z.lazy((): z.ZodType<Comment> => Comment)).optional(),
 });
+
+/**
+ * POST /v1/teams/:teamId/notes/:noteId/comments and
+ * PATCH /v1/teams/:teamId/comments/:commentId — the comment as the server now
+ * holds it.
+ */
+export const CommentResponse = z.strictObject({ comment: Comment });
+export type CommentResponse = z.infer<typeof CommentResponse>;
 
 /**
  * GET /v1/teams/:teamId/notes/:noteId/comments?after=&limit=

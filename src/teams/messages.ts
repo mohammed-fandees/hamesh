@@ -85,6 +85,34 @@ export interface TeamCacheSnapshot {
 
 export type TeamCacheResult = TeamsResult<TeamCacheSnapshot>;
 
+/**
+ * The worker telling Hamesh's own pages that something changed in a team, so a
+ * page already showing it can catch up.
+ *
+ * The only message that travels worker → page, and it carries ids and nothing
+ * else — the same rule the socket it comes from follows. A page that cares
+ * fetches through the ordinary authorized path; a page that does not, ignores
+ * it. Broadcast with `runtime.sendMessage`, which reaches the extension's own
+ * pages and never a content script.
+ */
+export interface TeamsEvent {
+  type: 'TEAMS_EVENT';
+  event: 'comments';
+  teamId: string;
+  noteId: string;
+}
+
+export function isTeamsEvent(message: unknown): message is TeamsEvent {
+  if (!message || typeof message !== 'object') return false;
+  const m = message as Record<string, unknown>;
+  return (
+    m.type === 'TEAMS_EVENT' &&
+    m.event === 'comments' &&
+    typeof m.teamId === 'string' &&
+    typeof m.noteId === 'string'
+  );
+}
+
 export function isTeamsCacheRequest(message: unknown): message is TeamsCacheRequest {
   if (!message || typeof message !== 'object') return false;
   const m = message as Record<string, unknown>;

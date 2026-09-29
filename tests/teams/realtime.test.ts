@@ -41,6 +41,7 @@ function setup(opts: { url?: string; failTicket?: boolean } = {}) {
   let nextHandle = 1;
   const onChanged = vi.fn();
   const onMembers = vi.fn();
+  const onComments = vi.fn();
   const onRevoked = vi.fn();
   const run = vi.fn(async (name: string) => {
     expect(name).toBe('realtime.ticket');
@@ -61,6 +62,7 @@ function setup(opts: { url?: string; failTicket?: boolean } = {}) {
     },
     onChanged,
     onMembers,
+    onComments,
     onRevoked,
     setTimeout: (fn, ms) => {
       const handle = nextHandle++;
@@ -80,7 +82,7 @@ function setup(opts: { url?: string; failTicket?: boolean } = {}) {
     await Promise.resolve();
   };
   const timers = () => [...scheduled.values()];
-  return { realtime, sockets, timers, tick, onChanged, onMembers, onRevoked, run };
+  return { realtime, sockets, timers, tick, onChanged, onMembers, onComments, onRevoked, run };
 }
 
 beforeEach(() => vi.clearAllMocks());
@@ -141,8 +143,17 @@ describe('the realtime link', () => {
     expect(onMembers).toHaveBeenCalledWith(TEAM);
   });
 
+  it('passes on a note’s comment activity by id, which is all the frame carries', async () => {
+    const { realtime, sockets, onComments } = setup();
+    await realtime.follow([TEAM]);
+    sockets[0].emit('open');
+
+    sockets[0].frame({ t: 'comments', noteId: NOTE });
+    expect(onComments).toHaveBeenCalledWith(TEAM, NOTE);
+  });
+
   it('ignores a frame it cannot recognise instead of guessing at it', async () => {
-    const { realtime, sockets, onChanged, onMembers, onRevoked } = setup();
+    const { realtime, sockets, onChanged, onMembers, onComments, onRevoked } = setup();
     await realtime.follow([TEAM]);
     sockets[0].emit('open');
     onChanged.mockClear();
@@ -153,10 +164,11 @@ describe('the realtime link', () => {
     sockets[0].frame({ t: 'changed', seq: 1, extra: true });
     sockets[0].frame({ t: 'nonsense' });
     sockets[0].frame({ t: 'revoked', reason: 'because' });
-    sockets[0].frame({ t: 'comments', noteId: NOTE });
+    sockets[0].frame({ t: 'comments', noteId: 'not-a-ulid' });
 
     expect(onChanged).not.toHaveBeenCalled();
     expect(onMembers).not.toHaveBeenCalled();
+    expect(onComments).not.toHaveBeenCalled();
     expect(onRevoked).not.toHaveBeenCalled();
   });
 

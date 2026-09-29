@@ -4,6 +4,7 @@ import { AccountIcon, PlanIcon, TeamIcon } from './SettingsIcons';
 import type { Lang, Strings } from './i18n';
 import type { TeamsClient } from '@/teams/client';
 import type { TeamsReply } from '@/teams/messages';
+import './teams/styles';
 
 interface TeamsSectionProps {
   strings: Strings;

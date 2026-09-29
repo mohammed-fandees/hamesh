@@ -76,10 +76,10 @@ TeamsSection  ─ TEAMS ─────────▶    registerTeams()  (src/
    runs in the page)                  ├─ Google sign-in (PKCE, state, nonce)
 TeamsView     ─ TEAMS_OP ──────▶    ├─ TeamsApi      (fetch + contract checks)
   teams, members, invitations,        ├─ operation table (operations.ts)
-  the plan, shared notes, folders     ├─ delta sync    (sync.ts)
-              ─ TEAMS_CACHE ───▶    ├─ realtime      (realtime.ts)
-                                      ├─ session store (IndexedDB, token)
-                                      └─ sync state    (IndexedDB, cursor)
+  the plan, shared notes, folders,    ├─ delta sync    (sync.ts)
+  comments, mentions                  ├─ realtime      (realtime.ts)
+              ─ TEAMS_CACHE ───▶    ├─ session store (IndexedDB, token)
+              ◀── TEAMS_EVENT ───    └─ sync state    (IndexedDB, cursor)
                                               │
 Content script (any web page)                 │ writes
 ─────────────────────────────                 ▼
@@ -176,6 +176,35 @@ rewrites the team names a page shows and drops the cache of any team the server 
 longer lists. Signing out, or turning Teams off, leaves nothing behind: every
 cached team note on the device goes.
 
+## Comments and mentions
+
+A discussion belongs to a team note, and is read and written where the note is
+managed — the Teams page — never on the web page the note is attached to. The
+worker answers Teams messages only from the extension's own pages, and a content
+script runs inside whatever page it is on, so there is no way to reach a comment
+from there, and no exception is made to let one.
+
+**A mention is an id, never a name.** A body carries `<@USERID>` and nothing
+else. Names are resolved when a comment is drawn, from the team's own member
+list, so renaming yourself renames you in every comment you were ever named in,
+and no comment can carry a name the server did not vouch for. The composer only
+ever offers people the server listed as members of that team.
+
+**What a comment declares is derived from what it says.** The `mentions` sent
+alongside a body come from the body itself (`mentionsIn`), never from a separate
+list the UI kept — and the operation table refuses a comment whose declared
+mentions are not exactly the tokens its text contains, before the server refuses
+it too. Nobody can be notified out of a comment that never named them.
+
+The tokens themselves live in `packages/teams-contract/mentions.ts`, which
+carries no schemas, so reading and writing them costs a client nothing but a
+regular expression.
+
+**Where you were named** (`GET /v1/me/mentions`) is the one place in Teams the
+extension asks about the account rather than about a team, because only the
+server sees every team at once. The ids in those entries are read by asking each
+team it lists for its members — the same request that team's own page makes.
+
 ## Realtime: a poke, never the content
 
 `POST /v1/realtime/tickets` returns a single-use, short-lived ticket and the
@@ -188,6 +217,13 @@ email or a URL, and every frame is parsed against the contract's own schema;
 anything else is ignored rather than guessed at. `changed` means "pull", and the
 pull goes through the ordinary authorized API — so a socket that lingers for a
 moment after someone's access ends cannot show them anything.
+
+`comments` names one note, and the worker passes it on to Hamesh's own pages as
+a `TEAMS_EVENT` — the only message that travels worker → page, carrying the two
+ids and nothing else. A page showing that note's discussion reads it again
+through the ordinary path; a page showing anything else ignores it.
+`runtime.sendMessage` reaches the extension's own pages and never a content
+script, and it rejects when no page is open, which is the ordinary case.
 
 The socket is a convenience, never the source of truth. The server ends each
 connection's authorization lease on a timer (`revoked: expired`), which is a
@@ -213,9 +249,11 @@ handling, PKCE (RFC 7636 test vector), state and redirect checking, the service'
 states, the sender check, the operation table (including the ids and cursors it
 refuses), the page cache, delta sync (including an expired cursor and a repeated
 round), the realtime link (including the URLs it will not connect to), and how the
-cache follows the account. `tests/ui/` covers the Settings section — including
-that the permission prompt is requested synchronously from the click — the Teams
-page, sharing a note, and the shared-notes panel.
+cache follows the account, and how the mention tokens are read and written.
+`tests/ui/` covers the Settings section — including that the permission prompt is
+requested synchronously from the click — the Teams page, sharing a note, the
+shared-notes panel, a note's discussion, writing a comment and naming someone in
+it, and where you were named.
 `tests/content/HameshApp.team-notes.test.tsx` covers what a team note looks like
 on the page it belongs to.
 
@@ -224,28 +262,53 @@ on the page it belongs to.
 Measured, not assumed — a store build of this work against the same build of
 `main`, both with no Teams configuration at all:
 
-| Entry               |     main | with shared notes |     Δ |
-| ------------------- | -------: | ----------------: | ----: |
-| `background.js`     | 12.43 kB |          12.43 kB |     0 |
-| `chunks/notes-*.js` | 60.31 kB |          60.60 kB | +0.29 |
-| `content.js`        | 318.5 kB |          319.2 kB | +0.72 |
+| Entry                |   main |    now |     Δ |
+| -------------------- | -----: | -----: | ----: |
+| `background.js`      |  12.43 |  12.43 |     0 |
+| `chunks/notes-*.js`  |  60.60 |  57.51 | −3.09 |
+| `assets/notes-*.css` |  19.72 |  17.15 | −2.57 |
+| `content.js`         | 319.22 | 319.22 |     0 |
+| whole build          | 710.87 | 704.58 | −6.29 |
 
-No contract, no zod, no endpoint, no cache key and no Teams wording anywhere in
-it. What is left is the scaffolding that makes the optional part optional: a
-context with nothing in it, an unset prop, and the one check that a note does not
-belong to a team. Every Teams entry point tests
-`import.meta.env.WXT_TEAMS_API_ORIGIN` as the first thing in its own body, so the
-bundler folds the branch away and drops everything it reached.
+(kilobytes.) Comments and mentions add nothing at all to a store build, and it
+comes out smaller than `main`'s, because two things that had been shipping
+regardless were found by measuring and fixed:
 
-Measure it the same way, and read the exit code before the sizes: WXT leaves a
-previous `.output` in place when a build fails, so a failed build measures the one
-before it.
+- **A stylesheet is not tree-shaken.** `import './teams.css'` is collected while
+  the bundler transforms modules, not by the tree-shaker, so every Teams rule
+  shipped even though every component that used them was dropped. Read as a
+  string instead (`import css from './teams.css?inline'`, applied behind the
+  build constant — see `src/ui/teams/styles.ts`), it is an ordinary value, and an
+  unused value is dropped like any other.
+- **A runtime guard is not a build-time one.** The account row in Settings was
+  gated on `{teams && …}`, which is only ever null at runtime, so its markup
+  shipped too. It tests the constant first now.
+
+What is left in a store build is the scaffolding that makes the optional part
+optional: a context with nothing in it, an unset prop, and the one check that a
+note does not belong to a team. No contract, no zod, no endpoint, no cache key,
+no CSS rule and no Teams wording anywhere in it.
+
+Every Teams entry point tests `import.meta.env.WXT_TEAMS_API_ORIGIN` as the first
+thing in its own body, so the bundler folds the branch away and drops everything
+it reached. Measure the same way, and read the exit code before the sizes: WXT
+leaves a previous `.output` in place when a build fails, so a failed build
+measures the one before it.
 
 ## What comes next
 
-Comments and mentions (`packages/teams-contract/comments.ts` already describes
-them) are the last part of the client, and the socket already carries their poke.
-Two things are deliberately left out of shared notes for now: an in-page marker
-that looks different for a shared note, which belongs to the design system rather
-than to this code, and any state of a reader's own on a team note — pinning one,
-or filing it into one of their personal folders.
+This is the whole extension client: configuration, permissions, sign-in, teams,
+members, invitations, the plan, shared notes, folders, comments, mentions and
+realtime. What remains is the end-to-end audit across both sides.
+
+Deliberately left out, and worth saying plainly:
+
+- An in-page marker that looks different for a shared note. That is a decision
+  for the design system, not for this code.
+- Any state of a reader's own on a team note — pinning one, or filing it into one
+  of their personal folders. Both would need local state about something that
+  lives on the server, and neither is described by the wire.
+- A comment count on the in-page card. The sync stream carries notes and folders,
+  not discussions, so the client has no honest way to show one without asking the
+  server about the page being read — which is the one thing the design will not
+  do.
