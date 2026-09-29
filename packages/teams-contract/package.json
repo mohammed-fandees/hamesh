@@ -9,7 +9,8 @@
   "types": "index.ts",
   "sideEffects": false,
   "exports": {
-    ".": "./index.ts"
+    ".": "./index.ts",
+    "./*": "./*.ts"
   },
   "dependencies": {
     "zod": "^4.6.5"

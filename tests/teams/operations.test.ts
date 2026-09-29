@@ -1,0 +1,100 @@
+import { describe, it, expect } from 'vitest';
+import { OPERATION_NAMES, isOperationName, newRequestId } from '@/teams/operation-names';
+import { operations } from '@/teams/operations';
+
+const TEAM = '01J0000000000000000000000A';
+const USER = '01J0000000000000000000000B';
+
+describe('the operation table', () => {
+  it('recognises only the operations it lists', () => {
+    for (const name of OPERATION_NAMES) expect(isOperationName(name)).toBe(true);
+    for (const other of ['', 'me', 'team.nuke', 'toString', 'constructor', '__proto__']) {
+      expect(isOperationName(other), other).toBe(false);
+    }
+    expect(isOperationName(null)).toBe(false);
+  });
+
+  /** Valid params per operation. A new operation must be listed here. */
+  const VALID: Record<string, unknown> = {
+    'team.get': { teamId: TEAM },
+    'team.create': { name: 'Team', requestId: newRequestId() },
+    'team.rename': { teamId: TEAM, name: 'Team' },
+    'team.delete': { teamId: TEAM },
+    'team.transfer': { teamId: TEAM, userId: USER },
+    'members.list': { teamId: TEAM },
+    'members.setRole': { teamId: TEAM, userId: USER, role: 'admin' },
+    'members.remove': { teamId: TEAM, userId: USER },
+    'invites.list': { teamId: TEAM },
+    'invites.create': { teamId: TEAM, email: 'someone@example.test', role: 'member' },
+    'invites.revoke': { teamId: TEAM, invitationId: TEAM },
+    'invites.preview': { token: 'a'.repeat(43) },
+    'invites.accept': { token: 'a'.repeat(43) },
+    'billing.plans': {},
+    'billing.payments': {},
+    'billing.submit': {
+      planCode: 'teams',
+      method: 'instapay',
+      reference: 'REF-1',
+      periods: 1,
+    },
+  };
+
+  it('has every operation covered by these checks', () => {
+    expect(Object.keys(VALID).sort()).toEqual([...OPERATION_NAMES].sort());
+    // The list and the built table must not drift apart.
+    expect(Object.keys(operations()).sort()).toEqual([...OPERATION_NAMES].sort());
+  });
+
+  it('builds every path under /v1/, from params it checked first', () => {
+    for (const name of OPERATION_NAMES) {
+      const operation = operations()[name];
+      const params = operation.params.safeParse(VALID[name]);
+      expect(params.success, name).toBe(true);
+      const request = operation.request(params.data as never);
+      expect(request.path.startsWith('/v1/'), `${name}: ${request.path}`).toBe(true);
+      expect(request.path).not.toContain('..');
+    }
+  });
+
+  it('refuses an id that is not a ULID, so a path cannot be steered', () => {
+    for (const teamId of [
+      '../../admin',
+      '01J0000000000000000000000A/../x',
+      'not-a-ulid',
+      '',
+      '01J0000000000000000000000a', // lowercase is not the ULID alphabet
+    ]) {
+      expect(operations()['team.get'].params.safeParse({ teamId }).success, teamId).toBe(false);
+    }
+    expect(operations()['team.get'].params.safeParse({ teamId: TEAM }).success).toBe(true);
+  });
+
+  it('refuses anything the operation did not ask for', () => {
+    expect(operations()['team.get'].params.safeParse({ teamId: TEAM, role: 'owner' }).success).toBe(
+      false,
+    );
+    expect(
+      operations()['members.setRole'].params.safeParse({
+        teamId: TEAM,
+        userId: USER,
+        role: 'owner',
+      }).success,
+      'ownership moves only through transfer',
+    ).toBe(false);
+  });
+
+  it('sends the invitation token in the body, never in the URL', () => {
+    const token = 'b'.repeat(43);
+    for (const name of ['invites.preview', 'invites.accept'] as const) {
+      const request = operations()[name].request({ token });
+      expect(request.path).not.toContain(token);
+      expect(request.body).toEqual({ token });
+    }
+  });
+
+  it('mints a request id the server will accept', () => {
+    const ids = new Set(Array.from({ length: 50 }, newRequestId));
+    expect(ids.size).toBe(50);
+    for (const id of ids) expect(id).toMatch(/^[A-Za-z0-9_-]{8,64}$/);
+  });
+});

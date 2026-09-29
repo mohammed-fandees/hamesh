@@ -1,6 +1,8 @@
 import type { z } from 'zod';
 import { MeResponse, SessionResponse, type GoogleSignInRequest } from '@hamesh/teams-contract';
 import type { TeamsConfig } from './config';
+import type { TeamsOpName } from './operation-names';
+import { operations, type ParamsOf, type ResultOf } from './operations';
 import type { SessionStore } from './session-store';
 import { TeamsError, errorFromBody } from './errors';
 
@@ -112,6 +114,20 @@ export function createTeamsApi(deps: TeamsApiDeps) {
     },
     me(): Promise<MeResponse> {
       return call('GET', '/v1/me', { schema: MeResponse });
+    },
+    /**
+     * Performs one listed operation. The params have already been validated
+     * against the operation's own schema (see ./service.ts), so the request
+     * built here is made only of values that passed it.
+     */
+    async run<K extends TeamsOpName>(name: K, params: ParamsOf<K>): Promise<ResultOf<K>> {
+      const operation = operations()[name];
+      const { method, path, body } = operation.request(params as never);
+      const result = await call(method, path, {
+        schema: operation.result,
+        ...(body === undefined ? {} : { body }),
+      });
+      return result as ResultOf<K>;
     },
   };
 }

@@ -1,10 +1,13 @@
 import { browser } from 'wxt/browser';
-import { teamsConfig, teamsPermissions, type TeamsConfig } from './config';
-import { createIdbSessionStore } from './session-store';
-import { createTeamsApi } from './api';
-import { createTeamsService, type TeamsService } from './service';
-import { isTeamsRequest, type TeamsReply } from './messages';
+import { teamsConfig } from './config';
+import {
+  isTeamsOperationRequest,
+  isTeamsRequest,
+  type TeamsReply,
+  type TeamsResult,
+} from './messages';
 import { codeOf } from './errors';
+import type { TeamsService } from './service';
 
 /**
  * Only Hamesh's own pages may drive Teams. A content script runs inside an
@@ -25,48 +28,42 @@ export function isExtensionPageSender(
   }
 }
 
-function createService(config: TeamsConfig | null): TeamsService {
-  const sessions = createIdbSessionStore();
-  return createTeamsService({
-    config,
-    sessions,
-    api: config ? createTeamsApi({ config, sessions }) : null,
-    hasPermissions: async () =>
-      !!config &&
-      !!browser.permissions &&
-      (await browser.permissions.contains(teamsPermissions(config))),
-    // `identity` is an optional permission, so the API only exists once granted.
-    auth: () => ({
-      redirectUri: browser.identity?.getRedirectURL() ?? '',
-      launchWebAuthFlow: (url) => {
-        if (!browser.identity) return Promise.reject(new Error('identity unavailable'));
-        return browser.identity.launchWebAuthFlow({ url, interactive: true });
-      },
-    }),
-  });
-}
-
 /** Wires Teams into the background service worker. A no-op in builds without Teams. */
 export function registerTeams(): void {
   const config = teamsConfig();
   if (!config) return;
-  let service: TeamsService | null = null;
-  const getService = () => (service ??= createService(config));
+
+  // Loaded on first use, not at startup: everything it reaches leads to the
+  // contract's schemas and zod, and none of that belongs in a build that has
+  // no Teams (see ./worker.ts). The listener below is still registered the
+  // moment the worker starts, which is what a service worker requires.
+  let service: Promise<TeamsService> | null = null;
+  const getService = (): Promise<TeamsService> =>
+    (service ??= import('./worker').then((worker) => worker.createService(config)));
 
   browser.runtime.onMessage.addListener((message, sender, sendResponse): true | undefined => {
-    if (!isTeamsRequest(message)) return undefined;
+    const account = isTeamsRequest(message);
+    if (!account && !isTeamsOperationRequest(message)) return undefined;
+    // The same gate for both kinds: only Hamesh's own pages, never a content
+    // script and never another extension.
     if (!isExtensionPageSender(sender, browser.runtime.id, browser.runtime.getURL('/'))) {
       return undefined;
     }
-    getService()
-      .handle(message.op)
-      .then(sendResponse, (err: unknown) =>
-        sendResponse({ status: { state: 'signed_out' }, error: codeOf(err) } satisfies TeamsReply),
-      );
+    const work = (async (): Promise<TeamsReply | TeamsResult<unknown>> => {
+      const service = await getService();
+      return account ? service.handle(message.op) : service.perform(message.op, message.params);
+    })();
+    work.then(sendResponse, (err: unknown) =>
+      sendResponse(
+        account
+          ? ({ status: { state: 'signed_out' }, error: codeOf(err) } satisfies TeamsReply)
+          : { ok: false, error: codeOf(err) },
+      ),
+    );
     return true; // async response
   });
 
   browser.permissions?.onRemoved.addListener(() => {
-    void getService().permissionsRemoved();
+    void getService().then((service) => service.permissionsRemoved());
   });
 }

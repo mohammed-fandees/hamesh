@@ -1,7 +1,8 @@
 import { MarginMark } from './MarginMark';
+import { TeamIcon } from './SettingsIcons';
 import type { Strings } from './i18n';
 
-export type LibraryView = 'library' | 'settings' | 'whats-new';
+export type LibraryView = 'library' | 'settings' | 'teams' | 'whats-new';
 
 interface SidebarProps {
   view: LibraryView;
@@ -11,6 +12,8 @@ interface SidebarProps {
    *  read. The page opens itself once after an update, so this is for
    *  anyone who closed that tab before reading it. */
   whatsNewUnseen?: boolean;
+  /** Teams gets a destination of its own only in builds that have it. */
+  showTeams?: boolean;
 }
 
 /**
@@ -23,7 +26,13 @@ interface SidebarProps {
  * somewhere you go once after an update, so it shouldn't share weight with
  * the two destinations you actually use.
  */
-export function Sidebar({ view, strings, onNavigate, whatsNewUnseen = false }: SidebarProps) {
+export function Sidebar({
+  view,
+  strings,
+  onNavigate,
+  whatsNewUnseen = false,
+  showTeams = false,
+}: SidebarProps) {
   return (
     <nav className="hm-sidebar" aria-label={strings.notesLibrary}>
       <div className="hm-sidebar__brand">
@@ -42,6 +51,19 @@ export function Sidebar({ view, strings, onNavigate, whatsNewUnseen = false }: S
             {strings.notesLibrary}
           </button>
         </li>
+        {showTeams && (
+          <li>
+            <button
+              type="button"
+              className="hm-sidebar__nav-item"
+              aria-current={view === 'teams' ? 'page' : undefined}
+              onClick={() => onNavigate('teams')}
+            >
+              <TeamIcon size={15} />
+              {strings.settingsTeams}
+            </button>
+          </li>
+        )}
         <li>
           <button
             type="button"

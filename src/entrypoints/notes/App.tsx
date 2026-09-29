@@ -36,6 +36,7 @@ import {
 import type { BackupImportOutcome } from '@/ui/BackupSection';
 import { teamsConfig } from '@/teams/config';
 import { createTeamsClient } from '@/teams/client';
+import { TeamsView } from '@/ui/teams/TeamsView';
 import type { Note } from '@/domain/note';
 import type { Folder } from '@/domain/folder';
 import '@/ui/tokens.css';
@@ -379,9 +380,12 @@ export function App() {
         strings={strings}
         onNavigate={setView}
         whatsNewUnseen={lastSeenVersion !== undefined && hasUnseenReleases(lastSeenVersion)}
+        showTeams={teamsClient !== null}
       />
 
-      {view === 'whats-new' ? (
+      {import.meta.env.WXT_TEAMS_API_ORIGIN && view === 'teams' && teamsClient ? (
+        <TeamsView lang={lang} client={teamsClient} onOpenSettings={() => setView('settings')} />
+      ) : view === 'whats-new' ? (
         <WhatsNewView
           strings={strings}
           lang={lang}

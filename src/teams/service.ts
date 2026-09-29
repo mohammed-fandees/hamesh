@@ -2,8 +2,10 @@ import type { TeamsConfig } from './config';
 import type { SessionStore } from './session-store';
 import type { TeamsApi } from './api';
 import { authorizeWithGoogle, type GoogleAuthDeps } from './google-auth';
-import { codeOf } from './errors';
-import type { TeamsOp, TeamsReply, TeamsStatus } from './messages';
+import { TeamsError, codeOf } from './errors';
+import type { ResultFor, TeamsOp, TeamsReply, TeamsStatus } from './messages';
+import type { TeamsOpName } from './operation-names';
+import { operations, type ParamsOf } from './operations';
 
 /**
  * What the background service worker does for Teams, independent of the
@@ -68,8 +70,33 @@ export function createTeamsService(deps: TeamsServiceDeps) {
     return signingIn;
   }
 
+  /**
+   * Performs one listed operation for a page. The params are checked against
+   * that operation's own schema first: the worker holds the session, so it
+   * sends the server only what the contract allows, whatever a page asked for.
+   */
+  async function perform<K extends TeamsOpName>(name: K, params: unknown): Promise<ResultFor<K>> {
+    if (!deps.api) return { ok: false, error: 'not_configured' };
+    if (!(await deps.hasPermissions())) return { ok: false, error: 'permission_missing' };
+    const checked = operations()[name].params.safeParse(params);
+    if (!checked.success) {
+      return {
+        ok: false,
+        error: 'invalid_request',
+        fields: checked.error.issues.map((i) => i.path.join('.')).filter(Boolean),
+      };
+    }
+    try {
+      return { ok: true, data: await deps.api.run(name, checked.data as ParamsOf<K>) };
+    } catch (err) {
+      const fields = err instanceof TeamsError ? err.fields : undefined;
+      return { ok: false, error: codeOf(err), ...(fields ? { fields } : {}) };
+    }
+  }
+
   return {
     status,
+    perform,
     signIn: signInOnce,
     signOut,
     /**

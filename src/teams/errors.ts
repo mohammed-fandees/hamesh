@@ -1,4 +1,7 @@
-import { ERROR_CODES, type ErrorCode } from '@hamesh/teams-contract';
+// From the contract's own error module rather than its barrel: these are a
+// plain list of strings, and going through the barrel would pull every schema
+// (and zod with them) into builds that have no Teams.
+import { ERROR_CODES, type ErrorCode } from '@hamesh/teams-contract/errors';
 
 /**
  * Everything a Teams call can fail with: the server's stable error codes, plus
