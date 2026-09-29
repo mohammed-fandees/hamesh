@@ -6,6 +6,8 @@
  * *content* direction is handled separately with `dir="auto"` so mixed
  * Arabic/Latin text lays out correctly regardless of UI language.
  */
+import type { TeamsErrorCode } from '@/teams/errors';
+
 export type Lang = 'en' | 'ar';
 
 export interface Strings {
@@ -105,6 +107,23 @@ export interface Strings {
   backupErrorUnsupported: string;
   backupErrorEmpty: string;
   backupErrorFailed: string;
+  settingsTeams: string;
+  teamsIntro: string;
+  teamsTurnOn: string;
+  teamsTurnOnHint: string;
+  teamsTurnOff: string;
+  teamsPermissionDenied: string;
+  teamsSignIn: string;
+  teamsSignInHint: string;
+  teamsSignOut: string;
+  teamsChecking: string;
+  teamsAccount: string;
+  teamsPlan: string;
+  teamsPlanActive: (until: string) => string;
+  teamsPlanNone: string;
+  teamsYourTeams: string;
+  teamsMemberOf: (n: number) => string;
+  teamsError: (code: TeamsErrorCode) => string;
   composerFolder: string;
   composerNoFolders: string;
   composerCreateFolder: string;
@@ -222,6 +241,45 @@ const en: Strings = {
   backupErrorUnsupported: 'That backup was made by a newer version of Hamesh.',
   backupErrorEmpty: 'That backup has no notes or folders in it.',
   backupErrorFailed: "Couldn't finish — your existing notes are untouched.",
+  settingsTeams: 'Teams',
+  teamsIntro:
+    'Share notes with the people you work with. Your personal notes stay on this device either way.',
+  teamsTurnOn: 'Turn on Teams',
+  teamsTurnOnHint:
+    'Hamesh will ask to reach its Teams server and to open Google sign-in. Nothing is sent until you sign in.',
+  teamsTurnOff: 'Turn off Teams',
+  teamsPermissionDenied: "Permission wasn't granted, so Teams stays off.",
+  teamsSignIn: 'Sign in with Google',
+  teamsSignInHint: 'Your Google name and email identify you to your teammates.',
+  teamsSignOut: 'Sign out',
+  teamsChecking: 'Checking…',
+  teamsAccount: 'Account',
+  teamsPlan: 'Plan',
+  teamsPlanActive: (until) => `Active until ${until}`,
+  teamsPlanNone: 'No plan',
+  teamsYourTeams: 'Your teams',
+  teamsMemberOf: (n) =>
+    n === 0 ? 'Not in a team yet' : n === 1 ? 'Member of 1 team' : `Member of ${n} teams`,
+  teamsError: (code) => {
+    switch (code) {
+      case 'network':
+      case 'unavailable':
+        return "Couldn't reach Hamesh Teams. Check your connection and try again.";
+      case 'cancelled':
+        return 'Sign-in was cancelled.';
+      case 'account_disabled':
+        return 'This account has been disabled.';
+      case 'permission_missing':
+        return 'Teams needs its permissions. Turn it on again.';
+      case 'rate_limited':
+        return 'Too many attempts. Try again in a minute.';
+      case 'unauthenticated':
+      case 'signed_out':
+        return 'You were signed out. Sign in again.';
+      default:
+        return 'Something went wrong. Try again.';
+    }
+  },
   composerFolder: 'Folder',
   composerNoFolders: 'No folders yet.',
   composerCreateFolder: 'Create folder',
@@ -338,6 +396,52 @@ const ar: Strings = {
   backupErrorUnsupported: 'هذه النسخة الاحتياطية من إصدار أحدث من هامش.',
   backupErrorEmpty: 'لا توجد ملاحظات أو فولدرات في هذه النسخة.',
   backupErrorFailed: 'تعذّر إكمال العملية — ملاحظاتك الحالية لم تتأثّر.',
+  settingsTeams: 'الفرق',
+  teamsIntro: 'شارك الملاحظات مع من تعمل معهم. ملاحظاتك الشخصية تبقى على جهازك في كل الأحوال.',
+  teamsTurnOn: 'تفعيل الفرق',
+  teamsTurnOnHint:
+    'سيطلب هامش إذنًا بالاتصال بخادم الفرق وفتح تسجيل الدخول بحساب Google. لا يُرسل أي شيء قبل أن تسجّل دخولك.',
+  teamsTurnOff: 'إيقاف الفرق',
+  teamsPermissionDenied: 'لم يُمنح الإذن، لذا تبقى الفرق متوقفة.',
+  teamsSignIn: 'تسجيل الدخول بحساب Google',
+  teamsSignInHint: 'اسمك وبريدك في Google يعرّفان بك لزملائك في الفريق.',
+  teamsSignOut: 'تسجيل الخروج',
+  teamsChecking: 'جارٍ التحقق…',
+  teamsAccount: 'الحساب',
+  teamsPlan: 'الاشتراك',
+  teamsPlanActive: (until) => `فعّال حتى ${until}`,
+  teamsPlanNone: 'لا يوجد اشتراك',
+  teamsYourTeams: 'فرقك',
+  teamsMemberOf: (n) =>
+    n === 0
+      ? 'لست في أي فريق بعد'
+      : n === 1
+        ? 'عضو في فريق واحد'
+        : n === 2
+          ? 'عضو في فريقين'
+          : n <= 10
+            ? `عضو في ${n} فرق`
+            : `عضو في ${n} فريقًا`,
+  teamsError: (code) => {
+    switch (code) {
+      case 'network':
+      case 'unavailable':
+        return 'تعذّر الوصول إلى خادم الفرق. تحقّق من اتصالك وحاول مرة أخرى.';
+      case 'cancelled':
+        return 'أُلغي تسجيل الدخول.';
+      case 'account_disabled':
+        return 'هذا الحساب معطّل.';
+      case 'permission_missing':
+        return 'تحتاج الفرق إلى أذوناتها. فعّلها مرة أخرى.';
+      case 'rate_limited':
+        return 'محاولات كثيرة. حاول مرة أخرى بعد دقيقة.';
+      case 'unauthenticated':
+      case 'signed_out':
+        return 'انتهت جلستك. سجّل دخولك مرة أخرى.';
+      default:
+        return 'حدث خطأ ما. حاول مرة أخرى.';
+    }
+  },
   composerFolder: 'الفولدر',
   composerNoFolders: 'لا توجد فولدرات بعد.',
   composerCreateFolder: 'إنشاء فولدر',

@@ -12,6 +12,8 @@ Audited against the actual **generated production manifest** (`pnpm build` → `
 
 > **Refreshed 2026-08-01 for v1.2.1 (release tag).** Confirms `["storage", "activeTab", "favicon", "alarms"]` via `pnpm release:validate --tag=v1.2.1 --previous-ref=v1.2.0` — the `alarms` addition above and this release are the same change, now shipped under a version tag. The other two v1.2.1 fixes (the favicon "no favicon" fallback, and composer/video-note textarea autofocus) touch no permission or host-access surface: the favicon fix still goes through the already-justified `favicon` permission below (same endpoint, now byte-compared instead of relying on `<img onError>`), and the autofocus fix is a pure UI-interaction change in `src/content/useFloating.ts` with no manifest implications at all.
 
+> **Refreshed 2026-09-29 for the Teams client foundation.** No change to the store manifest: a build without Teams configuration (every store build so far) still produces exactly `["storage", "activeTab", "favicon", "alarms"]`, no `host_permissions`, no `optional_permissions`, confirmed from `.output/chrome-mv3/manifest.json`. Teams is compiled in only when a build is given `WXT_TEAMS_API_ORIGIN` and `WXT_GOOGLE_CLIENT_ID` (see `docs/teams-client.md`). Such a build adds two **optional** entries and nothing required: `optional_permissions: ["identity"]` and `optional_host_permissions: ["<Teams API origin>/*"]`. Neither is granted at install; both are requested from Settings → Teams → Turn on Teams, and given back by Turn off Teams. See "Optional permissions in Teams builds" below. Before the first store release that includes Teams, this file, `PRIVACY_POLICY.md`, `PRIVACY_PRACTICES.md` and `landing/privacy.html` need the Teams disclosures (`PRIVACY.md` already has them).
+
 ## Generated manifest (verbatim, permission-relevant excerpt)
 
 ```json
@@ -97,9 +99,18 @@ This is not a `permissions` entry but is the broadest access surface in the mani
 - **Reviewer-facing justification (final text):**
   > A single CSS file (visual styling only, no user data) is declared web-accessible so it can be loaded into the extension's isolated Shadow DOM UI, per the standard pattern for the WXT extension framework. Its URL is randomized per session and it contains no user or page data.
 
+## Optional permissions in Teams builds (not in any store build yet)
+
+- **Declared:** added by `wxt.config.ts`'s `build:manifestGenerated` hook, only when the build has a Teams configuration.
+- **`identity` (optional):** used only by `src/teams/background.ts` to call `identity.getRedirectURL()` and `identity.launchWebAuthFlow()` for "Sign in with Google" (authorization code + PKCE). `getAuthToken` is not used, and no Google API is called with a Google token. The extension receives a one-time code and hands it to the Teams server.
+- **`<Teams API origin>/*` (optional host permission):** exactly one origin, the Teams API. Used only by `src/teams/api.ts` from the background service worker. No content script talks to it.
+- **Narrower alternative considered:** these are already optional and requested at the moment of use. Required permissions were rejected, since users who never turn Teams on would carry them.
+- **Draft reviewer-facing justification:**
+  > Optional, requested only when the user turns on Teams in Settings. `identity` opens the "Sign in with Google" window. The single host permission lets Hamesh reach its own Teams server to share notes the user explicitly chooses to share. Personal notes remain local and are never uploaded.
+
 ## Permissions **not** requested (confirms least-privilege posture)
 
-`tabs`, `scripting`, `webRequest`, `webNavigation`, `cookies`, `history`, `bookmarks`, `downloads`, `identity`, `notifications`, `clipboardRead/Write`, `geolocation`, `unlimitedStorage`, any `host_permissions` beyond the content-script match, and any `optional_permissions` — none appear in the manifest and none are used in code.
+`tabs`, `scripting`, `webRequest`, `webNavigation`, `cookies`, `history`, `bookmarks`, `downloads`, `identity`, `notifications`, `clipboardRead/Write`, `geolocation`, `unlimitedStorage`, any `host_permissions` beyond the content-script match, and any `optional_permissions` — none appear in the store manifest. (`identity` and one host are optional permissions in Teams builds only; see above.)
 
 ## Summary table for the dashboard
 

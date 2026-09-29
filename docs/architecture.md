@@ -32,6 +32,12 @@ logic. All three bindings are user-customizable only via Chrome's own
 `chrome://extensions/shortcuts` page — see "Notes Library, Settings &
 Shortcuts" below for why that's the _only_ place they can be changed.
 
+In builds configured for Hamesh Teams it also hosts the Teams client
+(`src/teams/background.ts`): the only code that holds the Teams session token
+or talks to the Teams API, answering `TEAMS` messages from Hamesh's own pages
+only. Builds without Teams carry none of that code. See
+[teams-client.md](teams-client.md).
+
 ### 3. Popup (`src/entrypoints/popup/`)
 
 A small "doorway, not a dashboard": brand mark, count of notes on the current
@@ -231,8 +237,12 @@ browser's native handling — they just skip the restore.
 - Key format: `hamesh:notes:<pageKey>` → `Note[]`.
 - Deserialization defensively filters malformed entries, so corrupted or
   partially-written storage never throws.
-- No external APIs, no network, no sync. A future backend can implement the same
-  interface.
+- No external APIs, no network, no sync for personal notes. A future backend
+  can implement the same interface.
+- **Teams** (optional, see [teams-client.md](teams-client.md)) keeps its one
+  secret, the session token, outside `chrome.storage.local` on purpose:
+  content scripts can read that area, so the token lives in IndexedDB under
+  the extension's own origin, read only by the background worker.
 - **Bulk writes** exist only for local backup: `NotesRepository.saveAll` and
   `FoldersRepository.saveAll` (see "Local backup" below). They persist an
   already-merged result and never delete, so no other flow needs to reason

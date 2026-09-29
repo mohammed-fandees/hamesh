@@ -3,6 +3,8 @@ import { browser } from 'wxt/browser';
 import { SettingRow } from './SettingRow';
 import { SegmentedControl } from './SegmentedControl';
 import { BackupSection, type BackupHandlers } from './BackupSection';
+import { TeamsSection } from './TeamsSection';
+import type { TeamsClient } from '@/teams/client';
 import {
   AppearanceIcon,
   DarkIcon,
@@ -33,6 +35,8 @@ interface LibrarySettingsViewProps {
    *  rather than reached for here, so this view keeps knowing nothing about
    *  storage. */
   backup: BackupHandlers;
+  /** Present only in builds that include Teams; the section is absent otherwise. */
+  teams?: TeamsClient | null;
 }
 
 /**
@@ -60,6 +64,7 @@ export function LibrarySettingsView({
   onAppearanceChange,
   onTextNotesChange,
   backup,
+  teams,
 }: LibrarySettingsViewProps) {
   const [commands, setCommands] = useState<Record<string, string | null>>({});
 
@@ -208,6 +213,8 @@ export function LibrarySettingsView({
         >
           {strings.shortcutOpenChromeSettings}
         </button>
+
+        {teams && <TeamsSection strings={strings} lang={lang} client={teams} />}
 
         <BackupSection strings={strings} handlers={backup} />
       </div>

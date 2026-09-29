@@ -2,6 +2,7 @@ import { defineBackground } from 'wxt/utils/define-background';
 import { browser } from 'wxt/browser';
 import type { HameshMessage, ShortcutsResponse } from '@/messaging/types';
 import { shouldAnnounceUpdate } from '@/domain/release-notes';
+import { registerTeams } from '@/teams/background';
 
 /** Secondary keep-alive for the `commands.onCommand` path below. Chrome tears
  *  down an idle MV3 service worker ~30s after its last event or API call
@@ -115,6 +116,11 @@ export default defineBackground(() => {
       /* nothing to do if the browser refuses a tab here */
     }
   });
+
+  // Optional Teams, only in builds configured for it (the check is a build-time
+  // constant, so other builds carry none of its code), and even then nothing
+  // reaches the network until the user turns Teams on.
+  if (import.meta.env.WXT_TEAMS_API_ORIGIN) registerTeams();
 
   // See KEEP_ALIVE_ALARM above. `create` with an existing name just resets
   // that alarm's schedule, so re-registering on every service-worker

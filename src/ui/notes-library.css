@@ -778,6 +778,27 @@
   letter-spacing: 0.03em;
 }
 
+/* A section's one-line explanation, between its heading and its rows. */
+.hm-settings__intro {
+  margin: var(--hm-space-2) 0 var(--hm-space-2);
+  color: var(--hm-ink-60);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+/* ---- Teams account row: the signed-in email beside its Sign out button ---- */
+.hm-teams-account {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hm-space-3);
+  min-width: 0;
+}
+.hm-teams-account bdi {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ---- Shortcut badge (read-only — Chrome has no API for an extension to
    change its own shortcut; see LibrarySettingsView) ---- */
 .hm-shortcut-badge {
