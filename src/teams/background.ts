@@ -2,6 +2,7 @@ import { browser } from 'wxt/browser';
 import { teamsConfig } from './config';
 import {
   isTeamsCacheRequest,
+  isTeamsDevSignIn,
   isTeamsOperationRequest,
   isTeamsRequest,
   type TeamsReply,
@@ -54,7 +55,10 @@ export function registerTeams(): void {
   browser.runtime.onMessage.addListener((message, sender, sendResponse): true | undefined => {
     const account = isTeamsRequest(message);
     const cache = !account && isTeamsCacheRequest(message);
-    if (!account && !cache && !isTeamsOperationRequest(message)) return undefined;
+    // Only a build that asked for it handles this at all: the constant folds
+    // away in every other one, and with it the branch below.
+    const devSignIn = __HAMESH_DEV_SIGN_IN__ && !account && !cache && isTeamsDevSignIn(message);
+    if (!account && !cache && !devSignIn && !isTeamsOperationRequest(message)) return undefined;
     // The same gate for all three kinds: only Hamesh's own pages, never a
     // content script and never another extension. The content script reads the
     // team notes it draws straight from storage instead (see ./page-cache.ts).
@@ -65,6 +69,14 @@ export function registerTeams(): void {
       const service = await getService();
       if (account) return service.handle(message.op);
       if (cache) return service.readCache(message.op, message.teamId);
+      // The constant again, not just `devSignIn` above: it is what folds this
+      // branch — and the check inside it — out of every build that did not ask
+      // for it. Narrowed by hand because TypeScript cannot use a build constant
+      // to tell the two message shapes apart.
+      if (__HAMESH_DEV_SIGN_IN__ && isTeamsDevSignIn(message)) {
+        return service.devSignIn(message.token);
+      }
+      if (!isTeamsOperationRequest(message)) return { ok: false, error: 'invalid_request' };
       return service.perform(message.op, message.params);
     })();
     work.then(sendResponse, (err: unknown) =>

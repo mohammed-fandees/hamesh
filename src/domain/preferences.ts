@@ -96,6 +96,21 @@ export const DEFAULT_FOLDER_DEFAULT_PREFERENCES: FolderDefaultPreferences = {
   pages: {},
 };
 
+/**
+ * What this device remembers about Teams — nothing the server needs, only what
+ * keeps the sidebar honest.
+ *
+ * A nested object rather than a field of its own, so the next thing Teams wants
+ * to remember here does not reshape `Preferences` again (the same reasoning as
+ * `pageContext` on a note).
+ */
+export interface TeamsPreferences {
+  /** The newest mention this reader has looked at, or null if they never have. */
+  lastSeenMentionId: string | null;
+}
+
+export const DEFAULT_TEAMS_PREFERENCES: TeamsPreferences = { lastSeenMentionId: null };
+
 export interface Preferences {
   schemaVersion: SchemaVersion;
   /** No explicit choice yet — callers fall back to the browser's UI language.
@@ -106,6 +121,7 @@ export interface Preferences {
   textNotes: TextNotePreferences;
   releaseNotes: ReleaseNotesPreferences;
   folderDefaults: FolderDefaultPreferences;
+  teams: TeamsPreferences;
 }
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -115,6 +131,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   textNotes: DEFAULT_TEXT_NOTE_PREFERENCES,
   releaseNotes: DEFAULT_RELEASE_NOTES_PREFERENCES,
   folderDefaults: DEFAULT_FOLDER_DEFAULT_PREFERENCES,
+  teams: DEFAULT_TEAMS_PREFERENCES,
 };
 
 function parseTextNotes(value: unknown): TextNotePreferences {
@@ -135,6 +152,15 @@ function parseReleaseNotes(value: unknown): ReleaseNotesPreferences {
   const record = value as Record<string, unknown>;
   return {
     lastSeenVersion: typeof record.lastSeenVersion === 'string' ? record.lastSeenVersion : null,
+  };
+}
+
+function parseTeams(value: unknown): TeamsPreferences {
+  if (!value || typeof value !== 'object') return DEFAULT_TEAMS_PREFERENCES;
+  const record = value as Record<string, unknown>;
+  return {
+    lastSeenMentionId:
+      typeof record.lastSeenMentionId === 'string' ? record.lastSeenMentionId : null,
   };
 }
 
@@ -208,5 +234,6 @@ export function parsePreferences(data: unknown): Preferences {
     textNotes: parseTextNotes(record.textNotes),
     releaseNotes: parseReleaseNotes(record.releaseNotes),
     folderDefaults: parseFolderDefaults(record.folderDefaults),
+    teams: parseTeams(record.teams),
   };
 }

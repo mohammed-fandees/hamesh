@@ -65,12 +65,16 @@ export function BillingPanel({ strings, lang, page, me }: BillingPanelProps) {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!plan || !method) return;
-    const result = await page.run('billing.submit', {
-      planCode: plan.code,
-      method: method as 'instapay' | 'vodafone_cash',
-      reference,
-      periods,
-    });
+    const result = await page.run(
+      'billing.submit',
+      {
+        planCode: plan.code,
+        method: method as 'instapay' | 'vodafone_cash',
+        reference,
+        periods,
+      },
+      'billing.submit',
+    );
     if (!result) return;
     setSubmitted(true);
     setReference('');
@@ -140,7 +144,11 @@ export function BillingPanel({ strings, lang, page, me }: BillingPanelProps) {
                 setSubmitted(false);
               }}
             />
-            <button type="submit" className="hm-btn hm-btn-primary" disabled={page.busy}>
+            <button
+              type="submit"
+              className="hm-btn hm-btn-primary"
+              disabled={page.working('billing.submit')}
+            >
               {strings.submitPayment}
             </button>
           </div>

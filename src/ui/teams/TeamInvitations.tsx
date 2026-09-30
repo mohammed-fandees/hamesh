@@ -54,7 +54,7 @@ export function TeamInvitations({ strings, lang, page, team }: TeamInvitationsPr
 
   async function create(e: React.FormEvent) {
     e.preventDefault();
-    const result = await page.run('invites.create', { teamId, email, role });
+    const result = await page.run('invites.create', { teamId, email, role }, 'invites.create');
     if (!result) return;
     setLink(result.link);
     setCopied(false);
@@ -74,7 +74,7 @@ export function TeamInvitations({ strings, lang, page, team }: TeamInvitationsPr
   }
 
   const revoke = async (id: string) => {
-    await page.run('invites.revoke', { teamId, invitationId: id });
+    await page.run('invites.revoke', { teamId, invitationId: id }, `invite:${id}`);
     await load();
   };
 
@@ -102,10 +102,19 @@ export function TeamInvitations({ strings, lang, page, team }: TeamInvitationsPr
               <option value="admin">{strings.inviteAsAdmin}</option>
             </select>
           )}
-          <button type="submit" className="hm-btn hm-btn-primary" disabled={page.busy}>
-            {strings.sendInvite}
+          <button
+            type="submit"
+            className="hm-btn hm-btn-primary"
+            disabled={page.working('invites.create')}
+          >
+            {page.working('invites.create') ? strings.working : strings.sendInvite}
           </button>
         </form>
+      )}
+      {page.failed('invites.create') && (
+        <p className="hm-field-error" role="alert">
+          {strings.error(page.failed('invites.create')!)}
+        </p>
       )}
 
       {link && (
@@ -141,10 +150,10 @@ export function TeamInvitations({ strings, lang, page, team }: TeamInvitationsPr
                 <button
                   type="button"
                   className="hm-btn hm-btn-ghost"
-                  disabled={page.busy}
+                  disabled={page.working(`invite:${invitation.id}`)}
                   onClick={() => void revoke(invitation.id)}
                 >
-                  {strings.revokeInvite}
+                  {page.working(`invite:${invitation.id}`) ? strings.working : strings.revokeInvite}
                 </button>
               )}
             </li>

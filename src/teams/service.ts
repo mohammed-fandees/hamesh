@@ -196,10 +196,29 @@ export function createTeamsService(deps: TeamsServiceDeps) {
     }
   }
 
+  /**
+   * Takes a session the server already issued, for a development build talking
+   * to a local one. The token is stored exactly as a sign-in would store it; the
+   * server decides on every request afterwards whether it is worth anything, so
+   * this grants nothing by itself.
+   */
+  async function devSignIn(token: string): Promise<TeamsReply> {
+    if (!deps.config || !deps.api)
+      return { status: { state: 'unavailable' }, error: 'not_configured' };
+    if (!(await deps.hasPermissions())) {
+      return { status: { state: 'permission_needed' }, error: 'permission_missing' };
+    }
+    // An hour short of the longest a server session may last: the real expiry
+    // lives on the server, and this copy is only a hint (see `StoredSession`).
+    await deps.sessions.set({ token, expiresAt: Date.now() + 89 * 86_400_000 });
+    return status();
+  }
+
   return {
     status,
     perform,
     readCache,
+    devSignIn,
     signIn: signInOnce,
     signOut,
     /**

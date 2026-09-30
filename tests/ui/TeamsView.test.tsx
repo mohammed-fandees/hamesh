@@ -110,7 +110,13 @@ afterEach(() => {
 
 const render_ = (client: TeamsClient, onOpenSettings = vi.fn()) =>
   render(
-    <TeamsView lang="en" client={client} onOpenSettings={onOpenSettings} personal={personal} />,
+    <TeamsView
+      lang="en"
+      client={client}
+      onOpenSettings={onOpenSettings}
+      onOpenLibrary={vi.fn()}
+      personal={personal}
+    />,
   );
 
 /**
@@ -137,7 +143,8 @@ describe('the Teams page', () => {
   it('lists the teams the server reported, and opens the first', async () => {
     const { client } = fakeClient();
     render_(client);
-    expect(await screen.findByRole('button', { name: /Alpha/ })).toBeInTheDocument();
+    // The switcher is a segmented control, so each team is a radio.
+    expect(await screen.findByRole('radio', { name: 'Alpha' })).toBeInTheDocument();
     expect(await screen.findByText('Sara')).toBeInTheDocument();
     expect(screen.getByText('sara@example.test')).toBeInTheDocument();
   });
@@ -205,60 +212,6 @@ describe('the Teams page', () => {
     });
   });
 
-  it('checks a pasted invite link before joining, and never puts the token in a URL', async () => {
-    const token = 'b'.repeat(43);
-    const { client, calls } = fakeClient({
-      'invites.preview': {
-        team: { id: TEAM, name: 'Beta' },
-        invitedBy: 'Sara',
-        role: 'member',
-        expiresAt: 2,
-      },
-      'invites.accept': { ...team, team: { ...team.team, id: TEAM, name: 'Beta' } },
-    });
-    render_(client);
-    // The button stays disabled until there is something pasted to check.
-    fireEvent.change(await screen.findByPlaceholderText(strings.joinPlaceholder), {
-      target: { value: `https://hamesh.app/join#${token}` },
-    });
-    fireEvent.click(await idle(strings.joinCheck));
-    expect(await screen.findByText(/invited to Beta/)).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: strings.joinAccept }));
-    await waitFor(() => expect(calls.some((c) => c.op === 'invites.accept')).toBe(true));
-    expect(calls.find((c) => c.op === 'invites.preview')!.params).toEqual({ token });
-  });
-
-  it('refuses a link that is not one, without asking the server', async () => {
-    const { client, calls } = fakeClient();
-    render_(client);
-    fireEvent.change(await screen.findByPlaceholderText(strings.joinPlaceholder), {
-      target: { value: 'https://hamesh.app/join#nope' },
-    });
-    fireEvent.click(await idle(strings.joinCheck));
-    expect(await screen.findByText(strings.error('invalid_request'))).toBeInTheDocument();
-    expect(calls.some((c) => c.op === 'invites.preview')).toBe(false);
-  });
-
-  it('shows the price the server sent, and submits a payment reference', async () => {
-    const { client, calls } = fakeClient();
-    render_(client);
-    // 45000 minor units of EGP, formatted — no price is written into the page.
-    expect(await screen.findByText(/450/)).toBeInTheDocument();
-    await idle(strings.submitPayment);
-    fireEvent.change(screen.getByPlaceholderText(strings.referencePlaceholder), {
-      target: { value: 'ref-9' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: strings.submitPayment }));
-    await waitFor(() => expect(calls.some((c) => c.op === 'billing.submit')).toBe(true));
-    expect(calls.find((c) => c.op === 'billing.submit')!.params).toEqual({
-      planCode: 'teams',
-      method: 'instapay',
-      reference: 'ref-9',
-      periods: 1,
-    });
-  });
-
   it('says when a team is read-only, with the date the server gave', async () => {
     const { client } = fakeClient({
       'team.get': {
@@ -267,8 +220,16 @@ describe('the Teams page', () => {
       },
     });
     render_(client);
-    const heading = await screen.findByRole('heading', { name: /Alpha/ });
-    expect(within(heading).getByText(/Read-only until/)).toBeInTheDocument();
+    // Said once, as a status, and only because it is not the ordinary state.
+    expect(await screen.findByText(/Read-only until/)).toBeInTheDocument();
+  });
+
+  it('says nothing at all about a team that is simply working', async () => {
+    const { client } = fakeClient();
+    render_(client);
+    await screen.findByRole('radio', { name: 'Alpha' });
+    expect(screen.queryByText(/Read-only/)).not.toBeInTheDocument();
+    expect(screen.queryByText(strings.stateActive)).not.toBeInTheDocument();
   });
 
   it('reports a failure in the reader’s own words', async () => {

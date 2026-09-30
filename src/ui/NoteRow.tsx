@@ -97,6 +97,15 @@ export function NoteRow({ note, strings, lang, showDomain }: NoteRowProps) {
         <p className="hm-note-row__title">
           {note.pinned && <PinIcon filled size={10} />}
           {derivePageLabel(note)}
+          {/* A note that lives in a team says so here, where the reader's eye
+              already is. Absent on every note this device stored, which is
+              every note at all in a build without Teams. */}
+          {note.team && (
+            <span className="hm-team-chip">
+              <span className="hm-team-chip__dot" aria-hidden="true" />
+              <bdi>{note.team.name}</bdi>
+            </span>
+          )}
         </p>
         {note.anchor.type === 'text' && <AttachedText label="" text={note.anchor.exact} compact />}
         <p

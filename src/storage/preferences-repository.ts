@@ -23,6 +23,9 @@ export interface PreferencesRepository {
   setTextNotes(patch: Partial<TextNotePreferences>): Promise<Preferences>;
   /** Records that the user has now read What's New up to `version`. */
   setLastSeenReleaseVersion(version: string): Promise<Preferences>;
+  /** Records the newest mention the reader has looked at, which is what the
+   *  sidebar's dot is derived from. Local only: the server is never told. */
+  setLastSeenMention(commentId: string): Promise<Preferences>;
   /** Sets (or, with `null`, clears) the default folder for one page. */
   setPageDefaultFolder(pageKey: string, folderId: string | null): Promise<Preferences>;
   /** Sets (or, with `null`, clears) the default folder for every page that
@@ -67,6 +70,13 @@ export function createPreferencesRepository(): PreferencesRepository {
     async setTextNotes(patch: Partial<TextNotePreferences>): Promise<Preferences> {
       const current = await this.get();
       const next: Preferences = { ...current, textNotes: { ...current.textNotes, ...patch } };
+      await storage.setItem(STORAGE_KEY, next);
+      return next;
+    },
+
+    async setLastSeenMention(commentId: string): Promise<Preferences> {
+      const current = await this.get();
+      const next: Preferences = { ...current, teams: { lastSeenMentionId: commentId } };
       await storage.setItem(STORAGE_KEY, next);
       return next;
     },

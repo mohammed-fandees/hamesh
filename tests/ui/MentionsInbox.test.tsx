@@ -4,7 +4,7 @@ import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/re
 import '@testing-library/jest-dom/vitest';
 import { MentionsInbox } from '@/ui/teams/MentionsInbox';
 import { getTeamsStrings } from '@/ui/teams/strings';
-import type { TeamsPage } from '@/ui/teams/useTeams';
+import type { TeamsClient } from '@/teams/client';
 
 const strings = getTeamsStrings('en');
 const ALPHA = '01J0000000000000000000000A';
@@ -27,48 +27,54 @@ function entry(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function fakePage(answers: Record<string, unknown> = {}) {
+/** A client whose answers a test steers, recording what was asked. */
+function fakeClient(answers: Record<string, unknown> = {}) {
   const calls: { op: string; params: unknown }[] = [];
-  const run = vi.fn(async (op: string, params: unknown) => {
+  const request = vi.fn(async (op: string, params: unknown) => {
     calls.push({ op, params });
-    return (Object.hasOwnProperty.call(answers, op) ? answers[op] : undefined) as never;
+    return Object.hasOwnProperty.call(answers, op)
+      ? { ok: true as const, data: answers[op] }
+      : { ok: true as const, data: undefined };
   });
-  const page = {
-    status: { state: 'signed_in', me: null },
-    me: null,
-    error: null,
-    busy: false,
-    clearError: vi.fn(),
-    refresh: vi.fn(async () => {}),
-    run,
+  const client = {
+    send: vi.fn(async () => ({
+      status: {
+        state: 'signed_in',
+        me: { user: { id: ME, email: 'me@example.test', displayName: 'Me' } },
+      },
+    })),
+    request,
     cache: vi.fn(),
     onEvent: () => () => {},
-  } as unknown as TeamsPage;
-  return { page, calls };
+    requestPermissions: vi.fn(),
+    removePermissions: vi.fn(),
+  } as unknown as TeamsClient;
+  return { client, calls };
 }
 
-const view = (page: TeamsPage) =>
-  render(<MentionsInbox strings={strings} lang="en" page={page} myUserId={ME} />);
+const onRead = vi.fn();
+const view = (client: TeamsClient) =>
+  render(<MentionsInbox lang="en" client={client} onRead={onRead} />);
 
 beforeEach(() => vi.clearAllMocks());
 afterEach(cleanup);
 
 describe('where you were named', () => {
   it('lists them newest first, with the team each came from', async () => {
-    const { page } = fakePage({
+    const { client } = fakeClient({
       'mentions.list': { mentions: [entry()], nextBefore: null },
       'members.list': {
         members: [{ userId: SARA, displayName: 'Sara', role: 'member', joinedAt: 1 }],
       },
     });
-    view(page);
+    view(client);
 
     expect(await screen.findByText(/what do you think/)).toBeInTheDocument();
     expect(screen.getByText(strings.mentionIn('Alpha'))).toBeInTheDocument();
   });
 
   it('reads the ids in the text by asking the teams they came from', async () => {
-    const { page, calls } = fakePage({
+    const { client, calls } = fakeClient({
       'mentions.list': {
         mentions: [entry(), entry({ commentId: C2, teamId: BETA, teamName: 'Beta' })],
         nextBefore: null,
@@ -77,7 +83,7 @@ describe('where you were named', () => {
         members: [{ userId: SARA, displayName: 'Sara', role: 'member', joinedAt: 1 }],
       },
     });
-    view(page);
+    view(client);
 
     await screen.findAllByText(/what do you think/);
     await waitFor(() => expect(screen.getAllByText('Sara').length).toBeGreaterThan(0));
@@ -87,11 +93,11 @@ describe('where you were named', () => {
   });
 
   it('shows the reader themselves as themselves', async () => {
-    const { page } = fakePage({
+    const { client } = fakeClient({
       'mentions.list': { mentions: [entry()], nextBefore: null },
       'members.list': { members: [] },
     });
-    view(page);
+    view(client);
 
     expect(await screen.findByText(strings.youMarker)).toBeInTheDocument();
     // What the body carries is an id; an id is never what is shown.
@@ -99,17 +105,18 @@ describe('where you were named', () => {
   });
 
   it('says so, rather than nothing, when nobody has named you', async () => {
-    const { page } = fakePage({ 'mentions.list': { mentions: [], nextBefore: null } });
-    view(page);
-    expect(await screen.findByText(strings.noMentions)).toBeInTheDocument();
+    const { client } = fakeClient({ 'mentions.list': { mentions: [], nextBefore: null } });
+    view(client);
+    expect(await screen.findByText(strings.emptyMentionsTitle)).toBeInTheDocument();
+    expect(screen.getByText(strings.emptyMentionsBody)).toBeInTheDocument();
   });
 
   it('pages back through older ones', async () => {
-    const { page, calls } = fakePage({
+    const { client, calls } = fakeClient({
       'mentions.list': { mentions: [entry()], nextBefore: C1 },
       'members.list': { members: [] },
     });
-    view(page);
+    view(client);
 
     fireEvent.click(await screen.findByRole('button', { name: strings.moreMentions }));
     await waitFor(() =>

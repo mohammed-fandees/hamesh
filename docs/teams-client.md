@@ -150,6 +150,15 @@ answers one question — what changed since this cursor — and the worker files
 everything it gets by page, under `hamesh:team-notes:<pageKey>`, exactly the way
 personal notes are stored. Matching a note to a page happens on this device.
 
+**Shared notes are in the Library too.** A reader thinks of their notes as
+theirs, so the Library lists what this device stored and what its teams have
+shared, together, with a chip on the row naming the team and pills for narrowing
+to one of them. Sharing therefore leaves a note where it is instead of making it
+vanish into another page — the team's copy is read back before the local one
+goes, so the row does not blink out of the list in between. A team note in the
+Library is read, not managed: its menu opens the team, and the team's own page is
+where it is changed.
+
 **The content script only reads.** It opens its own page's shelf in
 `chrome.storage.local` and watches it, and that is all: no session, no request,
 and no message to the worker, which refuses a content script anyway. A cached
@@ -175,6 +184,41 @@ cursor: a worker that dies in between repeats a round rather than skipping one.
 rewrites the team names a page shows and drops the cache of any team the server no
 longer lists. Signing out, or turning Teams off, leaves nothing behind: every
 cached team note on the device goes.
+
+## How it is laid out, and why
+
+Teams follows the rest of the library rather than sitting beside it.
+
+- **Notes first.** A team page opens on what the team has: its folders in a rail
+  on one side, its notes on the other. Who is in the team, and the handful of
+  things that end one, are folded away in panels until they are wanted.
+- **The account's half is in Settings.** Joining a team and paying for one are
+  not about any one team, and Settings already holds the account — signing in,
+  signing out, turning Teams off. So they live there.
+- **Being named is a destination.** It is the one thing in Teams addressed to a
+  person rather than to a team, and it can come from any of them, so Mentions is
+  its own entry in the rail with a dot when there is something new — the same
+  shape What's New already has. What the dot compares against is kept on this
+  device (`Preferences.teams.lastSeenMentionId`); the server is never told what
+  anyone has read.
+
+### Four patterns the page follows
+
+- **A question is asked where the thing is.** Deleting a note for everyone,
+  removing someone, handing a team over: the row itself asks, with the cautious
+  answer focused and Escape backing out (`InlineConfirm`). Hamesh confirms in
+  place everywhere else, and `window.confirm` — which Teams used in eight places
+  — is a box in the browser's language, not the reader's, over a page that
+  cannot say any more about what is about to happen.
+- **Only the row that is acting says so.** `useTeams` tracks work and failure
+  under a key the caller passes, so pressing Remove on one member does not grey
+  out the invite form, the folder rail and the payment button. Several rows can
+  be working at once, and each finishes on its own.
+- **A refusal is shown beside what was refused**, not at the top of the page.
+  The page-level line is kept for what the page itself failed at.
+- **Nothing there yet is a state, not a grey line.** Empty states carry the
+  margin mark, say what to do, and offer the control that does it; what is still
+  loading is a skeleton, as in the Library.
 
 ## Comments and mentions
 
@@ -233,6 +277,36 @@ An MV3 service worker the browser shut down has no socket at all, so the worker
 pulls on a five-minute alarm as well: a missed poke is a delay, not a note nobody
 ever sees.
 
+## Trying it against a server on this machine
+
+Signing in needs Google, and Google needs a redirect URI registered for this
+exact build — which an unpacked build changes every time it is loaded. That is a
+lot of ceremony for trying a feature against `wrangler dev`, so there is a way to
+hand the worker a session the **local** server already issued:
+
+1. In the API repo, with `wrangler dev` running: `pnpm dev:session`. It writes a
+   session row into the local D1 file — the same row a sign-in would have
+   written, with the same token shape and the same HMAC — and prints the token.
+   It is not an endpoint and adds no route: the Worker's code is untouched, so
+   there is nothing here that could exist in production.
+2. Build the extension with `pnpm build:local` (or `pnpm dev:local`), pointing
+   `WXT_TEAMS_API_ORIGIN` at `http://localhost:8787`.
+3. Settings → Teams, turn Teams on as usual, then paste the token into **Sign in
+   with a local token**.
+
+It is not a way past authentication. The token has to be one the server itself
+issued; the worker stores it exactly as it stores a Google sign-in's, and the
+server checks it on every request afterwards — a made-up one is refused with a
+401 the first time it is used, and the session is dropped.
+
+`--mode dev` is the only switch. It is a build constant, not an environment
+variable (`__HAMESH_DEV_SIGN_IN__`, defined in `wxt.config.ts`), because a key
+added to `import.meta.env` is read at runtime rather than folded — which would
+leave the code behind it in every build. Folded, a normal build carries no trace:
+not the component, not its wording, not the message name, and not the worker's
+handler for it, which is what actually refuses the message. WXT's own dev server
+runs in mode `development`, so `pnpm dev` does not turn it on by accident.
+
 ## The contract package
 
 `packages/teams-contract` is the wire contract: request and response schemas,
@@ -251,9 +325,12 @@ refuses), the page cache, delta sync (including an expired cursor and a repeated
 round), the realtime link (including the URLs it will not connect to), and how the
 cache follows the account, and how the mention tokens are read and written.
 `tests/ui/` covers the Settings section — including that the permission prompt is
-requested synchronously from the click — the Teams page, sharing a note, the
-shared-notes panel, a note's discussion, writing a comment and naming someone in
-it, and where you were named.
+requested synchronously from the click — the Teams page, the account's half of it
+in Settings, sharing a note, the shared-notes panel, a note's discussion, writing
+a comment and naming someone in it, where you were named, the inline
+confirmation (including that nothing happens until it is answered), that work and
+failure are reported per row rather than per page, and which notes the Library's
+filter keeps.
 `tests/content/HameshApp.team-notes.test.tsx` covers what a team note looks like
 on the page it belongs to.
 
@@ -265,14 +342,15 @@ Measured, not assumed — a store build of this work against the same build of
 | Entry                |   main |    now |     Δ |
 | -------------------- | -----: | -----: | ----: |
 | `background.js`      |  12.43 |  12.43 |     0 |
-| `chunks/notes-*.js`  |  60.60 |  57.51 | −3.09 |
-| `assets/notes-*.css` |  19.72 |  17.15 | −2.57 |
-| `content.js`         | 319.22 | 319.22 |     0 |
-| whole build          | 710.87 | 704.58 | −6.29 |
+| `chunks/notes-*.js`  |  57.51 |  58.03 | +0.52 |
+| `assets/notes-*.css` |  17.15 |  17.15 |     0 |
+| `content.js`         | 319.22 | 319.59 | +0.37 |
+| whole build          | 704.58 | 705.38 | +0.80 |
 
-(kilobytes.) Comments and mentions add nothing at all to a store build, and it
-comes out smaller than `main`'s, because two things that had been shipping
-regardless were found by measuring and fixed:
+(kilobytes.) The redesign touches shared components — the note row, the actions
+menu, the rail — so it is the change most able to leak, and the residue is 0.8 kB
+of markup that never renders. Two earlier rounds of measuring had already found
+three things shipping regardless, all fixed:
 
 - **A stylesheet is not tree-shaken.** `import './teams.css'` is collected while
   the bundler transforms modules, not by the tree-shaker, so every Teams rule
@@ -281,13 +359,15 @@ regardless were found by measuring and fixed:
   build constant — see `src/ui/teams/styles.ts`), it is an ordinary value, and an
   unused value is dropped like any other.
 - **A runtime guard is not a build-time one.** The account row in Settings was
-  gated on `{teams && …}`, which is only ever null at runtime, so its markup
-  shipped too. It tests the constant first now.
+  gated on `{teams && …}`, and the rail's Teams entry on `{showTeams && …}` —
+  both only ever false at runtime, so their markup shipped too. Each tests the
+  constant first now, which is what the notes chunk being 2.3 kB below where it
+  started comes from.
 
 What is left in a store build is the scaffolding that makes the optional part
-optional: a context with nothing in it, an unset prop, and the one check that a
-note does not belong to a team. No contract, no zod, no endpoint, no cache key,
-no CSS rule and no Teams wording anywhere in it.
+optional: a context with nothing in it, an unset prop, a chip that never renders,
+and the one check that a note does not belong to a team. No contract, no zod, no
+endpoint, no cache key, no CSS rule and no Teams wording anywhere in it.
 
 Every Teams entry point tests `import.meta.env.WXT_TEAMS_API_ORIGIN` as the first
 thing in its own body, so the bundler folds the branch away and drops everything

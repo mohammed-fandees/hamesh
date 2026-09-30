@@ -11,8 +11,13 @@ interface ShareNoteActionProps {
   client: TeamsClient;
   /** The teams this account is in, as the server last listed them. */
   teams: readonly { id: string; name: string }[];
+  /**
+   * Set for a note that already lives in a team: it is not shared again, so the
+   * item opens the team's own page instead, where it can be changed.
+   */
+  open?: (() => void) | undefined;
   /** Closes the menu this sits in, once there is nothing left to say. */
-  onDone: () => void;
+  onDone: () => void | Promise<void>;
 }
 
 /**
@@ -28,10 +33,23 @@ interface ShareNoteActionProps {
  * as the idempotency key, so sharing the same note twice is the same share, not
  * a second copy of it.
  */
-export function ShareNoteAction({ note, lang, client, teams, onDone }: ShareNoteActionProps) {
+export function ShareNoteAction({ note, lang, client, teams, open, onDone }: ShareNoteActionProps) {
   const strings = getTeamsStrings(lang);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<TeamsErrorCode | null>(null);
+
+  // A note that is already a team's is read here and changed there.
+  if (open) {
+    return (
+      <>
+        <div className="hm-folder-menu__divider" role="separator" />
+        <button type="button" role="menuitem" className="hm-folder-menu__item" onClick={open}>
+          {strings.openInTeams}
+        </button>
+        <div className="hm-folder-menu__section-label">{strings.teamNoteHint}</div>
+      </>
+    );
+  }
 
   if (teams.length === 0) return null;
 
@@ -50,7 +68,7 @@ export function ShareNoteAction({ note, lang, client, teams, onDone }: ShareNote
     setBusy(false);
     // Only a success closes the menu: a refusal has to stay on screen long
     // enough to be read.
-    if (result.ok) onDone();
+    if (result.ok) await onDone();
     else setError(result.error);
   }
 

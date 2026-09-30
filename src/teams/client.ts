@@ -26,6 +26,11 @@ export interface TeamsClient {
    */
   cache(op: TeamsCacheOp, teamId: string): Promise<TeamCacheResult>;
   /**
+   * Hands the worker a session the local server already issued. Answered only
+   * by a development build; any other reports `unavailable`.
+   */
+  devSignIn(token: string): Promise<TeamsReply>;
+  /**
    * Listens for the worker's notices that something changed in a team, so a
    * page showing it can catch up. Ids only; the page fetches the rest itself.
    */
@@ -58,6 +63,16 @@ export function createTeamsClient(config: TeamsConfig): TeamsClient {
       const reply = (await browser.runtime.sendMessage({ type: 'TEAMS_CACHE', op, teamId })) as
         TeamCacheResult | undefined;
       return reply ?? { ok: false, error: 'not_configured' };
+    },
+    async devSignIn(token) {
+      // The constant, so a build that did not ask for this carries neither the
+      // message it would send nor the name of it.
+      if (!__HAMESH_DEV_SIGN_IN__) {
+        return { status: { state: 'unavailable' }, error: 'not_configured' };
+      }
+      const reply = (await browser.runtime.sendMessage({ type: 'TEAMS_DEV_SIGN_IN', token })) as
+        TeamsReply | undefined;
+      return reply ?? { status: { state: 'unavailable' }, error: 'not_configured' };
     },
     onEvent(listener) {
       // Returns nothing, so the worker is never left waiting on a page.
