@@ -31,7 +31,7 @@
   background: var(--hm-surface);
   color: var(--hm-ink);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--hm-text-body);
 }
 .hm-input:focus-visible {
   outline: 2px solid var(--hm-accent);
@@ -62,7 +62,7 @@
   background: var(--hm-surface);
   color: inherit;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--hm-text-body);
   cursor: pointer;
 }
 .hm-team-switcher__item[aria-current='true'] {
@@ -101,19 +101,19 @@
   display: flex;
   gap: var(--hm-space-2);
   align-items: baseline;
-  font-size: 13.5px;
+  font-size: var(--hm-text-body);
 }
 .hm-team-member__you {
   color: var(--hm-ink-40);
-  font-size: 12px;
+  font-size: var(--hm-text-body-sm);
 }
 .hm-team-member__email {
   color: var(--hm-ink-60);
-  font-size: 12px;
+  font-size: var(--hm-text-body-sm);
 }
 .hm-team-member__meta {
   color: var(--hm-ink-40);
-  font-size: 12px;
+  font-size: var(--hm-text-body-sm);
 }
 .hm-team-member__actions {
   display: flex;
@@ -144,14 +144,14 @@
 }
 .hm-invite-link__title {
   margin: 0 0 var(--hm-space-2);
-  font-size: 13px;
+  font-size: var(--hm-text-body);
 }
 .hm-invite-link__value {
   display: block;
   overflow-wrap: anywhere;
   margin-bottom: var(--hm-space-2);
   font-family: var(--hm-mono);
-  font-size: 12px;
+  font-size: var(--hm-text-body-sm);
   user-select: all;
 }
 
@@ -160,7 +160,8 @@
 }
 .hm-billing__price {
   margin: var(--hm-space-3) 0 0;
-  font-size: 15px;
+  font-size: var(--hm-text-title);
+  line-height: var(--hm-lh-title);
 }
 
 /* ---- Comments on a shared note ---- */
@@ -189,11 +190,11 @@
 }
 .hm-comment__meta {
   color: var(--hm-ink-40);
-  font-size: 12px;
+  font-size: var(--hm-text-body-sm);
 }
 .hm-comment__body {
   margin: 0;
-  font-size: 13.5px;
+  font-size: var(--hm-text-body);
   line-height: 1.55;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -202,7 +203,7 @@
 .hm-comment__gone {
   margin: 0;
   color: var(--hm-ink-40);
-  font-size: 13px;
+  font-size: var(--hm-text-body);
   font-style: italic;
 }
 .hm-comment__actions {
@@ -264,14 +265,18 @@
   text-align: start;
   cursor: pointer;
 }
-.hm-mention-picker__item:hover,
+.hm-mention-picker__item:hover {
+  background: var(--hm-layer-hover);
+}
+/* The keyboard's choice is the one that Enter will take, so it is a selection,
+   not a hover. */
 .hm-mention-picker__item[data-highlighted='true'] {
   background: var(--hm-accent-tint);
 }
 .hm-mention-picker__empty {
   padding: var(--hm-space-2);
   color: var(--hm-ink-40);
-  font-size: 12.5px;
+  font-size: var(--hm-text-body-sm);
 }
 
 /* ---- The redesign: one row's state, one row's question ---- */
@@ -287,7 +292,7 @@
 .hm-team-bar__meta {
   margin-inline-start: auto;
   color: var(--hm-ink-40);
-  font-size: 12px;
+  font-size: var(--hm-text-body-sm);
 }
 
 /* "+ New team", "+ New folder" — an outline that says "there could be more
@@ -299,11 +304,11 @@
   background: none;
   color: var(--hm-ink-60);
   font: inherit;
-  font-size: 12.5px;
+  font-size: var(--hm-text-body-sm);
   cursor: pointer;
   transition:
-    border-color var(--hm-dur-fast) var(--hm-ease-out),
-    color var(--hm-dur-fast) var(--hm-ease-out);
+    border-color var(--hm-motion-state),
+    color var(--hm-motion-state);
 }
 .hm-chip-add:hover {
   border-color: var(--hm-accent);
@@ -323,14 +328,14 @@
 }
 .hm-confirm__question {
   flex: 1 1 14rem;
-  font-size: 12.5px;
+  font-size: var(--hm-text-body-sm);
 }
 
 /* A refusal, said beside whatever was refused. */
 .hm-field-error {
   margin: var(--hm-space-1) 0 0;
   color: var(--hm-danger);
-  font-size: 12px;
+  font-size: var(--hm-text-body-sm);
 }
 
 /* A round monogram, so a list of people scans as people. Initials only — no
@@ -344,7 +349,8 @@
   border-radius: var(--hm-radius-pill);
   background: var(--hm-accent-tint);
   color: var(--hm-accent-strong);
-  font-size: 11px;
+  font-size: var(--hm-text-label);
+  line-height: var(--hm-lh-label);
   font-weight: 600;
 }
 
@@ -360,7 +366,7 @@
   align-items: baseline;
   gap: var(--hm-space-3);
   padding: var(--hm-space-4);
-  font-size: 14px;
+  font-size: var(--hm-text-body);
   font-weight: 500;
   cursor: pointer;
   list-style: none;
@@ -375,7 +381,7 @@
   border-inline-end: 1.5px solid var(--hm-ink-40);
   border-block-end: 1.5px solid var(--hm-ink-40);
   transform: rotate(-45deg);
-  transition: transform var(--hm-dur-fast) var(--hm-ease-out);
+  transition: transform var(--hm-motion-state);
 }
 .hm-panel[open] > .hm-panel__summary::before {
   transform: rotate(45deg);
@@ -383,7 +389,7 @@
 .hm-panel__hint {
   color: var(--hm-ink-40);
   font-weight: 400;
-  font-size: 12px;
+  font-size: var(--hm-text-body-sm);
 }
 .hm-panel__body {
   padding: 0 var(--hm-space-4) var(--hm-space-4);
@@ -402,7 +408,8 @@
 }
 .hm-workspace__title {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--hm-text-title);
+  line-height: var(--hm-lh-title);
   font-weight: 600;
 }
 .hm-workspace__split {
@@ -443,7 +450,7 @@
   background: none;
   color: var(--hm-ink-60);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--hm-text-body);
   text-align: start;
   cursor: pointer;
 }
@@ -458,7 +465,7 @@
 }
 .hm-folder-rail__count {
   margin-inline-start: auto;
-  font-size: 12px;
+  font-size: var(--hm-text-body-sm);
   opacity: 0.75;
 }
 /* The folder and its controls share one line. */
@@ -483,7 +490,7 @@
   padding: 2px var(--hm-space-2);
   border-radius: var(--hm-radius-sm);
   background: var(--hm-paper-dim);
-  font-size: 12px;
+  font-size: var(--hm-text-body-sm);
 }
 .hm-folder-rail__line:hover .hm-folder-rail__actions,
 .hm-folder-rail__line:focus-within .hm-folder-rail__actions {
@@ -515,7 +522,7 @@
 }
 .hm-team-note__domain {
   color: var(--hm-ink-40);
-  font-size: 12px;
+  font-size: var(--hm-text-body-sm);
 }
 .hm-team-note__spacer {
   flex-grow: 1;
@@ -526,7 +533,7 @@
   margin: 0;
   font-family: var(--hm-serif);
   font-style: italic;
-  font-size: 13.5px;
+  font-size: var(--hm-text-body);
   line-height: 1.55;
   overflow-wrap: anywhere;
 }
@@ -537,7 +544,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--hm-space-2) var(--hm-space-3);
-  font-size: 12.5px;
+  font-size: var(--hm-text-body-sm);
 }
 .hm-team-note__move {
   display: inline-flex;
@@ -546,7 +553,7 @@
 .hm-team-note__move .hm-input--select {
   max-width: 9rem;
   padding: 2px var(--hm-space-2);
-  font-size: 12px;
+  font-size: var(--hm-text-body-sm);
 }
 /* The rail is as narrow as its longest folder name wants, so the notes beside
    it keep room for their own line of controls. */
@@ -590,14 +597,14 @@
   background: var(--hm-surface);
   color: var(--hm-ink-60);
   font: inherit;
-  font-size: 12.5px;
+  font-size: var(--hm-text-body-sm);
   cursor: pointer;
   transition:
-    background var(--hm-dur-fast) var(--hm-ease-out),
-    color var(--hm-dur-fast) var(--hm-ease-out);
+    background var(--hm-motion-state),
+    color var(--hm-motion-state);
 }
 .hm-owner-filter__pill:hover {
-  background: var(--hm-paper-dim);
+  background: var(--hm-surface-hover);
 }
 /* The chosen one inverts rather than tinting: the accent is the mark's, and a
    row of tinted pills would compete with the chips inside the list. */
@@ -623,7 +630,8 @@
   border-radius: var(--hm-radius-pill);
   background: var(--hm-accent-tint);
   color: var(--hm-accent-strong);
-  font-size: 11px;
+  font-size: var(--hm-text-label);
+  line-height: var(--hm-lh-label);
   font-weight: 500;
   vertical-align: baseline;
 }

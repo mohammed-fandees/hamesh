@@ -31,7 +31,8 @@
 }
 .hm-notes-page__title {
   margin: 0;
-  font-size: 18px;
+  font-size: var(--hm-text-title-lg);
+  line-height: var(--hm-lh-title-lg);
   font-weight: 600;
 }
 
@@ -64,7 +65,7 @@
 }
 .hm-sidebar__brand-text {
   font-weight: 600;
-  font-size: 14px;
+  font-size: var(--hm-text-body);
 }
 .hm-sidebar__nav {
   list-style: none;
@@ -84,19 +85,24 @@
   background: transparent;
   border-radius: var(--hm-radius-sm);
   font: inherit;
-  font-size: 13.5px;
+  font-size: var(--hm-text-body);
   font-weight: 500;
   color: var(--hm-ink-60);
   cursor: pointer;
   text-align: start;
-  transition: background var(--hm-dur-fast) var(--hm-ease-out);
+  transition: background var(--hm-motion-state);
 }
 .hm-sidebar__nav-item:hover {
-  background: var(--hm-paper-dim);
+  background: var(--hm-layer-hover);
 }
+.hm-sidebar__nav-item:active {
+  background: var(--hm-layer-pressed);
+}
+/* Selected is the tint, a step above pressed — it used to be the same fill as
+   hover, so the current page could not be told from one being pointed at. */
 .hm-sidebar__nav-item[aria-current='page'] {
-  background: var(--hm-paper-dim);
-  color: var(--hm-ink);
+  background: var(--hm-accent-tint);
+  color: var(--hm-accent-strong);
 }
 .hm-sidebar__nav-item:focus-visible {
   outline: 2px solid var(--hm-accent);
@@ -124,7 +130,7 @@
 .hm-whats-new__intro {
   margin: calc(-1 * var(--hm-space-2)) 0 var(--hm-space-5);
   color: var(--hm-ink-60);
-  font-size: 13.5px;
+  font-size: var(--hm-text-body);
 }
 .hm-whats-new__list {
   list-style: none;
@@ -163,7 +169,7 @@
 }
 .hm-whats-new__version {
   font-family: var(--hm-mono);
-  font-size: 12.5px;
+  font-size: var(--hm-text-body-sm);
   font-weight: 600;
   color: var(--hm-ink);
 }
@@ -172,7 +178,8 @@
   border-radius: var(--hm-radius-pill);
   background: var(--hm-accent-tint);
   color: var(--hm-accent-strong);
-  font-size: 10.5px;
+  font-size: var(--hm-text-label);
+  line-height: var(--hm-lh-label);
   font-weight: 600;
   letter-spacing: 0.02em;
 }
@@ -184,11 +191,13 @@
   margin-inline-start: auto;
   color: var(--hm-ink-40);
   font-family: var(--hm-mono);
-  font-size: 11px;
+  font-size: var(--hm-text-label);
+  line-height: var(--hm-lh-label);
 }
 .hm-whats-new__title {
   margin: var(--hm-space-1) 0 var(--hm-space-2);
-  font-size: 15px;
+  font-size: var(--hm-text-title);
+  line-height: var(--hm-lh-title);
   font-weight: 600;
   color: var(--hm-ink);
 }
@@ -204,8 +213,8 @@
   position: relative;
   padding-inline-start: var(--hm-space-3);
   font-family: var(--hm-serif);
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: var(--hm-text-prose);
+  line-height: var(--hm-lh-prose);
   color: var(--hm-ink);
 }
 .hm-scope[dir='rtl'] .hm-whats-new__item {
@@ -233,12 +242,12 @@
   width: 100%;
   padding: 9px 30px 9px var(--hm-space-3);
   font-family: var(--hm-sans);
-  font-size: 13.5px;
+  font-size: var(--hm-text-body);
   color: var(--hm-ink);
   background: var(--hm-surface);
   border: 1px solid var(--hm-border);
   border-radius: var(--hm-radius-md);
-  transition: border-color var(--hm-dur-fast) var(--hm-ease-out);
+  transition: border-color var(--hm-motion-state);
 }
 .hm-search::placeholder {
   color: var(--hm-ink-40);
@@ -247,7 +256,7 @@
 .hm-search:focus {
   outline: none;
   border-color: var(--hm-accent);
-  box-shadow: 0 0 0 3px var(--hm-accent-tint);
+  box-shadow: var(--hm-halo);
 }
 /* "/" keyboard-shortcut hint — same idea as the popup's Alt+H badge.
    Hidden once there's a query (the native search-input clear button takes
@@ -261,7 +270,8 @@
   border: 1px solid var(--hm-border);
   border-radius: var(--hm-radius-sm);
   font-family: var(--hm-mono);
-  font-size: 10.5px;
+  font-size: var(--hm-text-label);
+  line-height: var(--hm-lh-label);
   font-style: normal;
   color: var(--hm-ink-40);
   pointer-events: none;
@@ -321,7 +331,9 @@
   margin-bottom: var(--hm-space-2);
 }
 .hm-sort-row__label {
-  font-size: 11.5px;
+  font-size: var(--hm-text-label);
+
+  line-height: var(--hm-lh-label);
   color: var(--hm-ink-40);
 }
 
@@ -338,7 +350,7 @@
   }
 }
 .hm-fade-in {
-  animation: hm-fade-in var(--hm-dur-slow) var(--hm-ease-out) both;
+  animation: hm-fade-in var(--hm-motion-emphasized) both;
 }
 
 /* ---- Favicon / no-favicon fallback ---- */
@@ -361,7 +373,8 @@
 }
 .hm-continue__title {
   margin: 0 0 var(--hm-space-2);
-  font-size: 11px;
+  font-size: var(--hm-text-label);
+  line-height: var(--hm-lh-label);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -384,21 +397,23 @@
   background: var(--hm-surface);
   text-decoration: none;
   color: inherit;
-  transition: background var(--hm-dur-fast) var(--hm-ease-out);
+  transition: background var(--hm-motion-state);
 }
 .hm-continue__item:hover {
-  background: var(--hm-paper-dim);
+  background: var(--hm-surface-hover);
 }
 .hm-continue__item:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--hm-accent);
+  box-shadow: var(--hm-ring);
 }
 .hm-continue__domain {
   font-weight: 600;
-  font-size: 13px;
+  font-size: var(--hm-text-body);
 }
 .hm-continue__meta {
-  font-size: 11px;
+  font-size: var(--hm-text-label);
+
+  line-height: var(--hm-lh-label);
   color: var(--hm-ink-40);
 }
 
@@ -411,7 +426,8 @@
 }
 .hm-pinned__title {
   margin: 0 0 var(--hm-space-2);
-  font-size: 11px;
+  font-size: var(--hm-text-label);
+  line-height: var(--hm-lh-label);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -441,28 +457,29 @@
   border-radius: var(--hm-radius-sm);
   text-decoration: none;
   color: inherit;
-  transition: background var(--hm-dur-fast) var(--hm-ease-out);
+  transition: background var(--hm-motion-state);
 }
 .hm-pinned__item:hover {
-  background: var(--hm-paper-dim);
+  background: var(--hm-layer-hover);
 }
 .hm-pinned__item:focus-visible {
   outline: none;
-  box-shadow: inset 0 0 0 2px var(--hm-accent);
+  box-shadow: var(--hm-ring-inset);
 }
 .hm-pinned__kicker {
   display: inline-flex;
   align-items: center;
   gap: 5px;
   margin-bottom: 2px;
-  font-size: 11px;
+  font-size: var(--hm-text-label);
+  line-height: var(--hm-lh-label);
   font-weight: 600;
   color: var(--hm-accent-strong);
 }
 .hm-pinned__preview {
   margin: 0 0 2px;
   font-family: var(--hm-serif);
-  font-size: 13.5px;
+  font-size: var(--hm-text-body);
   line-height: 1.5;
   color: var(--hm-ink);
   display: -webkit-box;
@@ -474,7 +491,9 @@
   font-family: var(--hm-arabic);
 }
 .hm-pinned__meta {
-  font-size: 11px;
+  font-size: var(--hm-text-label);
+
+  line-height: var(--hm-lh-label);
   color: var(--hm-ink-40);
 }
 
@@ -508,14 +527,14 @@
   text-align: start;
   font-family: var(--hm-sans);
   color: var(--hm-ink);
-  transition: background var(--hm-dur-fast) var(--hm-ease-out);
+  transition: background var(--hm-motion-state);
 }
 .hm-group__header:hover {
-  background: var(--hm-paper-dim);
+  background: var(--hm-layer-hover);
 }
 .hm-group__header:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--hm-accent);
+  box-shadow: var(--hm-ring);
 }
 .hm-group__domain {
   flex: 1 1 auto;
@@ -524,20 +543,21 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-weight: 600;
-  font-size: 14px;
+  font-size: var(--hm-text-body);
 }
 .hm-group__count {
   flex: none;
-  font-size: 12px;
+  font-size: var(--hm-text-body-sm);
   color: var(--hm-ink-40);
 }
 .hm-group__chevron {
   flex: none;
   color: var(--hm-ink-40);
-  transition: transform var(--hm-dur-base) var(--hm-ease-out);
+  transition: transform var(--hm-motion-exit);
 }
 .hm-group__chevron[data-expanded='true'] {
   transform: rotate(180deg);
+  transition: transform var(--hm-motion-enter);
 }
 
 /* Height animation via CSS grid-rows — no JS measurement, cheap, and the
@@ -554,10 +574,11 @@
      padding). This still helps for anything else nested here that isn't
      wrapped that carefully. */
   overflow: hidden;
-  transition: grid-template-rows var(--hm-dur-base) var(--hm-ease-out);
+  transition: grid-template-rows var(--hm-motion-exit);
 }
 .hm-group__body[data-expanded='true'] {
   grid-template-rows: 1fr;
+  transition: grid-template-rows var(--hm-motion-enter);
 }
 .hm-group__body-inner {
   /* The sole direct child of `.hm-group__body` — see the comment in
@@ -611,16 +632,16 @@
   border-radius: var(--hm-radius-md);
   color: inherit;
   transition:
-    background var(--hm-dur-fast) var(--hm-ease-out),
-    border-color var(--hm-dur-fast) var(--hm-ease-out);
+    background var(--hm-motion-state),
+    border-color var(--hm-motion-state);
 }
 .hm-note-row:hover {
-  background: var(--hm-paper-dim);
+  background: var(--hm-layer-hover);
   border-color: var(--hm-ink-20);
 }
 .hm-note-row:has(> .hm-note-row__link:focus-visible) {
   border-color: var(--hm-accent);
-  box-shadow: inset 0 0 0 2px var(--hm-accent);
+  box-shadow: var(--hm-ring-inset);
 }
 .hm-note-row__link {
   display: block;
@@ -641,7 +662,8 @@
   align-items: center;
   gap: 5px;
   margin: 0 0 2px;
-  font-size: 11px;
+  font-size: var(--hm-text-label);
+  line-height: var(--hm-lh-label);
   font-weight: 600;
   color: var(--hm-accent-strong);
 }
@@ -650,7 +672,7 @@
   align-items: center;
   gap: 4px;
   margin: 0 0 2px;
-  font-size: 12.5px;
+  font-size: var(--hm-text-body-sm);
   font-weight: 600;
   color: var(--hm-ink-60);
 }
@@ -661,7 +683,7 @@
 .hm-note-row__preview {
   margin: 0 0 4px;
   font-family: var(--hm-serif);
-  font-size: 13.5px;
+  font-size: var(--hm-text-body);
   line-height: 1.5;
   color: var(--hm-ink);
   overflow-wrap: anywhere;
@@ -696,7 +718,8 @@
   margin: 0 0 4px;
   padding: 1px 2px;
   font-family: var(--hm-sans);
-  font-size: 11.5px;
+  font-size: var(--hm-text-label);
+  line-height: var(--hm-lh-label);
   font-weight: 600;
   color: var(--hm-accent-strong);
   background: none;
@@ -709,10 +732,10 @@
 }
 .hm-note-row__toggle:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--hm-accent);
+  box-shadow: var(--hm-ring);
 }
 .hm-note-row__toggle-chevron {
-  transition: transform var(--hm-dur-fast) var(--hm-ease-out);
+  transition: transform var(--hm-motion-state);
 }
 .hm-note-row__toggle-chevron[data-expanded='true'] {
   transform: rotate(180deg);
@@ -722,7 +745,8 @@
   align-items: center;
   gap: var(--hm-space-2);
   margin: 0;
-  font-size: 11px;
+  font-size: var(--hm-text-label);
+  line-height: var(--hm-lh-label);
   color: var(--hm-ink-40);
 }
 /* A contextual note's attached page text, above its own text in the row.
@@ -739,7 +763,8 @@
   gap: 3px;
   color: var(--hm-accent-strong);
   font-family: var(--hm-mono);
-  font-size: 10.5px;
+  font-size: var(--hm-text-label);
+  line-height: var(--hm-lh-label);
 }
 
 /* ---- Empty state ---- */
@@ -758,20 +783,21 @@
 }
 .hm-empty__title {
   margin: 0 0 var(--hm-space-2);
-  font-size: 15px;
+  font-size: var(--hm-text-title);
+  line-height: var(--hm-lh-title);
   font-weight: 600;
   color: var(--hm-ink);
 }
 .hm-empty__body {
   margin: 0;
   max-width: 320px;
-  font-size: 13px;
+  font-size: var(--hm-text-body);
 }
 
 /* ---- Library Settings view ---- */
 .hm-settings__subheading {
   margin: var(--hm-space-6) 0 0;
-  font-size: 12.5px;
+  font-size: var(--hm-text-body-sm);
   font-weight: 600;
   color: var(--hm-ink-40);
   text-transform: uppercase;
@@ -782,7 +808,7 @@
 .hm-settings__intro {
   margin: var(--hm-space-2) 0 var(--hm-space-2);
   color: var(--hm-ink-60);
-  font-size: 12.5px;
+  font-size: var(--hm-text-body-sm);
   line-height: 1.5;
 }
 
@@ -796,7 +822,7 @@
    change its own shortcut; see LibrarySettingsView) ---- */
 .hm-shortcut-badge {
   font-family: var(--hm-mono);
-  font-size: 12px;
+  font-size: var(--hm-text-body-sm);
   padding: var(--hm-space-1) var(--hm-space-2);
   background: var(--hm-paper-dim);
   border-radius: var(--hm-radius-sm);
@@ -841,10 +867,10 @@
   padding: var(--hm-space-2);
   border-radius: var(--hm-radius-md);
   cursor: pointer;
-  transition: background var(--hm-dur-fast) var(--hm-ease-out);
+  transition: background var(--hm-motion-state);
 }
 .hm-folder-node:hover {
-  background: var(--hm-paper-dim);
+  background: var(--hm-layer-hover);
 }
 .hm-folder-node[data-drag-over='true'] {
   background: var(--hm-accent-tint);
@@ -867,10 +893,11 @@
 .hm-folder-node__chevron {
   /* Collapsed: points at the folder glyph beside it (►). Expanded: rotates
      to point down (▼) — the familiar file-explorer convention. */
-  transition: transform var(--hm-dur-base) var(--hm-ease-out);
+  transition: transform var(--hm-motion-exit);
 }
 .hm-folder-node__chevron[data-expanded='true'] {
   transform: rotate(90deg);
+  transition: transform var(--hm-motion-enter);
 }
 /* Mirrored in RTL so a collapsed folder's chevron still points toward its
    glyph (now on the chevron's visual left, since the row itself mirrors). */
@@ -900,13 +927,13 @@
   cursor: pointer;
   font-family: var(--hm-sans);
   font-weight: 600;
-  font-size: 13.5px;
+  font-size: var(--hm-text-body);
   color: var(--hm-ink);
   padding: 0;
 }
 .hm-folder-node__count {
   flex: none;
-  font-size: 12px;
+  font-size: var(--hm-text-body-sm);
   color: var(--hm-ink-40);
   /* Same reasoning as `.hm-folder-node__glyph` — a click here should still
      toggle the row, not land on a dead zone. */
@@ -917,7 +944,7 @@
   display: flex;
   gap: 2px;
   opacity: 0;
-  transition: opacity var(--hm-dur-fast) var(--hm-ease-out);
+  transition: opacity var(--hm-motion-state);
 }
 .hm-folder-node:hover .hm-folder-node__actions,
 .hm-folder-node:focus-within .hm-folder-node__actions {
@@ -926,7 +953,7 @@
 
 .hm-folder-node__confirm {
   padding: var(--hm-space-2) var(--hm-space-2) var(--hm-space-3);
-  font-size: 12.5px;
+  font-size: var(--hm-text-body-sm);
   color: var(--hm-ink-60);
 }
 .hm-folder-node__confirm p {
@@ -941,10 +968,11 @@
      item's own padding; `.hm-folder-node__body-inner` below is the actual
      fix for that. */
   overflow: hidden;
-  transition: grid-template-rows var(--hm-dur-base) var(--hm-ease-out);
+  transition: grid-template-rows var(--hm-motion-exit);
 }
 .hm-folder-node__body[data-expanded='true'] {
   grid-template-rows: 1fr;
+  transition: grid-template-rows var(--hm-motion-enter);
 }
 .hm-folder-node__body-inner {
   /* The sole direct child of `.hm-folder-node__body`, and deliberately with
@@ -992,7 +1020,7 @@
   min-width: 0;
   padding: 6px var(--hm-space-2);
   font-family: var(--hm-sans);
-  font-size: 13px;
+  font-size: var(--hm-text-body);
   color: var(--hm-ink);
   background: var(--hm-surface);
   border: 1px solid var(--hm-border);
@@ -1002,7 +1030,7 @@
 .hm-folder-menu__input:focus-visible {
   outline: none;
   border-color: var(--hm-accent);
-  box-shadow: 0 0 0 3px var(--hm-accent-tint);
+  box-shadow: var(--hm-halo);
 }
 
 /* ---- Note actions menu — pin/unpin, edit, delete, and move to folder,
@@ -1027,7 +1055,7 @@
   background: var(--hm-surface);
   border: 1px solid var(--hm-border);
   border-radius: var(--hm-radius-md);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--hm-elev-2);
 }
 .hm-folder-menu__item {
   display: block;
@@ -1039,7 +1067,7 @@
   cursor: pointer;
   text-align: start;
   font-family: var(--hm-sans);
-  font-size: 12.5px;
+  font-size: var(--hm-text-body-sm);
   color: var(--hm-ink);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1054,7 +1082,7 @@
   margin-inline-end: 6px;
 }
 .hm-folder-menu__item:hover {
-  background: var(--hm-paper-dim);
+  background: var(--hm-layer-hover);
 }
 .hm-folder-menu__item--new {
   color: var(--hm-accent);
@@ -1096,7 +1124,8 @@
 }
 .hm-folder-menu__section-label {
   padding: 4px var(--hm-space-2) 2px;
-  font-size: 10.5px;
+  font-size: var(--hm-text-label);
+  line-height: var(--hm-lh-label);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.03em;
