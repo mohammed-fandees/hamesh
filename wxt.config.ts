@@ -43,6 +43,22 @@ export default defineConfig({
       },
     },
   },
+  /**
+   * `--mode dev` is the one switch that turns on signing in with a session the
+   * *local* server issued (see docs/teams-client.md). A constant of its own
+   * rather than an `import.meta.env` key: Vite builds that object itself, and an
+   * entry added to it is read at runtime rather than folded — which would leave
+   * the code behind the switch in every build. This one folds to `false`, and
+   * everything it guards goes with it.
+   *
+   * WXT's own dev server runs in mode `development`, so `pnpm dev` does not
+   * turn this on by accident: only `--mode dev`, asked for deliberately, does.
+   */
+  vite: (env) => ({
+    define: {
+      __HAMESH_DEV_SIGN_IN__: JSON.stringify(env.mode === 'dev'),
+    },
+  }),
   hooks: {
     /**
      * Optional Teams. Only a build given WXT_TEAMS_API_ORIGIN and

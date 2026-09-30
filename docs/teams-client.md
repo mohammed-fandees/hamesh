@@ -277,6 +277,36 @@ An MV3 service worker the browser shut down has no socket at all, so the worker
 pulls on a five-minute alarm as well: a missed poke is a delay, not a note nobody
 ever sees.
 
+## Trying it against a server on this machine
+
+Signing in needs Google, and Google needs a redirect URI registered for this
+exact build — which an unpacked build changes every time it is loaded. That is a
+lot of ceremony for trying a feature against `wrangler dev`, so there is a way to
+hand the worker a session the **local** server already issued:
+
+1. In the API repo, with `wrangler dev` running: `pnpm dev:session`. It writes a
+   session row into the local D1 file — the same row a sign-in would have
+   written, with the same token shape and the same HMAC — and prints the token.
+   It is not an endpoint and adds no route: the Worker's code is untouched, so
+   there is nothing here that could exist in production.
+2. Build the extension with `pnpm build:local` (or `pnpm dev:local`), pointing
+   `WXT_TEAMS_API_ORIGIN` at `http://localhost:8787`.
+3. Settings → Teams, turn Teams on as usual, then paste the token into **Sign in
+   with a local token**.
+
+It is not a way past authentication. The token has to be one the server itself
+issued; the worker stores it exactly as it stores a Google sign-in's, and the
+server checks it on every request afterwards — a made-up one is refused with a
+401 the first time it is used, and the session is dropped.
+
+`--mode dev` is the only switch. It is a build constant, not an environment
+variable (`__HAMESH_DEV_SIGN_IN__`, defined in `wxt.config.ts`), because a key
+added to `import.meta.env` is read at runtime rather than folded — which would
+leave the code behind it in every build. Folded, a normal build carries no trace:
+not the component, not its wording, not the message name, and not the worker's
+handler for it, which is what actually refuses the message. WXT's own dev server
+runs in mode `development`, so `pnpm dev` does not turn it on by accident.
+
 ## The contract package
 
 `packages/teams-contract` is the wire contract: request and response schemas,

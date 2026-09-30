@@ -19,8 +19,10 @@
   },
   "scripts": {
     "dev": "wxt",
+    "dev:local": "wxt --mode dev",
     "dev:firefox": "wxt -b firefox",
     "build": "wxt build",
+    "build:local": "wxt build --mode dev",
     "build:firefox": "wxt build -b firefox",
     "zip": "wxt zip",
     "zip:firefox": "wxt zip -b firefox",

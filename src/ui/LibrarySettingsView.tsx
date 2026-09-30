@@ -5,6 +5,7 @@ import { SegmentedControl } from './SegmentedControl';
 import { BackupSection, type BackupHandlers } from './BackupSection';
 import { TeamsSection } from './TeamsSection';
 import { TeamsAccount } from './teams/TeamsAccount';
+import { DevSignIn } from './teams/DevSignIn';
 import type { TeamsClient } from '@/teams/client';
 import {
   AppearanceIcon,
@@ -71,6 +72,8 @@ export function LibrarySettingsView({
   onOpenTeam,
 }: LibrarySettingsViewProps) {
   const [commands, setCommands] = useState<Record<string, string | null>>({});
+  /** Bumped when a local token is taken, so the account row re-reads its status. */
+  const [devSignedIn, setDevSignedIn] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -222,7 +225,16 @@ export function LibrarySettingsView({
             a build without Teams drops this section and its stylesheet too. */}
         {import.meta.env.WXT_TEAMS_API_ORIGIN && teams && (
           <>
-            <TeamsSection strings={strings} lang={lang} client={teams} />
+            <TeamsSection strings={strings} lang={lang} client={teams} key={devSignedIn} />
+            {/* Only a build that asked for it; the constant folds away in every
+                other one, and this component goes with it. */}
+            {__HAMESH_DEV_SIGN_IN__ && (
+              <DevSignIn
+                lang={lang}
+                client={teams}
+                onSignedIn={() => setDevSignedIn((n) => n + 1)}
+              />
+            )}
             {/* Joining a team and paying for one belong to the account, which
                 is here — not to any one team's page. */}
             <TeamsAccount lang={lang} client={teams} onJoined={(id) => onOpenTeam?.(id)} />

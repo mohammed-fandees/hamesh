@@ -113,6 +113,38 @@ export function isTeamsEvent(message: unknown): message is TeamsEvent {
   );
 }
 
+/**
+ * A session handed straight to the worker, for a development build pointed at a
+ * server running on this machine.
+ *
+ * Signing in needs Google, and Google needs a redirect URI registered for this
+ * exact build — which is a lot of ceremony for trying a feature against
+ * `wrangler dev`. The local server can mint a session row directly (see the API
+ * repo's `dev:session`), and this is how that token reaches the one place
+ * allowed to hold one.
+ *
+ * It is not a way past anything. The token has to be one the server already
+ * issued — a made-up one is refused on the first request, like any other — and
+ * the worker only handles this at all in a build that asked for it
+ * (`WXT_TEAMS_DEV_SIGN_IN`), from Hamesh's own pages, as with every other Teams
+ * message.
+ */
+export interface TeamsDevSignIn {
+  type: 'TEAMS_DEV_SIGN_IN';
+  token: string;
+}
+
+export function isTeamsDevSignIn(message: unknown): message is TeamsDevSignIn {
+  if (!message || typeof message !== 'object') return false;
+  const m = message as Record<string, unknown>;
+  // The same shape the server issues: 32 bytes, base64url.
+  return (
+    m.type === 'TEAMS_DEV_SIGN_IN' &&
+    typeof m.token === 'string' &&
+    /^[A-Za-z0-9_-]{43}$/.test(m.token)
+  );
+}
+
 export function isTeamsCacheRequest(message: unknown): message is TeamsCacheRequest {
   if (!message || typeof message !== 'object') return false;
   const m = message as Record<string, unknown>;
