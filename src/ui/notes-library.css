@@ -35,6 +35,17 @@
   line-height: var(--hm-lh-title-lg);
   font-weight: 600;
 }
+/* The Teams overview lays out tiles and chips, which want more room than a
+   list of notes does; the Library and the rest keep the reading column. */
+.hm-notes-page__inner--wide {
+  max-width: 880px;
+}
+/* A page reached from another one: the breadcrumb above it says where from, so
+   it is the title the header keeps, at a lower margin. */
+.hm-notes-page__header--sub {
+  align-items: baseline;
+  margin-bottom: var(--hm-space-4);
+}
 
 /* ---- Sidebar nav ---- */
 /* Sticky, one viewport tall, rather than stretching with the page. The
@@ -731,6 +742,29 @@
   text-decoration: underline;
 }
 .hm-note-row__toggle:focus-visible {
+  outline: none;
+  box-shadow: var(--hm-ring);
+}
+/* A team note's way to its discussion: at the end of the meta line, raised
+   above the stretched link like the toggle, and quiet until it is looked for. */
+.hm-note-row__discuss {
+  position: relative;
+  z-index: 1;
+  margin-inline-start: auto;
+  padding: 1px 2px;
+  border: none;
+  border-radius: var(--hm-radius-sm);
+  background: none;
+  color: var(--hm-accent-strong);
+  font-family: var(--hm-sans);
+  font-size: var(--hm-text-label);
+  font-weight: 600;
+  cursor: pointer;
+}
+.hm-note-row__discuss:hover {
+  text-decoration: underline;
+}
+.hm-note-row__discuss:focus-visible {
   outline: none;
   box-shadow: var(--hm-ring);
 }

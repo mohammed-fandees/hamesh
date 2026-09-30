@@ -19,3 +19,20 @@ export const NoteShareSlot = createContext<ShareActionRenderer | null>(null);
 export function useShareAction(): ShareActionRenderer | null {
   return useContext(NoteShareSlot);
 }
+
+/**
+ * Where a team note's discussion is opened from — the same idea as the share
+ * slot, for the same reason. A row only knows the note; the page that owns the
+ * notes knows where a team's discussion lives, and what to call the way there.
+ * The label travels with it so the row needs none of the Teams strings.
+ */
+export interface DiscussAction {
+  label: string;
+  open: (note: Note) => void;
+}
+
+export const NoteDiscussSlot = createContext<DiscussAction | null>(null);
+
+export function useDiscussAction(): DiscussAction | null {
+  return useContext(NoteDiscussSlot);
+}

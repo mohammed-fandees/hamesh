@@ -74,6 +74,44 @@ describe('which notes the library is showing', () => {
     );
   });
 
+  it('narrows a team to one of its folders, or to the notes filed in none', () => {
+    const inFolder = note({ id: ALPHA, name: 'Alpha' });
+    inFolder.team!.folderId = 'F1';
+    const loose = note({ id: ALPHA, name: 'Alpha' });
+    const all = [inFolder, loose];
+
+    const alphaF1: NoteOwner = { teamId: ALPHA, folder: { id: 'F1', name: 'Onboarding' } };
+    const alphaNone: NoteOwner = { teamId: ALPHA, folder: { id: null, name: 'Unfiled' } };
+    expect(all.filter((n) => matchesOwner(n, alphaF1))).toEqual([inFolder]);
+    expect(all.filter((n) => matchesOwner(n, alphaNone))).toEqual([loose]);
+    // Another team's folder is not this team's, even with the same id.
+    expect(
+      all.filter((n) => matchesOwner(n, { teamId: BETA, folder: { id: 'F1', name: 'x' } })),
+    ).toEqual([]);
+  });
+
+  it('says which folder it is narrowed to, keeps the team on, and lets it be undone', () => {
+    const onChange = vi.fn();
+    render(
+      <NoteFilter
+        lang="en"
+        teams={teams}
+        value={{ teamId: ALPHA, folder: { id: 'F1', name: 'Onboarding' } }}
+        onChange={onChange}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Alpha' })).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(screen.getByRole('button', { name: strings.clearFolderFilter('Onboarding') }));
+    // Back to the whole team — not to everything.
+    expect(onChange).toHaveBeenCalledWith({ teamId: ALPHA });
+  });
+
+  it('shows no folder chip when it is not narrowed', () => {
+    render(<NoteFilter lang="en" teams={teams} value={{ teamId: ALPHA }} onChange={vi.fn()} />);
+    expect(screen.queryByRole('button', { name: /Show all of the team/ })).not.toBeInTheDocument();
+  });
+
   it('is not there at all when this account is in no team', () => {
     const { container } = render(
       <NoteFilter lang="en" teams={[]} value="all" onChange={vi.fn()} />,

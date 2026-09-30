@@ -93,6 +93,14 @@
   --hm-radius-lg: 10px;
   --hm-radius-pill: 999px;
 
+  /* Cards — the box a thing on an extension page sits in: a hairline, the
+     large radius, and one of two paddings. `--hm-card-pad` is a section or a
+     panel; `--hm-card-pad-dense` is a card that repeats down a list (a note, a
+     tile, a mention), where the same padding would make the list twice as
+     long. Nothing else picks its own. */
+  --hm-card-pad: var(--hm-space-4) var(--hm-space-5);
+  --hm-card-pad-dense: var(--hm-space-3) var(--hm-space-4);
+
   /* Elevation — how far a layer is from the page it sits on. The level says
      what a thing IS, not how much it should stand out:
        0  resting     a card on the page: a hairline, no shadow at all

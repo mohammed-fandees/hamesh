@@ -21,8 +21,9 @@
 }
 
 /* ---- Teams page ------------------------------------------------------
-   The same hairline-separated rows as the rest of the library: a team is a
-   list of people, not a dashboard, so nothing here gets a card or a panel. */
+   An overview: a card for how a team's notes are filed, a card for who is in
+   it, and a panel that stays shut for the things that end it. Each card is the
+   same box (`--hm-card-*`), so the page reads as three of one thing. */
 .hm-input {
   min-width: 0;
   padding: var(--hm-space-2) var(--hm-space-3);
@@ -34,40 +35,15 @@
   font-size: var(--hm-text-body);
 }
 .hm-input:focus-visible {
-  outline: 2px solid var(--hm-accent);
-  outline-offset: 1px;
+  outline: none;
+  border-color: var(--hm-accent);
+  box-shadow: var(--hm-halo);
 }
 .hm-input--select {
   flex: 0 0 auto;
 }
 .hm-input--number {
   flex: 0 0 5rem;
-}
-
-.hm-team-switcher {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--hm-space-2);
-  margin: var(--hm-space-3) 0 0;
-  padding: 0;
-  list-style: none;
-}
-.hm-team-switcher__item {
-  display: flex;
-  align-items: baseline;
-  gap: var(--hm-space-2);
-  padding: var(--hm-space-2) var(--hm-space-3);
-  border: 1px solid var(--hm-border);
-  border-radius: var(--hm-radius-sm);
-  background: var(--hm-surface);
-  color: inherit;
-  font: inherit;
-  font-size: var(--hm-text-body);
-  cursor: pointer;
-}
-.hm-team-switcher__item[aria-current='true'] {
-  border-color: var(--hm-accent);
-  background: var(--hm-accent-tint);
 }
 
 .hm-team-members,
@@ -89,6 +65,20 @@
 .hm-team-member:last-child,
 .hm-team-invitation:last-child {
   border-bottom: none;
+}
+/* In its own card the rows run edge to edge, hairline between, and carry the
+   dense card padding — the card has none of its own to inset them. */
+.hm-section--flush .hm-team-members {
+  margin: 0;
+}
+.hm-section--flush .hm-team-member {
+  padding: var(--hm-card-pad-dense);
+}
+/* A row that is acting keeps its place and says so, where it says it. */
+.hm-team-member [role='status'] {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hm-space-2);
 }
 .hm-team-member__who,
 .hm-team-invitation__who {
@@ -155,9 +145,6 @@
   user-select: all;
 }
 
-.hm-team-detail {
-  margin-top: var(--hm-space-4);
-}
 .hm-billing__price {
   margin: var(--hm-space-3) 0 0;
   font-size: var(--hm-text-title);
@@ -361,11 +348,20 @@
   border-radius: var(--hm-radius-lg);
   background: var(--hm-surface);
 }
+.hm-panel__summary:hover {
+  background: var(--hm-layer-hover);
+}
+.hm-panel__summary:focus-visible {
+  outline: none;
+  background: var(--hm-layer-focus);
+  box-shadow: var(--hm-ring-inset);
+}
 .hm-panel__summary {
   display: flex;
   align-items: baseline;
   gap: var(--hm-space-3);
-  padding: var(--hm-space-4);
+  padding: var(--hm-card-pad);
+  border-radius: var(--hm-radius-lg);
   font-size: var(--hm-text-body);
   font-weight: 500;
   cursor: pointer;
@@ -392,109 +388,7 @@
   font-size: var(--hm-text-body-sm);
 }
 .hm-panel__body {
-  padding: 0 var(--hm-space-4) var(--hm-space-4);
-}
-
-/* ---- The team's notes ---- */
-.hm-workspace {
-  margin-top: var(--hm-space-4);
-}
-.hm-workspace__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--hm-space-3);
-  margin-bottom: var(--hm-space-3);
-}
-.hm-workspace__title {
-  margin: 0;
-  font-size: var(--hm-text-title);
-  line-height: var(--hm-lh-title);
-  font-weight: 600;
-}
-.hm-workspace__split {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--hm-space-5);
-}
-.hm-workspace__notes {
-  flex-grow: 1;
-  min-width: 0;
-}
-@media (max-width: 720px) {
-  .hm-workspace__split {
-    flex-direction: column;
-  }
-}
-
-/* The folder column: where a team's notes are divided up. */
-.hm-folder-rail {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  width: 15rem;
-  flex-shrink: 0;
-}
-.hm-folder-rail__row {
-  display: flex;
-  flex-direction: column;
-}
-.hm-folder-rail__item {
-  display: flex;
-  align-items: center;
-  gap: var(--hm-space-2);
-  width: 100%;
-  padding: var(--hm-space-2) var(--hm-space-3);
-  border: 1px solid transparent;
-  border-radius: var(--hm-radius-md);
-  background: none;
-  color: var(--hm-ink-60);
-  font: inherit;
-  font-size: var(--hm-text-body);
-  text-align: start;
-  cursor: pointer;
-}
-.hm-folder-rail__item:hover {
-  background: var(--hm-paper-dim);
-}
-.hm-folder-rail__item[aria-current='true'] {
-  border-color: var(--hm-accent-tint);
-  background: var(--hm-accent-tint);
-  color: var(--hm-accent-strong);
-  font-weight: 500;
-}
-.hm-folder-rail__count {
-  margin-inline-start: auto;
-  font-size: var(--hm-text-body-sm);
-  opacity: 0.75;
-}
-/* The folder and its controls share one line. */
-.hm-folder-rail__line {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-.hm-folder-rail__line .hm-folder-rail__item {
-  flex-grow: 1;
-  min-width: 0;
-}
-/* The controls sit over the count rather than beside it, and are not there at
-   all until the row is reached for — so the rail keeps one steady rhythm
-   instead of reserving a gap under every folder for something invisible. */
-.hm-folder-rail__actions {
-  position: absolute;
-  inset-inline-end: var(--hm-space-2);
-  display: none;
-  align-items: center;
-  gap: var(--hm-space-3);
-  padding: 2px var(--hm-space-2);
-  border-radius: var(--hm-radius-sm);
-  background: var(--hm-paper-dim);
-  font-size: var(--hm-text-body-sm);
-}
-.hm-folder-rail__line:hover .hm-folder-rail__actions,
-.hm-folder-rail__line:focus-within .hm-folder-rail__actions {
-  display: flex;
+  padding: 0 var(--hm-space-5) var(--hm-space-4);
 }
 
 .hm-team-notes {
@@ -509,10 +403,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--hm-space-2);
-  padding: var(--hm-space-4);
-  border: 1px solid var(--hm-border);
-  border-radius: var(--hm-radius-lg);
-  background: var(--hm-surface);
 }
 .hm-team-note__head {
   display: flex;
@@ -533,8 +423,8 @@
   margin: 0;
   font-family: var(--hm-serif);
   font-style: italic;
-  font-size: var(--hm-text-body);
-  line-height: 1.55;
+  font-size: var(--hm-text-prose);
+  line-height: var(--hm-lh-prose);
   overflow-wrap: anywhere;
 }
 /* A note's controls on one line where they fit: tighter than the page's usual
@@ -555,12 +445,6 @@
   padding: 2px var(--hm-space-2);
   font-size: var(--hm-text-body-sm);
 }
-/* The rail is as narrow as its longest folder name wants, so the notes beside
-   it keep room for their own line of controls. */
-.hm-folder-rail {
-  width: 13rem;
-}
-
 /* ---- Where you were named ---- */
 .hm-mentions {
   margin: var(--hm-space-3) 0 0;
@@ -574,7 +458,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--hm-space-1);
-  padding: var(--hm-space-3) var(--hm-space-4);
+  padding: var(--hm-card-pad-dense);
   border: 1px solid var(--hm-border);
   border-radius: var(--hm-radius-lg);
   background: var(--hm-surface);
@@ -648,4 +532,331 @@
 }
 .hm-empty__action {
   margin-top: var(--hm-space-3);
+}
+
+/* ---- The overview's cards ---- */
+.hm-section {
+  margin-top: var(--hm-space-4);
+  padding: var(--hm-card-pad);
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-lg);
+  background: var(--hm-surface);
+}
+.hm-section--flush {
+  padding: 0;
+  overflow: hidden;
+}
+.hm-section__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--hm-space-3);
+  margin-bottom: var(--hm-space-4);
+}
+.hm-section__title {
+  margin: 0;
+  font-size: var(--hm-text-title);
+  line-height: var(--hm-lh-title);
+  font-weight: 600;
+}
+/* Beside a title in a header the card's own bottom margin is the header's. */
+.hm-section > .hm-section__title {
+  margin-bottom: var(--hm-space-2);
+}
+.hm-section__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hm-space-2);
+  color: var(--hm-ink-40);
+  font-size: var(--hm-text-body-sm);
+}
+.hm-section__spacer {
+  flex-grow: 1;
+}
+/* A quiet heading between a card and the thread under it. */
+.hm-subheading {
+  margin: var(--hm-space-6) 0 var(--hm-space-2);
+  color: var(--hm-ink-40);
+  font-size: var(--hm-text-body-sm);
+  line-height: var(--hm-lh-body-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* The accent for a link that says where the reader can go next. */
+.hm-link--accent {
+  color: var(--hm-accent-strong);
+}
+.hm-link--accent:hover {
+  color: var(--hm-accent-strong);
+  text-decoration: underline;
+}
+
+/* ---- Folders as tiles ---- */
+.hm-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
+  gap: var(--hm-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.hm-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-md);
+  background: var(--hm-paper);
+  transition: opacity var(--hm-motion-state);
+}
+.hm-tile[data-busy] {
+  opacity: var(--hm-state-disabled);
+}
+.hm-tile__open {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--hm-space-1);
+  padding: var(--hm-card-pad-dense);
+  border: none;
+  border-radius: inherit;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: background var(--hm-motion-state);
+}
+.hm-tile__open:hover {
+  background: var(--hm-layer-hover);
+}
+.hm-tile__open:active {
+  background: var(--hm-layer-pressed);
+}
+.hm-tile__open:focus-visible {
+  outline: none;
+  background: var(--hm-layer-focus);
+  box-shadow: var(--hm-ring-inset);
+}
+.hm-tile__name {
+  display: flex;
+  align-items: center;
+  gap: var(--hm-space-2);
+  font-size: var(--hm-text-body);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.hm-tile__name--quiet {
+  color: var(--hm-ink-60);
+}
+.hm-tile__glyph {
+  flex: none;
+  color: var(--hm-accent);
+}
+.hm-tile__count {
+  color: var(--hm-ink-40);
+  font-size: var(--hm-text-body-sm);
+}
+/* What can be done to a folder waits until the tile is reached for, or focus is
+   in it — so the tiles stay a grid of places, not a grid of toolbars. Always
+   there on a screen with no hover, where "reaching for" is not a thing. */
+.hm-tile__actions {
+  display: flex;
+  gap: var(--hm-space-3);
+  padding: 0 var(--hm-space-4) var(--hm-space-2);
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition:
+    max-height var(--hm-motion-exit),
+    opacity var(--hm-motion-state);
+}
+.hm-tile:hover .hm-tile__actions,
+.hm-tile:focus-within .hm-tile__actions {
+  max-height: 2.5rem;
+  opacity: 1;
+  transition:
+    max-height var(--hm-motion-enter),
+    opacity var(--hm-motion-state);
+}
+@media (hover: none) {
+  .hm-tile__actions {
+    max-height: 2.5rem;
+    opacity: 1;
+  }
+}
+.hm-tile__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hm-space-2);
+  padding: var(--hm-card-pad-dense);
+}
+.hm-tile__form-actions {
+  display: flex;
+  gap: var(--hm-space-2);
+}
+.hm-tile .hm-confirm {
+  padding: var(--hm-card-pad-dense);
+  justify-content: flex-start;
+}
+.hm-tile .hm-field-error {
+  margin: 0;
+  padding: 0 var(--hm-space-4) var(--hm-space-2);
+}
+/* "+ New folder": an outline that says there could be another tile here. */
+.hm-tile--add {
+  border-style: dashed;
+  border-color: var(--hm-ink-20);
+  background: none;
+}
+.hm-tile__add {
+  flex: 1;
+  padding: var(--hm-card-pad-dense);
+  border: none;
+  border-radius: inherit;
+  background: none;
+  color: var(--hm-ink-60);
+  font: inherit;
+  font-size: var(--hm-text-body-sm);
+  text-align: start;
+  cursor: pointer;
+  transition:
+    background var(--hm-motion-state),
+    color var(--hm-motion-state);
+}
+.hm-tile__add:hover {
+  background: var(--hm-layer-hover);
+  color: var(--hm-accent-strong);
+}
+.hm-tile__add:focus-visible {
+  outline: none;
+  background: var(--hm-layer-focus);
+  box-shadow: var(--hm-ring-inset);
+}
+
+/* ---- Members as chips ---- */
+.hm-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--hm-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.hm-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hm-space-2);
+  padding-block: var(--hm-space-1);
+  padding-inline: var(--hm-space-1) var(--hm-space-3);
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-pill);
+  background: var(--hm-paper);
+  font-size: var(--hm-text-body-sm);
+}
+.hm-chip__meta {
+  color: var(--hm-ink-40);
+}
+/* "+ Invite someone" — the same outline as "+ New folder". */
+.hm-chip--add {
+  padding: var(--hm-space-2) var(--hm-space-4);
+  border-style: dashed;
+  border-color: var(--hm-ink-20);
+  background: none;
+  color: var(--hm-ink-60);
+  font: inherit;
+  font-size: var(--hm-text-body-sm);
+  cursor: pointer;
+  transition:
+    background var(--hm-motion-state),
+    color var(--hm-motion-state);
+}
+.hm-chip--add:hover {
+  background: var(--hm-layer-hover);
+  color: var(--hm-accent-strong);
+}
+.hm-chip--add:focus-visible {
+  outline: none;
+  background: var(--hm-layer-focus);
+  box-shadow: var(--hm-ring);
+}
+
+/* ---- The trail back ---- */
+.hm-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--hm-space-2);
+  margin: 0 0 var(--hm-space-4);
+  padding: 0;
+  list-style: none;
+  color: var(--hm-ink-40);
+  font-size: var(--hm-text-body-sm);
+}
+.hm-breadcrumb__item + .hm-breadcrumb__item::before {
+  content: '/';
+  margin-inline-end: var(--hm-space-2);
+}
+.hm-breadcrumb .hm-link {
+  color: var(--hm-ink-60);
+}
+.hm-breadcrumb .hm-link:hover {
+  color: var(--hm-ink);
+  text-decoration: underline;
+}
+.hm-breadcrumb [aria-current='page'] {
+  color: var(--hm-ink);
+}
+
+/* ---- A row that is acting ---- */
+/* The arc turns while a row waits on the server. Static under reduced motion
+   (the blanket override), which still reads as "this is in progress". */
+.hm-spinner {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid var(--hm-ink-20);
+  border-top-color: var(--hm-accent);
+  border-radius: var(--hm-radius-pill);
+  animation: hm-spin 800ms linear infinite;
+}
+@keyframes hm-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+/* Skeletons shaped like what is loading: a wrap of tiles, a line of chips. */
+.hm-skeleton--tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
+}
+.hm-skeleton--chips .hm-skeleton__row {
+  width: 60%;
+  height: 32px;
+  border-radius: var(--hm-radius-pill);
+}
+
+/* ---- The Library, narrowed to one of a team's folders ---- */
+.hm-owner-filter__scope {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hm-space-2);
+  padding: var(--hm-space-2) var(--hm-space-3);
+  border: 1px solid var(--hm-accent-tint);
+  border-radius: var(--hm-radius-pill);
+  background: var(--hm-accent-tint);
+  color: var(--hm-accent-strong);
+  font: inherit;
+  font-size: var(--hm-text-body-sm);
+  font-weight: 500;
+  cursor: pointer;
+}
+.hm-owner-filter__scope:hover {
+  border-color: var(--hm-accent);
+}
+.hm-owner-filter__scope:focus-visible {
+  outline: none;
+  box-shadow: var(--hm-ring);
 }

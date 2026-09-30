@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
-import { render, screen, cleanup, fireEvent, waitFor, within } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
-import { TeamNotes } from '@/ui/teams/TeamNotes';
+import { TeamNotePage } from '@/ui/teams/TeamNotePage';
 import { getTeamsStrings } from '@/ui/teams/strings';
 import type { TeamsPage } from '@/ui/teams/useTeams';
 import type { CachedTeamNote } from '@/teams/page-cache';
@@ -13,6 +13,7 @@ const TEAM = '01J0000000000000000000000A';
 const ME = '01J0000000000000000000000Z';
 const MATE = '01J0000000000000000000000V';
 const FOLDER = '01J0000000000000000000000F';
+const NOTE = '01J0000000000000000000000N';
 
 const ANCHOR = {
   primarySelector: 'p',
@@ -22,7 +23,7 @@ const ANCHOR = {
 
 function cached(overrides: Partial<CachedTeamNote> = {}): CachedTeamNote {
   return {
-    id: '01J0000000000000000000000N',
+    id: NOTE,
     teamId: TEAM,
     originalUrl: 'https://example.test/article',
     pageTitle: 'An article',
@@ -62,7 +63,7 @@ const folder = { id: FOLDER, parentId: null, name: 'Reading', createdAt: 1, upda
 /** A page whose answers a test steers, recording what was asked of the worker. */
 function fakePage(
   snapshot: { notes: CachedTeamNote[]; folders: unknown[] },
-  answers: Record<string, unknown> = {},
+  answers: Record<string, unknown> = { 'comments.list': { comments: [], nextAfter: null } },
 ) {
   const calls: { op: string; params: unknown }[] = [];
   const cache = vi.fn(async () => ({ ...snapshot, syncedAt: 1_700_000_000_000 }) as never);
@@ -91,30 +92,33 @@ const personal = {
   keep: vi.fn(async (_note: { content: string }) => {}),
 };
 
-const view = (page: TeamsPage, capabilities?: TeamAction[], onOpenLibrary = vi.fn()) =>
+const view = (page: TeamsPage, capabilities?: TeamAction[], onGone = vi.fn(), onRoute = vi.fn()) =>
   render(
-    <TeamNotes
+    <TeamNotePage
       strings={strings}
       lang="en"
       page={page}
       team={team(capabilities)}
       myUserId={ME}
       members={[]}
+      noteId={NOTE}
       personal={personal}
-      onOpenLibrary={onOpenLibrary}
+      onGone={onGone}
+      onRoute={onRoute}
     />,
   );
 
-/** Presses the row's own "are you sure" button. */
+/** Presses the note's own "are you sure" button. */
 const confirmWith = (label: string) => fireEvent.click(screen.getByRole('button', { name: label }));
 
 beforeEach(() => vi.clearAllMocks());
 afterEach(cleanup);
 
-describe('a team’s shared notes', () => {
-  it('reads what this device holds, pulling first, and shows it', async () => {
+describe('one shared note', () => {
+  it('reads what this device holds, pulling first, and shows the note with its trail back', async () => {
     const { page, cache } = fakePage({ notes: [cached()], folders: [] });
-    view(page);
+    const onRoute = vi.fn();
+    view(page, undefined, vi.fn(), onRoute);
 
     expect(await screen.findByText('my shared thought')).toBeInTheDocument();
     expect(cache).toHaveBeenCalledWith(TEAM, 'sync', 'notes.reload');
@@ -122,17 +126,22 @@ describe('a team’s shared notes', () => {
       'href',
       'https://example.test/article',
     );
+
+    // Teams / Alpha / the note — every step but the last is a way back.
+    fireEvent.click(screen.getByRole('button', { name: 'Alpha' }));
+    expect(onRoute).toHaveBeenCalledWith({ page: 'overview', teamId: TEAM });
+    fireEvent.click(screen.getByRole('button', { name: strings.teams }));
+    expect(onRoute).toHaveBeenLastCalledWith({ page: 'overview', teamId: null });
   });
 
-  it('says what to do about it, with the way to do it, when a team has nothing yet', async () => {
-    const onOpenLibrary = vi.fn();
+  it('says so, with the way back, when the note has gone from the team', async () => {
+    const onGone = vi.fn();
     const { page } = fakePage({ notes: [], folders: [] });
-    view(page, undefined, onOpenLibrary);
+    view(page, undefined, onGone);
 
-    expect(await screen.findByText(strings.emptyNotesTitle('Alpha'))).toBeInTheDocument();
-    expect(screen.getByText(strings.emptyNotesBody('Alpha'))).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: strings.goToLibrary }));
-    expect(onOpenLibrary).toHaveBeenCalled();
+    expect(await screen.findByText(strings.noteGoneTitle)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: strings.backToTeam('Alpha') }));
+    expect(onGone).toHaveBeenCalled();
   });
 
   it('quotes the version it saw when filing a note, so a stale move is refused', async () => {
@@ -144,30 +153,41 @@ describe('a team’s shared notes', () => {
     await waitFor(() => expect(calls.some((c) => c.op === 'notes.update')).toBe(true));
     expect(calls.find((c) => c.op === 'notes.update')!.params).toEqual({
       teamId: TEAM,
-      noteId: cached().id,
+      noteId: NOTE,
       version: 4,
       folderId: FOLDER,
     });
   });
 
-  it('asks on the row before taking a note back, and keeps it once told to', async () => {
+  it('asks on the note before taking it back, keeps it once told to, and goes back', async () => {
     const note = cached();
+    const onGone = vi.fn();
     const { page, calls } = fakePage(
       { notes: [note], folders: [] },
-      { 'notes.unshare': { note: { ...note, content: 'as it was shared' } } },
+      {
+        'comments.list': { comments: [], nextAfter: null },
+        'notes.unshare': { note: { ...note, content: 'as it was shared' } },
+      },
     );
-    view(page);
+    view(page, undefined, onGone);
     await screen.findByText('my shared thought');
 
     fireEvent.click(screen.getByRole('button', { name: strings.unshareNote }));
     // The question is asked here, in the page — never in a browser dialog.
     expect(screen.getByText(strings.unshareConfirm)).toBeInTheDocument();
-    expect(calls, 'nothing has happened yet').toHaveLength(0);
+    expect(
+      calls.some((c) => c.op === 'notes.unshare'),
+      'nothing has happened yet',
+    ).toBe(false);
 
     confirmWith(strings.unshareNote);
     await waitFor(() => expect(personal.keep).toHaveBeenCalled());
-    expect(calls[0]).toEqual({ op: 'notes.unshare', params: { teamId: TEAM, noteId: note.id } });
+    expect(calls.find((c) => c.op === 'notes.unshare')).toEqual({
+      op: 'notes.unshare',
+      params: { teamId: TEAM, noteId: note.id },
+    });
     expect(personal.keep.mock.calls[0]![0]).toMatchObject({ content: 'as it was shared' });
+    expect(onGone).toHaveBeenCalled();
   });
 
   it('lets the question be backed out of, and then nothing happens', async () => {
@@ -180,11 +200,11 @@ describe('a team’s shared notes', () => {
     fireEvent.click(screen.getByRole('button', { name: strings.keepIt }));
 
     expect(screen.queryByText(strings.deleteSharedConfirm)).not.toBeInTheDocument();
-    expect(calls).toHaveLength(0);
+    expect(calls.some((c) => c.op === 'notes.delete')).toBe(false);
   });
 
   it('offers nothing about someone else’s note beyond what the server allowed', async () => {
-    const theirs = cached({ id: '01J0000000000000000000000M', authorId: MATE });
+    const theirs = cached({ authorId: MATE });
     const { page } = fakePage({ notes: [theirs], folders: [] });
     // Only "own" capabilities: someone else's note is not this reader's to touch.
     view(page, ['team.view', 'notes.edit_own', 'notes.delete_own', 'notes.unshare_own']);
@@ -198,85 +218,49 @@ describe('a team’s shared notes', () => {
   });
 
   it('lets an admin delete anyone’s note for everyone, once they have said so', async () => {
+    const onGone = vi.fn();
     const theirs = cached({ authorId: MATE });
-    const { page, calls } = fakePage({ notes: [theirs], folders: [] });
-    view(page);
+    const { page, calls } = fakePage(
+      { notes: [theirs], folders: [] },
+      { 'comments.list': { comments: [], nextAfter: null }, 'notes.delete': {} },
+    );
+    view(page, undefined, onGone);
     await screen.findByText('my shared thought');
 
     fireEvent.click(screen.getByRole('button', { name: strings.deleteSharedNote }));
     confirmWith(strings.deleteSharedNote);
     await waitFor(() => expect(calls.some((c) => c.op === 'notes.delete')).toBe(true));
+    await waitFor(() => expect(onGone).toHaveBeenCalled());
   });
 
-  it('creates, renames and deletes a team’s folders', async () => {
-    const { page, calls } = fakePage(
-      { notes: [], folders: [folder] },
-      { 'folders.create': { folder: {} }, 'folders.rename': { folder: {} } },
+  it('edits a note against the version it saw', async () => {
+    const { page, calls } = fakePage({ notes: [cached()], folders: [] });
+    view(page);
+    await screen.findByText('my shared thought');
+
+    fireEvent.click(screen.getByRole('button', { name: strings.editNote }));
+    fireEvent.change(screen.getByLabelText(strings.editNote), { target: { value: 'reworded' } });
+    fireEvent.click(screen.getByRole('button', { name: strings.saveNote }));
+    await waitFor(() => expect(calls.some((c) => c.op === 'notes.update')).toBe(true));
+    expect(calls.find((c) => c.op === 'notes.update')!.params).toEqual({
+      teamId: TEAM,
+      noteId: NOTE,
+      version: 4,
+      content: 'reworded',
+    });
+  });
+
+  it('carries the note’s discussion under it', async () => {
+    const { page, calls } = fakePage({ notes: [cached()], folders: [] });
+    view(page);
+    await screen.findByText('my shared thought');
+
+    expect(screen.getByRole('heading', { name: strings.comments })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(calls.find((c) => c.op === 'comments.list')?.params).toEqual({
+        teamId: TEAM,
+        noteId: NOTE,
+      }),
     );
-    view(page);
-    await screen.findByText('Reading');
-
-    fireEvent.click(screen.getByRole('button', { name: `+ ${strings.newTeamFolder}` }));
-    fireEvent.change(screen.getByLabelText(strings.newTeamFolder), {
-      target: { value: 'Onboarding' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: strings.create }));
-    await waitFor(() => expect(calls.some((c) => c.op === 'folders.create')).toBe(true));
-    expect(calls.find((c) => c.op === 'folders.create')!.params).toEqual({
-      teamId: TEAM,
-      name: 'Onboarding',
-    });
-
-    fireEvent.click(screen.getByRole('button', { name: strings.renameFolder }));
-    fireEvent.change(screen.getByLabelText(strings.renameFolder), { target: { value: 'Papers' } });
-    fireEvent.click(screen.getByRole('button', { name: strings.rename }));
-    await waitFor(() => expect(calls.some((c) => c.op === 'folders.rename')).toBe(true));
-    expect(calls.find((c) => c.op === 'folders.rename')!.params).toEqual({
-      teamId: TEAM,
-      folderId: FOLDER,
-      name: 'Papers',
-    });
-
-    fireEvent.click(screen.getByRole('button', { name: strings.deleteFolder }));
-    confirmWith(strings.deleteFolder);
-    await waitFor(() => expect(calls.some((c) => c.op === 'folders.delete')).toBe(true));
-  });
-
-  it('shows no folder controls at all to someone the server did not let manage them', async () => {
-    const { page } = fakePage({ notes: [], folders: [folder] });
-    view(page, ['team.view']);
-    await screen.findByText('Reading');
-
-    expect(
-      screen.queryByRole('button', { name: `+ ${strings.newTeamFolder}` }),
-    ).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: strings.renameFolder })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: strings.deleteFolder })).not.toBeInTheDocument();
-  });
-
-  it('narrows the list to one folder, and counts what is in each', async () => {
-    const { page } = fakePage({
-      notes: [
-        cached({ id: '01J0000000000000000000000N', folderId: FOLDER, content: 'filed one' }),
-        cached({ id: '01J0000000000000000000000M', folderId: null, content: 'loose one' }),
-        // A folder that no longer exists leaves its note unfiled, never hidden.
-        cached({ id: '01J0000000000000000000000P', folderId: 'gone', content: 'orphan' }),
-      ],
-      folders: [folder],
-    });
-    view(page);
-    await screen.findByText('filed one');
-
-    const rail = screen.getByRole('complementary');
-    expect(within(rail).getByRole('button', { name: /Reading/ })).toHaveTextContent('1');
-    expect(within(rail).getByRole('button', { name: /Unfiled/ })).toHaveTextContent('2');
-
-    fireEvent.click(within(rail).getByRole('button', { name: /Reading/ }));
-    expect(screen.getByText('filed one')).toBeInTheDocument();
-    expect(screen.queryByText('loose one')).not.toBeInTheDocument();
-
-    fireEvent.click(within(rail).getByRole('button', { name: /Unfiled/ }));
-    expect(screen.getByText('orphan')).toBeInTheDocument();
-    expect(screen.queryByText('filed one')).not.toBeInTheDocument();
   });
 });

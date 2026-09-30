@@ -153,6 +153,20 @@ export interface TeamsStrings {
   sharedWithLabel: (team: string) => string;
   openInTeams: string;
   teamNoteHint: string;
+  /** The chip that says the Library is narrowed to one folder, and its way out. */
+  clearFolderFilter: (folder: string) => string;
+  /** Said when a team, or one of its folders, has no notes to show in the Library. */
+  filterEmptyTitle: string;
+  filterEmptyBody: string;
+  filterShowAll: string;
+  /** A folder nested in another, named by where it sits. */
+  folderIn: (parent: string) => string;
+  /** The Teams pages' trail back to where the reader came from. */
+  breadcrumb: string;
+  whoIsInIt: string;
+  noteGoneTitle: string;
+  noteGoneBody: string;
+  backToTeam: (team: string) => string;
 
   billing: string;
   planActive: (until: string) => string;
@@ -328,6 +342,16 @@ const en: TeamsStrings = {
   openInTeams: 'Open in Teams',
   teamNoteHint:
     'This one lives in a team. It is read where it is, and changed from the team it belongs to.',
+  clearFolderFilter: (folder) => `Show all of the team’s notes, not only ${folder}`,
+  filterEmptyTitle: 'Nothing here yet',
+  filterEmptyBody: 'No notes match this filter. Show everything to see the rest.',
+  filterShowAll: 'Show everything',
+  folderIn: (parent) => `in ${parent}`,
+  breadcrumb: 'Breadcrumb',
+  whoIsInIt: 'Who’s in it',
+  noteGoneTitle: 'This note is no longer here',
+  noteGoneBody: 'It was taken back, or deleted for everyone.',
+  backToTeam: (team) => `Back to ${team}`,
 
   billing: 'Plan',
   planActive: (until) => `Active until ${until}`,
@@ -562,6 +586,20 @@ const ar: TeamsStrings = {
   filterTeam: (team) => team,
   sharedWithLabel: (team) => `\u0645\u064f\u0634\u0627\u0631\u0643\u0629 \u0645\u0639 ${team}`,
   openInTeams: '\u0641\u062a\u062d \u0641\u064a \u0627\u0644\u0641\u0631\u0642',
+  clearFolderFilter: (folder) =>
+    `\u0639\u0631\u0636 \u0643\u0644 \u0645\u0644\u0627\u062d\u0638\u0627\u062a \u0627\u0644\u0641\u0631\u064a\u0642\u060c \u0644\u0627 ${folder} \u0641\u0642\u0637`,
+  filterEmptyTitle: '\u0644\u0627 \u0634\u064a\u0621 \u0647\u0646\u0627 \u0628\u0639\u062f',
+  filterEmptyBody:
+    '\u0644\u0627 \u062a\u0648\u062c\u062f \u0645\u0644\u0627\u062d\u0638\u0627\u062a \u062a\u0637\u0627\u0628\u0642 \u0647\u0630\u0627 \u0627\u0644\u0641\u0644\u062a\u0631. \u0627\u0639\u0631\u0636 \u0627\u0644\u0643\u0644 \u0644\u062a\u0631\u0649 \u0627\u0644\u0628\u0627\u0642\u064a.',
+  filterShowAll: '\u0639\u0631\u0636 \u0627\u0644\u0643\u0644',
+  folderIn: (parent) => `\u062f\u0627\u062e\u0644 ${parent}`,
+  breadcrumb: '\u0645\u0633\u0627\u0631 \u0627\u0644\u062a\u0646\u0642\u0644',
+  whoIsInIt: '\u0645\u0646 \u0641\u064a\u0647',
+  noteGoneTitle:
+    '\u0647\u0630\u0647 \u0627\u0644\u0645\u0644\u0627\u062d\u0638\u0629 \u0644\u0645 \u062a\u0639\u062f \u0647\u0646\u0627',
+  noteGoneBody:
+    '\u0627\u0633\u062a\u064f\u0639\u064a\u062f\u062a\u060c \u0623\u0648 \u062d\u064f\u0630\u0641\u062a \u0644\u0644\u062c\u0645\u064a\u0639.',
+  backToTeam: (team) => `\u0627\u0644\u0639\u0648\u062f\u0629 \u0625\u0644\u0649 ${team}`,
   teamNoteHint:
     '\u0647\u0630\u0647 \u062a\u0639\u064a\u0634 \u0641\u064a \u0641\u0631\u064a\u0642. \u062a\u064f\u0642\u0631\u0623 \u0641\u064a \u0645\u0643\u0627\u0646\u0647\u0627\u060c \u0648\u062a\u064f\u063a\u064a\u0651\u0631 \u0645\u0646 \u0627\u0644\u0641\u0631\u064a\u0642 \u0627\u0644\u0630\u064a \u062a\u062e\u0635\u0651\u0647.',
 

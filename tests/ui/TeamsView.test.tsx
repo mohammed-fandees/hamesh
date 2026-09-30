@@ -1,11 +1,13 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
+import { useState } from 'react';
 import { render, screen, cleanup, fireEvent, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { TeamsView } from '@/ui/teams/TeamsView';
 import { getTeamsStrings } from '@/ui/teams/strings';
 import type { TeamsClient } from '@/teams/client';
 import type { TeamsOpName } from '@/teams/operation-names';
+import { OVERVIEW, type TeamsRoute } from '@/ui/teams/route';
 
 const strings = getTeamsStrings('en');
 const TEAM = '01J0000000000000000000000A';
@@ -108,16 +110,65 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const render_ = (client: TeamsClient, onOpenSettings = vi.fn()) =>
-  render(
+/** The page above owns the route in the real app; a test needs the same owner. */
+function Harness({
+  client,
+  onOpenSettings,
+  onOpenLibrary,
+  initial = OVERVIEW,
+}: {
+  client: TeamsClient;
+  onOpenSettings: () => void;
+  onOpenLibrary: (owner: unknown) => void;
+  initial?: TeamsRoute;
+}) {
+  const [route, setRoute] = useState<TeamsRoute>(initial);
+  return (
     <TeamsView
       lang="en"
       client={client}
       onOpenSettings={onOpenSettings}
-      onOpenLibrary={vi.fn()}
+      onOpenLibrary={onOpenLibrary}
       personal={personal}
+      route={route}
+      onRoute={setRoute}
+    />
+  );
+}
+
+const render_ = (
+  client: TeamsClient,
+  onOpenSettings = vi.fn(),
+  onOpenLibrary = vi.fn(),
+  initial?: TeamsRoute,
+) =>
+  render(
+    <Harness
+      client={client}
+      onOpenSettings={onOpenSettings}
+      onOpenLibrary={onOpenLibrary}
+      initial={initial}
     />,
   );
+
+/** The members page, which is where the people and the invitations are. */
+const MEMBERS: TeamsRoute = { page: 'members', teamId: TEAM };
+
+/** A client whose local copy of the team's notes and folders is the given one. */
+function withSnapshot(
+  client: ReturnType<typeof fakeClient>['client'],
+  notes: ReturnType<typeof note>[],
+  folders: { id: string; parentId: string | null; name: string }[],
+) {
+  client.cache = vi.fn(async () => ({
+    ok: true as const,
+    data: {
+      notes,
+      folders: folders.map((f) => ({ ...f, createdAt: 1, updatedAt: 1 })),
+      syncedAt: 1_700_000_000_000,
+    },
+  })) as never;
+}
 
 /**
  * Waits for the page to finish its first round of loading. Controls are
@@ -128,6 +179,27 @@ async function idle(name: string) {
   const button = await screen.findByRole('button', { name });
   await waitFor(() => expect(button).toBeEnabled());
   return button;
+}
+
+const ANCHOR = {
+  primarySelector: 'p',
+  signals: { tagName: 'p' },
+  fallbackDocumentPosition: { x: 0, y: 0 },
+};
+function note(id: string, folderId: string | null, content: string) {
+  return {
+    id,
+    teamId: TEAM,
+    originalUrl: 'https://example.test/article',
+    pageTitle: 'An article',
+    content,
+    anchor: ANCHOR,
+    folderId,
+    authorId: ME_ID,
+    version: 1,
+    createdAt: 1,
+    updatedAt: 2,
+  };
 }
 
 describe('the Teams page', () => {
@@ -145,8 +217,123 @@ describe('the Teams page', () => {
     render_(client);
     // The switcher is a segmented control, so each team is a radio.
     expect(await screen.findByRole('radio', { name: 'Alpha' })).toBeInTheDocument();
+    // Who is in it is shown at a glance, as names; emails are for the page that
+    // manages them.
     expect(await screen.findByText('Sara')).toBeInTheDocument();
-    expect(screen.getByText('sara@example.test')).toBeInTheDocument();
+    expect(screen.queryByText('sara@example.test')).not.toBeInTheDocument();
+  });
+
+  it('is an overview: no list of notes, folders as tiles, and a way into the Library', async () => {
+    const onOpenLibrary = vi.fn();
+    const { client } = fakeClient();
+    withSnapshot(
+      client,
+      [
+        note('n1', 'FOLDER', 'a thought worth keeping'),
+        note('n2', null, 'a loose one'),
+        // A folder that no longer exists leaves its note unfiled, never hidden.
+        note('n3', 'gone', 'an orphan'),
+      ],
+      [{ id: 'FOLDER', parentId: null, name: 'Onboarding' }],
+    );
+    render_(client, vi.fn(), onOpenLibrary);
+
+    const tile = await screen.findByRole('button', { name: /Onboarding/ });
+    expect(tile).toHaveTextContent('1 note');
+    expect(screen.getByRole('button', { name: /Unfiled/ })).toHaveTextContent('2 notes');
+    // The notes themselves are read in the Library, not listed here.
+    expect(screen.queryByText('a thought worth keeping')).not.toBeInTheDocument();
+
+    fireEvent.click(tile);
+    expect(onOpenLibrary).toHaveBeenLastCalledWith({
+      teamId: TEAM,
+      folder: { id: 'FOLDER', name: 'Onboarding' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Unfiled/ }));
+    expect(onOpenLibrary).toHaveBeenLastCalledWith({
+      teamId: TEAM,
+      folder: { id: null, name: strings.unfiled },
+    });
+    fireEvent.click(screen.getByRole('button', { name: strings.openInLibrary }));
+    expect(onOpenLibrary).toHaveBeenLastCalledWith({ teamId: TEAM });
+  });
+
+  it('says what to do about a team with nothing shared, and offers the way to do it', async () => {
+    const onOpenLibrary = vi.fn();
+    const { client } = fakeClient();
+    render_(client, vi.fn(), onOpenLibrary);
+
+    expect(await screen.findByText(strings.emptyNotesTitle('Alpha'))).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: strings.goToLibrary }));
+    expect(onOpenLibrary).toHaveBeenCalledWith({ teamId: TEAM });
+  });
+
+  it('creates, renames and deletes a team folder, asking on the tile before deleting', async () => {
+    const { client, calls } = fakeClient({
+      'team.get': { ...team, capabilities: [...team.capabilities, 'folders.manage'] },
+      'folders.create': { folder: {} },
+      'folders.rename': { folder: {} },
+      'folders.delete': {},
+    });
+    withSnapshot(client, [], [{ id: 'FOLDER', parentId: null, name: 'Reading' }]);
+    render_(client);
+    await screen.findByText('Reading');
+
+    fireEvent.click(screen.getByRole('button', { name: `+ ${strings.newTeamFolder}` }));
+    fireEvent.change(screen.getByLabelText(strings.newTeamFolder), {
+      target: { value: 'Onboarding' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: strings.create }));
+    await waitFor(() => expect(calls.some((c) => c.op === 'folders.create')).toBe(true));
+    expect(calls.find((c) => c.op === 'folders.create')!.params).toEqual({
+      teamId: TEAM,
+      name: 'Onboarding',
+    });
+
+    // Scoped to the tile: the team's own settings panel has a "Rename" too.
+    const tile = screen.getByText('Reading').closest('li')!;
+    fireEvent.click(within(tile).getByRole('button', { name: strings.renameFolder }));
+    fireEvent.change(screen.getByLabelText(strings.renameFolder), { target: { value: 'Papers' } });
+    fireEvent.click(within(tile).getByRole('button', { name: strings.rename }));
+    await waitFor(() => expect(calls.some((c) => c.op === 'folders.rename')).toBe(true));
+    expect(calls.find((c) => c.op === 'folders.rename')!.params).toEqual({
+      teamId: TEAM,
+      folderId: 'FOLDER',
+      name: 'Papers',
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: strings.deleteFolder }));
+    // Asked on the tile itself, never in a browser dialog, and nothing has happened yet.
+    expect(screen.getByText(strings.deleteFolderConfirm('Reading'))).toBeInTheDocument();
+    expect(calls.some((c) => c.op === 'folders.delete')).toBe(false);
+    fireEvent.click(screen.getByRole('button', { name: strings.deleteFolder }));
+    await waitFor(() => expect(calls.some((c) => c.op === 'folders.delete')).toBe(true));
+  });
+
+  it('shows no folder controls at all to someone the server did not let manage them', async () => {
+    const { client } = fakeClient({ 'team.get': { ...team, capabilities: ['team.view'] } });
+    withSnapshot(client, [], [{ id: 'FOLDER', parentId: null, name: 'Reading' }]);
+    render_(client);
+    await screen.findByText('Reading');
+
+    expect(
+      screen.queryByRole('button', { name: `+ ${strings.newTeamFolder}` }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: strings.renameFolder })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: strings.deleteFolder })).not.toBeInTheDocument();
+  });
+
+  it('opens the members page from the overview, and comes back by the breadcrumb', async () => {
+    const { client } = fakeClient();
+    render_(client);
+    fireEvent.click(await screen.findByRole('button', { name: strings.manage }));
+
+    expect(await screen.findByText('sara@example.test')).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 1, name: strings.whoIsIn('Alpha') }),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: strings.teams }));
+    expect(await screen.findByRole('radio', { name: 'Alpha' })).toBeInTheDocument();
   });
 
   it('shows only the controls the server said this caller holds', async () => {
@@ -155,21 +342,23 @@ describe('the Teams page', () => {
     });
     render_(client);
     await screen.findByText('Sara');
-    // No promote, remove, invite or delete without the capability for it.
-    for (const name of [
-      strings.makeAdmin,
-      strings.removeMember,
-      strings.sendInvite,
-      strings.deleteTeam,
-    ]) {
+    // No delete without the capability for it, and no way to invite.
+    expect(screen.queryByRole('button', { name: strings.deleteTeam })).toBeNull();
+    expect(screen.queryByRole('button', { name: `+ ${strings.inviteSomeone}` })).toBeNull();
+    expect(screen.getByRole('button', { name: strings.leaveTeam })).toBeInTheDocument();
+    cleanup();
+
+    // And on the page that manages people: no promote, remove or invite.
+    render_(client, vi.fn(), vi.fn(), MEMBERS);
+    await screen.findByText('sara@example.test');
+    for (const name of [strings.makeAdmin, strings.removeMember, strings.sendInvite]) {
       expect(screen.queryByRole('button', { name }), name).toBeNull();
     }
-    expect(screen.getByRole('button', { name: strings.leaveTeam })).toBeInTheDocument();
   });
 
   it('promotes a member through the server, then re-reads it', async () => {
     const { client, calls } = fakeClient();
-    render_(client);
+    render_(client, vi.fn(), vi.fn(), MEMBERS);
     fireEvent.click(await idle(strings.makeAdmin));
     await waitFor(() => expect(calls.some((c) => c.op === 'members.setRole')).toBe(true));
     expect(calls.find((c) => c.op === 'members.setRole')!.params).toEqual({
@@ -198,7 +387,7 @@ describe('the Teams page', () => {
         link,
       },
     });
-    render_(client);
+    render_(client, vi.fn(), vi.fn(), MEMBERS);
     await idle(strings.sendInvite);
     fireEvent.change(screen.getByPlaceholderText(strings.inviteEmailPlaceholder), {
       target: { value: 'new@example.test' },

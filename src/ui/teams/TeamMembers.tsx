@@ -134,6 +134,7 @@ export function TeamMembers({
               />
             ) : working ? (
               <span className="hm-team-member__meta" role="status">
+                <span className="hm-spinner" aria-hidden="true" />
                 {strings.working}
               </span>
             ) : (

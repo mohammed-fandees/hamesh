@@ -7,6 +7,7 @@ import { AttachedText } from './AttachedText';
 import { Favicon } from './Favicon';
 import { PinIcon } from './PinIcon';
 import { PlayIcon } from './PlayIcon';
+import { useDiscussAction } from './NoteShareSlot';
 import type { Lang, Strings } from './i18n';
 import { relativeTime } from './i18n';
 
@@ -57,6 +58,7 @@ export function NoteRow({ note, strings, lang, showDomain }: NoteRowProps) {
   const [clamped, setClamped] = useState(false);
   const previewRef = useRef<HTMLParagraphElement>(null);
   const previewId = useId();
+  const discuss = useDiscussAction();
 
   // Whether the collapsed preview is actually cutting text off — measured,
   // not guessed from a character count, because the same note is two lines
@@ -154,6 +156,13 @@ export function NoteRow({ note, strings, lang, showDomain }: NoteRowProps) {
           </span>
         )}
         {strings.editedAgo(relativeTime(note.updatedAt, lang))}
+        {/* A team note has a discussion, and this is the one way to it from the
+            list. Raised above the stretched link, like the toggle above. */}
+        {note.team && discuss && (
+          <button type="button" className="hm-note-row__discuss" onClick={() => discuss.open(note)}>
+            {discuss.label}
+          </button>
+        )}
       </p>
     </div>
   );
