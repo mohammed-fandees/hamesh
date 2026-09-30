@@ -273,3 +273,339 @@
   color: var(--hm-ink-40);
   font-size: 12.5px;
 }
+
+/* ---- The redesign: one row's state, one row's question ---- */
+
+/* The team switcher and what sits beside it. */
+.hm-team-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--hm-space-3);
+  margin: var(--hm-space-4) 0 var(--hm-space-2);
+}
+.hm-team-bar__meta {
+  margin-inline-start: auto;
+  color: var(--hm-ink-40);
+  font-size: 12px;
+}
+
+/* "+ New team", "+ New folder" — an outline that says "there could be more
+   here", set apart from the solid chips beside it. */
+.hm-chip-add {
+  padding: var(--hm-space-2) var(--hm-space-4);
+  border: 1px dashed var(--hm-ink-20);
+  border-radius: var(--hm-radius-pill);
+  background: none;
+  color: var(--hm-ink-60);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition:
+    border-color var(--hm-dur-fast) var(--hm-ease-out),
+    color var(--hm-dur-fast) var(--hm-ease-out);
+}
+.hm-chip-add:hover {
+  border-color: var(--hm-accent);
+  color: var(--hm-accent-strong);
+}
+
+/* A question asked where the thing is, instead of in the browser's own box. */
+.hm-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--hm-space-2);
+  padding: var(--hm-space-2) 0;
+}
+.hm-confirm__question {
+  margin-inline-end: auto;
+  font-size: 12.5px;
+}
+
+/* A refusal, said beside whatever was refused. */
+.hm-field-error {
+  margin: var(--hm-space-1) 0 0;
+  color: var(--hm-danger);
+  font-size: 12px;
+}
+
+/* A round monogram, so a list of people scans as people. Initials only — no
+   avatar image exists, and none is worth a request. */
+.hm-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--hm-radius-pill);
+  background: var(--hm-accent-tint);
+  color: var(--hm-accent-strong);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* A panel that stays shut until it is wanted. */
+.hm-panel {
+  margin-top: var(--hm-space-4);
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-lg);
+  background: var(--hm-surface);
+}
+.hm-panel__summary {
+  display: flex;
+  align-items: baseline;
+  gap: var(--hm-space-3);
+  padding: var(--hm-space-4);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  list-style: none;
+}
+.hm-panel__summary::-webkit-details-marker {
+  display: none;
+}
+.hm-panel__summary::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-inline-end: 1.5px solid var(--hm-ink-40);
+  border-block-end: 1.5px solid var(--hm-ink-40);
+  transform: rotate(-45deg);
+  transition: transform var(--hm-dur-fast) var(--hm-ease-out);
+}
+.hm-panel[open] > .hm-panel__summary::before {
+  transform: rotate(45deg);
+}
+.hm-panel__hint {
+  color: var(--hm-ink-40);
+  font-weight: 400;
+  font-size: 12px;
+}
+.hm-panel__body {
+  padding: 0 var(--hm-space-4) var(--hm-space-4);
+}
+
+/* ---- The team's notes ---- */
+.hm-workspace {
+  margin-top: var(--hm-space-4);
+}
+.hm-workspace__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--hm-space-3);
+  margin-bottom: var(--hm-space-3);
+}
+.hm-workspace__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.hm-workspace__split {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--hm-space-5);
+}
+.hm-workspace__notes {
+  flex-grow: 1;
+  min-width: 0;
+}
+@media (max-width: 720px) {
+  .hm-workspace__split {
+    flex-direction: column;
+  }
+}
+
+/* The folder column: where a team's notes are divided up. */
+.hm-folder-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 15rem;
+  flex-shrink: 0;
+}
+.hm-folder-rail__row {
+  display: flex;
+  flex-direction: column;
+}
+.hm-folder-rail__item {
+  display: flex;
+  align-items: center;
+  gap: var(--hm-space-2);
+  width: 100%;
+  padding: var(--hm-space-2) var(--hm-space-3);
+  border: 1px solid transparent;
+  border-radius: var(--hm-radius-md);
+  background: none;
+  color: var(--hm-ink-60);
+  font: inherit;
+  font-size: 13px;
+  text-align: start;
+  cursor: pointer;
+}
+.hm-folder-rail__item:hover {
+  background: var(--hm-paper-dim);
+}
+.hm-folder-rail__item[aria-current='true'] {
+  border-color: var(--hm-accent-tint);
+  background: var(--hm-accent-tint);
+  color: var(--hm-accent-strong);
+  font-weight: 500;
+}
+.hm-folder-rail__count {
+  margin-inline-start: auto;
+  font-size: 12px;
+  opacity: 0.75;
+}
+/* The folder's own controls stay out of the way until the row is reached for. */
+.hm-folder-rail__actions {
+  display: flex;
+  gap: var(--hm-space-3);
+  padding: 0 var(--hm-space-3) var(--hm-space-2);
+  opacity: 0;
+  transition: opacity var(--hm-dur-fast) var(--hm-ease-out);
+}
+.hm-folder-rail__row:hover .hm-folder-rail__actions,
+.hm-folder-rail__row:focus-within .hm-folder-rail__actions {
+  opacity: 1;
+}
+
+.hm-team-notes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--hm-space-3);
+}
+.hm-team-note {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hm-space-2);
+  padding: var(--hm-space-4);
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-lg);
+  background: var(--hm-surface);
+}
+.hm-team-note__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--hm-space-2);
+}
+.hm-team-note__domain {
+  color: var(--hm-ink-40);
+  font-size: 12px;
+}
+.hm-team-note__spacer {
+  flex-grow: 1;
+}
+/* A note's own words, in the same serif italic they are written in everywhere
+   else in Hamesh. */
+.hm-team-note__body {
+  margin: 0;
+  font-family: var(--hm-serif);
+  font-style: italic;
+  font-size: 13.5px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+.hm-team-note__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--hm-space-3);
+}
+.hm-team-note__move .hm-input--select {
+  padding: var(--hm-space-1) var(--hm-space-2);
+  font-size: 12px;
+}
+
+/* ---- Where you were named ---- */
+.hm-mentions {
+  margin: var(--hm-space-3) 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--hm-space-2);
+}
+.hm-mention-entry {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hm-space-1);
+  padding: var(--hm-space-3) var(--hm-space-4);
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-lg);
+  background: var(--hm-surface);
+}
+
+/* ---- In the Library: whose notes, and which are a team's ---- */
+.hm-owner-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--hm-space-2);
+  margin-top: var(--hm-space-3);
+}
+.hm-owner-filter__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hm-space-2);
+  padding: var(--hm-space-2) var(--hm-space-4);
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-pill);
+  background: var(--hm-surface);
+  color: var(--hm-ink-60);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition:
+    background var(--hm-dur-fast) var(--hm-ease-out),
+    color var(--hm-dur-fast) var(--hm-ease-out);
+}
+.hm-owner-filter__pill:hover {
+  background: var(--hm-paper-dim);
+}
+/* The chosen one inverts rather than tinting: the accent is the mark's, and a
+   row of tinted pills would compete with the chips inside the list. */
+.hm-owner-filter__pill[aria-pressed='true'] {
+  border-color: var(--hm-ink);
+  background: var(--hm-ink);
+  color: var(--hm-paper);
+}
+.hm-owner-filter__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--hm-radius-pill);
+  background: var(--hm-accent);
+}
+
+/* The one thing that says a note in the Library is not this device's alone. */
+.hm-team-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-inline-start: var(--hm-space-2);
+  padding: 1px var(--hm-space-2);
+  border-radius: var(--hm-radius-pill);
+  background: var(--hm-accent-tint);
+  color: var(--hm-accent-strong);
+  font-size: 11px;
+  font-weight: 500;
+  vertical-align: baseline;
+}
+.hm-team-chip__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: var(--hm-radius-pill);
+  background: var(--hm-accent);
+}
+
+/* An empty state inside a panel, rather than filling a page. */
+.hm-empty--inline {
+  padding: var(--hm-space-4);
+}
+.hm-empty__action {
+  margin-top: var(--hm-space-3);
+}

@@ -62,8 +62,10 @@ function fakePage(answers: Record<string, unknown> = {}) {
   const page = {
     status: { state: 'signed_in', me: null },
     me: null,
-    error: null,
     busy: false,
+    failure: null,
+    working: () => false,
+    failed: () => null,
     clearError: vi.fn(),
     refresh: vi.fn(async () => {}),
     run,
@@ -120,7 +122,8 @@ describe('a note’s discussion', () => {
   it('says so, rather than nothing, when nobody has commented', async () => {
     const { page } = fakePage({ 'comments.list': { comments: [], nextAfter: null } });
     view(page);
-    expect(await screen.findByText(strings.noComments)).toBeInTheDocument();
+    expect(await screen.findByText(strings.emptyCommentsTitle)).toBeInTheDocument();
+    expect(screen.getByText(strings.emptyCommentsBody)).toBeInTheDocument();
   });
 
   it('sends a comment with exactly the mentions its text names', async () => {
@@ -129,7 +132,7 @@ describe('a note’s discussion', () => {
       'comments.create': { comment: comment() },
     });
     view(page);
-    await screen.findByText(strings.noComments);
+    await screen.findByText(strings.emptyCommentsTitle);
 
     fireEvent.change(screen.getByLabelText(strings.commentPlaceholder), {
       target: { value: `yes <@${SARA}>` },
@@ -206,8 +209,10 @@ describe('a note’s discussion', () => {
     await screen.findByText('worth a second look');
 
     fireEvent.click(screen.getByRole('button', { name: strings.deleteComment }));
+    // Asked on the comment itself, not in a browser dialog.
+    expect(screen.getByText(strings.deleteCommentConfirm)).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole('button', { name: strings.deleteComment })[0]!);
     await waitFor(() => expect(calls.some((c) => c.op === 'comments.delete')).toBe(true));
-    expect(window.confirm).toHaveBeenCalledWith(strings.deleteCommentConfirm);
   });
 
   it('keeps a deleted comment’s place when replies hang off it, and says what it is', async () => {

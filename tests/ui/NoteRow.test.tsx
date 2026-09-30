@@ -242,6 +242,32 @@ describe('NoteRow — long notes', () => {
     expect(screen.getByRole('link').contains(screen.getByRole('button'))).toBe(false);
   });
 
+  it('says which team a shared note belongs to, right where the title is', async () => {
+    const NoteRow = await importNoteRow();
+    render(
+      <NoteRow
+        note={makeElementNote({
+          team: {
+            id: '01J0000000000000000000000A',
+            name: 'Alpha',
+            version: 2,
+            authorId: null,
+            folderId: null,
+          },
+        })}
+        strings={strings}
+        lang="en"
+      />,
+    );
+    expect(screen.getByText('Alpha')).toBeInTheDocument();
+  });
+
+  it('says nothing of the kind about a note this device stored', async () => {
+    const NoteRow = await importNoteRow();
+    render(<NoteRow note={makeElementNote()} strings={strings} lang="en" />);
+    expect(screen.queryByText('Alpha')).not.toBeInTheDocument();
+  });
+
   it('speaks the reader’s language', async () => {
     stubLayout({ scrollHeight: 400, clientHeight: 40 });
     const NoteRow = await importNoteRow();

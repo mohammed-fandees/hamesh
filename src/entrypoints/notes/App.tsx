@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { browser } from 'wxt/browser';
 import { MarginMark } from '@/ui/MarginMark';
 import { Sidebar, type LibraryView } from '@/ui/Sidebar';
@@ -40,7 +40,16 @@ import { TeamsView } from '@/ui/teams/TeamsView';
 import { ShareNoteAction } from '@/ui/teams/ShareNoteAction';
 import { NoteShareSlot } from '@/ui/NoteShareSlot';
 import { generatePageKey } from '@/domain/page-key';
-import { readTeamIndex, watchTeamIndex, type CachedTeam } from '@/teams/page-cache';
+import { watchTeamIndex } from '@/teams/page-cache';
+import {
+  newestMentionId,
+  readTeamNotesForLibrary,
+  NO_TEAM_NOTES,
+  type LibraryTeamNotes,
+} from '@/ui/teams/library-notes';
+import { MentionsInbox } from '@/ui/teams/MentionsInbox';
+import { NoteFilter, matchesOwner, type NoteOwner } from '@/ui/teams/NoteFilter';
+import { getTeamsStrings } from '@/ui/teams/strings';
 import type { PersonalNotes } from '@/ui/teams/personal-notes';
 import type { TeamNote } from '@hamesh/teams-contract';
 import type { Note } from '@/domain/note';
@@ -91,9 +100,15 @@ export function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortMode, setSortMode] = useState<GroupSortMode>('alphabetical');
   const [libraryMode, setLibraryMode] = useState<LibraryMode>('domain');
-  /** The teams this account is in, as the worker last recorded them. Always
+  /** Every team note this device holds, and the teams they came from. Always
    *  empty in a build without Teams, and while nobody is signed in. */
-  const [teams, setTeams] = useState<CachedTeam[]>([]);
+  const [shared, setShared] = useState<LibraryTeamNotes>(NO_TEAM_NOTES);
+  /** Whose notes the library is showing. */
+  const [owner, setOwner] = useState<NoteOwner>('all');
+  /** The newest mention the server has, and the newest this reader has looked
+   *  at — the difference is what puts a dot on Mentions in the sidebar. */
+  const [newestMention, setNewestMention] = useState<string | null>(null);
+  const [lastSeenMention, setLastSeenMention] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const strings = getStrings(lang);
@@ -123,6 +138,7 @@ export function App() {
         setAppearance(prefs.appearance);
         setTextNotes(prefs.textNotes);
         setLastSeenVersion(prefs.releaseNotes.lastSeenVersion);
+        setLastSeenMention(prefs.teams.lastSeenMentionId);
       }
     })();
     const unwatch = prefsRepo.watch((prefs) => {
@@ -171,22 +187,38 @@ export function App() {
     };
   }, []);
 
-  // Which teams a note could be shared with. Read from what the background
-  // worker recorded, not asked for here: it is already on this device, and it
-  // stays current as membership changes.
+  // The team notes this device already holds, beside the reader's own. Nothing
+  // is fetched from the server here: the worker pulled each team's changes and
+  // filed them, and this asks it for what it has. Re-read when the set of teams
+  // changes, and when the window comes back — a pull may have landed while it
+  // was in the background.
+  const loadShared = useCallback(async () => {
+    if (!import.meta.env.WXT_TEAMS_API_ORIGIN || !teamsClient) return;
+    try {
+      setShared(await readTeamNotesForLibrary(teamsClient));
+    } catch {
+      setShared(NO_TEAM_NOTES);
+    }
+  }, [teamsClient]);
+
   useEffect(() => {
-    if (!import.meta.env.WXT_TEAMS_API_ORIGIN) return;
+    if (!import.meta.env.WXT_TEAMS_API_ORIGIN || !teamsClient) return;
     let cancelled = false;
     (async () => {
-      const index = await readTeamIndex();
-      if (!cancelled) setTeams(index.teams);
+      const next = await readTeamNotesForLibrary(teamsClient).catch(() => NO_TEAM_NOTES);
+      if (!cancelled) setShared(next);
+      const newest = await newestMentionId(teamsClient).catch(() => null);
+      if (!cancelled) setNewestMention(newest);
     })();
-    const unwatch = watchTeamIndex((index) => setTeams(index.teams));
+    const unwatch = watchTeamIndex(() => void loadShared());
+    const onFocus = () => void loadShared();
+    window.addEventListener('focus', onFocus);
     return () => {
       cancelled = true;
       unwatch();
+      window.removeEventListener('focus', onFocus);
     };
-  }, []);
+  }, [teamsClient, loadShared]);
 
   // "/" focuses search from anywhere on the page — ignored while focus is
   // already in an editable field (so it types a literal "/" there instead,
@@ -206,9 +238,18 @@ export function App() {
   }, []);
 
   const isSearching = searchQuery.trim() !== '';
+  /**
+   * One list: what this device stored and what its teams have shared. A reader
+   * thinks of them as their notes, so the library shows them together and the
+   * chip on a row says which are not theirs alone.
+   */
+  const visibleNotes = useMemo(
+    () => [...(notes ?? []), ...shared.notes].filter((note) => matchesOwner(note, owner)),
+    [notes, shared, owner],
+  );
   const filteredNotes = useMemo(
-    () => filterNotesByQuery(notes ?? [], searchQuery),
-    [notes, searchQuery],
+    () => filterNotesByQuery(visibleNotes, searchQuery),
+    [visibleNotes, searchQuery],
   );
   const groups = useMemo(
     () => sortWebsiteGroups(groupNotesByDomain(filteredNotes), sortMode),
@@ -221,7 +262,9 @@ export function App() {
   // Continue and Pinned always reflect the full, unfiltered library —
   // neither is a "search result" — so both are hidden (not filtered) while
   // actively searching. See render logic below.
-  const continueWebsites = useMemo(() => getContinueWebsites(notes ?? []), [notes]);
+  const continueWebsites = useMemo(() => getContinueWebsites(visibleNotes), [visibleNotes]);
+  // Only a note this device stored can be pinned, so this list never has to
+  // exclude a team's.
   const pinnedNotes = useMemo(() => getPinnedNotes(notes ?? []), [notes]);
 
   function handleLanguageChange(next: Lang) {
@@ -434,25 +477,33 @@ export function App() {
     // A build-time constant first: with it folded away, nothing below is
     // reachable and the Teams module this reaches is dropped from the bundle.
     if (!import.meta.env.WXT_TEAMS_API_ORIGIN) return null;
-    if (!teamsClient || teams.length === 0) return null;
+    if (!teamsClient || shared.teams.length === 0) return null;
     return (note: Note, close: () => void) => (
       <ShareNoteAction
         note={note}
         lang={lang}
         client={teamsClient}
-        teams={teams}
-        onDone={() => {
+        teams={shared.teams}
+        // A team note is not shared again; from here it is only opened.
+        open={note.team ? () => setView('teams') : undefined}
+        onDone={async () => {
           close();
-          void personalNotes.forget(note.id);
+          // The team's copy is read back before the local one goes, so the row
+          // never blinks out of the list between the two.
+          await loadShared();
+          await personalNotes.forget(note.id);
         }}
       />
     );
-  }, [teamsClient, teams, lang, personalNotes]);
+  }, [teamsClient, shared.teams, lang, personalNotes, loadShared]);
 
   const loading = notes === null;
-  const hasAnyNotes = !loading && notes.length > 0;
+  const hasAnyNotes = !loading && visibleNotes.length > 0;
   const noNotesAtAll = !loading && !hasAnyNotes;
   const noSearchResults = !loading && isSearching && hasAnyNotes && filteredNotes.length === 0;
+  const teamsStrings = getTeamsStrings(lang);
+  /** Somebody named this reader since they last looked at Mentions. */
+  const mentionsUnseen = newestMention !== null && newestMention !== lastSeenMention;
 
   return (
     <NoteShareSlot.Provider value={shareAction}>
@@ -463,6 +514,7 @@ export function App() {
           onNavigate={setView}
           whatsNewUnseen={lastSeenVersion !== undefined && hasUnseenReleases(lastSeenVersion)}
           showTeams={teamsClient !== null}
+          mentionsUnseen={mentionsUnseen}
         />
 
         {import.meta.env.WXT_TEAMS_API_ORIGIN && view === 'teams' && teamsClient ? (
@@ -470,8 +522,26 @@ export function App() {
             lang={lang}
             client={teamsClient}
             onOpenSettings={() => setView('settings')}
+            onOpenLibrary={() => setView('library')}
             personal={personalNotes}
           />
+        ) : import.meta.env.WXT_TEAMS_API_ORIGIN && view === 'mentions' && teamsClient ? (
+          <div className="hm-notes-main">
+            <div className="hm-notes-page__inner">
+              <header className="hm-notes-page__header">
+                <MarginMark size={20} strokeWidth={3.5} style={{ color: 'var(--hm-accent)' }} />
+                <h1 className="hm-notes-page__title">{teamsStrings.mentions}</h1>
+              </header>
+              <MentionsInbox
+                lang={lang}
+                client={teamsClient}
+                onRead={(commentId) => {
+                  setLastSeenMention(commentId);
+                  void prefsRepo.setLastSeenMention(commentId);
+                }}
+              />
+            </div>
+          </div>
         ) : view === 'whats-new' ? (
           <WhatsNewView
             strings={strings}
@@ -490,6 +560,7 @@ export function App() {
             onTextNotesChange={handleTextNotesChange}
             backup={{ onExport: handleExportBackup, onImport: handleImportBackup }}
             teams={teamsClient}
+            onOpenTeam={() => setView('teams')}
           />
         ) : (
           <div className="hm-notes-main">
@@ -526,6 +597,10 @@ export function App() {
                     </kbd>
                   )}
                 </div>
+              )}
+
+              {import.meta.env.WXT_TEAMS_API_ORIGIN && shared.teams.length > 0 && (
+                <NoteFilter lang={lang} teams={shared.teams} value={owner} onChange={setOwner} />
               )}
 
               {!isSearching && hasAnyNotes && (

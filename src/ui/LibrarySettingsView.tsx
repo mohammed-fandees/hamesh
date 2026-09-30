@@ -4,6 +4,7 @@ import { SettingRow } from './SettingRow';
 import { SegmentedControl } from './SegmentedControl';
 import { BackupSection, type BackupHandlers } from './BackupSection';
 import { TeamsSection } from './TeamsSection';
+import { TeamsAccount } from './teams/TeamsAccount';
 import type { TeamsClient } from '@/teams/client';
 import {
   AppearanceIcon,
@@ -37,6 +38,8 @@ interface LibrarySettingsViewProps {
   backup: BackupHandlers;
   /** Present only in builds that include Teams; the section is absent otherwise. */
   teams?: TeamsClient | null;
+  /** Opens the Teams page on a team just joined from here. */
+  onOpenTeam?: (teamId: string) => void;
 }
 
 /**
@@ -65,6 +68,7 @@ export function LibrarySettingsView({
   onTextNotesChange,
   backup,
   teams,
+  onOpenTeam,
 }: LibrarySettingsViewProps) {
   const [commands, setCommands] = useState<Record<string, string | null>>({});
 
@@ -217,7 +221,12 @@ export function LibrarySettingsView({
         {/* The build-time constant as well as the client: with it folded away,
             a build without Teams drops this section and its stylesheet too. */}
         {import.meta.env.WXT_TEAMS_API_ORIGIN && teams && (
-          <TeamsSection strings={strings} lang={lang} client={teams} />
+          <>
+            <TeamsSection strings={strings} lang={lang} client={teams} />
+            {/* Joining a team and paying for one belong to the account, which
+                is here — not to any one team's page. */}
+            <TeamsAccount lang={lang} client={teams} onJoined={(id) => onOpenTeam?.(id)} />
+          </>
         )}
 
         <BackupSection strings={strings} handlers={backup} />

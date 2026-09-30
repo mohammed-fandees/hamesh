@@ -34,13 +34,13 @@ export function JoinTeam({ strings, page, onJoined }: JoinTeamProps) {
       return;
     }
     setMalformed(false);
-    const result = await page.run('invites.preview', { token });
+    const result = await page.run('invites.preview', { token }, 'invites.preview');
     if (result) setPreview(result);
   }
 
   async function accept() {
     if (!token) return;
-    const result = await page.run('invites.accept', { token });
+    const result = await page.run('invites.accept', { token }, 'invites.accept');
     if (!result) return;
     setPasted('');
     setPreview(null);
@@ -65,7 +65,7 @@ export function JoinTeam({ strings, page, onJoined }: JoinTeamProps) {
         <button
           type="submit"
           className="hm-btn hm-btn-ghost"
-          disabled={page.busy || !pasted.trim()}
+          disabled={page.working('invites.preview') || !pasted.trim()}
         >
           {strings.joinCheck}
         </button>
@@ -89,7 +89,7 @@ export function JoinTeam({ strings, page, onJoined }: JoinTeamProps) {
           <button
             type="button"
             className="hm-btn hm-btn-primary"
-            disabled={page.busy}
+            disabled={page.working('invites.accept')}
             onClick={() => void accept()}
           >
             {strings.joinAccept}

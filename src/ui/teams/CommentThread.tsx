@@ -5,6 +5,8 @@ import { relativeTime } from '../i18n';
 import type { TeamsStrings } from './strings';
 import type { TeamsPage } from './useTeams';
 import { newRequestId } from '@/teams/operation-names';
+import { MarginMark } from '../MarginMark';
+import { InlineConfirm } from './InlineConfirm';
 import { CommentComposer } from './CommentComposer';
 import { splitBody } from './mentions';
 
@@ -45,6 +47,8 @@ export function CommentThread({
   const [editing, setEditing] = useState<string | null>(null);
   /** Replies fetched in full for a thread whose inline few were not all of them. */
   const [expanded, setExpanded] = useState<Record<string, Comment[]>>({});
+  /** The one comment waiting to be confirmed gone. */
+  const [confirming, setConfirming] = useState<string | null>(null);
   const teamId = team.team.id;
   const can = (action: TeamAction) => team.capabilities.includes(action);
 
@@ -93,46 +97,61 @@ export function CommentThread({
 
   async function more() {
     if (!nextAfter) return;
-    const result = await page.run('comments.list', { teamId, noteId, after: nextAfter });
+    const result = await page.run(
+      'comments.list',
+      { teamId, noteId, after: nextAfter },
+      'comments.more',
+    );
     if (!result) return;
     setComments((prev) => [...(prev ?? []), ...result.comments]);
     setNextAfter(result.nextAfter);
   }
 
   async function showReplies(comment: Comment) {
-    const result = await page.run('comments.replies', { teamId, commentId: comment.id });
+    const result = await page.run(
+      'comments.replies',
+      { teamId, commentId: comment.id },
+      `comment:${comment.id}`,
+    );
     if (!result) return;
     setExpanded((prev) => ({ ...prev, [comment.id]: result.replies }));
   }
 
   async function post(body: string, mentions: string[], parentId?: string) {
-    const created = await page.run('comments.create', {
-      teamId,
-      noteId,
-      requestId: newRequestId(),
-      body,
-      ...(parentId ? { parentId } : {}),
-      ...(mentions.length > 0 ? { mentions } : {}),
-    });
+    const created = await page.run(
+      'comments.create',
+      {
+        teamId,
+        noteId,
+        requestId: newRequestId(),
+        body,
+        ...(parentId ? { parentId } : {}),
+        ...(mentions.length > 0 ? { mentions } : {}),
+      },
+      parentId ? `comment:${parentId}` : 'comments.create',
+    );
     if (!created) return;
     setReplyingTo(null);
     await load();
   }
 
   async function saveEdit(commentId: string, body: string, mentions: string[]) {
-    const saved = await page.run('comments.update', {
-      teamId,
-      commentId,
-      body,
-      ...(mentions.length > 0 ? { mentions } : {}),
-    });
+    const saved = await page.run(
+      'comments.update',
+      { teamId, commentId, body, ...(mentions.length > 0 ? { mentions } : {}) },
+      `comment:${commentId}`,
+    );
     setEditing(null);
     if (saved) await load();
   }
 
   async function remove(comment: Comment) {
-    if (!confirm(strings.deleteCommentConfirm)) return;
-    const gone = await page.run('comments.delete', { teamId, commentId: comment.id });
+    const gone = await page.run(
+      'comments.delete',
+      { teamId, commentId: comment.id },
+      `comment:${comment.id}`,
+    );
+    setConfirming(null);
     if (gone !== null) await load();
   }
 
@@ -180,7 +199,7 @@ export function CommentThread({
             placeholder={strings.commentPlaceholder}
             submitLabel={strings.saveComment}
             initialBody={comment.body}
-            busy={page.busy}
+            busy={page.working(`comment:${comment.id}`)}
             autoFocus
             onSubmit={(next, mentions) => void saveEdit(comment.id, next, mentions)}
             onCancel={() => setEditing(null)}
@@ -188,7 +207,22 @@ export function CommentThread({
         ) : (
           body(comment)
         )}
-        {editing !== comment.id && !comment.deleted && (
+        {page.failed(`comment:${comment.id}`) && (
+          <p className="hm-field-error" role="alert">
+            {strings.error(page.failed(`comment:${comment.id}`)!)}
+          </p>
+        )}
+        {confirming === comment.id ? (
+          <InlineConfirm
+            strings={strings}
+            question={strings.deleteCommentConfirm}
+            confirmLabel={strings.deleteComment}
+            working={page.working(`comment:${comment.id}`)}
+            onConfirm={() => void remove(comment)}
+            onCancel={() => setConfirming(null)}
+          />
+        ) : null}
+        {editing !== comment.id && !comment.deleted && confirming !== comment.id && (
           <div className="hm-comment__actions">
             {/* Replies are one level deep, so a reply is not replied to. */}
             {!isReply && can('comments.create') && (
@@ -209,7 +243,7 @@ export function CommentThread({
               <button
                 type="button"
                 className="hm-link hm-link--danger"
-                onClick={() => void remove(comment)}
+                onClick={() => setConfirming(comment.id)}
               >
                 {strings.deleteComment}
               </button>
@@ -242,7 +276,7 @@ export function CommentThread({
                 members={members}
                 placeholder={strings.replyPlaceholder}
                 submitLabel={strings.postReply}
-                busy={page.busy}
+                busy={page.working(`comment:${comment.id}`)}
                 autoFocus
                 onSubmit={(next, mentions) => void post(next, mentions, comment.id)}
                 onCancel={() => setReplyingTo(null)}
@@ -254,15 +288,33 @@ export function CommentThread({
     );
   }
 
-  if (comments === null) return <p className="hm-setting-row__hint">{strings.working}</p>;
+  if (comments === null) {
+    return (
+      <div className="hm-skeleton" aria-hidden="true">
+        <div className="hm-skeleton__row" />
+        <div className="hm-skeleton__row" />
+      </div>
+    );
+  }
 
   return (
     <div className="hm-comment-thread">
-      {comments.length === 0 && <p className="hm-setting-row__hint">{strings.noComments}</p>}
+      {comments.length === 0 && (
+        <div className="hm-empty hm-empty--inline hm-fade-in">
+          <MarginMark size={22} strokeWidth={3} />
+          <p className="hm-empty__title">{strings.emptyCommentsTitle}</p>
+          <p className="hm-empty__body">{strings.emptyCommentsBody}</p>
+        </div>
+      )}
       {comments.length > 0 && <ul className="hm-comments">{comments.map(thread)}</ul>}
       {nextAfter && (
-        <button type="button" className="hm-link" disabled={page.busy} onClick={() => void more()}>
-          {strings.moreComments}
+        <button
+          type="button"
+          className="hm-link"
+          disabled={page.working('comments.more')}
+          onClick={() => void more()}
+        >
+          {page.working('comments.more') ? strings.working : strings.moreComments}
         </button>
       )}
       {can('comments.create') && members && (
@@ -271,7 +323,7 @@ export function CommentThread({
           members={members}
           placeholder={strings.commentPlaceholder}
           submitLabel={strings.postComment}
-          busy={page.busy}
+          busy={page.working('comments.create')}
           onSubmit={(next, mentions) => void post(next, mentions)}
         />
       )}

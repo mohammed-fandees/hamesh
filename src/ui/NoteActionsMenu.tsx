@@ -134,6 +134,13 @@ export function NoteActionsMenu({
   moveToFolder,
 }: NoteActionsMenuProps) {
   const shareAction = useShareAction();
+  /**
+   * A note that lives in a team is not this device's to pin, edit, delete or
+   * file: it is on the server, and the server decides who may change it. The
+   * menu offers what a reader can do with one from here — read it where it is —
+   * and the team's own page does the rest.
+   */
+  const shared = !!note.team;
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<PanelView>('menu');
   const [newFolderName, setNewFolderName] = useState('');
@@ -304,30 +311,34 @@ export function NoteActionsMenu({
           >
             {view === 'menu' && (
               <>
-                <button
-                  type="button"
-                  role="menuitem"
-                  className="hm-folder-menu__item"
-                  onClick={() => {
-                    onTogglePin(note.id);
-                    close();
-                  }}
-                >
-                  <PinIcon filled={!!note.pinned} size={12} />
-                  {note.pinned ? strings.unpinNote : strings.pinNote}
-                </button>
-                <button
-                  type="button"
-                  role="menuitem"
-                  className="hm-folder-menu__item"
-                  onClick={startEdit}
-                >
-                  {strings.edit}
-                </button>
+                {!shared && (
+                  <>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="hm-folder-menu__item"
+                      onClick={() => {
+                        onTogglePin(note.id);
+                        close();
+                      }}
+                    >
+                      <PinIcon filled={!!note.pinned} size={12} />
+                      {note.pinned ? strings.unpinNote : strings.pinNote}
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="hm-folder-menu__item"
+                      onClick={startEdit}
+                    >
+                      {strings.edit}
+                    </button>
+                  </>
+                )}
                 {/* Filled by the Notes Library only in a build with Teams. */}
                 {shareAction?.(note, close)}
 
-                {moveToFolder && (
+                {!shared && moveToFolder && (
                   <>
                     <div className="hm-folder-menu__divider" role="separator" />
                     <div className="hm-folder-menu__section-label">{strings.moveToFolder}</div>
@@ -372,15 +383,19 @@ export function NoteActionsMenu({
                   </>
                 )}
 
-                <div className="hm-folder-menu__divider" role="separator" />
-                <button
-                  type="button"
-                  role="menuitem"
-                  className="hm-folder-menu__item hm-folder-menu__item--danger"
-                  onClick={() => setView('confirmingDelete')}
-                >
-                  {strings.delete}
-                </button>
+                {!shared && (
+                  <>
+                    <div className="hm-folder-menu__divider" role="separator" />
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="hm-folder-menu__item hm-folder-menu__item--danger"
+                      onClick={() => setView('confirmingDelete')}
+                    >
+                      {strings.delete}
+                    </button>
+                  </>
+                )}
               </>
             )}
 

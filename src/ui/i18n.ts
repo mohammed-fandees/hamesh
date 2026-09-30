@@ -108,6 +108,7 @@ export interface Strings {
   backupErrorEmpty: string;
   backupErrorFailed: string;
   settingsTeams: string;
+  settingsMentions: string;
   teamsIntro: string;
   teamsTurnOn: string;
   teamsTurnOnHint: string;
@@ -242,6 +243,7 @@ const en: Strings = {
   backupErrorEmpty: 'That backup has no notes or folders in it.',
   backupErrorFailed: "Couldn't finish — your existing notes are untouched.",
   settingsTeams: 'Teams',
+  settingsMentions: 'Mentions',
   teamsIntro:
     'Share notes with the people you work with. Your personal notes stay on this device either way.',
   teamsTurnOn: 'Turn on Teams',
@@ -397,6 +399,7 @@ const ar: Strings = {
   backupErrorEmpty: 'لا توجد ملاحظات أو فولدرات في هذه النسخة.',
   backupErrorFailed: 'تعذّر إكمال العملية — ملاحظاتك الحالية لم تتأثّر.',
   settingsTeams: 'الفرق',
+  settingsMentions: 'الإشارات',
   teamsIntro: 'شارك الملاحظات مع من تعمل معهم. ملاحظاتك الشخصية تبقى على جهازك في كل الأحوال.',
   teamsTurnOn: 'تفعيل الفرق',
   teamsTurnOnHint:

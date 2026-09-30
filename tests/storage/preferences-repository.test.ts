@@ -37,6 +37,7 @@ describe('PreferencesRepository', () => {
       textNotes: { enabled: true, selectionAction: true },
       releaseNotes: { lastSeenVersion: null },
       folderDefaults: { global: null, pages: {} },
+      teams: { lastSeenMentionId: null },
     });
   });
 
@@ -71,6 +72,7 @@ describe('PreferencesRepository', () => {
       textNotes: { enabled: true, selectionAction: true },
       releaseNotes: { lastSeenVersion: null },
       folderDefaults: { global: null, pages: {} },
+      teams: { lastSeenMentionId: null },
     });
 
     await repo.setLanguage('en');
@@ -81,6 +83,7 @@ describe('PreferencesRepository', () => {
       textNotes: { enabled: true, selectionAction: true },
       releaseNotes: { lastSeenVersion: null },
       folderDefaults: { global: null, pages: {} },
+      teams: { lastSeenMentionId: null },
     });
   });
 
@@ -93,6 +96,7 @@ describe('PreferencesRepository', () => {
       textNotes: { enabled: true, selectionAction: true },
       releaseNotes: { lastSeenVersion: null },
       folderDefaults: { global: null, pages: {} },
+      teams: { lastSeenMentionId: null },
     });
   });
 

@@ -128,6 +128,32 @@ export interface TeamsStrings {
   openNote: string;
   moreMentions: string;
 
+  keepIt: string;
+  manage: string;
+  openInLibrary: string;
+  whoIsIn: (team: string) => string;
+  teamSettings: string;
+  teamSettingsHint: string;
+  seatsUsed: (count: number) => string;
+  notesShared: (count: number) => string;
+
+  emptyTeamsTitle: string;
+  emptyTeamsBody: string;
+  emptyNotesTitle: (team: string) => string;
+  emptyNotesBody: (team: string) => string;
+  goToLibrary: string;
+  emptyMentionsTitle: string;
+  emptyMentionsBody: string;
+  emptyCommentsTitle: string;
+  emptyCommentsBody: string;
+
+  filterEverything: string;
+  filterMine: string;
+  filterTeam: (team: string) => string;
+  sharedWithLabel: (team: string) => string;
+  openInTeams: string;
+  teamNoteHint: string;
+
   billing: string;
   planActive: (until: string) => string;
   planNone: string;
@@ -272,6 +298,36 @@ const en: TeamsStrings = {
   mentionIn: (team) => `in ${team}`,
   openNote: 'Open the page',
   moreMentions: 'Show older',
+
+  keepIt: 'Keep it',
+  manage: 'Manage',
+  openInLibrary: 'Open in the Library',
+  whoIsIn: (team) => `Who\u2019s in ${team}`,
+  teamSettings: 'Team settings',
+  teamSettingsHint: 'rename, hand over, leave, delete',
+  seatsUsed: (count) => (count === 1 ? '1 member' : `${count} members`),
+  notesShared: (count) => (count === 1 ? '1 note' : `${count} notes`),
+
+  emptyTeamsTitle: 'No teams yet',
+  emptyTeamsBody:
+    'A team is a place to put notes everyone can see. Make one, or join with a link somebody sent you.',
+  emptyNotesTitle: (team) => `Nothing in ${team} yet`,
+  emptyNotesBody: (team) =>
+    `Open a note in your Library and choose ${team}. It will appear on the page it belongs to, for everyone here.`,
+  goToLibrary: 'Go to the Library',
+  emptyMentionsTitle: 'Nobody has named you yet',
+  emptyMentionsBody:
+    'When someone types @ and picks you in a comment, it turns up here \u2014 whichever team it was in.',
+  emptyCommentsTitle: 'Nothing said about this one yet',
+  emptyCommentsBody: 'Start it off. Type @ to bring someone in.',
+
+  filterEverything: 'Everything',
+  filterMine: 'Only mine',
+  filterTeam: (team) => team,
+  sharedWithLabel: (team) => `Shared with ${team}`,
+  openInTeams: 'Open in Teams',
+  teamNoteHint:
+    'This one lives in a team. It is read where it is, and changed from the team it belongs to.',
 
   billing: 'Plan',
   planActive: (until) => `Active until ${until}`,
@@ -466,6 +522,48 @@ const ar: TeamsStrings = {
   mentionIn: (team) => `في ${team}`,
   openNote: 'فتح الصفحة',
   moreMentions: 'عرض الأقدم',
+
+  keepIt: '\u0623\u0628\u0642\u0650\u0647\u0627',
+  manage: '\u0625\u062f\u0627\u0631\u0629',
+  openInLibrary: '\u0641\u062a\u062d \u0641\u064a \u0627\u0644\u0645\u0643\u062a\u0628\u0629',
+  whoIsIn: (team) => `\u0645\u0646 \u0641\u064a ${team}`,
+  teamSettings: '\u0625\u0639\u062f\u0627\u062f\u0627\u062a \u0627\u0644\u0641\u0631\u064a\u0642',
+  teamSettingsHint:
+    '\u0625\u0639\u0627\u062f\u0629 \u062a\u0633\u0645\u064a\u0629\u060c \u062a\u0633\u0644\u064a\u0645\u060c \u0645\u063a\u0627\u062f\u0631\u0629\u060c \u062d\u0630\u0641',
+  seatsUsed: (count) =>
+    count === 1
+      ? '\u0639\u0636\u0648 \u0648\u0627\u062d\u062f'
+      : `${count} \u0623\u0639\u0636\u0627\u0621`,
+  notesShared: (count) =>
+    count === 1
+      ? '\u0645\u0644\u0627\u062d\u0638\u0629 \u0648\u0627\u062d\u062f\u0629'
+      : `${count} \u0645\u0644\u0627\u062d\u0638\u0629`,
+
+  emptyTeamsTitle: '\u0644\u0627 \u062a\u0648\u062c\u062f \u0641\u0631\u0642 \u0628\u0639\u062f',
+  emptyTeamsBody:
+    '\u0627\u0644\u0641\u0631\u064a\u0642 \u0645\u0643\u0627\u0646 \u0644\u0645\u0644\u0627\u062d\u0638\u0627\u062a \u064a\u0631\u0627\u0647\u0627 \u0627\u0644\u062c\u0645\u064a\u0639. \u0623\u0646\u0634\u0626 \u0648\u0627\u062d\u062f\u064b\u0627\u060c \u0623\u0648 \u0627\u0646\u0636\u0645 \u0628\u0631\u0627\u0628\u0637 \u0623\u0631\u0633\u0644\u0647 \u0644\u0643 \u0623\u062d\u062f\u0647\u0645.',
+  emptyNotesTitle: (team) =>
+    `\u0644\u0627 \u0634\u064a\u0621 \u0641\u064a ${team} \u0628\u0639\u062f`,
+  emptyNotesBody: (team) =>
+    `\u0627\u0641\u062a\u062d \u0645\u0644\u0627\u062d\u0638\u0629 \u0641\u064a \u0645\u0643\u062a\u0628\u062a\u0643 \u0648\u0627\u062e\u062a\u0631 ${team}\u060c \u0641\u062a\u0638\u0647\u0631 \u0639\u0644\u0649 \u0635\u0641\u062d\u062a\u0647\u0627 \u0644\u0643\u0644 \u0645\u0646 \u0647\u0646\u0627.`,
+  goToLibrary:
+    '\u0627\u0644\u0630\u0647\u0627\u0628 \u0625\u0644\u0649 \u0627\u0644\u0645\u0643\u062a\u0628\u0629',
+  emptyMentionsTitle:
+    '\u0644\u0645 \u064a\u0630\u0643\u0631\u0643 \u0623\u062d\u062f \u0628\u0639\u062f',
+  emptyMentionsBody:
+    '\u062d\u064a\u0646 \u064a\u0643\u062a\u0628 \u0623\u062d\u062f\u0647\u0645 @ \u0648\u064a\u062e\u062a\u0627\u0631\u0643 \u0641\u064a \u062a\u0639\u0644\u064a\u0642\u060c \u064a\u0638\u0647\u0631 \u0647\u0646\u0627 \u2014 \u0645\u0647\u0645\u0627 \u0643\u0627\u0646 \u0627\u0644\u0641\u0631\u064a\u0642.',
+  emptyCommentsTitle:
+    '\u0644\u0627 \u0634\u064a\u0621 \u0639\u0646 \u0647\u0630\u0647 \u0628\u0639\u062f',
+  emptyCommentsBody:
+    '\u0627\u0628\u062f\u0623 \u0623\u0646\u062a. \u0627\u0643\u062a\u0628 @ \u0644\u062a\u0636\u0645\u0651 \u0623\u062d\u062f\u0647\u0645.',
+
+  filterEverything: '\u0627\u0644\u0643\u0644',
+  filterMine: '\u0644\u064a \u0648\u062d\u062f\u064a',
+  filterTeam: (team) => team,
+  sharedWithLabel: (team) => `\u0645\u064f\u0634\u0627\u0631\u0643\u0629 \u0645\u0639 ${team}`,
+  openInTeams: '\u0641\u062a\u062d \u0641\u064a \u0627\u0644\u0641\u0631\u0642',
+  teamNoteHint:
+    '\u0647\u0630\u0647 \u062a\u0639\u064a\u0634 \u0641\u064a \u0641\u0631\u064a\u0642. \u062a\u064f\u0642\u0631\u0623 \u0641\u064a \u0645\u0643\u0627\u0646\u0647\u0627\u060c \u0648\u062a\u064f\u063a\u064a\u0651\u0631 \u0645\u0646 \u0627\u0644\u0641\u0631\u064a\u0642 \u0627\u0644\u0630\u064a \u062a\u062e\u0635\u0651\u0647.',
 
   billing: 'الاشتراك',
   planActive: (until) => `فعّال حتى ${until}`,

@@ -10,7 +10,7 @@ import type { TeamAction, TeamResponse } from '@hamesh/teams-contract';
 
 const strings = getTeamsStrings('en');
 const TEAM = '01J0000000000000000000000A';
-const ME = '01J0000000000000000000000U';
+const ME = '01J0000000000000000000000Z';
 const MATE = '01J0000000000000000000000V';
 const FOLDER = '01J0000000000000000000000F';
 
@@ -57,6 +57,8 @@ function team(capabilities: TeamAction[] = ALL): TeamResponse {
   };
 }
 
+const folder = { id: FOLDER, parentId: null, name: 'Reading', createdAt: 1, updatedAt: 1 };
+
 /** A page whose answers a test steers, recording what was asked of the worker. */
 function fakePage(
   snapshot: { notes: CachedTeamNote[]; folders: unknown[] },
@@ -71,12 +73,15 @@ function fakePage(
   const page = {
     status: { state: 'signed_in', me: null },
     me: null,
-    error: null,
+    failure: null,
     busy: false,
+    working: () => false,
+    failed: () => null,
     clearError: vi.fn(),
     refresh: vi.fn(async () => {}),
     run,
     cache,
+    onEvent: () => () => {},
   } as unknown as TeamsPage;
   return { page, calls, cache, run };
 }
@@ -86,12 +91,7 @@ const personal = {
   keep: vi.fn(async (_note: { content: string }) => {}),
 };
 
-const members = [
-  { userId: ME, displayName: 'Me', role: 'owner' as const, joinedAt: 1 },
-  { userId: MATE, displayName: 'Sara', role: 'member' as const, joinedAt: 2 },
-];
-
-const view = (page: TeamsPage, capabilities?: TeamAction[]) =>
+const view = (page: TeamsPage, capabilities?: TeamAction[], onOpenLibrary = vi.fn()) =>
   render(
     <TeamNotes
       strings={strings}
@@ -99,19 +99,17 @@ const view = (page: TeamsPage, capabilities?: TeamAction[]) =>
       page={page}
       team={team(capabilities)}
       myUserId={ME}
-      members={members}
+      members={[]}
       personal={personal}
+      onOpenLibrary={onOpenLibrary}
     />,
   );
 
-beforeEach(() => {
-  vi.clearAllMocks();
-  vi.spyOn(window, 'confirm').mockReturnValue(true);
-});
-afterEach(() => {
-  cleanup();
-  vi.restoreAllMocks();
-});
+/** Presses the row's own "are you sure" button. */
+const confirmWith = (label: string) => fireEvent.click(screen.getByRole('button', { name: label }));
+
+beforeEach(() => vi.clearAllMocks());
+afterEach(cleanup);
 
 describe('a team’s shared notes', () => {
   it('reads what this device holds, pulling first, and shows it', async () => {
@@ -119,23 +117,26 @@ describe('a team’s shared notes', () => {
     view(page);
 
     expect(await screen.findByText('my shared thought')).toBeInTheDocument();
-    expect(cache).toHaveBeenCalledWith(TEAM, 'sync');
+    expect(cache).toHaveBeenCalledWith(TEAM, 'sync', 'notes.reload');
     expect(screen.getByRole('link', { name: 'An article' })).toHaveAttribute(
       'href',
       'https://example.test/article',
     );
   });
 
-  it('says so, plainly, when nothing has been shared yet', async () => {
+  it('says what to do about it, with the way to do it, when a team has nothing yet', async () => {
+    const onOpenLibrary = vi.fn();
     const { page } = fakePage({ notes: [], folders: [] });
-    view(page);
-    expect(await screen.findByText(strings.noSharedNotes)).toBeInTheDocument();
-    expect(screen.getByText(strings.noTeamFolders)).toBeInTheDocument();
+    view(page, undefined, onOpenLibrary);
+
+    expect(await screen.findByText(strings.emptyNotesTitle('Alpha'))).toBeInTheDocument();
+    expect(screen.getByText(strings.emptyNotesBody('Alpha'))).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: strings.goToLibrary }));
+    expect(onOpenLibrary).toHaveBeenCalled();
   });
 
   it('quotes the version it saw when filing a note, so a stale move is refused', async () => {
-    const folders = [{ id: FOLDER, parentId: null, name: 'Reading', createdAt: 1, updatedAt: 1 }];
-    const { page, calls } = fakePage({ notes: [cached()], folders });
+    const { page, calls } = fakePage({ notes: [cached()], folders: [folder] });
     view(page);
     await screen.findByText('my shared thought');
 
@@ -149,7 +150,7 @@ describe('a team’s shared notes', () => {
     });
   });
 
-  it('keeps a note that has been taken back out of the team', async () => {
+  it('asks on the row before taking a note back, and keeps it once told to', async () => {
     const note = cached();
     const { page, calls } = fakePage(
       { notes: [note], folders: [] },
@@ -159,9 +160,27 @@ describe('a team’s shared notes', () => {
     await screen.findByText('my shared thought');
 
     fireEvent.click(screen.getByRole('button', { name: strings.unshareNote }));
+    // The question is asked here, in the page — never in a browser dialog.
+    expect(screen.getByText(strings.unshareConfirm)).toBeInTheDocument();
+    expect(calls, 'nothing has happened yet').toHaveLength(0);
+
+    confirmWith(strings.unshareNote);
     await waitFor(() => expect(personal.keep).toHaveBeenCalled());
     expect(calls[0]).toEqual({ op: 'notes.unshare', params: { teamId: TEAM, noteId: note.id } });
     expect(personal.keep.mock.calls[0]![0]).toMatchObject({ content: 'as it was shared' });
+  });
+
+  it('lets the question be backed out of, and then nothing happens', async () => {
+    const { page, calls } = fakePage({ notes: [cached()], folders: [] });
+    view(page);
+    await screen.findByText('my shared thought');
+
+    fireEvent.click(screen.getByRole('button', { name: strings.deleteSharedNote }));
+    expect(screen.getByText(strings.deleteSharedConfirm)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: strings.keepIt }));
+
+    expect(screen.queryByText(strings.deleteSharedConfirm)).not.toBeInTheDocument();
+    expect(calls).toHaveLength(0);
   });
 
   it('offers nothing about someone else’s note beyond what the server allowed', async () => {
@@ -178,27 +197,26 @@ describe('a team’s shared notes', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('lets an admin delete anyone’s note for everyone, once they have said yes', async () => {
+  it('lets an admin delete anyone’s note for everyone, once they have said so', async () => {
     const theirs = cached({ authorId: MATE });
     const { page, calls } = fakePage({ notes: [theirs], folders: [] });
     view(page);
     await screen.findByText('my shared thought');
 
     fireEvent.click(screen.getByRole('button', { name: strings.deleteSharedNote }));
+    confirmWith(strings.deleteSharedNote);
     await waitFor(() => expect(calls.some((c) => c.op === 'notes.delete')).toBe(true));
-    expect(window.confirm).toHaveBeenCalledWith(strings.deleteSharedConfirm);
   });
 
   it('creates, renames and deletes a team’s folders', async () => {
-    const folders = [{ id: FOLDER, parentId: null, name: 'Reading', createdAt: 1, updatedAt: 1 }];
     const { page, calls } = fakePage(
-      { notes: [], folders },
+      { notes: [], folders: [folder] },
       { 'folders.create': { folder: {} }, 'folders.rename': { folder: {} } },
     );
     view(page);
     await screen.findByText('Reading');
 
-    fireEvent.click(screen.getByRole('button', { name: strings.newTeamFolder }));
+    fireEvent.click(screen.getByRole('button', { name: `+ ${strings.newTeamFolder}` }));
     fireEvent.change(screen.getByLabelText(strings.newTeamFolder), {
       target: { value: 'Onboarding' },
     });
@@ -220,22 +238,23 @@ describe('a team’s shared notes', () => {
     });
 
     fireEvent.click(screen.getByRole('button', { name: strings.deleteFolder }));
+    confirmWith(strings.deleteFolder);
     await waitFor(() => expect(calls.some((c) => c.op === 'folders.delete')).toBe(true));
   });
 
   it('shows no folder controls at all to someone the server did not let manage them', async () => {
-    const folders = [{ id: FOLDER, parentId: null, name: 'Reading', createdAt: 1, updatedAt: 1 }];
-    const { page } = fakePage({ notes: [], folders });
+    const { page } = fakePage({ notes: [], folders: [folder] });
     view(page, ['team.view']);
     await screen.findByText('Reading');
 
-    expect(screen.queryByRole('button', { name: strings.newTeamFolder })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: `+ ${strings.newTeamFolder}` }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: strings.renameFolder })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: strings.deleteFolder })).not.toBeInTheDocument();
   });
 
-  it('groups notes under the folder they are filed in, and the rest under Unfiled', async () => {
-    const folders = [{ id: FOLDER, parentId: null, name: 'Reading', createdAt: 1, updatedAt: 1 }];
+  it('narrows the list to one folder, and counts what is in each', async () => {
     const { page } = fakePage({
       notes: [
         cached({ id: '01J0000000000000000000000N', folderId: FOLDER, content: 'filed one' }),
@@ -243,15 +262,21 @@ describe('a team’s shared notes', () => {
         // A folder that no longer exists leaves its note unfiled, never hidden.
         cached({ id: '01J0000000000000000000000P', folderId: 'gone', content: 'orphan' }),
       ],
-      folders,
+      folders: [folder],
     });
     view(page);
-
     await screen.findByText('filed one');
-    const lists = screen.getAllByRole('list');
-    // The first list is the folder list; the next two are the note groups.
-    expect(within(lists[1]).getByText('filed one')).toBeInTheDocument();
-    expect(within(lists[2]).getByText('loose one')).toBeInTheDocument();
-    expect(within(lists[2]).getByText('orphan')).toBeInTheDocument();
+
+    const rail = screen.getByRole('complementary');
+    expect(within(rail).getByRole('button', { name: /Reading/ })).toHaveTextContent('1');
+    expect(within(rail).getByRole('button', { name: /Unfiled/ })).toHaveTextContent('2');
+
+    fireEvent.click(within(rail).getByRole('button', { name: /Reading/ }));
+    expect(screen.getByText('filed one')).toBeInTheDocument();
+    expect(screen.queryByText('loose one')).not.toBeInTheDocument();
+
+    fireEvent.click(within(rail).getByRole('button', { name: /Unfiled/ }));
+    expect(screen.getByText('orphan')).toBeInTheDocument();
+    expect(screen.queryByText('filed one')).not.toBeInTheDocument();
   });
 });

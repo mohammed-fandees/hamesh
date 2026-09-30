@@ -2,7 +2,7 @@ import { MarginMark } from './MarginMark';
 import { TeamIcon } from './SettingsIcons';
 import type { Strings } from './i18n';
 
-export type LibraryView = 'library' | 'settings' | 'teams' | 'whats-new';
+export type LibraryView = 'library' | 'settings' | 'teams' | 'mentions' | 'whats-new';
 
 interface SidebarProps {
   view: LibraryView;
@@ -14,6 +14,11 @@ interface SidebarProps {
   whatsNewUnseen?: boolean;
   /** Teams gets a destination of its own only in builds that have it. */
   showTeams?: boolean;
+  /** Marks Mentions with a dot when someone has named the reader since they
+   *  last looked. Being named is the one thing in Teams that is addressed to
+   *  this person rather than to a team, which is why it is a destination of
+   *  its own rather than a section inside one team's page. */
+  mentionsUnseen?: boolean;
 }
 
 /**
@@ -32,6 +37,7 @@ export function Sidebar({
   onNavigate,
   whatsNewUnseen = false,
   showTeams = false,
+  mentionsUnseen = false,
 }: SidebarProps) {
   return (
     <nav className="hm-sidebar" aria-label={strings.notesLibrary}>
@@ -51,7 +57,7 @@ export function Sidebar({
             {strings.notesLibrary}
           </button>
         </li>
-        {showTeams && (
+        {import.meta.env.WXT_TEAMS_API_ORIGIN && showTeams && (
           <li>
             <button
               type="button"
@@ -61,6 +67,20 @@ export function Sidebar({
             >
               <TeamIcon size={15} />
               {strings.settingsTeams}
+            </button>
+          </li>
+        )}
+        {import.meta.env.WXT_TEAMS_API_ORIGIN && showTeams && (
+          <li>
+            <button
+              type="button"
+              className="hm-sidebar__nav-item"
+              aria-current={view === 'mentions' ? 'page' : undefined}
+              onClick={() => onNavigate('mentions')}
+            >
+              <MentionsIcon />
+              {strings.settingsMentions}
+              {mentionsUnseen && <span className="hm-sidebar__dot" aria-hidden="true" />}
             </button>
           </li>
         )}
@@ -92,6 +112,22 @@ export function Sidebar({
         </li>
       </ul>
     </nav>
+  );
+}
+
+/** An "@", for where somebody named you. Drawn rather than typed so it keeps
+ *  the same stroke weight as its neighbours in the rail. */
+function MentionsIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 15 15" aria-hidden="true" fill="none">
+      <circle cx="7.5" cy="7.5" r="2.6" stroke="currentColor" strokeWidth="1.3" />
+      <path
+        d="M10.1 5.2 V8.4 C10.1 9.4 10.8 10 11.6 10 C12.6 10 13.3 9.1 13.3 7.6 C13.3 4.1 11 1.7 7.6 1.7 C4.3 1.7 1.7 4.3 1.7 7.6 C1.7 10.9 4.3 13.3 7.6 13.3 C8.8 13.3 9.8 13 10.6 12.5"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+      />
+    </svg>
   );
 }
 

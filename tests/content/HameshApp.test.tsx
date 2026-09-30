@@ -31,6 +31,7 @@ function makePrefsRepo(): PreferencesRepository {
     setAppearance: vi.fn(),
     setTextNotes: vi.fn(),
     setLastSeenReleaseVersion: vi.fn(),
+    setLastSeenMention: vi.fn(),
     setPageDefaultFolder: vi.fn(),
     setGlobalDefaultFolder: vi.fn(),
   };
