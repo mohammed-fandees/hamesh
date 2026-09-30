@@ -181,6 +181,7 @@ export function CommentComposer({
           type="button"
           className="hm-btn hm-btn-primary"
           disabled={busy || !body.trim()}
+          aria-busy={busy}
           onClick={submit}
         >
           {submitLabel}

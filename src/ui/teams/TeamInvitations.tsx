@@ -106,8 +106,9 @@ export function TeamInvitations({ strings, lang, page, team }: TeamInvitationsPr
             type="submit"
             className="hm-btn hm-btn-primary"
             disabled={page.working('invites.create')}
+            aria-busy={page.working('invites.create')}
           >
-            {page.working('invites.create') ? strings.working : strings.sendInvite}
+            {strings.sendInvite}
           </button>
         </form>
       )}
@@ -151,9 +152,10 @@ export function TeamInvitations({ strings, lang, page, team }: TeamInvitationsPr
                   type="button"
                   className="hm-btn hm-btn-ghost"
                   disabled={page.working(`invite:${invitation.id}`)}
+                  aria-busy={page.working(`invite:${invitation.id}`)}
                   onClick={() => void revoke(invitation.id)}
                 >
-                  {page.working(`invite:${invitation.id}`) ? strings.working : strings.revokeInvite}
+                  {strings.revokeInvite}
                 </button>
               )}
             </li>

@@ -526,6 +526,41 @@
   filter: brightness(1.08);
 }
 
+/* A control that is acting keeps its own label — "Rename" is still "Rename"
+   while it happens — and gains an arc before it, so the button neither changes
+   width nor swaps its words for a generic "Working…". `aria-busy` is what says
+   so to a screen reader; the arc is the sighted half of the same statement. */
+.hm-btn[aria-busy='true'],
+.hm-link[aria-busy='true'] {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hm-space-2);
+  cursor: progress;
+}
+.hm-btn[aria-busy='true']::before,
+.hm-link[aria-busy='true']::before,
+.hm-spinner {
+  content: '';
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid currentColor;
+  border-top-color: transparent;
+  border-radius: var(--hm-radius-pill);
+  animation: hm-spin 800ms linear infinite;
+}
+/* On its own — where a row's controls have gone while it acts — the arc takes
+   the accent, and the row's name for it is the label a screen reader hears. */
+.hm-spinner {
+  display: inline-block;
+  color: var(--hm-accent);
+}
+@keyframes hm-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* Icon-style ghost action (Edit / Delete in viewer) */
 .hm-link {
   font-family: var(--hm-sans);

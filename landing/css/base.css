@@ -83,9 +83,9 @@ p {
   font-weight: 500;
   border: 1px solid transparent;
   transition:
-    transform var(--dur-base) var(--ease-out),
-    background-color var(--dur-base) var(--ease-out),
-    border-color var(--dur-base) var(--ease-out);
+    transform var(--motion-enter),
+    background-color var(--motion-state),
+    border-color var(--motion-state);
   will-change: transform;
 }
 
@@ -120,6 +120,7 @@ p {
 
 .btn--ghost:hover {
   border-color: var(--ink-40);
+  background: var(--surface-hover);
 }
 
 /* ---- Header --------------------------------------------------------- */
@@ -185,12 +186,19 @@ p {
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--ink-60);
-  transition: border-color var(--dur-base) var(--ease-out);
+  transition:
+    background var(--motion-state),
+    border-color var(--motion-state);
 }
 
 .lang-toggle:hover {
   border-color: var(--ink-40);
+  background: var(--layer-hover);
   color: var(--ink);
+}
+
+.lang-toggle:active {
+  background: var(--layer-pressed);
 }
 
 .visually-hidden,

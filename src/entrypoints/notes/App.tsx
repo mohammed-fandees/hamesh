@@ -601,6 +601,9 @@ export function App() {
                 <MentionsInbox
                   lang={lang}
                   client={teamsClient}
+                  onOpenNote={(teamId, noteId) =>
+                    navigate('teams', { page: 'note', teamId, noteId })
+                  }
                   onRead={(commentId) => {
                     setLastSeenMention(commentId);
                     void prefsRepo.setLastSeenMention(commentId);
@@ -696,6 +699,14 @@ export function App() {
                     <MarginMark size={28} strokeWidth={3} />
                     <p className="hm-empty__title">{strings.notesLibraryEmptyTitle}</p>
                     <p className="hm-empty__body">{strings.notesLibraryEmptyBody}</p>
+                    {/* The way to the shortcuts that make the first note. */}
+                    <button
+                      type="button"
+                      className="hm-btn hm-btn-primary hm-empty__action"
+                      onClick={() => navigate('settings')}
+                    >
+                      {strings.settingsShortcuts}
+                    </button>
                   </div>
                 ) : import.meta.env.WXT_TEAMS_API_ORIGIN && noFilterResults ? (
                   <div className="hm-empty hm-fade-in">

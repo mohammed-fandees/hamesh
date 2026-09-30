@@ -51,9 +51,11 @@ describe('asking before something irreversible', () => {
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 
-  it('says it is working, and takes no second answer while it is', () => {
+  it('keeps its own label while it is working, says so, and takes no second answer', () => {
     const { onConfirm, onCancel } = view({ working: true });
-    const confirm = screen.getByRole('button', { name: strings.working });
+    // Not swapped for a generic "Working…": the button is still what it was.
+    const confirm = screen.getByRole('button', { name: 'Delete' });
+    expect(confirm).toHaveAttribute('aria-busy', 'true');
     expect(confirm).toBeDisabled();
     fireEvent.click(confirm);
     fireEvent.click(screen.getByRole('button', { name: strings.keepIt }));

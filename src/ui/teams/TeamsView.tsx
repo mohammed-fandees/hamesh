@@ -286,8 +286,9 @@ export function TeamsView({
                 type="submit"
                 className="hm-btn hm-btn-primary"
                 disabled={page.working('team.create')}
+                aria-busy={page.working('team.create')}
               >
-                {page.working('team.create') ? strings.working : strings.create}
+                {strings.create}
               </button>
               <button
                 type="button"

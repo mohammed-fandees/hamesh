@@ -87,7 +87,10 @@ async function storedNoteIds(page: Page): Promise<string[]> {
 async function openSettings(context: BrowserContext, extensionId: string): Promise<Page> {
   const page = await context.newPage();
   await page.goto(`chrome-extension://${extensionId}/notes.html?view=settings`);
-  await expect(page.getByRole('heading', { name: 'Backup' })).toBeVisible();
+  // Backup is a panel that stays shut until it is wanted — a rare thing to
+  // reach for — so opening it is part of getting to it.
+  await page.locator('summary', { hasText: 'Backup' }).click();
+  await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeVisible();
   return page;
 }
 

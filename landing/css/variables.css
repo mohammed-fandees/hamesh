@@ -23,6 +23,8 @@
   --accent-strong: #8f3e22;
   --accent-tint: #f1dccc;
   --accent-glow: rgba(181, 80, 47, 0.22);
+  /* The accent as channels, for a state layer. Moves with --accent. */
+  --accent-rgb: 181 80 47;
 
   --border: rgba(30, 27, 24, 0.14);
   --border-soft: rgba(30, 27, 24, 0.08);
@@ -49,9 +51,25 @@
 
   /* Motion. `--ease-out` is the extension's own easing curve. */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
   --dur-fast: 120ms;
   --dur-base: 200ms;
   --dur-slow: 320ms;
+  /* The same intents the extension names (src/ui/tokens.css): a colour
+     answering the pointer, something arriving, something leaving. */
+  --motion-state: var(--dur-fast) var(--ease-out);
+  --motion-enter: var(--dur-base) var(--ease-out);
+  --motion-exit: var(--dur-fast) var(--ease-in);
+
+  /* State layers — the accent at 8, 12 and 16 percent, as in the extension.
+     `--surface-hover` is the 8% flattened onto --surface, for a control that
+     paints its own background. */
+  --state-hover: 0.08;
+  --state-focus: 0.12;
+  --state-pressed: 0.16;
+  --layer-hover: rgb(var(--accent-rgb) / var(--state-hover));
+  --layer-pressed: rgb(var(--accent-rgb) / var(--state-pressed));
+  --surface-hover: #f9f1ee;
 
   /* Layout */
   --maxw: 1120px;
@@ -70,6 +88,8 @@
     --surface-2: #1d1a14;
 
     --accent: #e08b5c;
+    --accent-rgb: 224 139 92;
+    --surface-hover: #352a1e;
     --accent-strong: #f0a578;
     --accent-tint: rgba(224, 139, 92, 0.16);
     --accent-glow: rgba(224, 139, 92, 0.26);

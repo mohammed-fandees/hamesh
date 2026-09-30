@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { SettingRow } from './SettingRow';
+import { SettingsGroup } from './SettingsGroup';
 import { AccountIcon, PlanIcon, TeamIcon } from './SettingsIcons';
 import type { Lang, Strings } from './i18n';
 import type { TeamsClient } from '@/teams/client';
@@ -96,9 +97,7 @@ export function TeamsSection({ strings, lang, client }: TeamsSectionProps) {
     new Intl.DateTimeFormat(lang, { dateStyle: 'medium' }).format(new Date(ms));
 
   return (
-    <>
-      <h2 className="hm-settings__subheading">{strings.settingsTeams}</h2>
-      <p className="hm-settings__intro">{strings.teamsIntro}</p>
+    <SettingsGroup title={strings.settingsTeams} intro={strings.teamsIntro}>
       <div className="hm-settings__body">
         {!status && (
           <SettingRow
@@ -119,8 +118,9 @@ export function TeamsSection({ strings, lang, client }: TeamsSectionProps) {
                   className="hm-btn hm-btn-primary"
                   onClick={turnOn}
                   disabled={busy !== null}
+                  aria-busy={busy === 'turn-on'}
                 >
-                  {busy === 'turn-on' ? strings.backupWorking : strings.teamsTurnOn}
+                  {strings.teamsTurnOn}
                 </button>
               }
             />
@@ -139,8 +139,9 @@ export function TeamsSection({ strings, lang, client }: TeamsSectionProps) {
                   className="hm-btn hm-btn-primary"
                   onClick={() => run('sign-in', () => client.send('signIn'))}
                   disabled={busy !== null}
+                  aria-busy={busy === 'sign-in'}
                 >
-                  {busy === 'sign-in' ? strings.backupWorking : strings.teamsSignIn}
+                  {strings.teamsSignIn}
                 </button>
               }
             />
@@ -161,8 +162,9 @@ export function TeamsSection({ strings, lang, client }: TeamsSectionProps) {
                     className="hm-btn hm-btn-ghost"
                     onClick={() => run('sign-out', () => client.send('signOut'))}
                     disabled={busy !== null}
+                    aria-busy={busy === 'sign-out'}
                   >
-                    {busy === 'sign-out' ? strings.backupWorking : strings.teamsSignOut}
+                    {strings.teamsSignOut}
                   </button>
                 </span>
               }
@@ -207,6 +209,6 @@ export function TeamsSection({ strings, lang, client }: TeamsSectionProps) {
           {notice}
         </p>
       )}
-    </>
+    </SettingsGroup>
   );
 }

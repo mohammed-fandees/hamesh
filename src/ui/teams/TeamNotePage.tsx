@@ -245,15 +245,13 @@ export function TeamNotePage({
               className="hm-btn hm-btn-primary"
               disabled={working}
               onClick={() => void saveEdit()}
+              aria-busy={working}
             >
-              {working ? strings.working : strings.saveNote}
+              {strings.saveNote}
             </button>
           </div>
         ) : working ? (
-          <p className="hm-section__meta" role="status">
-            <span className="hm-spinner" aria-hidden="true" />
-            {strings.working}
-          </p>
+          <span className="hm-spinner" role="status" aria-label={strings.working} />
         ) : (
           <div className="hm-team-note__actions">
             {mayFile && folders.length > 0 && (

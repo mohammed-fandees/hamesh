@@ -87,8 +87,9 @@ export function TeamSettings({
               type="submit"
               className="hm-btn hm-btn-ghost"
               disabled={page.working('team.rename')}
+              aria-busy={page.working('team.rename')}
             >
-              {page.working('team.rename') ? strings.working : strings.rename}
+              {strings.rename}
             </button>
           </form>
         )}

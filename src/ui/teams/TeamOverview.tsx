@@ -146,8 +146,9 @@ export function TeamOverview({
             className="hm-link"
             disabled={page.working('notes.reload')}
             onClick={() => void reload()}
+            aria-busy={page.working('notes.reload')}
           >
-            {page.working('notes.reload') ? strings.working : strings.refreshNotes}
+            {strings.refreshNotes}
           </button>
           <button
             type="button"
@@ -301,8 +302,9 @@ export function TeamOverview({
                         type="submit"
                         className="hm-btn hm-btn-primary"
                         disabled={page.working('folders.create')}
+                        aria-busy={page.working('folders.create')}
                       >
-                        {page.working('folders.create') ? strings.working : strings.create}
+                        {strings.create}
                       </button>
                       <button
                         type="button"

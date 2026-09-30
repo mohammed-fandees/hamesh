@@ -341,56 +341,6 @@
   font-weight: 600;
 }
 
-/* A panel that stays shut until it is wanted. */
-.hm-panel {
-  margin-top: var(--hm-space-4);
-  border: 1px solid var(--hm-border);
-  border-radius: var(--hm-radius-lg);
-  background: var(--hm-surface);
-}
-.hm-panel__summary:hover {
-  background: var(--hm-layer-hover);
-}
-.hm-panel__summary:focus-visible {
-  outline: none;
-  background: var(--hm-layer-focus);
-  box-shadow: var(--hm-ring-inset);
-}
-.hm-panel__summary {
-  display: flex;
-  align-items: baseline;
-  gap: var(--hm-space-3);
-  padding: var(--hm-card-pad);
-  border-radius: var(--hm-radius-lg);
-  font-size: var(--hm-text-body);
-  font-weight: 500;
-  cursor: pointer;
-  list-style: none;
-}
-.hm-panel__summary::-webkit-details-marker {
-  display: none;
-}
-.hm-panel__summary::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-inline-end: 1.5px solid var(--hm-ink-40);
-  border-block-end: 1.5px solid var(--hm-ink-40);
-  transform: rotate(-45deg);
-  transition: transform var(--hm-motion-state);
-}
-.hm-panel[open] > .hm-panel__summary::before {
-  transform: rotate(45deg);
-}
-.hm-panel__hint {
-  color: var(--hm-ink-40);
-  font-weight: 400;
-  font-size: var(--hm-text-body-sm);
-}
-.hm-panel__body {
-  padding: 0 var(--hm-space-5) var(--hm-space-4);
-}
-
 .hm-team-notes {
   margin: 0;
   padding: 0;
@@ -470,6 +420,7 @@
   flex-wrap: wrap;
   gap: var(--hm-space-2);
   margin-top: var(--hm-space-3);
+  margin-bottom: var(--hm-space-5);
 }
 .hm-owner-filter__pill {
   display: inline-flex;
@@ -524,73 +475,6 @@
   height: 5px;
   border-radius: var(--hm-radius-pill);
   background: var(--hm-accent);
-}
-
-/* An empty state inside a panel, rather than filling a page. */
-.hm-empty--inline {
-  padding: var(--hm-space-4);
-}
-.hm-empty__action {
-  margin-top: var(--hm-space-3);
-}
-
-/* ---- The overview's cards ---- */
-.hm-section {
-  margin-top: var(--hm-space-4);
-  padding: var(--hm-card-pad);
-  border: 1px solid var(--hm-border);
-  border-radius: var(--hm-radius-lg);
-  background: var(--hm-surface);
-}
-.hm-section--flush {
-  padding: 0;
-  overflow: hidden;
-}
-.hm-section__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--hm-space-3);
-  margin-bottom: var(--hm-space-4);
-}
-.hm-section__title {
-  margin: 0;
-  font-size: var(--hm-text-title);
-  line-height: var(--hm-lh-title);
-  font-weight: 600;
-}
-/* Beside a title in a header the card's own bottom margin is the header's. */
-.hm-section > .hm-section__title {
-  margin-bottom: var(--hm-space-2);
-}
-.hm-section__meta {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--hm-space-2);
-  color: var(--hm-ink-40);
-  font-size: var(--hm-text-body-sm);
-}
-.hm-section__spacer {
-  flex-grow: 1;
-}
-/* A quiet heading between a card and the thread under it. */
-.hm-subheading {
-  margin: var(--hm-space-6) 0 var(--hm-space-2);
-  color: var(--hm-ink-40);
-  font-size: var(--hm-text-body-sm);
-  line-height: var(--hm-lh-body-sm);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-/* The accent for a link that says where the reader can go next. */
-.hm-link--accent {
-  color: var(--hm-accent-strong);
-}
-.hm-link--accent:hover {
-  color: var(--hm-accent-strong);
-  text-decoration: underline;
 }
 
 /* ---- Folders as tiles ---- */
@@ -810,23 +694,6 @@
   color: var(--hm-ink);
 }
 
-/* ---- A row that is acting ---- */
-/* The arc turns while a row waits on the server. Static under reduced motion
-   (the blanket override), which still reads as "this is in progress". */
-.hm-spinner {
-  flex: none;
-  width: 12px;
-  height: 12px;
-  border: 1.5px solid var(--hm-ink-20);
-  border-top-color: var(--hm-accent);
-  border-radius: var(--hm-radius-pill);
-  animation: hm-spin 800ms linear infinite;
-}
-@keyframes hm-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
 /* Skeletons shaped like what is loading: a wrap of tiles, a line of chips. */
 .hm-skeleton--tiles {
   display: grid;
@@ -859,4 +726,10 @@
 .hm-owner-filter__scope:focus-visible {
   outline: none;
   box-shadow: var(--hm-ring);
+}
+
+/* A mention's way to the note it was written about, at the end of the card. */
+.hm-mention-entry__open {
+  align-self: flex-start;
+  margin-top: var(--hm-space-1);
 }

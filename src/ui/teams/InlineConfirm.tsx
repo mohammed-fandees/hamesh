@@ -71,8 +71,9 @@ export function InlineConfirm({
         className={tone === 'danger' ? 'hm-btn hm-btn-danger' : 'hm-btn hm-btn-primary'}
         disabled={working}
         onClick={onConfirm}
+        aria-busy={working}
       >
-        {working ? strings.working : confirmLabel}
+        {confirmLabel}
       </button>
     </div>
   );

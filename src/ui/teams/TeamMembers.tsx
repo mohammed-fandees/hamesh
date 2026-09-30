@@ -133,10 +133,8 @@ export function TeamMembers({
                 onCancel={() => setConfirming(null)}
               />
             ) : working ? (
-              <span className="hm-team-member__meta" role="status">
-                <span className="hm-spinner" aria-hidden="true" />
-                {strings.working}
-              </span>
+              // Where its controls were: an arc, and the word only for a screen reader.
+              <span className="hm-spinner" role="status" aria-label={strings.working} />
             ) : (
               <span className="hm-team-member__actions">
                 {member.role === 'member' && can('members.promote') && (

@@ -15,7 +15,6 @@ const WORDS = {
     placeholder: 'Session token…',
     action: 'Use it',
     badToken: 'That is not a session token — they are 43 characters.',
-    working: 'Working…',
   },
   ar: {
     title: 'تسجيل دخول بتوكن محلي',
@@ -23,7 +22,6 @@ const WORDS = {
     placeholder: 'توكن الجلسة…',
     action: 'استخدمه',
     badToken: 'هذا ليس توكن جلسة — طوله 43 حرفًا.',
-    working: 'جارٍ التنفيذ…',
   },
 } as const;
 
@@ -105,8 +103,13 @@ export function DevSignIn({ lang, client, onSignedIn }: DevSignInProps) {
           value={token}
           onChange={(e) => setToken(e.target.value)}
         />
-        <button type="submit" className="hm-btn hm-btn-ghost" disabled={busy || !token.trim()}>
-          {busy ? words.working : words.action}
+        <button
+          type="submit"
+          className="hm-btn hm-btn-ghost"
+          disabled={busy || !token.trim()}
+          aria-busy={busy}
+        >
+          {words.action}
         </button>
       </form>
       {error && (

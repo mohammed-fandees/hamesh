@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import { SettingRow } from './SettingRow';
+import { SettingsGroup } from './SettingsGroup';
 import { ExportIcon, ImportIcon } from './SettingsIcons';
 import type { Strings } from './i18n';
 
@@ -101,8 +102,7 @@ export function BackupSection({ strings, handlers }: BackupSectionProps) {
   );
 
   return (
-    <>
-      <h2 className="hm-settings__subheading">{strings.settingsBackup}</h2>
+    <SettingsGroup title={strings.settingsBackup} collapsed>
       <div className="hm-settings__body">
         <SettingRow
           label={strings.backupExport}
@@ -113,8 +113,9 @@ export function BackupSection({ strings, handlers }: BackupSectionProps) {
               className="hm-btn hm-btn-ghost"
               onClick={handleExport}
               disabled={busy !== null}
+              aria-busy={busy === 'export'}
             >
-              {busy === 'export' ? strings.backupWorking : strings.backupExport}
+              {strings.backupExport}
             </button>
           }
         />
@@ -129,8 +130,9 @@ export function BackupSection({ strings, handlers }: BackupSectionProps) {
               className="hm-btn hm-btn-ghost"
               onClick={() => fileInputRef.current?.click()}
               disabled={busy !== null}
+              aria-busy={busy === 'import'}
             >
-              {busy === 'import' ? strings.backupWorking : strings.backupImport}
+              {strings.backupImport}
             </button>
           }
         />
@@ -169,6 +171,6 @@ export function BackupSection({ strings, handlers }: BackupSectionProps) {
           if (file) void handleFile(file);
         }}
       />
-    </>
+    </SettingsGroup>
   );
 }

@@ -313,8 +313,9 @@ export function CommentThread({
           className="hm-link"
           disabled={page.working('comments.more')}
           onClick={() => void more()}
+          aria-busy={page.working('comments.more')}
         >
-          {page.working('comments.more') ? strings.working : strings.moreComments}
+          {strings.moreComments}
         </button>
       )}
       {can('comments.create') && members && (

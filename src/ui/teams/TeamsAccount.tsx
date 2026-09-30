@@ -5,6 +5,7 @@ import './styles';
 import { useTeams } from './useTeams';
 import { JoinTeam } from './JoinTeam';
 import { BillingPanel } from './BillingPanel';
+import { SettingsGroup } from '../SettingsGroup';
 
 interface TeamsAccountProps {
   lang: Lang;
@@ -33,18 +34,20 @@ export function TeamsAccount({ lang, client, onJoined }: TeamsAccountProps) {
 
   return (
     <>
-      <h2 className="hm-settings__subheading">{strings.joinTeam}</h2>
-      <JoinTeam
-        strings={strings}
-        page={page}
-        onJoined={(teamId) => {
-          void page.refresh();
-          onJoined(teamId);
-        }}
-      />
+      <SettingsGroup title={strings.joinTeam} collapsed>
+        <JoinTeam
+          strings={strings}
+          page={page}
+          onJoined={(teamId) => {
+            void page.refresh();
+            onJoined(teamId);
+          }}
+        />
+      </SettingsGroup>
 
-      <h2 className="hm-settings__subheading">{strings.billing}</h2>
-      <BillingPanel strings={strings} lang={lang} page={page} me={me} />
+      <SettingsGroup title={strings.billing} collapsed>
+        <BillingPanel strings={strings} lang={lang} page={page} me={me} />
+      </SettingsGroup>
     </>
   );
 }

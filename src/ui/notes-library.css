@@ -638,7 +638,7 @@
 .hm-note-row {
   position: relative;
   display: block;
-  padding: var(--hm-space-3);
+  padding: var(--hm-card-pad-dense);
   border: 1px solid var(--hm-border);
   border-radius: var(--hm-radius-md);
   color: inherit;
@@ -916,6 +916,7 @@
   font-style: italic;
 }
 .hm-folder-node__toggle {
+  position: relative;
   flex: none;
   display: inline-flex;
   border: none;
@@ -923,6 +924,13 @@
   padding: 2px;
   cursor: pointer;
   color: var(--hm-ink-40);
+}
+/* The chevron is small; what answers a click on it is not (see the hit-area
+   rule in tokens.css). */
+.hm-folder-node__toggle::after {
+  content: '';
+  position: absolute;
+  inset: min(0px, calc(50% - var(--hm-hit-min) / 2));
 }
 .hm-folder-node__chevron {
   /* Collapsed: points at the folder glyph beside it (►). Expanded: rotates
@@ -1174,4 +1182,144 @@
 .hm-folder-menu__edit {
   width: 240px;
   padding: var(--hm-space-2);
+}
+
+/* ---- Cards and panels ----
+   Shared by every extension page, not just Teams: Settings is made of them too,
+   and a build without Teams has Settings but not the Teams stylesheet. */
+/* A panel that stays shut until it is wanted. */
+.hm-panel {
+  margin-top: var(--hm-space-4);
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-lg);
+  background: var(--hm-surface);
+}
+.hm-panel__summary:hover {
+  background: var(--hm-layer-hover);
+}
+.hm-panel__summary:focus-visible {
+  outline: none;
+  background: var(--hm-layer-focus);
+  box-shadow: var(--hm-ring-inset);
+}
+.hm-panel__summary {
+  display: flex;
+  align-items: baseline;
+  gap: var(--hm-space-3);
+  padding: var(--hm-card-pad);
+  border-radius: var(--hm-radius-lg);
+  font-size: var(--hm-text-body);
+  font-weight: 500;
+  cursor: pointer;
+  list-style: none;
+}
+.hm-panel__summary::-webkit-details-marker {
+  display: none;
+}
+.hm-panel__summary::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-inline-end: 1.5px solid var(--hm-ink-40);
+  border-block-end: 1.5px solid var(--hm-ink-40);
+  transform: rotate(-45deg);
+  transition: transform var(--hm-motion-state);
+}
+.hm-panel[open] > .hm-panel__summary::before {
+  transform: rotate(45deg);
+}
+.hm-panel__hint {
+  color: var(--hm-ink-40);
+  font-weight: 400;
+  font-size: var(--hm-text-body-sm);
+}
+.hm-panel__body {
+  padding: 0 var(--hm-space-5) var(--hm-space-4);
+}
+
+/* ---- The overview's cards ---- */
+.hm-section {
+  margin-top: var(--hm-space-4);
+  padding: var(--hm-card-pad);
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-lg);
+  background: var(--hm-surface);
+}
+.hm-section--flush {
+  padding: 0;
+  overflow: hidden;
+}
+.hm-section__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--hm-space-3);
+  margin-bottom: var(--hm-space-4);
+}
+.hm-section__title {
+  margin: 0;
+  font-size: var(--hm-text-title);
+  line-height: var(--hm-lh-title);
+  font-weight: 600;
+}
+/* Beside a title in a header the card's own bottom margin is the header's. */
+.hm-section > .hm-section__title {
+  margin-bottom: var(--hm-space-2);
+}
+.hm-section__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hm-space-2);
+  color: var(--hm-ink-40);
+  font-size: var(--hm-text-body-sm);
+}
+.hm-section__spacer {
+  flex-grow: 1;
+}
+/* A quiet heading between a card and the thread under it. */
+.hm-subheading {
+  margin: var(--hm-space-6) 0 var(--hm-space-2);
+  color: var(--hm-ink-40);
+  font-size: var(--hm-text-body-sm);
+  line-height: var(--hm-lh-body-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* The accent for a link that says where the reader can go next. */
+.hm-link--accent {
+  color: var(--hm-accent-strong);
+}
+.hm-link--accent:hover {
+  color: var(--hm-accent-strong);
+  text-decoration: underline;
+}
+
+/* The releases nobody has to read again stay in a panel of their own, spaced off
+   the timeline above it. */
+.hm-panel--releases {
+  margin-top: var(--hm-space-2);
+}
+
+/* An empty state inside a card, rather than filling a page, and the control
+   every empty state carries: what to do, and the button that does it. */
+.hm-empty--inline {
+  padding: var(--hm-space-4);
+}
+.hm-empty__action {
+  margin-top: var(--hm-space-3);
+}
+
+/* Settings rows inside a card: the card already pads, so the row list starts at
+   its edge — the first card has no title above it, and its first row should not
+   sit a double padding down from the top. */
+.hm-section > .hm-settings__body {
+  margin-top: 0;
+}
+.hm-section > .hm-settings__body:first-child > .hm-setting-row:first-child {
+  padding-top: 0;
+}
+.hm-section > .hm-settings__body:last-child > .hm-setting-row:last-child {
+  padding-bottom: 0;
 }

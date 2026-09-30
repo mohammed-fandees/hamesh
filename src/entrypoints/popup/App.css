@@ -43,3 +43,13 @@ body {
   outline: none;
   box-shadow: var(--hm-ring);
 }
+
+/* Loading and empty, at popup scale: the same shapes as the Library's, tighter,
+   because 300px has room for one thing to say. */
+.hm-popup__skeleton {
+  margin-top: var(--hm-space-4);
+}
+.hm-empty--popup {
+  margin-top: var(--hm-space-3);
+  padding: var(--hm-space-4) 0 var(--hm-space-2);
+}

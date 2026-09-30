@@ -21,6 +21,9 @@ type View = 'home' | 'settings';
 export function App() {
   const [count, setCount] = useState<number | null>(null);
   const [active, setActive] = useState(false);
+  /** False until the page has answered (or refused to), so the popup shows a
+   *  skeleton while it is finding out rather than a dash that reads as "none". */
+  const [checked, setChecked] = useState(false);
   // `null` until the real current binding loads — shortcuts are now
   // user-customizable (Notes Library → Settings), so this can no longer be
   // a hardcoded "Alt+H" without going stale the moment someone rebinds it.
@@ -67,7 +70,10 @@ export function App() {
   useEffect(() => {
     (async () => {
       const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-      if (tab?.id == null) return;
+      if (tab?.id == null) {
+        setChecked(true);
+        return;
+      }
       try {
         const res = (await browser.tabs.sendMessage(tab.id, {
           type: 'GET_PAGE_STATE',
@@ -79,6 +85,7 @@ export function App() {
       } catch {
         setActive(false); // no content script on this page
       }
+      setChecked(true);
     })();
   }, []);
 
@@ -200,31 +207,44 @@ export function App() {
               </button>
             </div>
 
-            <div className="hm-popup__count">
-              {count ?? '—'} <span>{strings.notesOnPage(count ?? 0)}</span>
-            </div>
+            {!checked ? (
+              // Asking the page: the shape of what is coming, not a placeholder dash.
+              <div className="hm-skeleton hm-popup__skeleton" aria-hidden="true">
+                <div className="hm-skeleton__row" />
+                <div className="hm-skeleton__row" />
+              </div>
+            ) : !active ? (
+              // A page Hamesh cannot work on: what happened, and the control that
+              // still does something useful from here.
+              <div className="hm-empty hm-empty--popup hm-fade-in">
+                <MarginMark size={22} strokeWidth={3} />
+                <p className="hm-empty__title">{strings.popupUnavailableTitle}</p>
+                <p className="hm-empty__body">{strings.popupUnavailableBody}</p>
+              </div>
+            ) : (
+              <>
+                <div className="hm-popup__count">
+                  {count ?? 0} <span>{strings.notesOnPage(count ?? 0)}</span>
+                </div>
 
-            <button
-              type="button"
-              className="hm-btn hm-btn-primary"
-              style={{ width: '100%', marginTop: 'var(--hm-space-4)', padding: '11px' }}
-              onClick={handleAdd}
-              disabled={!active}
-            >
-              + {strings.addNote}
-            </button>
+                <button
+                  type="button"
+                  className="hm-btn hm-btn-primary"
+                  style={{ width: '100%', marginTop: 'var(--hm-space-4)', padding: '11px' }}
+                  onClick={handleAdd}
+                >
+                  + {strings.addNote}
+                </button>
 
-            <div
-              className={`hm-status ${active ? 'hm-status--success' : 'hm-status--warning'}`}
-              style={{ marginTop: 'var(--hm-space-3)', marginBottom: 0 }}
-            >
-              <span className="hm-dot" />
-              {active
-                ? strings.activeOnPage
-                : lang === 'ar'
-                  ? 'غير متاح هنا'
-                  : 'Not available here'}
-            </div>
+                <div
+                  className="hm-status hm-status--success"
+                  style={{ marginTop: 'var(--hm-space-3)', marginBottom: 0 }}
+                >
+                  <span className="hm-dot" />
+                  {strings.activeOnPage}
+                </div>
+              </>
+            )}
 
             <button
               type="button"

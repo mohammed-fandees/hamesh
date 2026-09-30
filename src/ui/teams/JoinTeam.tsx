@@ -66,6 +66,7 @@ export function JoinTeam({ strings, page, onJoined }: JoinTeamProps) {
           type="submit"
           className="hm-btn hm-btn-ghost"
           disabled={page.working('invites.preview') || !pasted.trim()}
+          aria-busy={page.working('invites.preview')}
         >
           {strings.joinCheck}
         </button>
@@ -90,6 +91,7 @@ export function JoinTeam({ strings, page, onJoined }: JoinTeamProps) {
             type="button"
             className="hm-btn hm-btn-primary"
             disabled={page.working('invites.accept')}
+            aria-busy={page.working('invites.accept')}
             onClick={() => void accept()}
           >
             {strings.joinAccept}

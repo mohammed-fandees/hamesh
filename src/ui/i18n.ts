@@ -30,6 +30,10 @@ export interface Strings {
   addNote: string;
   notesOnPage: (n: number) => string;
   activeOnPage: string;
+  /** Said in the popup on a page Hamesh cannot work on (a browser page, the
+   *  store, a PDF viewer) — what happened, and what to do instead. */
+  popupUnavailableTitle: string;
+  popupUnavailableBody: string;
   brand: string;
   settings: string;
   settingsBack: string;
@@ -91,6 +95,8 @@ export interface Strings {
   whatsNewIntro: string;
   whatsNewCurrentBadge: string;
   whatsNewNewBadge: string;
+  whatsNewEarlier: string;
+  whatsNewEarlierHint: (count: number) => string;
   whatsNewReleaseDate: (date: string) => string;
   settingsBackup: string;
   backupExport: string;
@@ -98,7 +104,6 @@ export interface Strings {
   backupImport: string;
   backupImportHint: string;
   backupChooseFile: string;
-  backupWorking: string;
   backupExported: (notes: number, folders: number) => string;
   backupImported: (notes: number, folders: number) => string;
   backupImportedNothingNew: string;
@@ -158,6 +163,9 @@ const en: Strings = {
   addNote: 'Add a note',
   notesOnPage: (n) => (n === 1 ? 'note on this page' : 'notes on this page'),
   activeOnPage: 'Active on this page',
+  popupUnavailableTitle: 'Notes can’t go on this page',
+  popupUnavailableBody:
+    'Hamesh works on ordinary websites. Open one, or read the notes you have already made.',
   brand: 'Hamesh',
   settings: 'Settings',
   settingsBack: 'Back',
@@ -220,6 +228,8 @@ const en: Strings = {
   whatsNewIntro: 'Everything that has changed in Hamesh, newest first.',
   whatsNewCurrentBadge: 'Installed',
   whatsNewNewBadge: 'New',
+  whatsNewEarlier: 'Earlier releases',
+  whatsNewEarlierHint: (count) => (count === 1 ? '1 release' : `${count} releases`),
   whatsNewReleaseDate: (date) => date,
   settingsBackup: 'Backup',
   backupExport: 'Export',
@@ -227,7 +237,6 @@ const en: Strings = {
   backupImport: 'Import',
   backupImportHint: 'Restore from a backup file. Nothing is ever deleted.',
   backupChooseFile: 'Choose a backup file',
-  backupWorking: 'Working…',
   backupExported: (notes, folders) =>
     `Saved ${notes} ${notes === 1 ? 'note' : 'notes'} and ${folders} ${
       folders === 1 ? 'folder' : 'folders'
@@ -320,6 +329,8 @@ const ar: Strings = {
   addNote: 'إضافة ملاحظة',
   notesOnPage: () => 'ملاحظات على هذه الصفحة',
   activeOnPage: 'نشِط على هذه الصفحة',
+  popupUnavailableTitle: 'لا يمكن وضع ملاحظات على هذه الصفحة',
+  popupUnavailableBody: 'يعمل هامش على المواقع العادية. افتح موقعًا، أو اقرأ ملاحظاتك السابقة.',
   brand: 'هامش',
   settings: 'الإعدادات',
   settingsBack: 'رجوع',
@@ -382,6 +393,8 @@ const ar: Strings = {
   whatsNewIntro: 'كل ما تغيّر في هامش، الأحدث أولًا.',
   whatsNewCurrentBadge: 'المثبّتة',
   whatsNewNewBadge: 'جديد',
+  whatsNewEarlier: 'الإصدارات السابقة',
+  whatsNewEarlierHint: (count) => (count === 1 ? 'إصدار واحد' : `${count} إصدارات`),
   whatsNewReleaseDate: (date) => date,
   settingsBackup: 'النسخ الاحتياطي',
   backupExport: 'تصدير',
@@ -389,7 +402,6 @@ const ar: Strings = {
   backupImport: 'استيراد',
   backupImportHint: 'استعد ملاحظاتك من ملف نسخة احتياطية. لا يُحذف أي شيء أبدًا.',
   backupChooseFile: 'اختر ملف نسخة احتياطية',
-  backupWorking: 'جارٍ التنفيذ…',
   backupExported: (notes, folders) => `حُفظت ${notes} ملاحظة و${folders} فولدر.`,
   backupImported: (notes, folders) => `استُعيدت ${notes} ملاحظة و${folders} فولدر.`,
   backupImportedNothingNew: 'كل ما في الملف موجود لديك بالفعل.',

@@ -14,6 +14,8 @@ interface MentionsInboxProps {
   client: TeamsClient;
   /** The newest entry shown, so the sidebar's dot can be put out. */
   onRead: (commentId: string) => void;
+  /** Opens the note an entry was written about, and its discussion. */
+  onOpenNote?: (teamId: string, noteId: string) => void;
 }
 
 /**
@@ -28,7 +30,7 @@ interface MentionsInboxProps {
  * each team an entry came from is fetched to read them — the same request that
  * team's own page makes, and only for teams this reader is in.
  */
-export function MentionsInbox({ lang, client, onRead }: MentionsInboxProps) {
+export function MentionsInbox({ lang, client, onRead, onOpenNote }: MentionsInboxProps) {
   const strings = getTeamsStrings(lang);
   const page = useTeams(client);
   const [entries, setEntries] = useState<MentionEntry[] | null>(null);
@@ -134,6 +136,15 @@ export function MentionsInbox({ lang, client, onRead }: MentionsInboxProps) {
                 ),
               )}
             </p>
+            {onOpenNote && (
+              <button
+                type="button"
+                className="hm-link hm-link--accent hm-mention-entry__open"
+                onClick={() => onOpenNote(entry.teamId, entry.noteId)}
+              >
+                {strings.openNote}
+              </button>
+            )}
           </li>
         ))}
       </ul>
@@ -143,8 +154,9 @@ export function MentionsInbox({ lang, client, onRead }: MentionsInboxProps) {
           className="hm-link"
           disabled={page.working('mentions.more')}
           onClick={() => void more()}
+          aria-busy={page.working('mentions.more')}
         >
-          {page.working('mentions.more') ? strings.working : strings.moreMentions}
+          {strings.moreMentions}
         </button>
       )}
     </>

@@ -148,6 +148,7 @@ export function BillingPanel({ strings, lang, page, me }: BillingPanelProps) {
               type="submit"
               className="hm-btn hm-btn-primary"
               disabled={page.working('billing.submit')}
+              aria-busy={page.working('billing.submit')}
             >
               {strings.submitPayment}
             </button>
@@ -165,7 +166,7 @@ export function BillingPanel({ strings, lang, page, me }: BillingPanelProps) {
 
       <h3 className="hm-settings__subheading">{strings.paymentHistory}</h3>
       {payments && payments.length === 0 && (
-        <p className="hm-setting-row__hint">{strings.noPayments}</p>
+        <p className="hm-settings__intro">{strings.noPayments}</p>
       )}
       {payments && payments.length > 0 && (
         <ul className="hm-team-invitations">
