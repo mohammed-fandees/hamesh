@@ -310,16 +310,19 @@
   color: var(--hm-accent-strong);
 }
 
-/* A question asked where the thing is, instead of in the browser's own box. */
+/* A question asked where the thing is, instead of in the browser's own box.
+   The two answers stay together: when the question needs the whole line, both
+   drop to the next one rather than one of them being orphaned. */
 .hm-confirm {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--hm-space-2);
   padding: var(--hm-space-2) 0;
 }
 .hm-confirm__question {
-  margin-inline-end: auto;
+  flex: 1 1 14rem;
   font-size: 12.5px;
 }
 
@@ -458,17 +461,33 @@
   font-size: 12px;
   opacity: 0.75;
 }
-/* The folder's own controls stay out of the way until the row is reached for. */
-.hm-folder-rail__actions {
+/* The folder and its controls share one line. */
+.hm-folder-rail__line {
+  position: relative;
   display: flex;
-  gap: var(--hm-space-3);
-  padding: 0 var(--hm-space-3) var(--hm-space-2);
-  opacity: 0;
-  transition: opacity var(--hm-dur-fast) var(--hm-ease-out);
+  align-items: center;
 }
-.hm-folder-rail__row:hover .hm-folder-rail__actions,
-.hm-folder-rail__row:focus-within .hm-folder-rail__actions {
-  opacity: 1;
+.hm-folder-rail__line .hm-folder-rail__item {
+  flex-grow: 1;
+  min-width: 0;
+}
+/* The controls sit over the count rather than beside it, and are not there at
+   all until the row is reached for — so the rail keeps one steady rhythm
+   instead of reserving a gap under every folder for something invisible. */
+.hm-folder-rail__actions {
+  position: absolute;
+  inset-inline-end: var(--hm-space-2);
+  display: none;
+  align-items: center;
+  gap: var(--hm-space-3);
+  padding: 2px var(--hm-space-2);
+  border-radius: var(--hm-radius-sm);
+  background: var(--hm-paper-dim);
+  font-size: 12px;
+}
+.hm-folder-rail__line:hover .hm-folder-rail__actions,
+.hm-folder-rail__line:focus-within .hm-folder-rail__actions {
+  display: flex;
 }
 
 .hm-team-notes {
@@ -511,15 +530,28 @@
   line-height: 1.55;
   overflow-wrap: anywhere;
 }
+/* A note's controls on one line where they fit: tighter than the page's usual
+   rhythm, because there can be five of them beside a folder picker. */
 .hm-team-note__actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--hm-space-3);
+  gap: var(--hm-space-2) var(--hm-space-3);
+  font-size: 12.5px;
+}
+.hm-team-note__move {
+  display: inline-flex;
+  min-width: 0;
 }
 .hm-team-note__move .hm-input--select {
-  padding: var(--hm-space-1) var(--hm-space-2);
+  max-width: 9rem;
+  padding: 2px var(--hm-space-2);
   font-size: 12px;
+}
+/* The rail is as narrow as its longest folder name wants, so the notes beside
+   it keep room for their own line of controls. */
+.hm-folder-rail {
+  width: 13rem;
 }
 
 /* ---- Where you were named ---- */

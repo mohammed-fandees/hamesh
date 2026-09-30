@@ -482,7 +482,9 @@ export function TeamNotes({
                       onCancel={() => setConfirming(null)}
                     />
                   ) : (
-                    <>
+                    // The folder and its controls share one line, so the rail
+                    // keeps a steady rhythm whether or not a row is hovered.
+                    <div className="hm-folder-rail__line">
                       <button
                         type="button"
                         className="hm-folder-rail__item"
@@ -511,7 +513,7 @@ export function TeamNotes({
                           </button>
                         </span>
                       )}
-                    </>
+                    </div>
                   )}
                   {failed && (
                     <p className="hm-field-error" role="alert">

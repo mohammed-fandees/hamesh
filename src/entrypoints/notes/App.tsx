@@ -36,6 +36,7 @@ import {
 import type { BackupImportOutcome } from '@/ui/BackupSection';
 import { teamsConfig } from '@/teams/config';
 import { createTeamsClient } from '@/teams/client';
+import { createDemoTeamsClient } from '@/ui/teams/demo/client';
 import { TeamsView } from '@/ui/teams/TeamsView';
 import { ShareNoteAction } from '@/ui/teams/ShareNoteAction';
 import { NoteShareSlot } from '@/ui/NoteShareSlot';
@@ -63,10 +64,20 @@ const initialLang = resolveLang(browser.i18n?.getUILanguage?.());
 // Lets another context deep-link straight to a view instead of always
 // opening to Library: the popup's "Open full settings" link
 // (`notes.html?view=settings`), and the tab the background opens after an
-// update (`notes.html?view=whats-new`).
+// update (`notes.html?view=whats-new`). Every view the sidebar offers is
+// reachable this way, so a link can point at one — anything else opens the
+// Library, as an unrecognised view always has.
+const DEEP_LINKS: readonly LibraryView[] = [
+  'library',
+  'settings',
+  'teams',
+  'mentions',
+  'whats-new',
+];
 const requestedView = new URLSearchParams(location.search).get('view');
-const initialView: LibraryView =
-  requestedView === 'settings' || requestedView === 'whats-new' ? requestedView : 'library';
+const initialView: LibraryView = DEEP_LINKS.includes(requestedView as LibraryView)
+  ? (requestedView as LibraryView)
+  : 'library';
 // The build's own version, so What's New can mark the entry actually
 // installed rather than assuming it's the newest one listed.
 const currentVersion = browser.runtime.getManifest().version;
@@ -116,6 +127,10 @@ export function App() {
   const teamsClient = useMemo(() => {
     // A build-time constant: builds without Teams drop this code entirely.
     if (!import.meta.env.WXT_TEAMS_API_ORIGIN) return null;
+    // A build given WXT_TEAMS_DEMO answers from made-up data instead of a
+    // server, for looking at these pages without a session. Also a constant, so
+    // it and everything it reaches are absent from every other build.
+    if (import.meta.env.WXT_TEAMS_DEMO) return createDemoTeamsClient();
     const config = teamsConfig();
     return config ? createTeamsClient(config) : null;
   }, []);
