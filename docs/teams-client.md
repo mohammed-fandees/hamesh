@@ -277,41 +277,6 @@ An MV3 service worker the browser shut down has no socket at all, so the worker
 pulls on a five-minute alarm as well: a missed poke is a delay, not a note nobody
 ever sees.
 
-## Looking at it without a server
-
-Teams needs a session, and a session needs Google. To see the pages without
-either — for design work, for a screenshot, for checking a language or a theme —
-build with `WXT_TEAMS_DEMO=1` alongside the two Teams variables:
-
-```
-WXT_TEAMS_API_ORIGIN=https://api.example.com
-WXT_GOOGLE_CLIENT_ID=1234-abc.apps.googleusercontent.com
-WXT_TEAMS_DEMO=1
-```
-
-`TeamsClient` is then `src/ui/teams/demo/client.ts`, which answers from made-up
-data: two teams (one you own and one you are only a member of, the second
-read-only), four members, an open invitation and an expired one, notes filed and
-unfiled, a thread with replies and a deleted comment that kept its place, two
-mentions, a plan and its payments. It **changes** as it is used — a folder
-created appears, a note deleted goes, a comment posted shows up — because a demo
-nothing can be pressed in says nothing about the page.
-
-It is not a way in. There is no token to obtain and no server to convince: a demo
-build reaches no origin at all, and the flag is a build-time constant, so the
-whole thing is absent from every other build (`tests/ui/demo-client.test.ts`
-checks the data against the contract's own schemas, so the demo cannot drift away
-from what a real answer looks like).
-
-Its notes are filed into `chrome.storage.local` the same way the worker files
-real ones, so the in-page half works too: open
-`developer.mozilla.org/en-US/docs/Web/API/Storage` or the Wikipedia page on
-marginalia in a demo build and the note is there, marked with its team. Those
-keys stay in that profile until something clears them.
-
-Every view is deep-linkable — `notes.html?view=teams`, `?view=mentions`,
-`?view=settings`, `?view=whats-new` — which is how the screenshots are taken.
-
 ## The contract package
 
 `packages/teams-contract` is the wire contract: request and response schemas,

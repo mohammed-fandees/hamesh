@@ -36,7 +36,6 @@ import {
 import type { BackupImportOutcome } from '@/ui/BackupSection';
 import { teamsConfig } from '@/teams/config';
 import { createTeamsClient } from '@/teams/client';
-import { createDemoTeamsClient } from '@/ui/teams/demo/client';
 import { TeamsView } from '@/ui/teams/TeamsView';
 import { ShareNoteAction } from '@/ui/teams/ShareNoteAction';
 import { NoteShareSlot } from '@/ui/NoteShareSlot';
@@ -127,10 +126,6 @@ export function App() {
   const teamsClient = useMemo(() => {
     // A build-time constant: builds without Teams drop this code entirely.
     if (!import.meta.env.WXT_TEAMS_API_ORIGIN) return null;
-    // A build given WXT_TEAMS_DEMO answers from made-up data instead of a
-    // server, for looking at these pages without a session. Also a constant, so
-    // it and everything it reaches are absent from every other build.
-    if (import.meta.env.WXT_TEAMS_DEMO) return createDemoTeamsClient();
     const config = teamsConfig();
     return config ? createTeamsClient(config) : null;
   }, []);
