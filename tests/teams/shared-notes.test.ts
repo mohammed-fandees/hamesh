@@ -32,6 +32,7 @@ function setup(opts: { fetch?: ReturnType<typeof respond>; permitted?: boolean }
     realtime: realtime as never,
     writeIndex: vi.fn(async () => {}),
     clearCache: vi.fn(async () => {}),
+    people: { refresh: vi.fn(async () => {}) },
     now: () => 99,
   };
   const sessions = memorySessions(LIVE);
@@ -75,6 +76,22 @@ describe('keeping the team-note cache in step with the account', () => {
     expect(sync.reconcile).toHaveBeenCalledWith([TEAM]);
     expect(realtime.follow).toHaveBeenCalledWith([TEAM]);
     expect(sync.syncTeam).toHaveBeenCalledWith(TEAM);
+  });
+
+  it('gathers who is in the teams, and gathers again regardless once members change', async () => {
+    const { service, shared } = setup();
+    await service.status();
+    await settle();
+    expect(shared.people!.refresh).toHaveBeenLastCalledWith([TEAM], false);
+
+    await service.accountChanged();
+    await settle();
+    expect(shared.people!.refresh).toHaveBeenLastCalledWith([TEAM], true);
+
+    // Forced once, not from then on.
+    await service.status();
+    await settle();
+    expect(shared.people!.refresh).toHaveBeenLastCalledWith([TEAM], false);
   });
 
   it('pulls once for a team, however many times it is asked at once', async () => {

@@ -3,6 +3,7 @@ import type { Note } from '@/domain/note';
 import type { Lang } from '@/ui/i18n';
 import { newRequestId } from './operation-names';
 import { readPageNotes, watchPageNotes, watchTeamIndex } from './page-cache';
+import { readPeople, watchPeople, type PeopleDirectory } from './people-cache';
 import type {
   Destination,
   PageRequest,
@@ -29,6 +30,10 @@ export interface TeamNotesSource {
   read(pageKey: string): Promise<Note[]>;
   /** Fires when this page's team notes change, or when the teams themselves do. */
   watch(pageKey: string, onChange: () => void): () => void;
+  /** Who is in the teams — a name and a picture for each shared note's pin. */
+  people(): Promise<PeopleDirectory>;
+  /** Fires when the worker gathers the people again. */
+  watchPeople(onChange: (people: PeopleDirectory) => void): () => void;
   /** "Shared with <team>", for a note that has one. */
   label(note: Note, lang: Lang): string | undefined;
   /** The latest of a team note's discussion — see `./page-channel.ts`. */
@@ -73,6 +78,8 @@ export function createTeamNotesSource(): TeamNotesSource {
         unwatchIndex();
       };
     },
+    people: readPeople,
+    watchPeople,
     label(note, lang) {
       return note.team ? sharedWithTeam(note.team.name, lang) : undefined;
     },

@@ -10,6 +10,7 @@ import type { Note } from '@/domain/note';
 import { DEFAULT_PREFERENCES } from '@/domain/preferences';
 import { generatePageKey } from '@/domain/page-key';
 import { sharedWithTeam, type TeamNotesSource } from '@/teams/page-notes';
+import type { PeopleDirectory } from '@/teams/people-cache';
 
 const PAGE = 'https://example.com/page';
 
@@ -81,8 +82,14 @@ const foldersRepo = (): FoldersRepository => ({
   watch: vi.fn().mockReturnValue(() => {}),
 });
 
+/** A personal note's mark, or a shared note's pin — whichever a note has. */
+const MARK = /view note|shared note/i;
+
+const AUTHOR = '01J0000000000000000000000U';
+const PHOTO = 'data:image/png;base64,iVBORw0KGgo=';
+
 /** A team-note source a test drives: what is cached, and one change to it. */
-function source(notes: Note[]) {
+function source(notes: Note[], people: PeopleDirectory['people'] = {}) {
   let current = notes;
   let announce: (() => void) | null = null;
   const read = vi.fn(async () => current);
@@ -94,6 +101,8 @@ function source(notes: Note[]) {
         announce = null;
       };
     },
+    people: vi.fn(async () => ({ people, teamIds: [], syncedAt: 1 })),
+    watchPeople: () => () => {},
     label: (n, lang) => (n.team ? sharedWithTeam(n.team.name, lang) : undefined),
     thread: vi.fn(async () => ({ ok: true as const, data: { total: 0, latest: [] } })),
     reply: vi.fn(async () => ({ ok: true as const, data: null })),
@@ -149,7 +158,7 @@ afterEach(() => {
 
 /** Opens the note behind the only marker on the page. */
 async function openTheMarker() {
-  const markers = await screen.findAllByRole('button', { name: /view note/i });
+  const markers = await screen.findAllByRole('button', { name: MARK });
   fireEvent.click(markers[0]);
 }
 
@@ -161,9 +170,7 @@ describe('a team’s notes on the page they belong to', () => {
 
     // Asked for this page by its page key, which is all the source is ever given.
     await waitFor(() => expect(cached.read).toHaveBeenCalledWith(generatePageKey(location.href)));
-    await waitFor(() =>
-      expect(screen.getAllByRole('button', { name: /view note/i })).toHaveLength(2),
-    );
+    await waitFor(() => expect(screen.getAllByRole('button', { name: MARK })).toHaveLength(2));
   });
 
   it('says which team a shared note came from, and offers nothing that would change it', async () => {
@@ -191,20 +198,36 @@ describe('a team’s notes on the page they belong to', () => {
     const cached = source([]);
     renderApp(repoWith([]), cached.teamNotes);
     await waitFor(() => expect(cached.read).toHaveBeenCalled());
-    expect(screen.queryByRole('button', { name: /view note/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: MARK })).not.toBeInTheDocument();
 
     cached.set([teamNote()]);
-    await waitFor(() =>
-      expect(screen.getAllByRole('button', { name: /view note/i })).toHaveLength(1),
+    await waitFor(() => expect(screen.getAllByRole('button', { name: MARK })).toHaveLength(1));
+  });
+
+  it('marks a shared note with its author’s face, and one of this device’s own with the margin mark', async () => {
+    const repo = repoWith([note()]);
+    renderApp(
+      repo,
+      source([teamNote()], { [AUTHOR]: { name: 'Sara', photo: PHOTO, source: null } }).teamNotes,
     );
+
+    const pin = await screen.findByRole('button', { name: 'Sara’s shared note' });
+    expect(pin.querySelector('img')).toHaveAttribute('src', PHOTO);
+    expect(screen.getByRole('button', { name: /view note/i })).not.toHaveClass('hm-pin');
+  });
+
+  it('pins a note by someone this device does not know with a quiet dot', async () => {
+    renderApp(repoWith([]), source([teamNote()]).teamNotes);
+
+    const pin = await screen.findByRole('button', { name: 'A shared note' });
+    expect(pin.querySelector('img')).toBeNull();
+    expect(pin.querySelector('.hm-avatar')).toHaveAttribute('data-unknown', 'true');
   });
 
   it('shows only personal notes in a build with no Teams at all', async () => {
     vi.unstubAllEnvs();
     renderApp(repoWith([note()]));
-    await waitFor(() =>
-      expect(screen.getAllByRole('button', { name: /view note/i })).toHaveLength(1),
-    );
+    await waitFor(() => expect(screen.getAllByRole('button', { name: MARK })).toHaveLength(1));
     expect(screen.queryByText(/Shared with/)).not.toBeInTheDocument();
   });
 });
