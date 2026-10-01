@@ -31,6 +31,8 @@ function source(overrides: Partial<TeamNotesSource> = {}): TeamNotesSource {
   return {
     read: vi.fn(),
     watch: () => () => {},
+    people: vi.fn(async () => ({ people: {}, teamIds: [], syncedAt: 0 })),
+    watchPeople: () => () => {},
     label: () => undefined,
     thread: vi.fn(async () => ({
       ok: true as const,

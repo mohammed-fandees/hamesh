@@ -9,6 +9,8 @@ import { clearAllPages, readPageBucket, writePageBucket, writeTeamIndex } from '
 import { createSyncStore } from './sync-store';
 import { createTeamSync } from './sync';
 import { createRealtime } from './realtime';
+import { createPeople } from './people';
+import { clearPeople, readPeople, writePeople } from './people-cache';
 
 /**
  * The Teams service, wired to the browser.
@@ -83,7 +85,16 @@ export function createService(config: TeamsConfig): TeamsService {
       sync,
       realtime,
       writeIndex: writeTeamIndex,
-      clearCache: clearAllPages,
+      clearCache: async () => {
+        await Promise.all([clearAllPages(), clearPeople()]);
+      },
+      people: createPeople({
+        api,
+        read: readPeople,
+        write: writePeople,
+        fetch: (input, init) => fetch(input, init),
+        now: Date.now,
+      }),
       now: Date.now,
     },
   });

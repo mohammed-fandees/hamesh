@@ -173,11 +173,26 @@ Teams messages the worker answers to a content script: `thread` and `reply` for
 a team note the worker has cached for the very page asking, `share` for a note
 this device holds for that page (the worker reads the note itself — nothing the
 page sends is trusted as the note), `destinations` (the teams and folders a new
-note can go to) and `open` (opens the note's page in Hamesh). The sender must be
+note can go to) and `open` (opens the note's discussion in Chrome's side panel
+beside the page, or its page in Hamesh where there is no side panel). The side
+panel is `notes.html?view=panel` (`src/ui/teams/PanelView.tsx`) — one of
+Hamesh's own pages, so it asks the worker like any other and the web page
+beside it is handed nothing; the `sidePanel` permission is added only to a
+Chrome build that has Teams. The sender must be
 this extension's own content script in a page's top frame, and the page is the
 URL the browser reports for that frame. Every other Teams message is still
 answered only to Hamesh's own pages, and the server checks every request as
 always.
+
+**A shared note's mark is its author's face.** The worker asks who is in each
+team and fetches each picture itself (`src/teams/people.ts`) — only from
+Google's image host, without cookies or a referrer, at most 64 KB — and keeps
+names and pictures as `data:` URLs in `hamesh:team-people`
+(`src/teams/people-cache.ts`). The content script draws the pin from that
+(`src/ui/teams/TeamPin.tsx`): no web page asks Google for a picture, and no
+email is kept there. It is gathered again when the teams change, when the
+server says a team's members did, or after six hours; signing out clears it
+with the rest.
 
 **Sharing moves a note.** The personal note's own id travels as the idempotency
 key, so sharing the same note twice is one share, and the local copy is then

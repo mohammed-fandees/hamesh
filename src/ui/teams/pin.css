@@ -1,0 +1,22 @@
+/* A shared note's pin on the page: its author's face in a white ring, round
+   but for the corner nearest the text — the point. Built on .hm-marker, so it
+   keeps the marker's place in the stack, its touch target, its focus ring and
+   its stillness under reduced motion; only the shape and the face differ. */
+.hm-marker.hm-pin {
+  width: 30px;
+  height: 30px;
+  padding: 3px;
+  border-radius: var(--hm-radius-pill);
+  border-start-end-radius: 4px;
+}
+.hm-pin .hm-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--hm-radius-pill);
+  border-start-end-radius: 3px;
+  font-size: 11px;
+}
+/* Pressed, the ring fills with the accent and the face stays a face. */
+.hm-marker.hm-pin:active {
+  background: var(--hm-accent);
+}

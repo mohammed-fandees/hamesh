@@ -86,6 +86,16 @@ export default defineConfig({
         manifest.optional_host_permissions = [hostPermissionFor(teams)];
       }
       manifest.optional_permissions = [...optional] as typeof manifest.optional_permissions;
+      // A shared note's whole discussion opens in Chrome's side panel, beside
+      // the page (src/ui/teams/PanelView.tsx). The permission carries no
+      // warning, and only a build with Teams asks for it. The default path is
+      // what the panel shows when opened without a note.
+      if (wxt.config.browser === 'chrome' && wxt.config.manifestVersion === 3) {
+        manifest.permissions = [...new Set([...(manifest.permissions ?? []), 'sidePanel'])];
+        (manifest as { side_panel?: { default_path: string } }).side_panel = {
+          default_path: 'notes.html?view=panel',
+        };
+      }
       manifest.description =
         'Leave a note exactly where it belongs on a web page, and find it there when you return. Share with your team, optionally.';
     },

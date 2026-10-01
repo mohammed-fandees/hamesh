@@ -33,6 +33,7 @@ import { createTeamsClient } from '@/teams/client';
 import { TeamsView } from '@/ui/teams/TeamsView';
 import { ShareNoteAction } from '@/ui/teams/ShareNoteAction';
 import { ShareConsent } from '@/ui/teams/ShareConsent';
+import { PanelView } from '@/ui/teams/PanelView';
 import { shareNote } from '@/ui/teams/share-note';
 import type { TeamLibraryActions } from '@/ui/teams/TeamSpace';
 import { Failure } from '@/ui/hooks/useWork';
@@ -80,6 +81,20 @@ function placeFrom(search: string): Place {
   };
 }
 const initialPlace = placeFrom(location.search);
+/**
+ * Opened in Chrome's side panel (`?view=panel`, set by the worker for the tab a
+ * shared note was opened from): the page is the panel and nothing else — no
+ * sidebar, no other views. Teams only.
+ */
+const panelPlace = (() => {
+  const params = new URLSearchParams(location.search);
+  if (params.get('view') !== 'panel') return null;
+  return {
+    teamId: params.get('team'),
+    noteId: params.get('note'),
+    pageKey: params.get('pagekey'),
+  };
+})();
 // The build's own version, so What's New can mark the entry actually
 // installed rather than assuming it's the newest one listed.
 const currentVersion = browser.runtime.getManifest().version;
@@ -534,6 +549,20 @@ export function App() {
         onMoveNote={noteActions.move}
         onOpenSettings={() => navigate('settings')}
       />
+    );
+  }
+
+  if (import.meta.env.WXT_TEAMS_API_ORIGIN && panelPlace && teamsClient) {
+    return (
+      <div ref={scopeRef} className="hm-scope hm-panel-page" dir={dir} data-hm-theme={theme}>
+        <PanelView
+          lang={lang}
+          client={teamsClient}
+          teamId={panelPlace.teamId}
+          noteId={panelPlace.noteId}
+          pageKey={panelPlace.pageKey}
+        />
+      </div>
     );
   }
 

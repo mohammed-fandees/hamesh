@@ -71,6 +71,8 @@ function teamSource(share: TeamNotesSource['share']): TeamNotesSource {
   return {
     read: vi.fn(async (): Promise<Note[]> => []),
     watch: () => () => {},
+    people: vi.fn(async () => ({ people: {}, teamIds: [], syncedAt: 0 })),
+    watchPeople: () => () => {},
     label: () => undefined,
     thread: vi.fn(),
     reply: vi.fn(),
