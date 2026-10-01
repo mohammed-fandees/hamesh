@@ -1,5 +1,7 @@
 # Hamesh Privacy Policy
 
+> **2.0.0 (Hamesh Teams in the store build):** see [`V2-TEAMS-SUBMISSION.md`](V2-TEAMS-SUBMISSION.md) — it supersedes this file's "no data leaves the device" answers for 2.0.0 and later. What follows remains true for personal notes.
+
 **Last updated:** August 1, 2026
 **Applies to:** Hamesh browser extension, version 0.1.0 and later versions with the same data-handling behavior described below.
 

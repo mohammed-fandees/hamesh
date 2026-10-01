@@ -1,5 +1,7 @@
 # Privacy Practices — Dashboard Answer Sheet
 
+> **2.0.0 (Hamesh Teams in the store build):** see [`V2-TEAMS-SUBMISSION.md`](V2-TEAMS-SUBMISSION.md) — it supersedes this file's "no data leaves the device" answers for 2.0.0 and later. What follows remains true for personal notes.
+
 Every answer below is traced to a specific code path in the `v0.2.0` build (commit-verified against `.output/chrome-mv3/manifest.json` and the full `src/` tree), not inferred from product intent. Where the Chrome Web Store dashboard's exact checkbox wording could not be independently confirmed from public documentation (see `README.md`'s requirements table for sourcing), the category name used here follows the publicly documented set; **verify the live checkbox label matches before submitting** (flagged below).
 
 > **Refreshed 2026-07-11 for v0.2.0** (previously audited against v0.1.0). Every answer was re-traced against the current `src/` tree, including the Settings screen added since v0.1.0 (language + appearance preferences, `src/storage/preferences-repository.ts`). None of the disclosure answers changed: preferences are app configuration (which language/theme the user picked), not personal data, and don't fit — or expand — any of the categories in the table below. They're stored the same way (`chrome.storage.local`, no network transmission), so the "Remote code" and data-in-transit answers are unaffected too.

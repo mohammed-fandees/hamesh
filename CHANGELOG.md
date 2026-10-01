@@ -6,13 +6,31 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-## [1.5.0] — 2026-10-01
+## [2.0.0] — 2026-10-01
+
+Hamesh Teams arrives in the store build. Personal notes are unchanged and still never leave the
+device; Teams is optional, off until turned on, and its permissions are optional too.
 
 ### Added
 
+- **Hamesh Teams** (optional, a paid plan): sign in with Google from Settings → Teams, then
+  create a team, invite members by email or link, and manage roles and the plan. Payment is by
+  InstaPay with the instructions served by the Teams server, confirmed by the owner; the Terms of
+  Use and the Privacy Policy are agreed to on the first payment.
+- **Share a note with a team** — from the Library's note menu, by dropping it on a team's folder,
+  or by writing it on the page straight into a team. A shared note moves to the team, and its
+  author's face marks it on the page; several on one element are one pin with their faces.
+- **Discuss a shared note**: the latest of its discussion and a quick reply in its popup on the
+  page, and the whole of it — replies, @ mentions — in Chrome's side panel beside the page or in
+  the Library. Where you were named is in **Mentions**.
+- **One space per owner in the Library**: your notes and each team's, by site or by folder.
+- **People are told apart**: their Google picture, or their initial in a tone of their own.
 - **Every note has a menu.** The ⋮ on a note's card on the page opens it in the Notes Library,
   copies its words, or deletes it (asked first). Opened from the menu, the Library goes straight to
   the note: its site's card opens and the note is brought into view and marked for a moment.
+- **Permissions (Teams build):** `sidePanel` (required, no install warning) for the discussion
+  beside the page; `identity` and the Teams server's origin stay **optional**, requested only when
+  Teams is turned on and given back when it is turned off.
 
 ### Fixed
 
@@ -24,7 +42,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - **Times in Arabic read as they are said** — «منذ ساعتين», «منذ 5 ساعات», «منذ 11 يومًا» —
   instead of «قبل 5 ساعة».
-
 - **One visual standard across the extension.** Hover, focus and pressed states are now one
   consistent wash of the clay accent on every control, and the current page in the sidebar is
   finally told apart from one you are pointing at. Text sizes, shadows and motion follow a single
@@ -39,16 +56,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   and a bare line, and shows a placeholder while it finds out.
 - **Buttons that are working keep their label.** A spinner appears beside it rather than the label
   being swapped for “Working…”.
-
-### Teams (not in the store build)
-
-Built behind the Teams build constant and absent from the store package; listed so the history is
-complete. A client for Hamesh Teams: Google sign-in, teams, members, invitations and the plan
-(with payment instructions served by the API, never stored here); sharing a note with a team and
-seeing the team's notes on the page, each marked with its author's face; a note written on the
-page straight into a team; a shared note's discussion in its popup and in Chrome's side panel,
-with replies and @ mentions; one space per owner in the Library, sharing by dropping a note on a
-team's folder; the Terms of Use and the Teams section of the Privacy Policy.
 
 ## [1.4.0] — 2026-09-26
 

@@ -37,10 +37,22 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
-    version: '1.5.0',
+    version: '2.0.0',
     date: '2026-10-01',
-    title: { en: 'One look, everywhere', ar: 'شكل واحد في كل مكان' },
+    title: { en: 'Hamesh Teams', ar: 'فرق هامش' },
     items: [
+      {
+        en: 'Hamesh Teams: share notes with your team, and talk about them right on the page. Optional, and off until you turn it on from Settings → Teams. Your personal notes still never leave your device.',
+        ar: 'فرق هامش: شارك ملاحظاتك مع فريقك، وتناقشوا فيها على الصفحة نفسها. ميزة اختيارية ومتوقفة حتى تفعّلها من الإعدادات ← الفرق. وملاحظاتك الشخصية ما زالت لا تغادر جهازك أبدًا.',
+      },
+      {
+        en: 'A shared note shows its author’s face on the page. Open it to read the discussion and reply, or open the whole conversation in the side panel beside the page.',
+        ar: 'الملحوظة المشتركة تظهر على الصفحة بصورة كاتبها. افتحها لتقرأ النقاش وترد، أو افتح المحادثة كاملة في اللوحة الجانبية بجانب الصفحة.',
+      },
+      {
+        en: 'Write a note straight into a team, or drop one from your notes onto a team’s folder in the Library. Name people with @, and find where you were named in Mentions.',
+        ar: 'اكتب ملحوظتك مباشرة في فريق، أو اسحب ملاحظة من ملاحظاتك إلى مجلد الفريق في المكتبة. اذكر الأشخاص بـ @، وتجد ما ذُكرت فيه في «الإشارات».',
+      },
       {
         en: 'Every note has a menu: open it in the Notes Library, copy its words, or delete it. The Library opens right on the note.',
         ar: 'لكل ملاحظة قائمة: افتحها في مكتبة الملاحظات، أو انسخ نصها، أو احذفها. وتفتح المكتبة على الملاحظة نفسها مباشرة.',

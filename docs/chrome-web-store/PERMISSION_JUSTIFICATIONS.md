@@ -1,5 +1,7 @@
 # Permission Justifications
 
+> **2.0.0 (Hamesh Teams in the store build):** see [`V2-TEAMS-SUBMISSION.md`](V2-TEAMS-SUBMISSION.md) — it supersedes this file's "no data leaves the device" answers for 2.0.0 and later. What follows remains true for personal notes.
+
 Audited against the actual **generated production manifest** (`pnpm build` → `.output/chrome-mv3/manifest.json`, version 0.2.0), not just `wxt.config.ts`. Every declared permission and host-access surface is listed below with its exact code usage. Nothing is assumed.
 
 > **Refreshed 2026-07-14 for the Notes Library (PR1).** `favicon` was added — the first new permission since v0.1.0. All other entries are unchanged from the v0.2.0 audit.

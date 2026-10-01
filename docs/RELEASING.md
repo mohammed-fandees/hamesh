@@ -41,6 +41,14 @@ The version is the single source of truth in `package.json` and must match
    `docs/releases/adr/`); until it's fully in place, the store listing is still updated manually
    per `docs/chrome-web-store/SUBMISSION_GUIDE.md`.
 
+## Teams in the release package (2.0.0 and later)
+
+The store package includes Hamesh Teams. The **Release** workflow builds it with the repository
+variables `WXT_TEAMS_API_ORIGIN` and `WXT_GOOGLE_CLIENT_ID` (public values, kept out of the
+source), and stops if either is missing or the package came out without Teams. `pnpm build`
+without them still produces the Teams-less build, which the CI gate checks. Store disclosures:
+`docs/chrome-web-store/V2-TEAMS-SUBMISSION.md`.
+
 ## The artifact
 
 The release artifact is `hamesh-<version>-chrome.zip` — the packaged Chrome
