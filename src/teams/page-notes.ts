@@ -1,17 +1,19 @@
+import { browser } from 'wxt/browser';
 import type { Note } from '@/domain/note';
 import type { Lang } from '@/ui/i18n';
+import { newRequestId } from './operation-names';
 import { readPageNotes, watchPageNotes, watchTeamIndex } from './page-cache';
+import type { PageRequest, PageResult, TeamsPageMessage, ThreadPreview } from './page-channel';
 
 /**
  * The content script's whole view of Teams: the notes a team has shared on the
- * page it is drawing, and the words for saying so.
+ * page it is drawing, the words for saying so, and the little a shared note's
+ * popup may ask of the worker.
  *
- * Nothing here talks to the server, holds a session, or sends a message to the
- * background worker — it reads what the worker already cached for this page (see
- * ./page-cache.ts). That is deliberate: a content script runs inside an
- * arbitrary web page, so it is given the notes it is about to draw and nothing
- * else, and the worker's "only Hamesh's own pages may drive Teams" rule needs no
- * exception for it.
+ * The notes themselves are read from what the worker already cached for this
+ * page (see ./page-cache.ts) — no session, no server. A content script runs
+ * inside an arbitrary web page, so beyond that it may only ask the worker the
+ * few things in ./page-channel.ts, each checked against this very page.
  *
  * Reached only behind this build's Teams constant, so a build without Teams
  * drops it along with everything it imports.
@@ -23,6 +25,25 @@ export interface TeamNotesSource {
   watch(pageKey: string, onChange: () => void): () => void;
   /** "Shared with <team>", for a note that has one. */
   label(note: Note, lang: Lang): string | undefined;
+  /** The latest of a team note's discussion — see `./page-channel.ts`. */
+  thread(teamId: string, noteId: string): Promise<PageResult<ThreadPreview>>;
+  /** Adds a comment to a team note's discussion. */
+  reply(teamId: string, noteId: string, body: string): Promise<PageResult<null>>;
+  /** Opens the note's whole discussion in Hamesh's own page. */
+  openDiscussion(teamId: string, noteId: string): Promise<void>;
+}
+
+/** Asks the worker, through the one channel a page may use. */
+async function ask<T>(request: PageRequest): Promise<PageResult<T>> {
+  try {
+    const reply = (await browser.runtime.sendMessage({
+      type: 'TEAMS_PAGE',
+      request,
+    } satisfies TeamsPageMessage)) as PageResult<T> | undefined;
+    return reply ?? { ok: false, error: 'unavailable' };
+  } catch {
+    return { ok: false, error: 'unavailable' };
+  }
 }
 
 export function sharedWithTeam(team: string, lang: Lang): string {
@@ -44,6 +65,13 @@ export function createTeamNotesSource(): TeamNotesSource {
     },
     label(note, lang) {
       return note.team ? sharedWithTeam(note.team.name, lang) : undefined;
+    },
+    thread: (teamId, noteId) => ask({ op: 'thread', teamId, noteId }),
+    // A fresh key each time: a retry of the same reply is one comment, not two.
+    reply: (teamId, noteId, body) =>
+      ask({ op: 'reply', teamId, noteId, body, requestId: newRequestId() }),
+    openDiscussion: async (teamId, noteId) => {
+      await ask({ op: 'open', teamId, noteId });
     },
   };
 }

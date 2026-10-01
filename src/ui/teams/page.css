@@ -1,0 +1,105 @@
+/*
+ * Teams inside a web page: a shared note's discussion in its popup.
+ *
+ * Applied inside the content script's shadow root by the component that needs
+ * it (read as a string, so a build without Teams carries none of it), on top
+ * of tokens.css, which the shadow root already has.
+ */
+.hm-thread {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hm-space-3);
+  margin: var(--hm-space-3) calc(-1 * var(--hm-space-4)) calc(-1 * var(--hm-space-4));
+  padding: var(--hm-space-3) var(--hm-space-4) var(--hm-space-4);
+  border-top: 1px solid var(--hm-ink-10);
+  background: var(--hm-paper);
+  border-radius: 0 0 var(--hm-radius-lg) var(--hm-radius-lg);
+}
+.hm-thread__lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--hm-space-3);
+}
+.hm-thread__line {
+  display: flex;
+  gap: var(--hm-space-2);
+  align-items: flex-start;
+}
+.hm-thread__said {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.hm-thread__meta {
+  color: var(--hm-ink-40);
+  font-size: var(--hm-text-label);
+  line-height: var(--hm-lh-label);
+}
+.hm-thread__author {
+  color: var(--hm-ink);
+  font-weight: 600;
+}
+.hm-thread__body {
+  margin: 0;
+  font-size: var(--hm-text-body);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.hm-thread__empty {
+  margin: 0;
+  color: var(--hm-ink-40);
+  font-size: var(--hm-text-body-sm);
+}
+.hm-thread__open {
+  align-self: flex-start;
+}
+.hm-reply {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--hm-space-2);
+}
+.hm-reply__field {
+  flex: 1;
+  min-height: 36px;
+  max-height: 8rem;
+  resize: none;
+  padding: 8px 12px;
+  border: 1px solid var(--hm-border);
+  border-radius: 18px;
+  background: var(--hm-surface);
+  color: var(--hm-ink);
+  font-family: var(--hm-sans);
+  font-size: var(--hm-text-body);
+  line-height: 1.4;
+}
+.hm-reply__field:focus {
+  outline: none;
+  border-color: var(--hm-accent);
+  box-shadow: var(--hm-halo);
+}
+.hm-reply__send {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: var(--hm-radius-pill);
+  background: var(--hm-accent);
+  color: #fff;
+  cursor: pointer;
+}
+.hm-reply__send:disabled {
+  opacity: var(--hm-state-disabled);
+  cursor: not-allowed;
+}
+.hm-reply__send:focus-visible {
+  outline: none;
+  box-shadow: var(--hm-ring);
+}

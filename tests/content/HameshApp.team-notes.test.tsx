@@ -95,6 +95,9 @@ function source(notes: Note[]) {
       };
     },
     label: (n, lang) => (n.team ? sharedWithTeam(n.team.name, lang) : undefined),
+    thread: vi.fn(async () => ({ ok: true as const, data: { total: 0, latest: [] } })),
+    reply: vi.fn(async () => ({ ok: true as const, data: null })),
+    openDiscussion: vi.fn(async () => {}),
   };
   return {
     teamNotes,

@@ -159,14 +159,25 @@ goes, so the row does not blink out of the list in between. A team note in the
 Library is read, not managed: its menu opens the team, and the team's own page is
 where it is changed.
 
-**The content script only reads.** It opens its own page's shelf in
-`chrome.storage.local` and watches it, and that is all: no session, no request,
-and no message to the worker, which refuses a content script anyway. A cached
-note becomes an ordinary `Note` carrying `team` (`src/domain/note.ts`), so every
-marker, anchor resolver and card works on it unchanged — and everything that
-writes checks for `team` first. On the page, a shared note is read-only and says
-**Shared with <team>**; it is changed from Hamesh's own pages, the only ones
-allowed to ask the server.
+**The content script reads, and may ask a little.** It opens its own page's
+shelf in `chrome.storage.local` and watches it — no session, no request. A
+cached note becomes an ordinary `Note` carrying `team` (`src/domain/note.ts`), so
+every marker, anchor resolver and card works on it unchanged — and everything
+that writes checks for `team` first. On the page, a shared note's text is
+read-only and says **Shared with <team>**; it is edited from Hamesh's own pages.
+
+Its popup does show the latest of the note's discussion and takes a reply, and
+the composer can put a new note straight into a team. Those few things go
+through one narrow channel (`src/teams/page-channel.ts`, `TEAMS_PAGE`), the only
+Teams messages the worker answers to a content script: `thread` and `reply` for
+a team note the worker has cached for the very page asking, `share` for a note
+this device holds for that page (the worker reads the note itself — nothing the
+page sends is trusted as the note), `destinations` (the teams and folders a new
+note can go to) and `open` (opens the note's page in Hamesh). The sender must be
+this extension's own content script in a page's top frame, and the page is the
+URL the browser reports for that frame. Every other Teams message is still
+answered only to Hamesh's own pages, and the server checks every request as
+always.
 
 **Sharing moves a note.** The personal note's own id travels as the idempotency
 key, so sharing the same note twice is one share, and the local copy is then

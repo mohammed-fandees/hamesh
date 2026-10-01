@@ -65,6 +65,7 @@ import {
 } from '@/ui/video/VideoMarkerClusterList';
 import { getStrings, dirForLang, type Lang, type Strings } from '@/ui/i18n';
 import type { TeamNotesSource } from '@/teams/page-notes';
+import { NoteDiscussion } from '@/ui/teams/NoteDiscussion';
 import { usePreferences } from '@/ui/hooks/usePreferences';
 import { useFolders } from '@/ui/hooks/useFolders';
 import { useNoteMutations } from '@/ui/hooks/useNoteMutations';
@@ -1697,6 +1698,16 @@ export function HameshApp({
     import.meta.env.WXT_TEAMS_API_ORIGIN && viewerNote && teamNotes
       ? teamNotes.label(viewerNote, lang)
       : undefined;
+  // A team note's discussion at the foot of its popup — again only with Teams.
+  const viewerDiscussion =
+    import.meta.env.WXT_TEAMS_API_ORIGIN && viewerNote?.team && teamNotes ? (
+      <NoteDiscussion
+        key={viewerNote.id}
+        note={viewerNote as Note & { team: NonNullable<Note['team']> }}
+        lang={lang}
+        source={teamNotes}
+      />
+    ) : undefined;
   const viewerIsVideo = viewerNote?.anchor.type === 'video';
   const viewerIsText = viewerNote?.anchor.type === 'text';
   const viewerTextResolved =
@@ -1920,6 +1931,7 @@ export function HameshApp({
           attachedText={viewerNote.anchor.type === 'text' ? viewerNote.anchor.exact : undefined}
           initialEditing={viewerEditing}
           sharedLabel={viewerSharedLabel}
+          discussion={viewerDiscussion}
           strings={strings}
           lang={lang}
           saving={mutations.busy(viewerNote.id)}

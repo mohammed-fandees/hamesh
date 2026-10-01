@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { mayMutateNote, type Note } from '@/domain/note';
 import { AttachedText } from './AttachedText';
 import { relativeTime } from './format';
@@ -26,6 +26,9 @@ interface NoteViewerProps {
    *  Teams. Its note is shown read-only: edit, delete and pin all belong to
    *  Hamesh's own pages, which are the only place allowed to ask the server. */
   sharedLabel?: string;
+  /** A team note's discussion, at the foot of the card — supplied by the
+   *  content script only in builds that have Teams. */
+  discussion?: ReactNode;
   /** Opens straight into edit mode. Used by the hover popup's Edit button,
    *  so editing a contextual note goes through this exact component (and
    *  therefore this exact update flow) rather than a second editor. */
@@ -56,6 +59,7 @@ export function NoteViewer({
   unavailableLabel,
   attachedText,
   sharedLabel,
+  discussion,
   initialEditing = false,
   saving = false,
   error,
@@ -152,6 +156,7 @@ export function NoteViewer({
           )}
         </>
       )}
+      {discussion}
 
       <button
         type="button"
