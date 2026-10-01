@@ -422,7 +422,7 @@ test.describe('Landing page', () => {
     const trace = await page.evaluate(async () => {
       const rises: number[] = [];
       const samples: number[] = [];
-      let previous = 1;
+      let armed = false;
       const began = Date.now();
       // Long enough that a restart — which follows within a second or two —
       // always shows up, whenever the loader happens to hand over.
@@ -430,8 +430,15 @@ test.describe('Landing page', () => {
         const cursor = document.querySelector('.hero .demo-cursor') as HTMLElement | null;
         const now = cursor ? Number(getComputedStyle(cursor).opacity) : -1;
         samples.push(Math.round(now * 10) / 10);
-        if (previous < 0.05 && now > 0.2) rises.push(Math.round((Date.now() - began) / 100) / 10);
-        previous = now;
+        // A rise is the cursor going from hidden to shown, however many
+        // samples the fade happens to straddle: armed once it is hidden,
+        // counted once it is clearly visible. Comparing two neighbouring
+        // samples missed a fade that landed on 0 → 0.1 → 0.6.
+        if (now >= 0 && now < 0.05) armed = true;
+        if (armed && now > 0.2) {
+          rises.push(Math.round((Date.now() - began) / 100) / 10);
+          armed = false;
+        }
         await new Promise((r) => setTimeout(r, 80));
       }
       return { rises, samples };
