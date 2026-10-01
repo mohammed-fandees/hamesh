@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { PanelView } from '@/ui/teams/PanelView';
 import { getTeamsStrings } from '@/ui/teams/strings';
@@ -102,7 +102,8 @@ describe('Hamesh in the side panel', () => {
     expect(screen.getByText('«Self-attention, at once.»')).toBeInTheDocument();
     expect(screen.getByText('Sara')).toBeInTheDocument();
     expect(container.querySelector('.hm-panel-note img')).toHaveAttribute('src', PHOTO);
-    expect(calls.some((c) => c.op === 'comments.list')).toBe(true);
+    // The discussion is asked for once the team is known — on its own turn.
+    await waitFor(() => expect(calls.some((c) => c.op === 'comments.list')).toBe(true));
   });
 
   it('lists every shared note on the page, and opens the one picked', async () => {
