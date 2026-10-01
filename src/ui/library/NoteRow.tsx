@@ -73,7 +73,11 @@ export function NoteRow({ note, strings, lang, showDomain, movable }: NoteRowPro
   const showDiscuss = isSharedNote(note) && discuss;
 
   return (
-    <article className="hm-note-row" data-busy={actions?.busy(note.id) || undefined}>
+    <article
+      className="hm-note-row"
+      data-note-id={note.id}
+      data-busy={actions?.busy(note.id) || undefined}
+    >
       <a
         className="hm-note-row__link"
         href={note.originalUrl}

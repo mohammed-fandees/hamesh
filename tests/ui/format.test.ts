@@ -27,7 +27,7 @@ describe('relativeTime', () => {
     expect(relativeTime(isoMinutesAgo(120), 'ar')).toBe('منذ ساعتين');
     expect(relativeTime(isoMinutesAgo(300), 'ar')).toBe('منذ 5 ساعات');
     expect(relativeTime(isoMinutesAgo(60 * 24 * 3), 'ar')).toBe('منذ 3 أيام');
-    expect(relativeTime(isoMinutesAgo(60 * 24 * 30), 'ar')).toBe('منذ 30 يوم');
+    expect(relativeTime(isoMinutesAgo(60 * 24 * 30), 'ar')).toBe('منذ 30 يومًا');
   });
 
   it('returns the raw value for an unparseable date', () => {

@@ -7,6 +7,7 @@ import { InlineConfirm } from './kit/InlineConfirm';
 import { CloseIcon, PinIcon } from './kit/icons';
 import { escapeLayer } from './kit/keys';
 import { NoteEditor } from './NoteEditor';
+import { NoteMenu } from './NoteMenu';
 import type { Lang, Strings } from './i18n';
 
 interface NoteViewerProps {
@@ -41,6 +42,8 @@ interface NoteViewerProps {
   onDelete: () => void;
   onClose: () => void;
   onTogglePin: () => void;
+  /** Opens this note in the Library — its menu's first item. */
+  onOpenInHamesh: () => void;
 }
 
 /**
@@ -67,6 +70,7 @@ export function NoteViewer({
   onDelete,
   onClose,
   onTogglePin,
+  onOpenInHamesh,
 }: NoteViewerProps) {
   // A note that lives in a team is read here and changed elsewhere.
   const own = mayMutateNote(note);
@@ -133,18 +137,9 @@ export function NoteViewer({
             <div className="hm-row hm-row--between">
               <span className="hm-meta">{edited}</span>
               {own ? (
-                <span className="hm-row__group">
-                  <button type="button" className="hm-link" onClick={() => setEditing(true)}>
-                    {strings.edit}
-                  </button>
-                  <button
-                    type="button"
-                    className="hm-link hm-link--danger"
-                    onClick={() => setConfirmingDelete(true)}
-                  >
-                    {strings.delete}
-                  </button>
-                </span>
+                <button type="button" className="hm-link" onClick={() => setEditing(true)}>
+                  {strings.edit}
+                </button>
               ) : (
                 sharedLabel && (
                   <span className="hm-shared-with">
@@ -158,14 +153,22 @@ export function NoteViewer({
       )}
       {discussion}
 
-      <button
-        type="button"
-        className="hm-icon-btn hm-icon-btn--small hm-corner-end"
-        onClick={onClose}
-        aria-label={strings.cancel}
-      >
-        <CloseIcon />
-      </button>
+      <span className="hm-corner-end hm-viewer-tools">
+        <NoteMenu
+          strings={strings}
+          text={note.content}
+          onOpenInHamesh={onOpenInHamesh}
+          onDelete={own ? () => setConfirmingDelete(true) : undefined}
+        />
+        <button
+          type="button"
+          className="hm-icon-btn hm-icon-btn--small"
+          onClick={onClose}
+          aria-label={strings.cancel}
+        >
+          <CloseIcon />
+        </button>
+      </span>
     </div>
   );
 }

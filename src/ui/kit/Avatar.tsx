@@ -1,13 +1,17 @@
 import { useState } from 'react';
 
 /** How many tones a monogram may take — see `.hm-avatar[data-tone]`. */
-export const AVATAR_TONES = 4;
+export const AVATAR_TONES = 8;
 
 /** A person's tone: the same for the same id, everywhere and always. */
 export function toneOf(seed: string): number {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) | 0;
-  return Math.abs(hash) % AVATAR_TONES;
+  // FNV-1a: ids that differ in one character still land far apart.
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < seed.length; i++) {
+    hash ^= seed.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0) % AVATAR_TONES;
 }
 
 /**

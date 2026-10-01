@@ -55,6 +55,21 @@ export default defineBackground(() => {
     }
   });
 
+  // A note's menu on a page asks for the Library, opened on that note — a
+  // content script cannot open one of the extension's own pages itself. Only
+  // this extension's own scripts are listened to, and the id is only ever put
+  // in the page's address, which the Library reads as a note to look for.
+  browser.runtime.onMessage.addListener((message: HameshMessage, sender): undefined => {
+    if (message.type !== 'OPEN_IN_LIBRARY' || sender.id !== browser.runtime.id) return undefined;
+    const noteId = message.noteId;
+    if (typeof noteId !== 'string' || !/^[\w-]{1,64}$/.test(noteId)) return undefined;
+    const params = new URLSearchParams({ view: 'library', note: noteId });
+    void browser.tabs
+      .create({ url: browser.runtime.getURL(`/notes.html?${params}` as '/notes.html') })
+      .catch(() => {});
+    return undefined;
+  });
+
   // `chrome.commands` is not available in a content script's execution
   // context (Chrome restricts it to background/extension pages), so the
   // content script's `keydown` listener can't call `commands.getAll()`

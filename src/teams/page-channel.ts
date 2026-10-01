@@ -17,6 +17,8 @@ import type { TeamsErrorCode } from './errors';
  *   page's say-so);
  * - `share`: only a note this device holds for that page — the worker reads
  *   the note itself, so no text from the page is trusted as the note;
+ * - `delete`: only a team note the worker has cached for that page — the
+ *   server decides whether this member may;
  * - `open`: opens the note's discussion beside the page (Chrome's side panel),
  *   or its page in Hamesh (`in: 'hamesh'`); carries no data.
  *
@@ -31,6 +33,7 @@ export type PageRequest =
   | { op: 'reply'; teamId: string; noteId: string; body: string; requestId: string }
   | { op: 'share'; noteId: string; teamId: string; folderId: string | null }
   | { op: 'destinations' }
+  | { op: 'delete'; teamId: string; noteId: string }
   | { op: 'open'; teamId: string; noteId: string; in?: 'panel' | 'hamesh' };
 
 export interface TeamsPageMessage {
@@ -78,6 +81,7 @@ export function isTeamsPageMessage(message: unknown): message is TeamsPageMessag
   const r = m.request as Record<string, unknown>;
   switch (r.op) {
     case 'thread':
+    case 'delete':
       return isId(r.teamId) && isId(r.noteId);
     case 'open':
       return (

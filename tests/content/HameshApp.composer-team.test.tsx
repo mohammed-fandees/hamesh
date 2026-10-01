@@ -78,6 +78,7 @@ function teamSource(share: TeamNotesSource['share']): TeamNotesSource {
     reply: vi.fn(),
     openDiscussion: vi.fn(),
     openInHamesh: vi.fn(),
+    remove: vi.fn(),
     destinations: vi.fn(async () => ({
       ok: true as const,
       data: [

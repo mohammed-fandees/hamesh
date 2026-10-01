@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { revealElement } from '@/utils/dom';
 import type { Folder, FolderLike } from '@/domain/folder';
 import { buildFolderTree } from '@/domain/folder-grouping';
 import { isSharedNote, type Note } from '@/domain/note';
@@ -31,6 +32,8 @@ import { WebsiteGroup } from './WebsiteGroup';
 type LibraryMode = 'domain' | 'folder';
 
 interface LibraryViewProps {
+  /** A note to find and show once the notes are in, from a link to it. */
+  focusNoteId?: string | null;
   strings: Strings;
   lang: Lang;
   /** This device's notes; `null` while they load. */
@@ -65,6 +68,7 @@ interface LibraryViewProps {
 export function LibraryView({
   strings,
   lang,
+  focusNoteId = null,
   notes,
   teamNotes,
   teams,
@@ -118,6 +122,36 @@ export function LibraryView({
     [folders, personalFound],
   );
   const continueSites = useMemo(() => getContinueWebsites(visible), [visible]);
+
+  // Opened on one note (from its menu on a page): by site, its site's card
+  // open, and the note brought into view and marked a moment — once.
+  const [focusing, setFocusing] = useState(focusNoteId);
+  const focusGroup = useMemo(
+    () => (focusing ? groups.find((g) => g.notes.some((note) => note.id === focusing)) : undefined),
+    [focusing, groups],
+  );
+  useEffect(() => {
+    if (!focusing || !focusGroup) return;
+    // Its card opened on one frame, the note found in it on the next.
+    let next = 0;
+    const first = requestAnimationFrame(() => {
+      setMode('domain');
+      setExpanded((prev) => new Set(prev).add(focusGroup.domain));
+      next = requestAnimationFrame(() => {
+        const row = document.querySelector<HTMLElement>(`[data-note-id="${CSS.escape(focusing)}"]`);
+        if (row) {
+          revealElement(row);
+          row.dataset.focus = 'true';
+          window.setTimeout(() => delete row.dataset.focus, 2400);
+        }
+        setFocusing(null);
+      });
+    });
+    return () => {
+      cancelAnimationFrame(first);
+      cancelAnimationFrame(next);
+    };
+  }, [focusing, focusGroup]);
   // Only this device's notes can be pinned, so a team's never appear here.
   const pinned = useMemo(() => getPinnedNotes(notes ?? []), [notes]);
 
