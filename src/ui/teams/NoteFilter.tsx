@@ -1,17 +1,8 @@
-import type { Note } from '@/domain/note';
+import type { NoteOwner } from '@/domain/note-owner';
 import type { CachedTeam } from '@/teams/page-cache';
 import type { Lang } from '../i18n';
+import { CloseIcon } from '../kit/icons';
 import { getTeamsStrings } from './strings';
-
-/**
- * Whose notes the Library is showing: everyone's, only mine, or one team's —
- * and, for a team, optionally just one of its folders (`id: null` is the notes
- * the team has filed nowhere). The folder's name travels with it because the
- * Library holds no team folders of its own: it only needs the name to say what
- * it is narrowed to.
- */
-export type NoteOwner =
-  'all' | 'mine' | { teamId: string; folder?: { id: string | null; name: string } };
 
 interface NoteFilterProps {
   lang: Lang;
@@ -20,19 +11,12 @@ interface NoteFilterProps {
   onChange: (value: NoteOwner) => void;
 }
 
-/** Whether `note` belongs in the list `owner` asked for. */
-export function matchesOwner(note: Note, owner: NoteOwner): boolean {
-  if (owner === 'all') return true;
-  if (owner === 'mine') return !note.team;
-  if (note.team?.id !== owner.teamId) return false;
-  if (!owner.folder) return true;
-  return owner.folder.id === null ? !note.team.folderId : note.team.folderId === owner.folder.id;
-}
-
 const keyOf = (owner: NoteOwner) => (typeof owner === 'string' ? owner : owner.teamId);
 
 /**
- * Pills for narrowing the Library to one team's notes, or to the reader's own.
+ * Filter chips for narrowing the Library to one team's notes, or to the
+ * reader's own. The chosen one inverts — ink on paper — as the chosen segment
+ * of a segmented control does beside it.
  *
  * Only shown when this account is in a team — with no teams there is nothing to
  * tell apart, and the row would be three buttons that all do the same thing.
@@ -83,15 +67,7 @@ export function NoteFilter({ lang, teams, value, onChange }: NoteFilterProps) {
           onClick={() => onChange({ teamId: value.teamId })}
         >
           <bdi>{folder.name}</bdi>
-          <svg width="8" height="8" viewBox="0 0 10 10" aria-hidden="true">
-            <path
-              d="M2 2 L8 8 M8 2 L2 8"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              fill="none"
-            />
-          </svg>
+          <CloseIcon size={9} />
         </button>
       )}
     </div>

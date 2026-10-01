@@ -197,8 +197,8 @@ describe('a note’s discussion', () => {
     view(page, ['team.view', 'comments.create', 'comments.edit_own', 'comments.delete_own']);
     await screen.findByText('worth a second look');
 
-    expect(screen.queryByRole('button', { name: strings.editComment })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: strings.deleteComment })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: strings.edit })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: strings.delete })).not.toBeInTheDocument();
   });
 
   it('lets an admin delete someone else’s, once they have said yes', async () => {
@@ -208,10 +208,10 @@ describe('a note’s discussion', () => {
     view(page);
     await screen.findByText('worth a second look');
 
-    fireEvent.click(screen.getByRole('button', { name: strings.deleteComment }));
+    fireEvent.click(screen.getByRole('button', { name: strings.delete }));
     // Asked on the comment itself, not in a browser dialog.
     expect(screen.getByText(strings.deleteCommentConfirm)).toBeInTheDocument();
-    fireEvent.click(screen.getAllByRole('button', { name: strings.deleteComment })[0]!);
+    fireEvent.click(screen.getAllByRole('button', { name: strings.delete })[0]!);
     await waitFor(() => expect(calls.some((c) => c.op === 'comments.delete')).toBe(true));
   });
 
@@ -228,7 +228,7 @@ describe('a note’s discussion', () => {
 
     expect(await screen.findByText(strings.commentDeleted)).toBeInTheDocument();
     // Nothing can be done to a comment that is already gone.
-    expect(screen.queryByRole('button', { name: strings.editComment })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: strings.edit })).not.toBeInTheDocument();
   });
 
   it('reads the thread again when the socket says it moved on, and trusts nothing it was told', async () => {
@@ -264,7 +264,7 @@ describe('a note’s discussion', () => {
       'comments.list': { comments: [comment()], nextAfter: C1 },
     });
     view(page);
-    fireEvent.click(await screen.findByRole('button', { name: strings.moreComments }));
+    fireEvent.click(await screen.findByRole('button', { name: strings.showMore }));
     await waitFor(() =>
       expect(calls.filter((c) => c.op === 'comments.list').length).toBeGreaterThan(1),
     );

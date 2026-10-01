@@ -218,7 +218,7 @@ describe('Composer — creating a folder', () => {
     renderComposer(makePicker({ folders: [] }));
     expect(screen.queryByRole('combobox')).toBeNull();
     expect(screen.getByText('No folders yet.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '+ Create folder' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Create folder' })).toBeInTheDocument();
   });
 
   it('still saves an unfiled note with no folders at all', () => {
@@ -236,7 +236,7 @@ describe('Composer — creating a folder', () => {
     );
     write('Into a brand-new folder');
 
-    fireEvent.click(screen.getByRole('button', { name: '+ Create folder' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Create folder' }));
     const name = screen.getByRole('textbox', { name: 'New folder' });
     expect(screen.getByRole('button', { name: 'Create' })).toBeDisabled();
     fireEvent.change(name, { target: { value: '  Research  ' } });
@@ -268,7 +268,7 @@ describe('Composer — creating a folder', () => {
 
   it('backs out of naming a folder on Escape without closing the composer', () => {
     const { onCancel } = renderComposer(makePicker({ folders: [] }));
-    fireEvent.click(screen.getByRole('button', { name: '+ Create folder' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Create folder' }));
     fireEvent.keyDown(screen.getByRole('textbox', { name: 'New folder' }), { key: 'Escape' });
 
     expect(screen.queryByRole('textbox', { name: 'New folder' })).toBeNull();
@@ -282,7 +282,7 @@ describe('Composer — creating a folder', () => {
       onCreateFolder: vi.fn().mockRejectedValue(new Error('quota')),
     });
     renderComposer(picker);
-    fireEvent.click(screen.getByRole('button', { name: '+ Create folder' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Create folder' }));
     const name = screen.getByRole('textbox', { name: 'New folder' });
     fireEvent.change(name, { target: { value: 'Research' } });
     fireEvent.click(screen.getByRole('button', { name: 'Create' }));

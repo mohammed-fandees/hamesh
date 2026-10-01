@@ -14,7 +14,7 @@ vi.mock('wxt/browser', () => ({
 }));
 
 async function importNoteRow() {
-  const mod = await import('@/ui/NoteRow');
+  const mod = await import('@/ui/library/NoteRow');
   return mod.NoteRow;
 }
 
@@ -286,7 +286,7 @@ describe('the way to a team note’s discussion', () => {
 
   it('is on a team note’s row, and opens that note', async () => {
     const NoteRow = await importNoteRow();
-    const { NoteDiscussSlot } = await import('@/ui/NoteShareSlot');
+    const { NoteDiscussSlot } = await import('@/ui/library/NoteShareSlot');
     const open = vi.fn();
     render(
       <NoteDiscussSlot.Provider value={{ label: 'Discuss', open }}>
@@ -299,7 +299,7 @@ describe('the way to a team note’s discussion', () => {
 
   it('is not on a note this device stored, however the page is set up', async () => {
     const NoteRow = await importNoteRow();
-    const { NoteDiscussSlot } = await import('@/ui/NoteShareSlot');
+    const { NoteDiscussSlot } = await import('@/ui/library/NoteShareSlot');
     render(
       <NoteDiscussSlot.Provider value={{ label: 'Discuss', open: vi.fn() }}>
         <NoteRow note={makeElementNote()} strings={strings} lang="en" />

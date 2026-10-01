@@ -2,7 +2,8 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
-import { NoteFilter, matchesOwner, type NoteOwner } from '@/ui/teams/NoteFilter';
+import { NoteFilter } from '@/ui/teams/NoteFilter';
+import { matchesOwner, type NoteOwner } from '@/domain/note-owner';
 import { getTeamsStrings } from '@/ui/teams/strings';
 import type { Note } from '@/domain/note';
 

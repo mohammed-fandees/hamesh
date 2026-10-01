@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  resolveTheme,
   DEFAULT_PREFERENCES,
   isAppearanceMode,
   isSupportedLanguage,
@@ -233,5 +234,17 @@ describe('withPageDefaultFolder / withGlobalDefaultFolder', () => {
     withPageDefaultFolder(start, 'https://a.com/x', null);
     withGlobalDefaultFolder(start, null);
     expect(start).toEqual(snapshot);
+  });
+});
+
+describe('resolveTheme', () => {
+  it('keeps an explicit choice whatever the surface sees', () => {
+    expect(resolveTheme('light', 'dark')).toBe('light');
+    expect(resolveTheme('dark', 'light')).toBe('dark');
+  });
+
+  it('follows the surface for "Match website"', () => {
+    expect(resolveTheme('match-website', 'dark')).toBe('dark');
+    expect(resolveTheme('match-website', 'light')).toBe('light');
   });
 });

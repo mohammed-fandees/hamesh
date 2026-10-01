@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Invitation, TeamResponse } from '@hamesh/teams-contract';
+import { formatDate } from '../format';
 import type { Lang } from '../i18n';
+import { InlineError } from '../kit/Feedback';
+import { SegmentedControl } from '../kit/SegmentedControl';
+import { inviteRights } from './permissions';
 import type { TeamsStrings } from './strings';
 import type { TeamsPage } from './useTeams';
-import { formatDate } from './format';
 
 interface TeamInvitationsProps {
   strings: TeamsStrings;
@@ -28,9 +31,7 @@ export function TeamInvitations({ strings, lang, page, team }: TeamInvitationsPr
   const [copied, setCopied] = useState(false);
 
   const teamId = team.team.id;
-  const canInviteMember = team.capabilities.includes('invites.create_member');
-  const canInviteAdmin = team.capabilities.includes('invites.create_admin');
-  const canManage = team.capabilities.includes('invites.manage');
+  const may = inviteRights(team);
 
   const load = useCallback(async () => {
     const result = await page.run('invites.list', { teamId });
@@ -39,7 +40,7 @@ export function TeamInvitations({ strings, lang, page, team }: TeamInvitationsPr
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    void (async () => {
       const result = await page.run('invites.list', { teamId });
       if (cancelled) return;
       setInvitations(result?.invitations ?? null);
@@ -80,86 +81,101 @@ export function TeamInvitations({ strings, lang, page, team }: TeamInvitationsPr
 
   return (
     <>
-      {(canInviteMember || canInviteAdmin) && (
-        <form className="hm-team-invite" onSubmit={create}>
-          <input
-            type="email"
-            required
-            className="hm-input"
-            placeholder={strings.inviteEmailPlaceholder}
-            aria-label={strings.inviteSomeone}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          {canInviteAdmin && (
-            <select
-              className="hm-input hm-input--select"
+      {may.any && (
+        <>
+          <p className="hm-section__intro">{strings.inviteLinkHint}</p>
+          <form className="hm-team-invite" onSubmit={create}>
+            <input
+              type="email"
+              required
+              className="hm-input"
+              placeholder={strings.inviteEmailPlaceholder}
               aria-label={strings.inviteSomeone}
-              value={role}
-              onChange={(e) => setRole(e.target.value === 'admin' ? 'admin' : 'member')}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            {may.admin && (
+              <SegmentedControl<'member' | 'admin'>
+                value={role}
+                name="hm-invite-role"
+                groupLabel={strings.inviteSomeone}
+                options={[
+                  { value: 'member', label: strings.inviteAsMember },
+                  { value: 'admin', label: strings.inviteAsAdmin },
+                ]}
+                onChange={setRole}
+              />
+            )}
+            <button
+              type="submit"
+              className="hm-btn hm-btn-primary"
+              disabled={page.working('invites.create')}
+              aria-busy={page.working('invites.create')}
             >
-              <option value="member">{strings.inviteAsMember}</option>
-              <option value="admin">{strings.inviteAsAdmin}</option>
-            </select>
+              {strings.sendInvite}
+            </button>
+          </form>
+          {page.failed('invites.create') && (
+            <InlineError>{strings.error(page.failed('invites.create')!)}</InlineError>
           )}
-          <button
-            type="submit"
-            className="hm-btn hm-btn-primary"
-            disabled={page.working('invites.create')}
-            aria-busy={page.working('invites.create')}
-          >
-            {strings.sendInvite}
-          </button>
-        </form>
-      )}
-      {page.failed('invites.create') && (
-        <p className="hm-field-error" role="alert">
-          {strings.error(page.failed('invites.create')!)}
-        </p>
+        </>
       )}
 
       {link && (
+        // Shown once and never stored, so it is given room to be read and
+        // copied rather than truncated into a row.
         <div className="hm-invite-link" role="status">
           <p className="hm-invite-link__title">{strings.inviteLinkReady}</p>
           {/* Selectable, so it can be copied by hand if the clipboard is refused. */}
           <code className="hm-invite-link__value">{link}</code>
-          <p className="hm-setting-row__hint">{strings.inviteLinkHint}</p>
-          <button type="button" className="hm-btn hm-btn-ghost" onClick={() => void copy()}>
+          <button
+            type="button"
+            className="hm-btn hm-btn-ghost hm-btn--compact"
+            onClick={() => void copy()}
+          >
             {copied ? strings.copied : strings.copyLink}
           </button>
         </div>
       )}
 
       {invitations && invitations.length === 0 && (
-        <p className="hm-setting-row__hint">{strings.noInvitations}</p>
+        <p className="hm-supporting">{strings.noInvitations}</p>
       )}
 
       {invitations && invitations.length > 0 && (
         <ul className="hm-team-invitations">
-          {invitations.map((invitation) => (
-            <li key={invitation.id} className="hm-team-invitation">
-              <span className="hm-team-invitation__who">
-                <bdi>{invitation.email}</bdi>
-                <span className="hm-team-member__meta">
-                  {strings.role(invitation.role)} ·{' '}
-                  {invitation.expired
-                    ? strings.inviteExpired
-                    : strings.inviteExpires(formatDate(invitation.expiresAt, lang))}
+          {invitations.map((invitation) => {
+            const key = `invite:${invitation.id}`;
+            return (
+              <li key={invitation.id} className="hm-team-invitation">
+                <span className="hm-team-invitation__who">
+                  <bdi>{invitation.email}</bdi>
+                  <span className="hm-team-member__meta">
+                    {strings.role(invitation.role)} ·{' '}
+                    {invitation.expired
+                      ? strings.inviteExpired
+                      : strings.inviteExpires(formatDate(invitation.expiresAt, lang))}
+                  </span>
                 </span>
-              </span>
-              {canManage && (
-                <button
-                  type="button"
-                  className="hm-btn hm-btn-ghost"
-                  disabled={page.working(`invite:${invitation.id}`)}
-                  aria-busy={page.working(`invite:${invitation.id}`)}
-                  onClick={() => void revoke(invitation.id)}
-                >
-                  {strings.revokeInvite}
-                </button>
-              )}
-            </li>
-          ))}
+                {may.manage && (
+                  <button
+                    type="button"
+                    className="hm-btn hm-btn-ghost hm-btn--compact"
+                    disabled={page.working(key)}
+                    aria-busy={page.working(key)}
+                    onClick={() => void revoke(invitation.id)}
+                  >
+                    {strings.revokeInvite}
+                  </button>
+                )}
+                {page.failed(key) && (
+                  <span className="hm-team-invitation__alert">
+                    <InlineError>{strings.error(page.failed(key)!)}</InlineError>
+                  </span>
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
     </>

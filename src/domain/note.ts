@@ -232,6 +232,24 @@ export function updateNoteContent(note: Note, input: UpdateNoteInput): Note {
   };
 }
 
+/**
+ * Whether a note lives in a team rather than on this device — the one test for
+ * "shared", so no surface decides it for itself.
+ */
+export function isSharedNote(note: Pick<Note, 'team'>): boolean {
+  return note.team !== undefined;
+}
+
+/**
+ * Whether this device may change a note: edit, delete, pin or file it. A team's
+ * note is the server's to change, and only through Hamesh's own pages, so every
+ * local write path asks this first — hiding a control is never the thing that
+ * stops the write.
+ */
+export function mayMutateNote(note: Pick<Note, 'team'>): boolean {
+  return !isSharedNote(note);
+}
+
 /** Toggles the pin flag without touching `updatedAt` — see `Note.pinned`. */
 export function setNotePinned(note: Note, pinned: boolean): Note {
   return { ...note, pinned };

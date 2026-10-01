@@ -1,30 +1,24 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { browser } from 'wxt/browser';
-import { MarginMark } from '@/ui/MarginMark';
-import { Sidebar, type LibraryView } from '@/ui/Sidebar';
-import { LibrarySettingsView } from '@/ui/LibrarySettingsView';
+import { Sidebar, type LibraryView as View } from '@/ui/library/Sidebar';
+import { LibraryView } from '@/ui/library/LibraryView';
+import { NoteActionsContext, type NoteActions } from '@/ui/library/NoteActions';
+import { NoteDiscussSlot, NoteShareSlot, type DiscussAction } from '@/ui/library/NoteShareSlot';
+import { LibrarySettingsView } from '@/ui/settings/LibrarySettingsView';
 import { WhatsNewView } from '@/ui/WhatsNewView';
-import { WebsiteGroup } from '@/ui/WebsiteGroup';
-import { FolderTree } from '@/ui/FolderTree';
-import { ContinueSection } from '@/ui/ContinueSection';
-import { PinnedSection } from '@/ui/PinnedSection';
-import { SegmentedControl } from '@/ui/SegmentedControl';
-import { getStrings, resolveLang, dirForLang, type Lang } from '@/ui/i18n';
+import { Page, PageHeader } from '@/ui/kit/Page';
+import { getStrings, resolveLang, dirForLang } from '@/ui/i18n';
+import { usePreferences, systemTheme } from '@/ui/hooks/usePreferences';
+import { useFolders } from '@/ui/hooks/useFolders';
+import { useNoteMutations } from '@/ui/hooks/useNoteMutations';
+import { usePageBackground } from '@/ui/hooks/usePageBackground';
 import { createNotesRepository } from '@/storage/notes-repository';
 import { createPreferencesRepository } from '@/storage/preferences-repository';
 import { createFoldersRepository } from '@/storage/folders-repository';
-import {
-  groupNotesByDomain,
-  getContinueWebsites,
-  getPinnedNotes,
-  filterNotesByQuery,
-  sortWebsiteGroups,
-  type GroupSortMode,
-} from '@/domain/notes-grouping';
-import { buildFolderTree } from '@/domain/folder-grouping';
-import type { AppearanceMode, TextNotePreferences } from '@/domain/preferences';
-import { DEFAULT_TEXT_NOTE_PREFERENCES } from '@/domain/preferences';
+import { flattenFolderTree } from '@/domain/folder-grouping';
+import { resolveTheme } from '@/domain/preferences';
 import { getLatestReleaseVersion, hasUnseenReleases } from '@/domain/release-notes';
+import type { NoteOwner } from '@/domain/note-owner';
 import {
   backupFileName,
   buildBackup,
@@ -33,12 +27,11 @@ import {
   parseBackup,
   serializeBackup,
 } from '@/domain/backup';
-import type { BackupImportOutcome } from '@/ui/BackupSection';
+import type { BackupImportOutcome } from '@/ui/settings/BackupSection';
 import { teamsConfig } from '@/teams/config';
 import { createTeamsClient } from '@/teams/client';
 import { TeamsView } from '@/ui/teams/TeamsView';
 import { ShareNoteAction } from '@/ui/teams/ShareNoteAction';
-import { NoteDiscussSlot, NoteShareSlot, type DiscussAction } from '@/ui/NoteShareSlot';
 import { OVERVIEW, routeFromParams, routeToParams, type TeamsRoute } from '@/ui/teams/route';
 import { generatePageKey } from '@/domain/page-key';
 import { watchTeamIndex } from '@/teams/page-cache';
@@ -49,16 +42,12 @@ import {
   type LibraryTeamNotes,
 } from '@/ui/teams/library-notes';
 import { MentionsInbox } from '@/ui/teams/MentionsInbox';
-import { NoteFilter, matchesOwner, type NoteOwner } from '@/ui/teams/NoteFilter';
 import { getTeamsStrings } from '@/ui/teams/strings';
 import type { PersonalNotes } from '@/ui/teams/personal-notes';
-import type { TeamNote } from '@hamesh/teams-contract';
-import type { Note } from '@/domain/note';
-import type { Folder } from '@/domain/folder';
+import { isSharedNote, type Note } from '@/domain/note';
 import '@/ui/tokens.css';
+import '@/ui/pages.css';
 import '@/ui/notes-library.css';
-
-type LibraryMode = 'domain' | 'folder';
 
 const initialLang = resolveLang(browser.i18n?.getUILanguage?.());
 // Lets another context deep-link straight to a view instead of always
@@ -67,23 +56,17 @@ const initialLang = resolveLang(browser.i18n?.getUILanguage?.());
 // update (`notes.html?view=whats-new`). Every view the sidebar offers is
 // reachable this way, so a link can point at one — anything else opens the
 // Library, as an unrecognised view always has.
-const DEEP_LINKS: readonly LibraryView[] = [
-  'library',
-  'settings',
-  'teams',
-  'mentions',
-  'whats-new',
-];
+const DEEP_LINKS: readonly View[] = ['library', 'settings', 'teams', 'mentions', 'whats-new'];
 /** Where an address says the reader is: a view, and inside Teams, a place in it. */
 interface Place {
-  view: LibraryView;
+  view: View;
   teams: TeamsRoute;
 }
 function placeFrom(search: string): Place {
   const params = new URLSearchParams(search);
   const requested = params.get('view');
   return {
-    view: DEEP_LINKS.includes(requested as LibraryView) ? (requested as LibraryView) : 'library',
+    view: DEEP_LINKS.includes(requested as View) ? (requested as View) : 'library',
     teams: routeFromParams(params),
   };
 }
@@ -91,11 +74,8 @@ const initialPlace = placeFrom(location.search);
 // The build's own version, so What's New can mark the entry actually
 // installed rather than assuming it's the newest one listed.
 const currentVersion = browser.runtime.getManifest().version;
-// Same rationale as the popup: this page has no single host webpage of its
-// own to detect a background from, so "Match website" resolves to the OS
-// scheme here too.
-const prefersDark =
-  typeof matchMedia !== 'undefined' && matchMedia('(prefers-color-scheme: dark)').matches;
+/** This page has no website to match, so "Match website" follows the system. */
+const matched = systemTheme();
 /** What "a note moves between this device and a team" means when there are no
  *  teams: nothing at all. Named here so the real one below can sit behind this
  *  build's Teams constant. */
@@ -108,123 +88,101 @@ const foldersRepo = createFoldersRepository();
 export function App() {
   const [place, setPlace] = useState<Place>(initialPlace);
   const view = place.view;
+  const placeRef = useRef(place);
+  useEffect(() => {
+    placeRef.current = place;
+  }, [place]);
   /**
-   * Moves to a view, and — for Teams — to a place inside it, as a history entry,
-   * so the browser's back button walks the pages the reader has been through
-   * rather than leaving the Library altogether.
+   * Moves to a view, and — for Teams — to a place inside it.
+   *
+   * Switching between the sidebar's views is not a navigation: the same document
+   * shows another view, and the address does not change (a reload opens the
+   * Library, as it always has). Only a page reached *from* Teams — a team's
+   * members, one shared note — is a history entry, so the browser's back button
+   * returns to where the reader came from instead of leaving the Library
+   * altogether, and so the page can be linked to. Each entry carries the place
+   * it stands for, because the address alone cannot say where a sidebar switch
+   * left the reader.
    */
-  const navigate = useCallback((next: LibraryView, teams: TeamsRoute = OVERVIEW) => {
-    setPlace({ view: next, teams });
-    const params = new URLSearchParams({ view: next });
-    if (next === 'teams') {
-      for (const [key, value] of Object.entries(routeToParams(teams))) params.set(key, value);
+  const navigate = useCallback((next: View, teams: TeamsRoute = OVERVIEW) => {
+    const target: Place = { view: next, teams };
+    const deep = next === 'teams' && teams.page !== 'overview';
+    if (deep) {
+      // Remember where this entry is before stepping past it.
+      history.replaceState({ place: placeRef.current }, '');
+      const params = new URLSearchParams({ view: 'teams', ...routeToParams(teams) });
+      history.pushState({ place: target }, '', `?${params}`);
+    } else if (new URLSearchParams(location.search).has('page')) {
+      // Leaving a linkable page for a top-level one: the address should not go on
+      // saying the reader is somewhere they no longer are.
+      history.replaceState({ place: target }, '', location.pathname);
     }
-    history.pushState(null, '', `?${params}`);
+    setPlace(target);
   }, []);
   useEffect(() => {
-    const onPop = () => setPlace(placeFrom(location.search));
+    const onPop = (event: PopStateEvent) => {
+      const remembered = (event.state as { place?: Place } | null)?.place;
+      setPlace(remembered ?? placeFrom(location.search));
+    };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
   }, []);
-  const [lang, setLang] = useState<Lang>(initialLang);
-  const [appearance, setAppearance] = useState<AppearanceMode>('match-website');
-  const [textNotes, setTextNotes] = useState<TextNotePreferences>(DEFAULT_TEXT_NOTE_PREFERENCES);
-  /** `undefined` until preferences load — distinct from `null`, which means
-   *  "loaded, and this user has never opened What's New". */
-  const [lastSeenVersion, setLastSeenVersion] = useState<string | null | undefined>(undefined);
-  /** `null` while the initial load is in flight; distinguishes "loading" from
-   *  "loaded, zero notes" so the empty state doesn't flash before data arrives. */
+
+  const preferences = usePreferences(prefsRepo);
+  const { prefs, first } = preferences;
+  const lang = prefs?.language ?? initialLang;
+  const strings = getStrings(lang);
+  const dir = dirForLang(lang);
+  const theme = resolveTheme(prefs?.appearance ?? 'match-website', matched);
+  const scopeRef = useRef<HTMLDivElement>(null);
+  usePageBackground(scopeRef, '--hm-paper', theme);
+
+  /** This device's notes; `null` while the first read is in flight, so the
+   *  empty state never flashes before the notes arrive. */
   const [notes, setNotes] = useState<Note[] | null>(null);
-  const [folders, setFolders] = useState<Folder[] | null>(null);
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortMode, setSortMode] = useState<GroupSortMode>('alphabetical');
-  const [libraryMode, setLibraryMode] = useState<LibraryMode>('domain');
+  const notesRef = useRef<Note[] | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const all = await repo.getAll().catch(() => [] as Note[]);
+      if (cancelled) return;
+      notesRef.current = all;
+      setNotes(all);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const mutations = useNoteMutations(
+    repo,
+    useMemo(
+      () => ({
+        current: () => notesRef.current ?? [],
+        commit: (next: Note[]) => {
+          notesRef.current = next;
+          setNotes(next);
+        },
+      }),
+      [],
+    ),
+  );
+  const { folders, create: createFolder } = useFolders(foldersRepo);
+
   /** Every team note this device holds, and the teams they came from. Always
    *  empty in a build without Teams, and while nobody is signed in. */
   const [shared, setShared] = useState<LibraryTeamNotes>(NO_TEAM_NOTES);
   /** Whose notes the library is showing. */
   const [owner, setOwner] = useState<NoteOwner>('all');
-  /** The newest mention the server has, and the newest this reader has looked
-   *  at — the difference is what puts a dot on Mentions in the sidebar. */
+  /** The newest mention the server has — against the newest the reader has
+   *  looked at, what puts a dot on Mentions in the sidebar. */
   const [newestMention, setNewestMention] = useState<string | null>(null);
-  const [lastSeenMention, setLastSeenMention] = useState<string | null>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const strings = getStrings(lang);
   // Null in builds without Teams, which leaves Settings exactly as it was.
   const teamsClient = useMemo(() => {
     // A build-time constant: builds without Teams drop this code entirely.
     if (!import.meta.env.WXT_TEAMS_API_ORIGIN) return null;
     const config = teamsConfig();
     return config ? createTeamsClient(config) : null;
-  }, []);
-  const dir = dirForLang(lang);
-  const theme =
-    appearance === 'light'
-      ? 'light'
-      : appearance === 'dark'
-        ? 'dark'
-        : prefersDark
-          ? 'dark'
-          : 'light';
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const prefs = await prefsRepo.get();
-      if (!cancelled) {
-        setLang(prefs.language ?? initialLang);
-        setAppearance(prefs.appearance);
-        setTextNotes(prefs.textNotes);
-        setLastSeenVersion(prefs.releaseNotes.lastSeenVersion);
-        setLastSeenMention(prefs.teams.lastSeenMentionId);
-      }
-    })();
-    const unwatch = prefsRepo.watch((prefs) => {
-      setLang(prefs.language ?? initialLang);
-      setAppearance(prefs.appearance);
-      setTextNotes(prefs.textNotes);
-      // Deliberately not mirrored back into `lastSeenVersion`: this view
-      // marks itself read as soon as it opens, and echoing that write back
-      // would clear the "new" dot mid-visit, before the reader has read it.
-    });
-    return () => {
-      cancelled = true;
-      unwatch();
-    };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const all = await repo.getAll();
-        if (!cancelled) setNotes(all);
-      } catch {
-        if (!cancelled) setNotes([]);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const all = await foldersRepo.getAll();
-        if (!cancelled) setFolders(all);
-      } catch {
-        if (!cancelled) setFolders([]);
-      }
-    })();
-    const unwatch = foldersRepo.watch((next) => setFolders(next));
-    return () => {
-      cancelled = true;
-      unwatch();
-    };
   }, []);
 
   // The team notes this device already holds, beside the reader's own. Nothing
@@ -234,17 +192,13 @@ export function App() {
   // was in the background.
   const loadShared = useCallback(async () => {
     if (!import.meta.env.WXT_TEAMS_API_ORIGIN || !teamsClient) return;
-    try {
-      setShared(await readTeamNotesForLibrary(teamsClient));
-    } catch {
-      setShared(NO_TEAM_NOTES);
-    }
+    setShared(await readTeamNotesForLibrary(teamsClient).catch(() => NO_TEAM_NOTES));
   }, [teamsClient]);
 
   useEffect(() => {
     if (!import.meta.env.WXT_TEAMS_API_ORIGIN || !teamsClient) return;
     let cancelled = false;
-    (async () => {
+    void (async () => {
       const next = await readTeamNotesForLibrary(teamsClient).catch(() => NO_TEAM_NOTES);
       if (!cancelled) setShared(next);
       const newest = await newestMentionId(teamsClient).catch(() => null);
@@ -260,69 +214,24 @@ export function App() {
     };
   }, [teamsClient, loadShared]);
 
-  // "/" focuses search from anywhere on the page — ignored while focus is
-  // already in an editable field (so it types a literal "/" there instead,
-  // e.g. into the search box itself).
+  // Opening What's New *is* reading it — the badge and the auto-open both key
+  // off this, so it's recorded on arrival rather than on some "mark as read"
+  // nobody would click. The view reads what had been seen from `first`, so its
+  // entries stay marked "New" while they're being read.
+  const lastSeenVersion = first?.releaseNotes.lastSeenVersion;
   useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key !== '/') return;
-      const target = e.target as HTMLElement | null;
-      const tag = target?.tagName;
-      const isEditable = tag === 'INPUT' || tag === 'TEXTAREA' || !!target?.isContentEditable;
-      if (isEditable) return;
-      e.preventDefault();
-      searchInputRef.current?.focus();
-    }
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, []);
-
-  const isSearching = searchQuery.trim() !== '';
-  /**
-   * One list: what this device stored and what its teams have shared. A reader
-   * thinks of them as their notes, so the library shows them together and the
-   * chip on a row says which are not theirs alone.
-   */
-  const visibleNotes = useMemo(
-    () => [...(notes ?? []), ...shared.notes].filter((note) => matchesOwner(note, owner)),
-    [notes, shared, owner],
-  );
-  const filteredNotes = useMemo(
-    () => filterNotesByQuery(visibleNotes, searchQuery),
-    [visibleNotes, searchQuery],
-  );
-  const groups = useMemo(
-    () => sortWebsiteGroups(groupNotesByDomain(filteredNotes), sortMode),
-    [filteredNotes, sortMode],
-  );
-  const folderTree = useMemo(
-    () => buildFolderTree(folders ?? [], filteredNotes),
-    [folders, filteredNotes],
-  );
-  // Continue and Pinned always reflect the full, unfiltered library —
-  // neither is a "search result" — so both are hidden (not filtered) while
-  // actively searching. See render logic below.
-  const continueWebsites = useMemo(() => getContinueWebsites(visibleNotes), [visibleNotes]);
-  // Only a note this device stored can be pinned, so this list never has to
-  // exclude a team's.
-  const pinnedNotes = useMemo(() => getPinnedNotes(notes ?? []), [notes]);
-
-  function handleLanguageChange(next: Lang) {
-    setLang(next); // immediate feedback; persisted below, and re-confirmed by watch()
-    void prefsRepo.setLanguage(next);
-  }
-
-  function handleAppearanceChange(next: AppearanceMode) {
-    setAppearance(next); // immediate feedback; persisted below, and re-confirmed by watch()
-    void prefsRepo.setAppearance(next);
-  }
+    if (view !== 'whats-new' || lastSeenVersion === undefined) return;
+    const latest = getLatestReleaseVersion();
+    if (lastSeenVersion === latest) return;
+    void prefsRepo.setLastSeenReleaseVersion(latest);
+  }, [view, lastSeenVersion]);
 
   /**
    * Export — everything, to a file the user chooses where to keep.
    *
-   * Reads storage directly rather than the `notes` already in state: a
-   * backup must be the whole truth at the moment it's taken, not whatever
-   * the current view happens to be filtered to.
+   * Reads storage directly rather than the `notes` already in state: a backup
+   * must be the whole truth at the moment it's taken, not whatever the current
+   * view happens to be filtered to.
    */
   async function handleExportBackup(): Promise<{ notes: number; folders: number }> {
     const [allNotes, allFolders] = await Promise.all([repo.getAll(), foldersRepo.getAll()]);
@@ -331,9 +240,9 @@ export function App() {
       folders: allFolders,
       appVersion: currentVersion,
     });
-
-    const blob = new Blob([serializeBackup(backup)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
+    const url = URL.createObjectURL(
+      new Blob([serializeBackup(backup)], { type: 'application/json' }),
+    );
     try {
       const link = document.createElement('a');
       link.href = url;
@@ -344,17 +253,16 @@ export function App() {
       // download the click just started.
       setTimeout(() => URL.revokeObjectURL(url), 0);
     }
-
     return { notes: allNotes.length, folders: allFolders.length };
   }
 
   /**
    * Import — merge a backup file back in.
    *
-   * Reads the current contents fresh, merges by the rules in
-   * `domain/backup.ts` (never deletes; newer edit wins), then writes. If a
-   * write fails partway the user still has everything they had before,
-   * because nothing is ever removed first.
+   * Reads the current contents fresh, merges by the rules in `domain/backup.ts`
+   * (never deletes; newer edit wins), then writes. If a write fails partway the
+   * user still has everything they had before, because nothing is ever removed
+   * first.
    */
   async function handleImportBackup(text: string): Promise<BackupImportOutcome> {
     const parsed = parseBackup(text);
@@ -369,118 +277,42 @@ export function App() {
 
     const noteChanges = mergedNotes.added + mergedNotes.updated;
     const folderChanges = mergedFolders.added + mergedFolders.updated;
-    // Nothing new in the file: skip the writes entirely rather than
-    // rewriting every page bucket for no reason.
-    if (noteChanges === 0 && folderChanges === 0) {
-      return { ok: true, notes: 0, folders: 0 };
-    }
+    // Nothing new in the file: skip the writes entirely rather than rewriting
+    // every page bucket for no reason.
+    if (noteChanges === 0 && folderChanges === 0) return { ok: true, notes: 0, folders: 0 };
 
-    // Folders first: a note carrying a `folderId` should never be visible
-    // for even a moment before the folder it points at exists.
+    // Folders first: a note carrying a `folderId` should never be visible for
+    // even a moment before the folder it points at exists.
     if (folderChanges > 0) await foldersRepo.saveAll(mergedFolders.items);
     if (noteChanges > 0) await repo.saveAll(mergedNotes.items);
 
+    notesRef.current = mergedNotes.items;
     setNotes(mergedNotes.items);
     return { ok: true, notes: noteChanges, folders: folderChanges };
   }
 
-  function handleTextNotesChange(patch: Partial<TextNotePreferences>) {
-    setTextNotes((prev) => ({ ...prev, ...patch })); // re-confirmed by watch()
-    void prefsRepo.setTextNotes(patch);
-  }
-
-  // Opening What's New *is* reading it — the badge and the auto-open both
-  // key off this, so it's recorded on arrival rather than on some "mark as
-  // read" affordance nobody would click. The local `lastSeenVersion` stays
-  // as it was for this visit, so entries stay marked "New" while they're
-  // being read.
-  useEffect(() => {
-    if (view !== 'whats-new' || lastSeenVersion === undefined) return;
-    const latest = getLatestReleaseVersion();
-    if (lastSeenVersion === latest) return;
-    void prefsRepo.setLastSeenReleaseVersion(latest);
-  }, [view, lastSeenVersion]);
-
-  function toggleGroup(domain: string) {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(domain)) next.delete(domain);
-      else next.add(domain);
-      return next;
-    });
-  }
-
-  // None of these mutators touch `folders` state directly — the
-  // `foldersRepo.watch()` subscription above already delivers the
-  // authoritative array after every write, including this context's own
-  // (chrome.storage.onChanged fires same-context too). A second, optimistic
-  // local update here would race that subscription: if the watch callback
-  // wins, an `[...(prev ?? []), folder]`-style append would append onto the
-  // already-updated array and duplicate the entry.
-  async function handleCreateFolder(name: string, parentId: string | null): Promise<string> {
-    const folder = await foldersRepo.create({ name, parentId });
-    return folder.id;
-  }
-
-  async function handleRenameFolder(folderId: string, name: string) {
-    await foldersRepo.rename(folderId, name);
-  }
-
-  async function handleDeleteFolder(folderId: string) {
+  /** Deleting a folder takes every folder inside it too, and unfiles — never
+   *  deletes — the notes that were in any of them. The two repositories stay
+   *  apart, so the two steps meet here. */
+  async function deleteFolder(folderId: string) {
     const { removedFolderIds } = await foldersRepo.remove(folderId);
-    const removedSet = new Set(removedFolderIds);
-
-    // Unfile every note that belonged to the removed folder or any of its
-    // descendants — folders-repository and notes-repository stay decoupled
-    // from each other, so this two-step orchestration lives here.
-    const affected = (notes ?? []).filter((n) => n.folderId && removedSet.has(n.folderId));
-    const updates = await Promise.all(
-      affected.map((n) => repo.setFolder(n.id, n.pageKey, undefined)),
-    );
-    if (updates.length > 0) {
-      setNotes((prev) => {
-        if (!prev) return prev;
-        const byId = new Map(updates.filter((u): u is Note => !!u).map((u) => [u.id, u]));
-        return prev.map((n) => byId.get(n.id) ?? n);
-      });
-    }
+    await mutations.unfile(new Set(removedFolderIds));
   }
 
-  async function handleMoveNote(noteId: string, folderId: string | undefined) {
-    const note = notes?.find((n) => n.id === noteId);
-    if (!note) return;
-    const updated = await repo.setFolder(noteId, note.pageKey, folderId);
-    if (updated) {
-      setNotes((prev) => prev?.map((n) => (n.id === noteId ? updated : n)) ?? prev);
-    }
-  }
-
-  async function handleTogglePin(noteId: string) {
-    const note = notes?.find((n) => n.id === noteId);
-    if (!note) return;
-    const updated = await repo.setPinned(noteId, note.pageKey, !note.pinned);
-    if (updated) {
-      setNotes((prev) => prev?.map((n) => (n.id === noteId ? updated : n)) ?? prev);
-    }
-  }
-
-  async function handleEditNote(noteId: string, content: string) {
-    const note = notes?.find((n) => n.id === noteId);
-    if (!note) return;
-    const updated = await repo.update(noteId, note.pageKey, { content });
-    if (updated) {
-      setNotes((prev) => prev?.map((n) => (n.id === noteId ? updated : n)) ?? prev);
-    }
-  }
-
-  async function handleDeleteNote(noteId: string) {
-    const note = notes?.find((n) => n.id === noteId);
-    if (!note) return;
-    const deleted = await repo.delete(noteId, note.pageKey);
-    if (deleted) {
-      setNotes((prev) => prev?.filter((n) => n.id !== noteId) ?? prev);
-    }
-  }
+  /** What every note row in the Library can do — see `NoteActions`. */
+  const noteActions = useMemo<NoteActions>(
+    () => ({
+      togglePin: (id) => void mutations.togglePin(id),
+      edit: async (id, content) => (await mutations.update(id, content)) !== null,
+      remove: (id) => mutations.remove(id),
+      move: (id, folderId) => void mutations.move(id, folderId),
+      createFolder: async (name) => (await createFolder({ name, parentId: null })).id,
+      folders: flattenFolderTree(folders ?? []),
+      busy: mutations.busy,
+      failed: mutations.failed,
+    }),
+    [mutations, folders, createFolder],
+  );
 
   /**
    * How a note crosses between this device and a team. Sharing moves it: the
@@ -495,22 +327,20 @@ export function App() {
     // this nor what it reaches (the page-key helper among it).
     if (!import.meta.env.WXT_TEAMS_API_ORIGIN) return NO_SHARING;
     return {
-      forget: (noteId: string) => handleDeleteNote(noteId),
-      keep: async (note: TeamNote) => {
-        const created = await repo.create({
+      forget: async (noteId) => {
+        await mutations.remove(noteId);
+      },
+      keep: async (note) => {
+        await mutations.create({
           content: note.content,
           pageKey: generatePageKey(note.originalUrl),
           originalUrl: note.originalUrl,
           anchor: note.anchor,
           ...(note.pageTitle ? { pageContext: { title: note.pageTitle } } : {}),
         });
-        setNotes((prev) => (prev ? [...prev, created] : prev));
       },
     };
-    // `handleDeleteNote` closes over `notes`, which is exactly what it needs to
-    // find the note's page; a new identity per render is the point here.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notes]);
+  }, [mutations]);
 
   /** The "Share with team" item in a note's actions menu. */
   const shareAction = useMemo(() => {
@@ -525,7 +355,7 @@ export function App() {
         client={teamsClient}
         teams={shared.teams}
         // A team note is not shared again; from here it is only opened.
-        open={note.team ? () => navigate('teams') : undefined}
+        open={isSharedNote(note) ? () => navigate('teams') : undefined}
         onDone={async () => {
           close();
           // The team's copy is read back before the local one goes, so the row
@@ -544,262 +374,108 @@ export function App() {
     return {
       label: getTeamsStrings(lang).discuss,
       open: (note) => {
-        if (note.team) {
-          navigate('teams', { page: 'note', teamId: note.team.id, noteId: note.id });
-        }
+        if (note.team) navigate('teams', { page: 'note', teamId: note.team.id, noteId: note.id });
       },
     };
   }, [teamsClient, lang, navigate]);
 
-  const loading = notes === null;
-  const hasAnyNotes = !loading && visibleNotes.length > 0;
-  // "Nothing here" means nothing at all, not nothing in this filter: a team, or
-  // one of its folders, with no notes yet is a different thing to say, and has
-  // a different way out.
-  const noNotesAtAll = !loading && (notes?.length ?? 0) + shared.notes.length === 0;
-  const noFilterResults = !loading && !noNotesAtAll && !hasAnyNotes;
-  const noSearchResults = !loading && isSearching && hasAnyNotes && filteredNotes.length === 0;
-  const teamsStrings = getTeamsStrings(lang);
+  const lastSeenMention = prefs?.teams.lastSeenMentionId ?? null;
   /** Somebody named this reader since they last looked at Mentions. */
   const mentionsUnseen = newestMention !== null && newestMention !== lastSeenMention;
 
-  return (
-    <NoteShareSlot.Provider value={shareAction}>
-      <NoteDiscussSlot.Provider value={discussAction}>
-        <div className="hm-scope hm-notes-page" dir={dir} data-hm-theme={theme}>
-          <Sidebar
-            view={view}
-            strings={strings}
-            // Teams keeps the team the reader was on, so leaving for the Library
-            // and coming back does not put them on a different one.
-            onNavigate={(next) => navigate(next, { page: 'overview', teamId: place.teams.teamId })}
-            whatsNewUnseen={lastSeenVersion !== undefined && hasUnseenReleases(lastSeenVersion)}
-            showTeams={teamsClient !== null}
-            mentionsUnseen={mentionsUnseen}
+  function content() {
+    if (import.meta.env.WXT_TEAMS_API_ORIGIN && view === 'teams' && teamsClient) {
+      return (
+        <TeamsView
+          lang={lang}
+          client={teamsClient}
+          onOpenSettings={() => navigate('settings')}
+          onOpenLibrary={(next) => {
+            setOwner(next);
+            navigate('library');
+          }}
+          personal={personalNotes}
+          route={place.teams}
+          onRoute={(teams) => navigate('teams', teams)}
+        />
+      );
+    }
+    if (import.meta.env.WXT_TEAMS_API_ORIGIN && view === 'mentions' && teamsClient) {
+      return (
+        <Page>
+          <PageHeader title={getTeamsStrings(lang).mentionsTitle} />
+          <MentionsInbox
+            lang={lang}
+            client={teamsClient}
+            onOpenNote={(teamId, noteId) => navigate('teams', { page: 'note', teamId, noteId })}
+            onRead={(commentId) => void prefsRepo.setLastSeenMention(commentId)}
           />
+        </Page>
+      );
+    }
+    if (view === 'whats-new') {
+      return (
+        <WhatsNewView
+          strings={strings}
+          lang={lang}
+          currentVersion={currentVersion}
+          lastSeenVersion={lastSeenVersion ?? null}
+        />
+      );
+    }
+    if (view === 'settings') {
+      return (
+        <LibrarySettingsView
+          strings={strings}
+          lang={lang}
+          preferences={preferences}
+          backup={{ onExport: handleExportBackup, onImport: handleImportBackup }}
+          teams={teamsClient}
+          onOpenTeam={() => navigate('teams')}
+        />
+      );
+    }
+    return (
+      <LibraryView
+        strings={strings}
+        lang={lang}
+        notes={notes}
+        teamNotes={shared.notes}
+        teams={shared.teams}
+        folders={folders}
+        owner={owner}
+        onOwnerChange={setOwner}
+        onCreateFolder={(name, parentId) => createFolder({ name, parentId })}
+        onRenameFolder={(folderId, name) => foldersRepo.rename(folderId, name)}
+        onDeleteFolder={deleteFolder}
+        onMoveNote={noteActions.move}
+        onOpenSettings={() => navigate('settings')}
+      />
+    );
+  }
 
-          {import.meta.env.WXT_TEAMS_API_ORIGIN && view === 'teams' && teamsClient ? (
-            <TeamsView
+  return (
+    <NoteActionsContext.Provider value={noteActions}>
+      <NoteShareSlot.Provider value={shareAction}>
+        <NoteDiscussSlot.Provider value={discussAction}>
+          <div ref={scopeRef} className="hm-scope hm-notes-page" dir={dir} data-hm-theme={theme}>
+            <Sidebar
+              view={view}
               lang={lang}
-              client={teamsClient}
-              onOpenSettings={() => navigate('settings')}
-              onOpenLibrary={(next) => {
-                setOwner(next);
-                navigate('library');
-              }}
-              personal={personalNotes}
-              route={place.teams}
-              onRoute={(teams) => navigate('teams', teams)}
-            />
-          ) : import.meta.env.WXT_TEAMS_API_ORIGIN && view === 'mentions' && teamsClient ? (
-            <div className="hm-notes-main">
-              <div className="hm-notes-page__inner">
-                <header className="hm-notes-page__header">
-                  <MarginMark size={20} strokeWidth={3.5} style={{ color: 'var(--hm-accent)' }} />
-                  <h1 className="hm-notes-page__title">{teamsStrings.mentions}</h1>
-                </header>
-                <MentionsInbox
-                  lang={lang}
-                  client={teamsClient}
-                  onOpenNote={(teamId, noteId) =>
-                    navigate('teams', { page: 'note', teamId, noteId })
-                  }
-                  onRead={(commentId) => {
-                    setLastSeenMention(commentId);
-                    void prefsRepo.setLastSeenMention(commentId);
-                  }}
-                />
-              </div>
-            </div>
-          ) : view === 'whats-new' ? (
-            <WhatsNewView
               strings={strings}
-              lang={lang}
-              currentVersion={currentVersion}
-              lastSeenVersion={lastSeenVersion ?? null}
+              // Teams keeps the team the reader was on, so leaving for the Library
+              // and coming back does not put them on a different one.
+              onNavigate={(next) =>
+                navigate(next, { page: 'overview', teamId: place.teams.teamId })
+              }
+              whatsNewUnseen={lastSeenVersion !== undefined && hasUnseenReleases(lastSeenVersion)}
+              showTeams={teamsClient !== null}
+              mentionsUnseen={mentionsUnseen}
             />
-          ) : view === 'settings' ? (
-            <LibrarySettingsView
-              strings={strings}
-              lang={lang}
-              appearance={appearance}
-              textNotes={textNotes}
-              onLanguageChange={handleLanguageChange}
-              onAppearanceChange={handleAppearanceChange}
-              onTextNotesChange={handleTextNotesChange}
-              backup={{ onExport: handleExportBackup, onImport: handleImportBackup }}
-              teams={teamsClient}
-              onOpenTeam={() => navigate('teams')}
-            />
-          ) : (
-            <div className="hm-notes-main">
-              <div className="hm-notes-page__inner">
-                <header className="hm-notes-page__header">
-                  <MarginMark size={20} strokeWidth={3.5} style={{ color: 'var(--hm-accent)' }} />
-                  <h1 className="hm-notes-page__title">{strings.notesLibrary}</h1>
-                </header>
-
-                <span className="hm-visually-hidden" role="status">
-                  {loading ? strings.loadingNotes : ''}
-                </span>
-
-                {hasAnyNotes && (
-                  <div className="hm-search-wrap">
-                    <input
-                      ref={searchInputRef}
-                      type="search"
-                      className="hm-search"
-                      placeholder={strings.searchPlaceholder}
-                      aria-label={strings.searchPlaceholder}
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key !== 'Escape' || !searchQuery) return;
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setSearchQuery('');
-                      }}
-                    />
-                    {!isSearching && (
-                      <kbd className="hm-search__hint" aria-hidden="true">
-                        /
-                      </kbd>
-                    )}
-                  </div>
-                )}
-
-                {import.meta.env.WXT_TEAMS_API_ORIGIN && shared.teams.length > 0 && (
-                  <NoteFilter lang={lang} teams={shared.teams} value={owner} onChange={setOwner} />
-                )}
-
-                {!isSearching && hasAnyNotes && (
-                  <ContinueSection websites={continueWebsites} strings={strings} lang={lang} />
-                )}
-
-                {!isSearching && hasAnyNotes && (
-                  <PinnedSection
-                    notes={pinnedNotes}
-                    allNotes={notes ?? []}
-                    strings={strings}
-                    lang={lang}
-                    onTogglePin={handleTogglePin}
-                    onEditNote={handleEditNote}
-                    onDeleteNote={handleDeleteNote}
-                  />
-                )}
-
-                {loading ? (
-                  <div className="hm-skeleton" aria-hidden="true">
-                    <div className="hm-skeleton__row" />
-                    <div className="hm-skeleton__row" />
-                    <div className="hm-skeleton__row" />
-                  </div>
-                ) : noNotesAtAll ? (
-                  <div className="hm-empty hm-fade-in">
-                    <MarginMark size={28} strokeWidth={3} />
-                    <p className="hm-empty__title">{strings.notesLibraryEmptyTitle}</p>
-                    <p className="hm-empty__body">{strings.notesLibraryEmptyBody}</p>
-                    {/* The way to the shortcuts that make the first note. */}
-                    <button
-                      type="button"
-                      className="hm-btn hm-btn-primary hm-empty__action"
-                      onClick={() => navigate('settings')}
-                    >
-                      {strings.settingsShortcuts}
-                    </button>
-                  </div>
-                ) : import.meta.env.WXT_TEAMS_API_ORIGIN && noFilterResults ? (
-                  <div className="hm-empty hm-fade-in">
-                    <MarginMark size={28} strokeWidth={3} />
-                    <p className="hm-empty__title">{teamsStrings.filterEmptyTitle}</p>
-                    <p className="hm-empty__body">{teamsStrings.filterEmptyBody}</p>
-                    <button
-                      type="button"
-                      className="hm-btn hm-btn-ghost hm-empty__action"
-                      onClick={() => setOwner('all')}
-                    >
-                      {teamsStrings.filterShowAll}
-                    </button>
-                  </div>
-                ) : noSearchResults ? (
-                  <div className="hm-empty hm-fade-in">
-                    <MarginMark size={28} strokeWidth={3} />
-                    <p className="hm-empty__title">{strings.searchNoResultsTitle}</p>
-                    <p className="hm-empty__body">
-                      {strings.searchNoResultsBody(searchQuery.trim())}
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    {!isSearching && (
-                      <div className="hm-sort-row">
-                        <SegmentedControl<LibraryMode>
-                          value={libraryMode}
-                          name="hm-library-mode"
-                          groupLabel={strings.libraryModeLabel}
-                          options={[
-                            { value: 'domain', label: strings.modeDomain },
-                            { value: 'folder', label: strings.modeFolder },
-                          ]}
-                          onChange={setLibraryMode}
-                        />
-                        {libraryMode === 'domain' && groups.length > 0 && (
-                          <>
-                            <span className="hm-sort-row__label">{strings.sortLabel}</span>
-                            <SegmentedControl<GroupSortMode>
-                              value={sortMode}
-                              name="hm-notes-sort"
-                              groupLabel={strings.sortLabel}
-                              options={[
-                                { value: 'alphabetical', label: strings.sortAlphabetical },
-                                { value: 'recent', label: strings.sortRecent },
-                              ]}
-                              onChange={setSortMode}
-                            />
-                          </>
-                        )}
-                      </div>
-                    )}
-                    {libraryMode === 'folder' ? (
-                      <FolderTree
-                        tree={folderTree.tree}
-                        unfiledNotes={folderTree.unfiledNotes}
-                        strings={strings}
-                        lang={lang}
-                        onCreateFolder={handleCreateFolder}
-                        onRenameFolder={handleRenameFolder}
-                        onDeleteFolder={handleDeleteFolder}
-                        onMoveNote={handleMoveNote}
-                        onTogglePin={handleTogglePin}
-                        onEditNote={handleEditNote}
-                        onDeleteNote={handleDeleteNote}
-                      />
-                    ) : (
-                      <ul className="hm-groups">
-                        {groups.map((group, i) => (
-                          <li key={group.domain}>
-                            <WebsiteGroup
-                              group={group}
-                              expanded={isSearching || expanded.has(group.domain)}
-                              onToggle={() => toggleGroup(group.domain)}
-                              strings={strings}
-                              lang={lang}
-                              style={{ animationDelay: `${Math.min(i * 30, 240)}ms` }}
-                              onTogglePin={handleTogglePin}
-                              onEditNote={handleEditNote}
-                              onDeleteNote={handleDeleteNote}
-                            />
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      </NoteDiscussSlot.Provider>
-    </NoteShareSlot.Provider>
+            {content()}
+          </div>
+        </NoteDiscussSlot.Provider>
+      </NoteShareSlot.Provider>
+    </NoteActionsContext.Provider>
   );
 }

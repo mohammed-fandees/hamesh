@@ -116,7 +116,7 @@ const folderSelect = (page: Page) => page.getByRole('combobox', { name: 'Folder'
 const star = (page: Page) => page.getByRole('button', { name: 'Default folder' });
 
 async function createFolderFromComposer(page: Page, name: string): Promise<void> {
-  const emptyState = page.getByRole('button', { name: '+ Create folder' });
+  const emptyState = page.getByRole('button', { name: 'Create folder' });
   if (await emptyState.isVisible()) await emptyState.click();
   else await folderSelect(page).selectOption({ label: '+ New folder…' });
   const input = page.getByRole('textbox', { name: 'New folder' });
@@ -358,10 +358,10 @@ test.describe('Notes Library — long notes', () => {
     await library.getByRole('button', { name: /127\.0\.0\.1/ }).click();
     const long = library.locator('.hm-note-row', { hasText: 'Paragraph 1:' });
 
-    // A point on the "Edited …" line — outside the link's own content, so
-    // it's the stretched link over the card that has to catch it.
+    // A point on the "Edited …" time beside the title — outside the link's own
+    // content, so it's the stretched link over the card that has to catch it.
     const card = (await long.boundingBox())!;
-    const meta = (await long.locator('.hm-note-row__meta').boundingBox())!;
+    const meta = (await long.locator('.hm-note-row__time').boundingBox())!;
     const [opened] = await Promise.all([
       context.waitForEvent('page'),
       long.click({ position: { x: meta.x - card.x + 4, y: meta.y - card.y + meta.height / 2 } }),

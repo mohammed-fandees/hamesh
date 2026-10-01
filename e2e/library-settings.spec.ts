@@ -82,25 +82,25 @@ test.describe('Notes Library — sidebar + Settings', () => {
     await page.goto(`chrome-extension://${extensionId}/notes.html`);
     await page.getByRole('button', { name: 'Settings' }).click();
 
-    const feature = page.getByRole('radiogroup', { name: 'Notes on selected text' });
-    const chip = page.getByRole('radiogroup', { name: 'Show icon after selecting' });
-    await expect(feature.getByRole('radio', { name: 'On' })).toBeChecked();
-    await expect(chip.getByRole('radio', { name: 'On' })).toBeChecked();
+    // On/off settings are switches.
+    const feature = page.getByRole('switch', { name: 'Notes on selected text' });
+    const chip = page.getByRole('switch', { name: 'Show icon after selecting' });
+    await expect(feature).toHaveAttribute('aria-checked', 'true');
+    await expect(chip).toHaveAttribute('aria-checked', 'true');
 
     // Turning the automatic chip off is persisted, not just local state.
-    await chip.getByRole('radio', { name: 'Off' }).check();
+    await chip.click();
+    await expect(chip).toHaveAttribute('aria-checked', 'false');
     await page.reload();
     await page.getByRole('button', { name: 'Settings' }).click();
-    await expect(
-      page.getByRole('radiogroup', { name: 'Show icon after selecting' }).getByRole('radio', {
-        name: 'Off',
-      }),
-    ).toBeChecked();
-    await expect(
-      page.getByRole('radiogroup', { name: 'Notes on selected text' }).getByRole('radio', {
-        name: 'On',
-      }),
-    ).toBeChecked();
+    await expect(page.getByRole('switch', { name: 'Show icon after selecting' })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    );
+    await expect(page.getByRole('switch', { name: 'Notes on selected text' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
   });
 
   test('the Chrome settings link opens chrome://extensions/shortcuts in a new tab', async () => {

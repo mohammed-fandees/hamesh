@@ -1,21 +1,27 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { TeamMember, TeamResponse } from '@hamesh/teams-contract';
-import type { Lang } from '../i18n';
+import type { NoteOwner } from '@/domain/note-owner';
 import type { TeamsClient } from '@/teams/client';
 import { newRequestId } from '@/teams/operation-names';
-import { MarginMark } from '../MarginMark';
-import { SegmentedControl } from '../SegmentedControl';
-import { getTeamsStrings } from './strings';
-import './styles';
-import { useTeams } from './useTeams';
-import { formatDate } from './format';
-import { TeamOverview } from './TeamOverview';
-import { TeamPeople } from './TeamPeople';
-import { TeamNotePage } from './TeamNotePage';
-import { TeamSettings } from './TeamSettings';
-import type { NoteOwner } from './NoteFilter';
+import { formatDate } from '../format';
+import type { Lang } from '../i18n';
+import { EmptyState } from '../kit/EmptyState';
+import { InlineError, StatusLine } from '../kit/Feedback';
+import { NameField } from '../kit/NameField';
+import { Page, PageHeader } from '../kit/Page';
+import { SegmentedControl } from '../kit/SegmentedControl';
+import { Skeleton } from '../kit/Skeleton';
+import { PlusIcon } from '../kit/icons';
 import type { PersonalNotes } from './personal-notes';
 import type { TeamsRoute } from './route';
+import { getTeamsStrings, type TeamsStrings } from './strings';
+import './styles';
+import { TEAM_NAME_MAX } from './limits';
+import { TeamNotePage } from './TeamNotePage';
+import { TeamOverview } from './TeamOverview';
+import { TeamPeople } from './TeamPeople';
+import { TeamSettings } from './TeamSettings';
+import { PAGE, useTeams } from './useTeams';
 
 interface TeamsViewProps {
   lang: Lang;
@@ -30,6 +36,20 @@ interface TeamsViewProps {
    *  back button can walk it. */
   route: TeamsRoute;
   onRoute: (route: TeamsRoute) => void;
+}
+
+/** Said only when it is not the ordinary state — a working team says nothing. */
+function stateLine(t: TeamResponse, strings: TeamsStrings, lang: Lang): string | null {
+  switch (t.team.state) {
+    case 'active':
+      return null;
+    case 'read_only':
+      return t.team.readOnlyUntil
+        ? strings.stateReadOnly(formatDate(t.team.readOnlyUntil, lang))
+        : strings.stateReadOnlyNoDate;
+    case 'locked':
+      return strings.stateLocked;
+  }
 }
 
 /**
@@ -64,7 +84,6 @@ export function TeamsView({
   const [team, setTeam] = useState<TeamResponse | null>(null);
   const [members, setMembers] = useState<TeamMember[] | null>(null);
   const [creating, setCreating] = useState(false);
-  const [newName, setNewName] = useState('');
 
   const me = page.me;
   const teams = me?.teams ?? [];
@@ -83,8 +102,7 @@ export function TeamsView({
       setMembers(null);
       return;
     }
-    const result = await page.run('team.get', { teamId: selectedId });
-    setTeam(result);
+    setTeam(await page.run('team.get', { teamId: selectedId }));
     const who = await page.run('members.list', { teamId: selectedId });
     setMembers(who?.members ?? null);
     // `page` is rebuilt on every render; the chosen team is what changes.
@@ -96,7 +114,7 @@ export function TeamsView({
   // reloads that follow a change.
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    void (async () => {
       if (!selectedId) {
         setTeam(null);
         setMembers(null);
@@ -124,16 +142,14 @@ export function TeamsView({
 
   const toOverview = (teamId: string | null) => onRoute({ page: 'overview', teamId });
 
-  async function createTeam(e: React.FormEvent) {
-    e.preventDefault();
+  async function createTeam(name: string) {
     // A retry of the same create returns the original team rather than a second one.
     const result = await page.run(
       'team.create',
-      { name: newName, requestId: newRequestId() },
+      { name, requestId: newRequestId() },
       'team.create',
     );
     if (!result) return;
-    setNewName('');
     setCreating(false);
     toOverview(result.team.id);
     await page.refresh();
@@ -145,80 +161,55 @@ export function TeamsView({
     await page.refresh();
   }
 
-  /** Said only when it is not the ordinary state — a working team says nothing. */
-  function stateLine(t: TeamResponse): string | null {
-    switch (t.team.state) {
-      case 'active':
-        return null;
-      case 'read_only':
-        return t.team.readOnlyUntil
-          ? strings.stateReadOnly(formatDate(t.team.readOnlyUntil, lang))
-          : strings.stateReadOnlyNoDate;
-      case 'locked':
-        return strings.stateLocked;
-    }
-  }
-
-  const skeleton = (
-    <div className="hm-skeleton" aria-hidden="true">
-      <div className="hm-skeleton__row" />
-      <div className="hm-skeleton__row" />
-      <div className="hm-skeleton__row" />
-    </div>
+  const newTeam = creating ? (
+    <NameField
+      label={strings.createTeam}
+      placeholder={strings.teamNamePlaceholder}
+      maxLength={TEAM_NAME_MAX}
+      submitLabel={strings.create}
+      cancelLabel={strings.cancel}
+      busy={page.working('team.create')}
+      onCancel={() => setCreating(false)}
+      onSubmit={(name) => void createTeam(name)}
+    />
+  ) : (
+    <button type="button" className="hm-add" onClick={() => setCreating(true)}>
+      <PlusIcon size={11} />
+      {strings.createTeam}
+    </button>
   );
 
   const body = () => {
-    if (!page.status) return skeleton;
+    if (!page.status) return <Skeleton />;
 
     // Signing in belongs to Settings; this page only ever points at it.
     if (page.status.state !== 'signed_in') {
       return (
-        <div className="hm-empty hm-fade-in">
-          <MarginMark size={28} strokeWidth={3} />
-          <p className="hm-empty__title">{strings.signedOutTitle}</p>
-          <p className="hm-empty__body">{strings.signedOutBody}</p>
-          <button
-            type="button"
-            className="hm-btn hm-btn-primary hm-empty__action"
-            onClick={onOpenSettings}
-          >
-            {strings.goToSettings}
-          </button>
-        </div>
+        <EmptyState
+          title={strings.signedOutTitle}
+          body={strings.signedOutBody}
+          action={{ label: strings.goToSettings, onClick: onOpenSettings }}
+        />
       );
     }
 
     if (!me) {
       // Signed in, but the server could not be reached just now.
       return (
-        <div className="hm-empty hm-fade-in">
-          <MarginMark size={28} strokeWidth={3} />
-          <p className="hm-empty__title">{strings.error(page.failure?.code ?? 'network')}</p>
-          <button
-            type="button"
-            className="hm-btn hm-btn-ghost hm-empty__action"
-            onClick={() => void page.refresh()}
-          >
-            {strings.retry}
-          </button>
-        </div>
+        <EmptyState
+          title={strings.error(page.failed(PAGE) ?? 'network')}
+          action={{ label: strings.retry, onClick: () => void page.refresh(), tone: 'ghost' }}
+        />
       );
     }
 
     if (teams.length === 0 && !creating) {
       return (
-        <div className="hm-empty hm-fade-in">
-          <MarginMark size={28} strokeWidth={3} />
-          <p className="hm-empty__title">{strings.emptyTeamsTitle}</p>
-          <p className="hm-empty__body">{strings.emptyTeamsBody}</p>
-          <button
-            type="button"
-            className="hm-btn hm-btn-primary hm-empty__action"
-            onClick={() => setCreating(true)}
-          >
-            {strings.createTeam}
-          </button>
-        </div>
+        <EmptyState
+          title={strings.emptyTeamsTitle}
+          body={strings.emptyTeamsBody}
+          action={{ label: strings.createTeam, onClick: () => setCreating(true) }}
+        />
       );
     }
 
@@ -227,7 +218,7 @@ export function TeamsView({
     // page for a team this reader has since left says nothing rather than
     // something stale.
     if (route.page !== 'overview' && selectedId === route.teamId) {
-      if (!team) return skeleton;
+      if (!team) return <Skeleton />;
       if (route.page === 'members') {
         return (
           <TeamPeople
@@ -258,6 +249,7 @@ export function TeamsView({
       );
     }
 
+    const state = team && stateLine(team, strings, lang);
     return (
       <>
         <div className="hm-team-bar">
@@ -270,39 +262,7 @@ export function TeamsView({
               onChange={toOverview}
             />
           )}
-          {creating ? (
-            <form className="hm-team-invite" onSubmit={createTeam}>
-              <input
-                type="text"
-                required
-                autoFocus
-                className="hm-input"
-                placeholder={strings.teamNamePlaceholder}
-                aria-label={strings.createTeam}
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-              />
-              <button
-                type="submit"
-                className="hm-btn hm-btn-primary"
-                disabled={page.working('team.create')}
-                aria-busy={page.working('team.create')}
-              >
-                {strings.create}
-              </button>
-              <button
-                type="button"
-                className="hm-btn hm-btn-ghost"
-                onClick={() => setCreating(false)}
-              >
-                {strings.cancel}
-              </button>
-            </form>
-          ) : (
-            <button type="button" className="hm-chip-add" onClick={() => setCreating(true)}>
-              + {strings.createTeam}
-            </button>
-          )}
+          <span className="hm-team-bar__new">{newTeam}</span>
           {team && (
             <span className="hm-team-bar__meta">
               {strings.role(team.team.role)}
@@ -311,21 +271,12 @@ export function TeamsView({
           )}
         </div>
         {page.failed('team.create') && (
-          <p className="hm-status hm-status--warning" role="alert">
-            <span className="hm-dot" />
-            {strings.error(page.failed('team.create')!)}
-          </p>
+          <InlineError>{strings.error(page.failed('team.create')!)}</InlineError>
         )}
 
         {team && (
           <>
-            {stateLine(team) && (
-              <p className="hm-status hm-status--warning" role="status">
-                <span className="hm-dot" />
-                {stateLine(team)}
-              </p>
-            )}
-
+            {state && <StatusLine tone="warning">{state}</StatusLine>}
             <TeamOverview
               strings={strings}
               lang={lang}
@@ -336,7 +287,6 @@ export function TeamsView({
               onOpenLibrary={onOpenLibrary}
               onRoute={onRoute}
             />
-
             <TeamSettings
               strings={strings}
               page={page}
@@ -352,28 +302,16 @@ export function TeamsView({
   };
 
   const onOverview = route.page === 'overview' || selectedId !== route.teamId;
+  // Only what the page itself failed at, and only once there is a page to say
+  // it on. Everything a row did says so on that row, beside the control that
+  // did it.
+  const pageFailure = me ? page.failed(PAGE) : null;
 
   return (
-    <div className="hm-notes-main">
-      <div className="hm-notes-page__inner hm-notes-page__inner--wide">
-        {onOverview && (
-          <header className="hm-notes-page__header">
-            <MarginMark size={20} strokeWidth={3.5} style={{ color: 'var(--hm-accent)' }} />
-            <h1 className="hm-notes-page__title">{strings.teams}</h1>
-          </header>
-        )}
-
-        {/* Only what the page itself failed at. Everything a row did says so on
-            that row, beside the control that did it. */}
-        {page.failure?.key === null && (
-          <p className="hm-status hm-status--warning" role="status">
-            <span className="hm-dot" />
-            {strings.error(page.failure.code)}
-          </p>
-        )}
-
-        {body()}
-      </div>
-    </div>
+    <Page wide>
+      {onOverview && <PageHeader title={strings.teams} meta={strings.tagline} />}
+      {pageFailure && <InlineError>{strings.error(pageFailure)}</InlineError>}
+      {body()}
+    </Page>
   );
 }

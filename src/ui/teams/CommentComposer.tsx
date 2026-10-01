@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import type { TeamMember } from '@hamesh/teams-contract';
 import { MAX_COMMENT_LENGTH, mentionsIn } from '@hamesh/teams-contract/mentions';
+import { Avatar } from '../kit/Avatar';
 import type { TeamsStrings } from './strings';
 import { insertMention, mentionQueryAt } from './mentions';
 
@@ -14,6 +15,8 @@ interface CommentComposerProps {
   initialBody?: string;
   busy?: boolean;
   autoFocus?: boolean;
+  /** A line beside the button — how to send, and how to start a new line. */
+  hint?: string;
   onSubmit: (body: string, mentions: string[]) => void;
   onCancel?: () => void;
 }
@@ -43,6 +46,7 @@ export function CommentComposer({
   initialBody = '',
   busy = false,
   autoFocus = false,
+  hint,
   onSubmit,
   onCancel,
 }: CommentComposerProps) {
@@ -164,6 +168,7 @@ export function CommentComposer({
                   pick(member.userId);
                 }}
               >
+                <Avatar name={member.displayName} />
                 <bdi>{member.displayName}</bdi>
               </button>
             </li>
@@ -172,6 +177,7 @@ export function CommentComposer({
       )}
 
       <div className="hm-row">
+        {hint && <span className="hm-comment-composer__hint">{hint}</span>}
         {onCancel && (
           <button type="button" className="hm-btn hm-btn-ghost" onClick={onCancel}>
             {strings.cancel}

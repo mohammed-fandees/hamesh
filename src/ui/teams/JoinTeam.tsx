@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import type { InvitationPreviewResponse } from '@hamesh/teams-contract';
+import { InlineError } from '../kit/Feedback';
 import type { TeamsStrings } from './strings';
 import type { TeamsPage } from './useTeams';
-import { inviteTokenFrom } from './format';
+import { inviteTokenFrom } from './invite-link';
 
 interface JoinTeamProps {
   strings: TeamsStrings;
@@ -49,7 +50,7 @@ export function JoinTeam({ strings, page, onJoined }: JoinTeamProps) {
 
   return (
     <>
-      <p className="hm-settings__intro">{strings.joinHint}</p>
+      <p className="hm-section__intro">{strings.joinHint}</p>
       <form className="hm-team-invite" onSubmit={check}>
         <input
           type="text"
@@ -72,11 +73,11 @@ export function JoinTeam({ strings, page, onJoined }: JoinTeamProps) {
         </button>
       </form>
 
-      {malformed && (
-        <p className="hm-status hm-status--warning" role="status">
-          <span className="hm-dot" />
-          {strings.error('invalid_request')}
-        </p>
+      {malformed && <InlineError>{strings.error('invalid_request')}</InlineError>}
+      {(page.failed('invites.preview') ?? page.failed('invites.accept')) && (
+        <InlineError>
+          {strings.error((page.failed('invites.preview') ?? page.failed('invites.accept'))!)}
+        </InlineError>
       )}
 
       {preview && (
@@ -85,7 +86,7 @@ export function JoinTeam({ strings, page, onJoined }: JoinTeamProps) {
             {strings.joinInvitedTo(preview.team.name, strings.role(preview.role))}
           </p>
           {preview.invitedBy && (
-            <p className="hm-setting-row__hint">{strings.joinInvitedBy(preview.invitedBy)}</p>
+            <p className="hm-supporting">{strings.joinInvitedBy(preview.invitedBy)}</p>
           )}
           <button
             type="button"

@@ -1,3 +1,4 @@
+import { PreviewPillContent } from './PreviewPill';
 import type { Strings } from './i18n';
 
 interface TextNotePopupProps {
@@ -50,10 +51,7 @@ export function TextNotePopup({
         onOpen();
       }}
     >
-      <span className="hm-video-preview__dot" aria-hidden="true" />
-      <span className="hm-video-preview__text" dir="auto">
-        {preview}
-      </span>
+      <PreviewPillContent preview={preview} />
     </button>
   );
 }

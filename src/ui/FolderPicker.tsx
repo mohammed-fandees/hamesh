@@ -1,9 +1,10 @@
 import { useId, useMemo, useState } from 'react';
-import type { Folder } from '@/domain/folder';
-import { validateFolderName } from '@/domain/folder';
-import { buildFolderTree, flattenFolderTreeForMenu } from '@/domain/folder-grouping';
-import { FolderGlyph } from './FolderGlyph';
-import { StarIcon } from './StarIcon';
+import { FOLDER_NAME_MAX, type Folder } from '@/domain/folder';
+import { flattenFolderTree } from '@/domain/folder-grouping';
+import { InlineError } from './kit/Feedback';
+import { NameField } from './kit/NameField';
+import { FolderIcon, PlusIcon, StarIcon } from './kit/icons';
+import { FolderSelect } from './FolderSelect';
 import type { Strings } from './i18n';
 
 /** The `<select>` value of the trailing "New folder…" option. Not a folder
@@ -36,17 +37,10 @@ interface FolderPickerProps extends FolderPickerSource {
  * be filed into, and — through the star beside it — whether that folder is
  * the default for this page, for every page, or both.
  *
- * A native `<select>` rather than a custom listbox: it's inside a floating
- * card on someone else's page, where the browser's own popup is the one
- * dropdown that can never be clipped by the card or covered by the page,
- * and it's fully keyboard- and screen-reader-operable for free. Nesting is
- * shown by indentation, the same flat walk `NoteActionsMenu`'s "Move to
- * folder" list uses.
- *
- * With no folders at all there is nothing to select, so the selector is
- * replaced by a one-line empty state offering to create one on the spot.
- * The note never needs a folder: "No folder" is always available, and an
- * empty state is only an offer.
+ * The folder list is the shared `FolderSelect`; naming a new one is the shared
+ * `NameField`, right here, without leaving the note. With no folders at all
+ * there is nothing to select, so the selector gives way to a one-line offer to
+ * make one. A note never needs a folder: "No folder" is always there.
  */
 export function FolderPicker({
   strings,
@@ -60,31 +54,23 @@ export function FolderPicker({
   onCreateFolder,
 }: FolderPickerProps) {
   const [creating, setCreating] = useState(false);
-  const [newName, setNewName] = useState('');
   const [createFailed, setCreateFailed] = useState(false);
   const [defaultsOpen, setDefaultsOpen] = useState(false);
   const defaultsId = useId();
-
-  const options = useMemo(
-    () => flattenFolderTreeForMenu(buildFolderTree(folders, []).tree),
-    [folders],
-  );
+  const options = useMemo(() => flattenFolderTree(folders), [folders]);
 
   const isPageDefault = value !== null && value === pageDefaultId;
   const isGlobalDefault = value !== null && value === globalDefaultId;
   const isDefault = isPageDefault || isGlobalDefault;
-  const canCreate = validateFolderName(newName) === null;
 
   function closeCreate() {
     setCreating(false);
-    setNewName('');
     setCreateFailed(false);
   }
 
-  async function submitCreate() {
-    if (!canCreate) return;
+  async function create(name: string) {
     try {
-      const folderId = await onCreateFolder(newName.trim());
+      const folderId = await onCreateFolder(name);
       closeCreate();
       onChange(folderId);
     } catch {
@@ -96,63 +82,18 @@ export function FolderPicker({
     return (
       <div className="hm-folder-picker">
         <div className="hm-folder-picker__row">
-          <FolderGlyph className="hm-folder-picker__glyph" />
-          <input
-            type="text"
-            className="hm-folder-picker__input"
-            dir="auto"
-            autoFocus
-            value={newName}
+          <FolderIcon className="hm-folder-picker__glyph" />
+          <NameField
+            label={strings.newFolder}
             placeholder={strings.folderNamePlaceholder}
-            aria-label={strings.newFolder}
-            onChange={(e) => {
-              setNewName(e.target.value);
-              if (createFailed) setCreateFailed(false);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey) {
-                e.preventDefault();
-                e.stopPropagation();
-                void submitCreate();
-              } else if (e.key === 'Escape') {
-                // Backs out of naming a folder only — the note being written
-                // stays open, the same one-level-at-a-time Escape
-                // `NoteActionsMenu` uses.
-                e.preventDefault();
-                e.stopPropagation();
-                closeCreate();
-              }
-            }}
+            maxLength={FOLDER_NAME_MAX}
+            submitLabel={strings.create}
+            cancelLabel={strings.cancel}
+            onCancel={closeCreate}
+            onSubmit={(name) => void create(name)}
           />
-          <button
-            type="button"
-            className="hm-link"
-            disabled={!canCreate}
-            onClick={() => void submitCreate()}
-          >
-            {strings.composerCreateFolderSubmit}
-          </button>
-          <button
-            type="button"
-            className="hm-folder-picker__icon-btn"
-            aria-label={strings.cancel}
-            onClick={closeCreate}
-          >
-            <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
-              <path
-                d="M2 2 L8 8 M8 2 L2 8"
-                stroke="currentColor"
-                strokeWidth="1.4"
-                strokeLinecap="round"
-              />
-            </svg>
-          </button>
         </div>
-        {createFailed && (
-          <p className="hm-error" role="alert">
-            {strings.saveError}
-          </p>
-        )}
+        {createFailed && <InlineError>{strings.saveError}</InlineError>}
       </div>
     );
   }
@@ -160,11 +101,15 @@ export function FolderPicker({
   if (folders.length === 0) {
     return (
       <div className="hm-folder-picker">
-        <div className="hm-folder-picker__row hm-folder-picker__empty">
-          <FolderGlyph className="hm-folder-picker__glyph" />
+        <div className="hm-folder-picker__row">
+          <FolderIcon className="hm-folder-picker__glyph" />
           <span className="hm-folder-picker__empty-text">{strings.composerNoFolders}</span>
-          <button type="button" className="hm-link" onClick={() => setCreating(true)}>
-            + {strings.composerCreateFolder}
+          <button
+            type="button"
+            className="hm-link hm-link--accent"
+            onClick={() => setCreating(true)}
+          >
+            <PlusIcon size={10} /> {strings.composerCreateFolder}
           </button>
         </div>
       </div>
@@ -174,31 +119,28 @@ export function FolderPicker({
   return (
     <div className="hm-folder-picker">
       <div className="hm-folder-picker__row">
-        <FolderGlyph className="hm-folder-picker__glyph" />
-        <select
-          className="hm-folder-picker__select"
-          aria-label={strings.composerFolder}
-          value={value ?? ''}
-          onChange={(e) => {
-            setDefaultsOpen(false);
-            if (e.target.value === NEW_FOLDER_VALUE) {
+        <FolderIcon className="hm-folder-picker__glyph" />
+        <FolderSelect
+          folders={options}
+          value={value}
+          label={strings.composerFolder}
+          noneLabel={strings.noFolderOption}
+          extra={{
+            value: NEW_FOLDER_VALUE,
+            label: strings.composerNewFolderOption,
+            onSelect: () => {
+              setDefaultsOpen(false);
               setCreating(true);
-              return;
-            }
-            onChange(e.target.value || null);
+            },
           }}
-        >
-          <option value="">{strings.noFolderOption}</option>
-          {options.map(({ folder, depth }) => (
-            <option key={folder.id} value={folder.id}>
-              {'   '.repeat(depth) + folder.name}
-            </option>
-          ))}
-          <option value={NEW_FOLDER_VALUE}>{strings.composerNewFolderOption}</option>
-        </select>
+          onChange={(next) => {
+            setDefaultsOpen(false);
+            onChange(next);
+          }}
+        />
         <button
           type="button"
-          className="hm-folder-picker__icon-btn hm-folder-picker__star"
+          className="hm-icon-btn hm-folder-picker__star"
           aria-label={strings.defaultFolderMenu}
           aria-expanded={defaultsOpen}
           aria-controls={defaultsOpen ? defaultsId : undefined}

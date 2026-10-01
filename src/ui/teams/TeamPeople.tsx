@@ -1,11 +1,14 @@
 import type { TeamMember, TeamResponse } from '@hamesh/teams-contract';
 import type { Lang } from '../i18n';
-import type { TeamsStrings } from './strings';
-import type { TeamsPage } from './useTeams';
+import { Breadcrumb } from '../kit/Breadcrumb';
+import { PageHeader } from '../kit/Page';
+import { Section } from '../kit/Section';
+import { inviteRights } from './permissions';
 import type { TeamsRoute } from './route';
-import { TeamsBreadcrumb } from './TeamsBreadcrumb';
-import { TeamMembers } from './TeamMembers';
+import type { TeamsStrings } from './strings';
 import { TeamInvitations } from './TeamInvitations';
+import { TeamMembers } from './TeamMembers';
+import type { TeamsPage } from './useTeams';
 
 interface TeamPeopleProps {
   strings: TeamsStrings;
@@ -40,20 +43,21 @@ export function TeamPeople({
   const teamId = team.team.id;
   return (
     <>
-      <TeamsBreadcrumb
-        strings={strings}
+      <Breadcrumb
+        label={strings.breadcrumb}
         items={[
           { label: strings.teams, onClick: () => onRoute({ page: 'overview', teamId: null }) },
           { label: team.team.name, onClick: () => onRoute({ page: 'overview', teamId }) },
           { label: strings.whoIsInIt },
         ]}
       />
-      <header className="hm-notes-page__header hm-notes-page__header--sub">
-        <h1 className="hm-notes-page__title">{strings.whoIsIn(team.team.name)}</h1>
-        {members && <span className="hm-section__meta">{strings.seatsUsed(members.length)}</span>}
-      </header>
+      <PageHeader
+        level="sub"
+        title={strings.whoIsIn(team.team.name)}
+        meta={members && strings.seatsUsed(members.length)}
+      />
 
-      <section className="hm-section hm-section--flush" aria-label={strings.members}>
+      <Section flush label={strings.members}>
         <TeamMembers
           strings={strings}
           lang={lang}
@@ -63,14 +67,11 @@ export function TeamPeople({
           members={members}
           onChanged={onChanged}
         />
-      </section>
+      </Section>
 
-      <section className="hm-section" aria-labelledby="hm-team-invitations-title">
-        <h2 className="hm-section__title" id="hm-team-invitations-title">
-          {strings.invitations}
-        </h2>
+      <Section title={inviteRights(team).any ? strings.inviteSomeone : strings.invitations}>
         <TeamInvitations strings={strings} lang={lang} page={page} team={team} />
-      </section>
+      </Section>
     </>
   );
 }

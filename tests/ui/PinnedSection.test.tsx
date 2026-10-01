@@ -14,7 +14,7 @@ vi.mock('wxt/browser', () => ({
 }));
 
 async function importPinnedSection() {
-  const mod = await import('@/ui/PinnedSection');
+  const mod = await import('@/ui/library/PinnedSection');
   return mod.PinnedSection;
 }
 
@@ -56,21 +56,10 @@ function makeTextNote(overrides: Partial<Note> = {}): Note {
   });
 }
 
-/** Renders exactly what the Notes Library does: the domain projection fed
- *  into the section, alongside the full notes it was derived from. */
+/** Renders exactly what the Notes Library does. */
 async function renderPinned(notes: Note[]) {
   const PinnedSection = await importPinnedSection();
-  return render(
-    <PinnedSection
-      notes={getPinnedNotes(notes)}
-      allNotes={notes}
-      strings={strings}
-      lang="en"
-      onTogglePin={() => {}}
-      onEditNote={() => {}}
-      onDeleteNote={() => {}}
-    />,
-  );
+  return render(<PinnedSection notes={getPinnedNotes(notes)} strings={strings} lang="en" />);
 }
 
 describe('PinnedSection', () => {
@@ -102,15 +91,24 @@ describe('PinnedSection', () => {
 
   it('shows the attached text above the note itself, as every other view does', async () => {
     await renderPinned([makeTextNote()]);
-    const item = document.querySelector('.hm-pinned__item')!;
+    const item = document.querySelector('.hm-pinned .hm-note-row')!;
     const quote = item.querySelector('.hm-attached__quote')!;
-    const preview = item.querySelector('.hm-pinned__preview')!;
+    const preview = item.querySelector('.hm-note-row__preview')!;
     expect(quote.compareDocumentPosition(preview) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('keeps every pinned note distinct when contextual and ordinary notes are mixed', async () => {
     await renderPinned([makeNote(), makeTextNote()]);
-    expect(document.querySelectorAll('.hm-pinned__item')).toHaveLength(2);
+    expect(document.querySelectorAll('.hm-pinned .hm-note-row')).toHaveLength(2);
     expect(document.querySelectorAll('.hm-attached')).toHaveLength(1);
+  });
+
+  it('shows each pinned note as the same row every list uses — so a long one can open out', async () => {
+    // Regression: Pinned was the one list whose preview could not be expanded,
+    // so a long pinned note was cut to two lines for good.
+    await renderPinned([makeNote()]);
+    const preview = document.querySelector('.hm-pinned .hm-note-row__preview')!;
+    expect(preview.getAttribute('data-expanded')).toBe('false');
+    expect(document.querySelector('.hm-pinned .hm-note-row__domain')).not.toBeNull();
   });
 });

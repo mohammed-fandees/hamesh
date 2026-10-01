@@ -8,6 +8,7 @@ import {
   validateNoteContent,
 } from '@/domain/note';
 import { DEFAULT_WORKSPACE_ID } from '@/domain/workspace';
+import { createStoredList, type LocalKey } from './stored-list';
 
 const STORAGE_KEY_PREFIX = 'hamesh:notes:';
 
@@ -46,48 +47,31 @@ export interface NotesRepository {
   saveAll(notes: Note[]): Promise<void>;
 }
 
-export function createNotesRepository(): NotesRepository {
-  return {
-    async getForPage(pageKey: string): Promise<Note[]> {
-      const key = storageKey(pageKey);
-      const data = await storage.getItem<Note[]>(`local:${key}`);
-      return parseStoredNotes(data);
-    },
+const notesAt = (pageKey: string): LocalKey => `local:${storageKey(pageKey)}`;
 
-    async create(input: CreateNoteInput): Promise<Note> {
+export function createNotesRepository(): NotesRepository {
+  const list = createStoredList<Note>(parseStoredNotes);
+
+  return {
+    getForPage: (pageKey) => list.read(notesAt(pageKey)),
+
+    async create(input) {
       const note = createNote(input);
-      const existing = await this.getForPage(input.pageKey);
-      existing.push(note);
-      const key = storageKey(input.pageKey);
-      await storage.setItem(`local:${key}`, existing);
+      await list.append(notesAt(input.pageKey), note);
       return note;
     },
 
-    async update(noteId: string, pageKey: string, input: UpdateNoteInput): Promise<Note | null> {
-      const validationError = validateNoteContent(input.content);
-      if (validationError) return null;
-
-      const existing = await this.getForPage(pageKey);
-      const index = existing.findIndex((n) => n.id === noteId);
-      if (index === -1) return null;
-
-      const updated = updateNoteContent(existing[index], input);
-      existing[index] = updated;
-      const key = storageKey(pageKey);
-      await storage.setItem(`local:${key}`, existing);
-      return updated;
+    async update(noteId, pageKey, input) {
+      // Every content write is validated here, whichever editor it came from.
+      if (validateNoteContent(input.content)) return null;
+      return list.update(notesAt(pageKey), noteId, (note) => updateNoteContent(note, input));
     },
 
-    async delete(noteId: string, pageKey: string): Promise<boolean> {
-      const existing = await this.getForPage(pageKey);
-      const filtered = existing.filter((n) => n.id !== noteId);
-      if (filtered.length === existing.length) return false;
-      const key = storageKey(pageKey);
-      await storage.setItem(`local:${key}`, filtered);
-      return true;
+    async delete(noteId, pageKey) {
+      return (await list.removeWhere(notesAt(pageKey), (n) => n.id === noteId)) > 0;
     },
 
-    async getAll(): Promise<Note[]> {
+    async getAll() {
       const snapshot = await storage.snapshot('local');
       const allNotes: Note[] = [];
       for (const [key, value] of Object.entries(snapshot)) {
@@ -98,19 +82,13 @@ export function createNotesRepository(): NotesRepository {
       return allNotes;
     },
 
-    async setPinned(noteId: string, pageKey: string, pinned: boolean): Promise<Note | null> {
-      const existing = await this.getForPage(pageKey);
-      const index = existing.findIndex((n) => n.id === noteId);
-      if (index === -1) return null;
+    setPinned: (noteId, pageKey, pinned) =>
+      list.update(notesAt(pageKey), noteId, (note) => setNotePinned(note, pinned)),
 
-      const updated = setNotePinned(existing[index], pinned);
-      existing[index] = updated;
-      const key = storageKey(pageKey);
-      await storage.setItem(`local:${key}`, existing);
-      return updated;
-    },
+    setFolder: (noteId, pageKey, folderId) =>
+      list.update(notesAt(pageKey), noteId, (note) => setNoteFolder(note, folderId)),
 
-    async saveAll(notes: Note[]): Promise<void> {
+    async saveAll(notes) {
       const byPage = groupNotesByPageKey(notes);
       // One write per page bucket, matching how notes are stored. Pages
       // absent from `notes` are deliberately left untouched — `saveAll` is
@@ -118,25 +96,9 @@ export function createNotesRepository(): NotesRepository {
       // cleared unmentioned pages would turn a restore into a wipe.
       await Promise.all(
         [...byPage.entries()].map(([pageKey, pageNotes]) =>
-          storage.setItem(`local:${storageKey(pageKey)}`, pageNotes),
+          list.write(notesAt(pageKey), pageNotes),
         ),
       );
-    },
-
-    async setFolder(
-      noteId: string,
-      pageKey: string,
-      folderId: string | undefined,
-    ): Promise<Note | null> {
-      const existing = await this.getForPage(pageKey);
-      const index = existing.findIndex((n) => n.id === noteId);
-      if (index === -1) return null;
-
-      const updated = setNoteFolder(existing[index], folderId);
-      existing[index] = updated;
-      const key = storageKey(pageKey);
-      await storage.setItem(`local:${key}`, existing);
-      return updated;
     },
   };
 }

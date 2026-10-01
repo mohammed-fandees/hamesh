@@ -1,4 +1,4 @@
-import type { Folder } from './folder';
+import { parseFolderRecord, type Folder } from './folder';
 import type { Note } from './note';
 
 /**
@@ -64,16 +64,7 @@ function isImportableNote(value: unknown): value is Note {
 }
 
 function isImportableFolder(value: unknown): value is Folder {
-  if (!value || typeof value !== 'object') return false;
-  const folder = value as Partial<Folder>;
-  return (
-    typeof folder.id === 'string' &&
-    folder.id.length > 0 &&
-    typeof folder.name === 'string' &&
-    (folder.parentId === null || typeof folder.parentId === 'string') &&
-    typeof folder.createdAt === 'string' &&
-    typeof folder.updatedAt === 'string'
-  );
+  return parseFolderRecord(value, 'string') !== null;
 }
 
 export interface BuildBackupInput {

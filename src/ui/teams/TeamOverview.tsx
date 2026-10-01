@@ -1,15 +1,23 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { TeamMember, TeamResponse } from '@hamesh/teams-contract';
+import { FOLDER_NAME_MAX } from '@/domain/folder';
+import { countInFolder, flattenFolderTree } from '@/domain/folder-grouping';
+import type { NoteOwner } from '@/domain/note-owner';
 import type { TeamCacheSnapshot } from '@/teams/messages';
+import { FolderMenu } from '../FolderMenu';
+import { relativeTime } from '../format';
 import type { Lang } from '../i18n';
-import { relativeTime } from '../i18n';
-import { MarginMark } from '../MarginMark';
+import { Avatar } from '../kit/Avatar';
+import { EmptyState } from '../kit/EmptyState';
+import { InlineError } from '../kit/Feedback';
+import { NameField } from '../kit/NameField';
+import { Section } from '../kit/Section';
+import { Skeleton } from '../kit/Skeleton';
+import { FolderIcon, PlusIcon } from '../kit/icons';
+import { inviteRights, teamCan } from './permissions';
+import type { TeamsRoute } from './route';
 import type { TeamsStrings } from './strings';
 import type { TeamsPage } from './useTeams';
-import type { NoteOwner } from './NoteFilter';
-import type { TeamsRoute } from './route';
-import { InlineConfirm } from './InlineConfirm';
-import { countInFolder, flattenFolders } from './folders';
 
 interface TeamOverviewProps {
   strings: TeamsStrings;
@@ -24,9 +32,6 @@ interface TeamOverviewProps {
   onRoute: (route: TeamsRoute) => void;
 }
 
-/** What is waiting to be confirmed, and on which folder. */
-type Asking = { kind: 'delete'; id: string };
-
 /**
  * A team at a glance: how its notes are divided, and who is in it.
  *
@@ -36,7 +41,7 @@ type Asking = { kind: 'delete'; id: string };
  * read them. A second list here was a second thing to keep in step.
  *
  * Folders are tiles, because a folder is a place to go, not a row to read; what
- * can be done to one (rename, delete) waits until the tile is reached for.
+ * can be done to one is in its "⋮" — the same menu a folder in the Library has.
  */
 export function TeamOverview({
   strings,
@@ -49,12 +54,8 @@ export function TeamOverview({
   onRoute,
 }: TeamOverviewProps) {
   const teamId = team.team.id;
-  const can = (action: string) => team.capabilities.includes(action as never);
   const [snapshot, setSnapshot] = useState<TeamCacheSnapshot | null>(null);
   const [adding, setAdding] = useState(false);
-  const [newFolder, setNewFolder] = useState('');
-  const [renaming, setRenaming] = useState<{ id: string; name: string } | null>(null);
-  const [asking, setAsking] = useState<Asking | null>(null);
 
   // Switching teams starts the tiles over. Adjusted during render rather than
   // in an effect: there is no async work in it, and an effect would cascade a
@@ -64,8 +65,6 @@ export function TeamOverview({
     setShownTeam(teamId);
     setSnapshot(null);
     setAdding(false);
-    setRenaming(null);
-    setAsking(null);
   }
 
   /** Pulls first, then reads: after a change, what is shown is what the server has. */
@@ -81,7 +80,7 @@ export function TeamOverview({
   // effect's synchronous path cascades a render (see `useTeams`).
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    void (async () => {
       const next = await page.cache(teamId, 'sync', 'notes.reload');
       if (!cancelled && next) setSnapshot(next);
     })();
@@ -91,177 +90,109 @@ export function TeamOverview({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teamId]);
 
-  async function createFolder(e: React.FormEvent) {
-    e.preventDefault();
-    const name = newFolder.trim();
-    if (!name) return;
+  async function createFolder(name: string) {
     const created = await page.run('folders.create', { teamId, name }, 'folders.create');
     if (!created) return;
-    setNewFolder('');
     setAdding(false);
     await reload();
   }
 
-  async function renameFolder(e: React.FormEvent) {
-    e.preventDefault();
-    if (!renaming) return;
-    const done = await page.run(
-      'folders.rename',
-      { teamId, folderId: renaming.id, name: renaming.name },
-      `folder:${renaming.id}`,
-    );
-    setRenaming(null);
-    if (done) await reload();
+  async function renameFolder(folderId: string, name: string) {
+    if (await page.run('folders.rename', { teamId, folderId, name }, `folder:${folderId}`)) {
+      await reload();
+    }
   }
 
-  async function deleteFolder(id: string) {
-    const done = await page.run('folders.delete', { teamId, folderId: id }, `folder:${id}`);
-    setAsking(null);
+  async function deleteFolder(folderId: string) {
+    const done = await page.run('folders.delete', { teamId, folderId }, `folder:${folderId}`);
     if (done !== null) await reload();
   }
 
-  const folders = flattenFolders(snapshot?.folders ?? []);
+  const folders = flattenFolderTree(snapshot?.folders ?? []);
   const notes = snapshot?.notes ?? [];
+  const knownIds = new Set(folders.map((f) => f.folder.id));
+  const filedIn = notes.map((n) => n.folderId);
   const nothingYet = snapshot !== null && notes.length === 0 && folders.length === 0;
-  const canInvite = can('invites.create_member') || can('invites.create_admin');
+  const manage = teamCan(team, 'folders.manage');
 
   return (
     <>
-      <section className="hm-section" aria-labelledby="hm-team-notes-title">
-        <header className="hm-section__head">
-          <h2 className="hm-section__title" id="hm-team-notes-title">
-            {strings.sharedNotes}
-          </h2>
-          {snapshot && (
-            <span className="hm-section__meta">
+      <Section
+        title={strings.sharedNotes}
+        meta={
+          snapshot && (
+            <>
               {strings.notesShared(notes.length)} ·{' '}
               {snapshot.syncedAt
-                ? strings.syncedAgo(relativeTime(new Date(snapshot.syncedAt).toISOString(), lang))
+                ? strings.syncedAgo(relativeTime(snapshot.syncedAt, lang))
                 : strings.neverSynced}
-            </span>
-          )}
-          <span className="hm-section__spacer" />
-          <button
-            type="button"
-            className="hm-link"
-            disabled={page.working('notes.reload')}
-            onClick={() => void reload()}
-            aria-busy={page.working('notes.reload')}
-          >
-            {strings.refreshNotes}
-          </button>
-          <button
-            type="button"
-            className="hm-link hm-link--accent"
-            onClick={() => onOpenLibrary({ teamId })}
-          >
-            {strings.openInLibrary}
-          </button>
-        </header>
-
-        {!snapshot ? (
-          <div className="hm-skeleton hm-skeleton--tiles" aria-hidden="true">
-            <div className="hm-skeleton__row" />
-            <div className="hm-skeleton__row" />
-            <div className="hm-skeleton__row" />
-          </div>
-        ) : nothingYet ? (
-          <div className="hm-empty hm-empty--inline hm-fade-in">
-            <MarginMark size={28} strokeWidth={3} />
-            <p className="hm-empty__title">{strings.emptyNotesTitle(team.team.name)}</p>
-            <p className="hm-empty__body">{strings.emptyNotesBody(team.team.name)}</p>
+            </>
+          )
+        }
+        actions={
+          <>
             <button
               type="button"
-              className="hm-btn hm-btn-primary hm-empty__action"
+              className="hm-link"
+              disabled={page.working('notes.reload')}
+              onClick={() => void reload()}
+              aria-busy={page.working('notes.reload')}
+            >
+              {strings.refreshNotes}
+            </button>
+            <button
+              type="button"
+              className="hm-link hm-link--accent"
               onClick={() => onOpenLibrary({ teamId })}
             >
-              {strings.goToLibrary}
+              {strings.openInLibrary}
             </button>
-          </div>
+          </>
+        }
+      >
+        {!snapshot ? (
+          <Skeleton shape="tiles" />
+        ) : nothingYet ? (
+          <EmptyState
+            size="inline"
+            title={strings.emptyNotesTitle(team.team.name)}
+            body={strings.emptyNotesBody(team.team.name)}
+            action={{ label: strings.goToLibrary, onClick: () => onOpenLibrary({ teamId }) }}
+          />
         ) : (
           <ul className="hm-tiles" aria-label={strings.teamFolders}>
             {folders.map(({ folder, parent }) => {
               const key = `folder:${folder.id}`;
               const failed = page.failed(key);
-              const count = countInFolder(notes, folders, folder.id);
               return (
                 <li key={folder.id} className="hm-tile" data-busy={page.working(key) || undefined}>
-                  {renaming?.id === folder.id ? (
-                    <form className="hm-tile__form" onSubmit={renameFolder}>
-                      <input
-                        type="text"
-                        required
-                        autoFocus
-                        className="hm-input"
-                        aria-label={strings.renameFolder}
-                        value={renaming.name}
-                        onChange={(e) => setRenaming({ id: folder.id, name: e.target.value })}
-                      />
-                      <span className="hm-tile__form-actions">
-                        <button type="submit" className="hm-btn hm-btn-ghost">
-                          {strings.rename}
-                        </button>
-                        <button
-                          type="button"
-                          className="hm-btn hm-btn-ghost"
-                          onClick={() => setRenaming(null)}
-                        >
-                          {strings.cancel}
-                        </button>
-                      </span>
-                    </form>
-                  ) : asking?.kind === 'delete' && asking.id === folder.id ? (
-                    <InlineConfirm
+                  <button
+                    type="button"
+                    className="hm-tile__open"
+                    onClick={() =>
+                      onOpenLibrary({ teamId, folder: { id: folder.id, name: folder.name } })
+                    }
+                  >
+                    <span className="hm-tile__name">
+                      <FolderIcon size={14} className="hm-tile__glyph" />
+                      <bdi>{folder.name}</bdi>
+                    </span>
+                    <span className="hm-tile__count">
+                      {strings.notesShared(countInFolder(filedIn, knownIds, folder.id))}
+                      {parent && <> · {strings.folderIn(parent.name)}</>}
+                    </span>
+                  </button>
+                  {manage && (
+                    <FolderMenu
+                      name={folder.name}
                       strings={strings}
-                      question={strings.deleteFolderConfirm(folder.name)}
-                      confirmLabel={strings.deleteFolder}
+                      deleteQuestion={strings.deleteTeamFolderConfirm(folder.name)}
                       working={page.working(key)}
-                      onConfirm={() => void deleteFolder(folder.id)}
-                      onCancel={() => setAsking(null)}
+                      onRename={(name) => renameFolder(folder.id, name)}
+                      onDelete={() => deleteFolder(folder.id)}
                     />
-                  ) : (
-                    <>
-                      <button
-                        type="button"
-                        className="hm-tile__open"
-                        onClick={() =>
-                          onOpenLibrary({ teamId, folder: { id: folder.id, name: folder.name } })
-                        }
-                      >
-                        <span className="hm-tile__name">
-                          <FolderGlyph />
-                          <bdi>{folder.name}</bdi>
-                        </span>
-                        <span className="hm-tile__count">
-                          {strings.notesShared(count)}
-                          {parent && <> · {strings.folderIn(parent.name)}</>}
-                        </span>
-                      </button>
-                      {can('folders.manage') && (
-                        <span className="hm-tile__actions">
-                          <button
-                            type="button"
-                            className="hm-link"
-                            onClick={() => setRenaming({ id: folder.id, name: folder.name })}
-                          >
-                            {strings.renameFolder}
-                          </button>
-                          <button
-                            type="button"
-                            className="hm-link hm-link--danger"
-                            onClick={() => setAsking({ kind: 'delete', id: folder.id })}
-                          >
-                            {strings.deleteFolder}
-                          </button>
-                        </span>
-                      )}
-                    </>
                   )}
-                  {failed && (
-                    <p className="hm-field-error" role="alert">
-                      {strings.error(failed)}
-                    </p>
-                  )}
+                  {failed && <InlineError>{strings.error(failed)}</InlineError>}
                 </li>
               );
             })}
@@ -272,52 +203,38 @@ export function TeamOverview({
                   type="button"
                   className="hm-tile__open"
                   onClick={() =>
-                    onOpenLibrary({ teamId, folder: { id: null, name: strings.unfiled } })
+                    onOpenLibrary({ teamId, folder: { id: null, name: strings.unfiledSection } })
                   }
                 >
-                  <span className="hm-tile__name hm-tile__name--quiet">{strings.unfiled}</span>
+                  <span className="hm-tile__name hm-tile__name--quiet">
+                    {strings.unfiledSection}
+                  </span>
                   <span className="hm-tile__count">
-                    {strings.notesShared(countInFolder(notes, folders, null))}
+                    {strings.notesShared(countInFolder(filedIn, knownIds, null))}
                   </span>
                 </button>
               </li>
             )}
 
-            {can('folders.manage') && (
+            {manage && (
               <li className="hm-tile hm-tile--add">
                 {adding ? (
-                  <form className="hm-tile__form" onSubmit={createFolder}>
-                    <input
-                      type="text"
-                      required
-                      autoFocus
-                      className="hm-input"
+                  <div className="hm-tile__form">
+                    <NameField
+                      label={strings.newFolder}
                       placeholder={strings.folderNamePlaceholder}
-                      aria-label={strings.newTeamFolder}
-                      value={newFolder}
-                      onChange={(e) => setNewFolder(e.target.value)}
+                      maxLength={FOLDER_NAME_MAX}
+                      submitLabel={strings.create}
+                      cancelLabel={strings.cancel}
+                      busy={page.working('folders.create')}
+                      onCancel={() => setAdding(false)}
+                      onSubmit={(name) => void createFolder(name)}
                     />
-                    <span className="hm-tile__form-actions">
-                      <button
-                        type="submit"
-                        className="hm-btn hm-btn-primary"
-                        disabled={page.working('folders.create')}
-                        aria-busy={page.working('folders.create')}
-                      >
-                        {strings.create}
-                      </button>
-                      <button
-                        type="button"
-                        className="hm-btn hm-btn-ghost"
-                        onClick={() => setAdding(false)}
-                      >
-                        {strings.cancel}
-                      </button>
-                    </span>
-                  </form>
+                  </div>
                 ) : (
                   <button type="button" className="hm-tile__add" onClick={() => setAdding(true)}>
-                    + {strings.newTeamFolder}
+                    <PlusIcon size={11} />
+                    {strings.newFolder}
                   </button>
                 )}
               </li>
@@ -325,18 +242,13 @@ export function TeamOverview({
           </ul>
         )}
         {page.failed('folders.create') && (
-          <p className="hm-field-error" role="alert">
-            {strings.error(page.failed('folders.create')!)}
-          </p>
+          <InlineError>{strings.error(page.failed('folders.create')!)}</InlineError>
         )}
-      </section>
+      </Section>
 
-      <section className="hm-section" aria-labelledby="hm-team-people-title">
-        <header className="hm-section__head">
-          <h2 className="hm-section__title" id="hm-team-people-title">
-            {strings.whoIsIn(team.team.name)}
-          </h2>
-          <span className="hm-section__spacer" />
+      <Section
+        title={strings.whoIsIn(team.team.name)}
+        actions={
           <button
             type="button"
             className="hm-link hm-link--accent"
@@ -344,18 +256,15 @@ export function TeamOverview({
           >
             {strings.manage}
           </button>
-        </header>
+        }
+      >
         {!members ? (
-          <div className="hm-skeleton hm-skeleton--chips" aria-hidden="true">
-            <div className="hm-skeleton__row" />
-          </div>
+          <Skeleton rows={1} shape="chips" />
         ) : (
           <ul className="hm-chips">
             {members.map((member) => (
               <li key={member.userId} className="hm-chip">
-                <span className="hm-avatar" aria-hidden="true">
-                  {member.displayName.slice(0, 1).toUpperCase()}
-                </span>
+                <Avatar name={member.displayName} />
                 <span className="hm-chip__name">
                   <bdi>{member.displayName}</bdi>
                   {member.userId === myUserId ? (
@@ -366,38 +275,21 @@ export function TeamOverview({
                 </span>
               </li>
             ))}
-            {canInvite && (
+            {inviteRights(team).any && (
               <li>
                 <button
                   type="button"
-                  className="hm-chip hm-chip--add"
+                  className="hm-add"
                   onClick={() => onRoute({ page: 'members', teamId })}
                 >
-                  + {strings.inviteSomeone}
+                  <PlusIcon size={11} />
+                  {strings.inviteSomeone}
                 </button>
               </li>
             )}
           </ul>
         )}
-      </section>
+      </Section>
     </>
-  );
-}
-
-/** A folder outline, the same one the Library's folder view draws. */
-function FolderGlyph() {
-  return (
-    <svg
-      className="hm-tile__glyph"
-      width="14"
-      height="14"
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.4"
-      aria-hidden="true"
-    >
-      <path d="M1.8 4.2c0-.7.6-1.2 1.2-1.2h2.6l1.3 1.6h5.1c.7 0 1.2.5 1.2 1.2v6c0 .7-.5 1.2-1.2 1.2H3c-.6 0-1.2-.5-1.2-1.2z" />
-    </svg>
   );
 }

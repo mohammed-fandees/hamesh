@@ -7,6 +7,11 @@ export interface RailRect {
   width: number;
 }
 
+/** A rail, and how far down the viewport it runs. */
+export interface RailPlacement extends RailRect {
+  top: number;
+}
+
 /** Pixel x-offset along `railRect` for a note at `timestamp` seconds into a
  *  video of `duration` seconds. Clamped to the rail's bounds — a timestamp
  *  beyond a (possibly since-changed) duration still places a marker at the

@@ -61,6 +61,27 @@ export function getElementPosition(element: Element): {
   };
 }
 
-export function scrollToElement(element: Element): void {
-  element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+/**
+ * How long a restored note's "here it is" flash lasts, on an element (the
+ * `.hm-restore-highlight` ring) or on text (its highlight). The one number:
+ * the ring's CSS animation reads it from `--hm-flash`, set from here, and the
+ * flash is cleared by the same value — so the two can never drift apart.
+ */
+export const RESTORE_FLASH_MS = 1400;
+
+/** Brings an element to the middle of the view — smoothly, unless the reader
+ *  asked for less motion. The one way Hamesh scrolls a web page. */
+export function revealElement(element: Element): void {
+  const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+  element.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
+}
+
+/** The element under a point on the page, or `null` — never a throw, which
+ *  some pages' own overrides of `elementFromPoint` have done. */
+export function elementAtPoint(x: number, y: number): Element | null {
+  try {
+    return document.elementFromPoint(x, y);
+  } catch {
+    return null;
+  }
 }

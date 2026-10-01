@@ -1,4 +1,6 @@
-import { MarginMark } from './MarginMark';
+import { Page, PageHeader } from './kit/Page';
+import { Panel } from './kit/Section';
+import { stagger } from './kit/motion';
 import {
   RELEASE_NOTES,
   compareVersions,
@@ -55,7 +57,7 @@ export function WhatsNewView({
         <li
           key={release.version}
           className="hm-whats-new__release hm-fade-in"
-          style={{ animationDelay: `${Math.min((offset + i) * 40, 240)}ms` }}
+          style={stagger(offset + i)}
         >
           <ReleaseEntry
             release={release}
@@ -70,26 +72,17 @@ export function WhatsNewView({
   );
 
   return (
-    <div className="hm-notes-main">
-      <div className="hm-notes-page__inner">
-        <header className="hm-notes-page__header">
-          <MarginMark size={20} strokeWidth={3.5} style={{ color: 'var(--hm-accent)' }} />
-          <h1 className="hm-notes-page__title">{strings.whatsNew}</h1>
-        </header>
-        <p className="hm-whats-new__intro">{strings.whatsNewIntro}</p>
+    <Page>
+      <PageHeader title={strings.whatsNew} />
+      <p className="hm-whats-new__intro">{strings.whatsNewIntro}</p>
 
-        {renderList(recent, 0)}
-        {earlier.length > 0 && (
-          <details className="hm-panel hm-panel--releases">
-            <summary className="hm-panel__summary">
-              <span className="hm-panel__title">{strings.whatsNewEarlier}</span>
-              <span className="hm-panel__hint">{strings.whatsNewEarlierHint(earlier.length)}</span>
-            </summary>
-            <div className="hm-panel__body">{renderList(earlier, recent.length)}</div>
-          </details>
-        )}
-      </div>
-    </div>
+      {renderList(recent, 0)}
+      {earlier.length > 0 && (
+        <Panel title={strings.whatsNewEarlier} hint={strings.whatsNewEarlierHint(earlier.length)}>
+          {renderList(earlier, recent.length)}
+        </Panel>
+      )}
+    </Page>
   );
 }
 
@@ -125,7 +118,7 @@ function ReleaseEntry({
       <h2 className="hm-whats-new__title">{localizeReleaseNote(release.title, lang)}</h2>
       <ul className="hm-whats-new__items">
         {release.items.map((item, i) => (
-          <li key={i} className="hm-whats-new__item">
+          <li key={i} className="hm-whats-new__item hm-serif">
             {localizeReleaseNote(item, lang)}
           </li>
         ))}

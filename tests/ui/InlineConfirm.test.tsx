@@ -2,17 +2,17 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
-import { InlineConfirm } from '@/ui/teams/InlineConfirm';
-import { getTeamsStrings } from '@/ui/teams/strings';
+import { InlineConfirm } from '@/ui/kit/InlineConfirm';
+import { getStrings } from '@/ui/i18n';
 
-const strings = getTeamsStrings('en');
+const strings = getStrings('en');
 
 function view(overrides: { working?: boolean } = {}) {
   const onConfirm = vi.fn();
   const onCancel = vi.fn();
   render(
     <InlineConfirm
-      strings={strings}
+      cancelLabel={strings.keepIt}
       question="Delete this for everyone in Alpha?"
       confirmLabel="Delete"
       working={overrides.working}

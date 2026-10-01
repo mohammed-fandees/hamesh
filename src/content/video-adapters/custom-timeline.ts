@@ -1,4 +1,5 @@
 import type { VideoPlayerAdapter } from './types';
+import { pickActiveVideo, sourceOrOrdinalId } from './shared';
 
 /** Opt-in convention: a custom HTML5 player marks its own chrome so Hamesh can
  *  treat it like a native-timeline player instead of falling back to the rail
@@ -31,30 +32,18 @@ function playerFor(video: HTMLVideoElement): Element | null {
   return video.closest(PLAYER_SELECTOR) ?? getOptedInPlayer();
 }
 
-/** Prefers a currently-playing video among opted-in players; falls back to the
- *  first in document order. Mirrors `html5-generic`'s heuristic, scoped to
- *  opted-in players. */
-function pickActiveVideo(): HTMLVideoElement | null {
-  const videos = Array.from(
-    document.querySelectorAll<HTMLVideoElement>(`${PLAYER_SELECTOR} video`),
+/** The active video among opted-in players — the shared rule, scoped to them. */
+function activeVideo(): HTMLVideoElement | null {
+  return pickActiveVideo(
+    Array.from(document.querySelectorAll<HTMLVideoElement>(`${PLAYER_SELECTOR} video`)),
   );
-  if (videos.length === 0) return null;
-  const playing = videos.find((v) => !v.paused && !v.ended && v.readyState > 2);
-  return playing ?? videos[0];
 }
 
 /** Stable id for a video in a custom player: an explicit
  *  `data-hamesh-video-id` wins (a page that manages its own sources can pin
- *  identity across reloads); otherwise the resolved source, then the ordinal
- *  position among all `<video>` elements — same fallback ladder as
- *  `html5-generic`. */
+ *  identity across reloads); otherwise the shared source-then-ordinal rule. */
 function deriveVideoId(video: HTMLVideoElement): string {
-  const explicit = video.getAttribute('data-hamesh-video-id');
-  if (explicit) return explicit;
-  const src = video.currentSrc || video.getAttribute('src');
-  if (src) return src;
-  const index = Array.from(document.querySelectorAll('video')).indexOf(video);
-  return `video-${index === -1 ? 0 : index}`;
+  return video.getAttribute('data-hamesh-video-id') || sourceOrOrdinalId(video);
 }
 
 export const customTimelineAdapter: VideoPlayerAdapter = {
@@ -65,7 +54,7 @@ export const customTimelineAdapter: VideoPlayerAdapter = {
   },
 
   getActiveVideo(): HTMLVideoElement | null {
-    return pickActiveVideo();
+    return activeVideo();
   },
 
   getPlayerContainer(video: HTMLVideoElement): Element | null {

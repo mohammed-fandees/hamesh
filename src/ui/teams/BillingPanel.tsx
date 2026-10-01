@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { MeResponse, PaymentView, PlansResponse } from '@hamesh/teams-contract';
 import type { Lang } from '../i18n';
+import { InlineError, StatusLine } from '../kit/Feedback';
 import type { TeamsStrings } from './strings';
 import type { TeamsPage } from './useTeams';
-import { formatDate, formatMoney } from './format';
+import { formatDate, formatMoney } from '../format';
 
 interface BillingPanelProps {
   strings: TeamsStrings;
@@ -99,7 +100,7 @@ export function BillingPanel({ strings, lang, page, me }: BillingPanelProps) {
 
   return (
     <>
-      <p className="hm-settings__intro">{planLine()}</p>
+      <p className="hm-section__intro">{planLine()}</p>
 
       {plan && (
         <form className="hm-billing" onSubmit={submit}>
@@ -112,7 +113,7 @@ export function BillingPanel({ strings, lang, page, me }: BillingPanelProps) {
 
           <div className="hm-team-invite">
             <select
-              className="hm-input hm-input--select"
+              className="hm-input"
               aria-label={strings.payWith}
               value={method}
               onChange={(e) => setMethod(e.target.value)}
@@ -153,21 +154,17 @@ export function BillingPanel({ strings, lang, page, me }: BillingPanelProps) {
               {strings.submitPayment}
             </button>
           </div>
-          <p className="hm-setting-row__hint">{strings.referenceHint}</p>
+          <p className="hm-supporting">{strings.referenceHint}</p>
         </form>
       )}
-
-      {submitted && (
-        <p className="hm-status hm-status--success" role="status">
-          <span className="hm-dot" />
-          {strings.paymentSubmitted}
-        </p>
+      {page.failed('billing.submit') && (
+        <InlineError>{strings.error(page.failed('billing.submit')!)}</InlineError>
       )}
 
-      <h3 className="hm-settings__subheading">{strings.paymentHistory}</h3>
-      {payments && payments.length === 0 && (
-        <p className="hm-settings__intro">{strings.noPayments}</p>
-      )}
+      {submitted && <StatusLine tone="success">{strings.paymentSubmitted}</StatusLine>}
+
+      <h3 className="hm-overline hm-billing__history">{strings.paymentHistory}</h3>
+      {payments && payments.length === 0 && <p className="hm-supporting">{strings.noPayments}</p>}
       {payments && payments.length > 0 && (
         <ul className="hm-team-invitations">
           {payments.map((payment) => (

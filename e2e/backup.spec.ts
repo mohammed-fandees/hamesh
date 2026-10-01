@@ -84,14 +84,24 @@ async function storedNoteIds(page: Page): Promise<string[]> {
   });
 }
 
+/** Backup is a panel that stays shut until it is wanted — a rare thing to
+ *  reach for — so opening it is part of getting to it, after every load. */
+async function openBackup(page: Page): Promise<void> {
+  await page.locator('summary', { hasText: 'Backup' }).click();
+  await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeVisible();
+}
+
 async function openSettings(context: BrowserContext, extensionId: string): Promise<Page> {
   const page = await context.newPage();
   await page.goto(`chrome-extension://${extensionId}/notes.html?view=settings`);
-  // Backup is a panel that stays shut until it is wanted — a rare thing to
-  // reach for — so opening it is part of getting to it.
-  await page.locator('summary', { hasText: 'Backup' }).click();
-  await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeVisible();
+  await openBackup(page);
   return page;
+}
+
+/** Reloads Settings, and opens Backup again — a reload shuts every panel. */
+async function reload(page: Page): Promise<void> {
+  await page.reload();
+  await openBackup(page);
 }
 
 test.describe('Settings — local backup', () => {
@@ -112,7 +122,7 @@ test.describe('Settings — local backup', () => {
       { id: 'note-one', content: 'The first note' },
       { id: 'note-two', content: 'The second note' },
     ]);
-    await page.reload();
+    await reload(page);
 
     // Export — a real download.
     const [download] = await Promise.all([
@@ -136,7 +146,7 @@ test.describe('Settings — local backup', () => {
       ).chrome;
       await chromeApi.storage.local.clear();
     });
-    await page.reload();
+    await reload(page);
     expect(await storedNoteIds(page)).toEqual([]);
 
     // Import the file back.
@@ -158,7 +168,7 @@ test.describe('Settings — local backup', () => {
     const page = await openSettings(context, extensionId);
 
     await seedNotes(page, [{ id: 'in-backup', content: 'Backed up' }]);
-    await page.reload();
+    await reload(page);
     const [download] = await Promise.all([
       page.waitForEvent('download'),
       page.getByRole('button', { name: 'Export', exact: true }).click(),
@@ -171,7 +181,7 @@ test.describe('Settings — local backup', () => {
       { id: 'in-backup', content: 'Backed up' },
       { id: 'written-later', content: 'Written after the backup' },
     ]);
-    await page.reload();
+    await reload(page);
 
     await page.locator('input[type="file"]').setInputFiles(backupPath);
     await expect(page.locator('.hm-status')).toBeVisible();
@@ -187,7 +197,7 @@ test.describe('Settings — local backup', () => {
     const page = await openSettings(context, extensionId);
 
     await seedNotes(page, [{ id: 'only-note', content: 'Only note' }]);
-    await page.reload();
+    await reload(page);
     const [download] = await Promise.all([
       page.waitForEvent('download'),
       page.getByRole('button', { name: 'Export', exact: true }).click(),
@@ -213,7 +223,7 @@ test.describe('Settings — local backup', () => {
     const page = await openSettings(context, extensionId);
 
     await seedNotes(page, [{ id: 'safe', content: 'Still here' }]);
-    await page.reload();
+    await reload(page);
 
     const junkPath = path.join(os.tmpdir(), `not-a-backup-${Date.now()}.json`);
     fs.writeFileSync(junkPath, JSON.stringify({ hello: 'world' }), 'utf8');

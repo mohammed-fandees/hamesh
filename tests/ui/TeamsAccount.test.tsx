@@ -117,7 +117,8 @@ describe('the account’s own half of Teams, in Settings', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: strings.joinCheck }));
 
-    await waitFor(() => expect(screen.getByRole('status')).toBeInTheDocument());
+    // A refusal, said beside the field — and nothing sent.
+    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
     expect(calls.some((c) => c.op === 'invites.preview')).toBe(false);
   });
 

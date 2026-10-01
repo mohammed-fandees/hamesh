@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import type { MentionEntry } from '@hamesh/teams-contract';
 import type { TeamsClient } from '@/teams/client';
+import { relativeTime } from '../format';
 import type { Lang } from '../i18n';
-import { relativeTime } from '../i18n';
-import { MarginMark } from '../MarginMark';
+import { Avatar } from '../kit/Avatar';
+import { EmptyState } from '../kit/EmptyState';
+import { Skeleton } from '../kit/Skeleton';
+import { MentionText } from './MentionText';
 import { getTeamsStrings } from './strings';
 import './styles';
 import { useTeams } from './useTeams';
-import { splitBody } from './mentions';
 
 interface MentionsInboxProps {
   lang: Lang;
@@ -53,7 +55,7 @@ export function MentionsInbox({ lang, client, onRead, onOpenNote }: MentionsInbo
   // this page: state set on an effect's synchronous path cascades a render.
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    void (async () => {
       const result = await page.run('mentions.list', {}, 'mentions.list');
       if (cancelled || !result) return;
       setEntries(result.mentions);
@@ -84,74 +86,53 @@ export function MentionsInbox({ lang, client, onRead, onOpenNote }: MentionsInbo
   const nameOf = (userId: string) => (userId === myUserId ? strings.youMarker : names[userId]);
 
   if (page.status && page.status.state !== 'signed_in') {
-    return (
-      <div className="hm-empty hm-fade-in">
-        <MarginMark size={28} strokeWidth={3} />
-        <p className="hm-empty__title">{strings.signedOutTitle}</p>
-        <p className="hm-empty__body">{strings.signedOutBody}</p>
-      </div>
-    );
+    return <EmptyState title={strings.signedOutTitle} body={strings.signedOutBody} />;
   }
-
-  if (entries === null) {
-    return (
-      <div className="hm-skeleton" aria-hidden="true">
-        <div className="hm-skeleton__row" />
-        <div className="hm-skeleton__row" />
-        <div className="hm-skeleton__row" />
-      </div>
-    );
-  }
-
+  if (entries === null) return <Skeleton />;
   if (entries.length === 0) {
-    return (
-      <div className="hm-empty hm-fade-in">
-        <MarginMark size={28} strokeWidth={3} />
-        <p className="hm-empty__title">{strings.emptyMentionsTitle}</p>
-        <p className="hm-empty__body">{strings.emptyMentionsBody}</p>
-      </div>
-    );
+    return <EmptyState title={strings.emptyMentionsTitle} body={strings.emptyMentionsBody} />;
   }
 
   return (
     <>
       <ul className="hm-mentions">
-        {entries.map((entry) => (
-          <li key={entry.commentId} className="hm-mention-entry">
-            <span className="hm-team-member__meta">
-              <bdi>
-                {(entry.authorId ? nameOf(entry.authorId) : undefined) ?? strings.formerMember}
-              </bdi>{' '}
-              <bdi>{strings.mentionIn(entry.teamName)}</bdi> ·{' '}
-              {strings.commentedAgo(relativeTime(new Date(entry.createdAt).toISOString(), lang))}
-            </span>
-            <p className="hm-comment__body" dir="auto">
-              {splitBody(entry.body, nameOf).map((part, i) =>
-                part.kind === 'text' ? (
-                  <span key={i}>{part.text}</span>
-                ) : (
-                  <span key={i} className="hm-mention" data-me={part.userId === myUserId}>
-                    @<bdi>{part.name ?? strings.formerMember}</bdi>
-                  </span>
-                ),
-              )}
-            </p>
-            {onOpenNote && (
-              <button
-                type="button"
-                className="hm-link hm-link--accent hm-mention-entry__open"
-                onClick={() => onOpenNote(entry.teamId, entry.noteId)}
-              >
-                {strings.openNote}
-              </button>
-            )}
-          </li>
-        ))}
+        {entries.map((entry) => {
+          const author = entry.authorId ? nameOf(entry.authorId) : undefined;
+          return (
+            <li key={entry.commentId} className="hm-mention-entry">
+              <Avatar name={author} />
+              <div className="hm-mention-entry__content">
+                <span className="hm-mention-entry__meta">
+                  <bdi className="hm-mention-entry__author">{author ?? strings.formerMember}</bdi>{' '}
+                  <bdi>{strings.mentionIn(entry.teamName)}</bdi> ·{' '}
+                  {strings.commentedAgo(relativeTime(entry.createdAt, lang))}
+                </span>
+                <p className="hm-comment__body" dir="auto">
+                  <MentionText
+                    body={entry.body}
+                    nameOf={nameOf}
+                    myUserId={myUserId}
+                    strings={strings}
+                  />
+                </p>
+                {onOpenNote && (
+                  <button
+                    type="button"
+                    className="hm-link hm-link--accent hm-mention-entry__open"
+                    onClick={() => onOpenNote(entry.teamId, entry.noteId)}
+                  >
+                    {strings.openNote}
+                  </button>
+                )}
+              </div>
+            </li>
+          );
+        })}
       </ul>
       {nextBefore && (
         <button
           type="button"
-          className="hm-link"
+          className="hm-link hm-link--accent hm-mentions__more"
           disabled={page.working('mentions.more')}
           onClick={() => void more()}
           aria-busy={page.working('mentions.more')}

@@ -15,6 +15,7 @@ const read = (path: string) => readFileSync(resolve(root, path), 'utf8');
 
 const SHEETS = {
   'src/ui/tokens.css': read('src/ui/tokens.css'),
+  'src/ui/pages.css': read('src/ui/pages.css'),
   'src/ui/notes-library.css': read('src/ui/notes-library.css'),
   'src/ui/teams/teams.css': read('src/ui/teams/teams.css'),
   'src/entrypoints/popup/App.css': read('src/entrypoints/popup/App.css'),
@@ -150,5 +151,40 @@ describe('the type scale', () => {
       }
     }
     expect(offenders).toEqual([]);
+  });
+});
+
+describe('custom properties', () => {
+  it('never refer to themselves — a cycle resolves to nothing and silently kills every consumer', () => {
+    // How the motion intents broke once: `--hm-motion-state: var(--hm-motion-state)`
+    // left every hover transition, the popup slide and every entrance animation
+    // resolving to their initial values, repo-wide, with nothing failing.
+    const offenders: string[] = [];
+    for (const [file, css] of Object.entries(SHEETS)) {
+      for (const { body } of rules(css)) {
+        for (const found of body.matchAll(/(--hm-[\w-]+)\s*:\s*([^;]+);/g)) {
+          if (found[2].includes(`var(${found[1]})`) || found[2].includes(`var(${found[1]},`)) {
+            offenders.push(`${file}: ${found[1]}`);
+          }
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it('give every motion intent a duration and a curve', () => {
+    for (const intent of ['state', 'enter', 'exit', 'emphasized', 'pop']) {
+      expect(themeValue(`--hm-motion-${intent}`, 'light')).toMatch(
+        /^var\(--hm-dur-\w+\) var\(--hm-ease-\w+\)$/,
+      );
+    }
+  });
+});
+
+describe('selectors the build can keep', () => {
+  it('never uses :dir(), which the CSS pipeline lowers to :lang() — matching nothing here', () => {
+    for (const [file, css] of Object.entries(SHEETS)) {
+      expect(css.replace(/\/\*[\s\S]*?\*\//g, ''), file).not.toMatch(/:dir\(/);
+    }
   });
 });

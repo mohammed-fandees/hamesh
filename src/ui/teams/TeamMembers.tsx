@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import type { TeamMember, TeamResponse } from '@hamesh/teams-contract';
+import { formatDate } from '../format';
 import type { Lang } from '../i18n';
+import { Avatar } from '../kit/Avatar';
+import { Busy, InlineError } from '../kit/Feedback';
+import { InlineConfirm } from '../kit/InlineConfirm';
+import { Skeleton } from '../kit/Skeleton';
+import { memberRights } from './permissions';
 import type { TeamsStrings } from './strings';
 import type { TeamsPage } from './useTeams';
-import { formatDate } from './format';
-import { InlineConfirm } from './InlineConfirm';
 
 interface TeamMembersProps {
   strings: TeamsStrings;
@@ -22,15 +26,12 @@ interface TeamMembersProps {
 }
 
 /**
- * Who is in this team, and the few things that can be done about it.
+ * Who is in this team, and the few things that can be done about each of them.
  *
- * Every control is shown only when the server said this caller holds the
- * matching capability — and the server checks again on the request itself.
- * Hiding a button here is tidiness, never the thing that stops anyone.
- *
- * Removing someone, or handing the team to them, is confirmed on their own row:
- * the question names them, and that row alone says it is working while it
- * happens, so the rest of the page stays usable.
+ * One row per person: who they are, their role, and — where the server says the
+ * reader may — what can be done. Removing someone, or handing the team to them,
+ * is asked on their own row, and that row alone says it is working while it
+ * happens, and why it failed if it did; the rest of the page stays usable.
  */
 export function TeamMembers({
   strings,
@@ -42,7 +43,6 @@ export function TeamMembers({
   onChanged,
 }: TeamMembersProps) {
   const teamId = team.team.id;
-  const can = (action: string) => team.capabilities.includes(action as never);
   /** The one row waiting for an answer, and which question it asked. */
   const [confirming, setConfirming] = useState<{
     userId: string;
@@ -57,27 +57,12 @@ export function TeamMembers({
 
   const setRole = (userId: string, role: 'admin' | 'member') =>
     act(page.run('members.setRole', { teamId, userId, role }, `member:${userId}`));
-
   const remove = (member: TeamMember) =>
     act(page.run('members.remove', { teamId, userId: member.userId }, `member:${member.userId}`));
-
   const transfer = (member: TeamMember) =>
     act(page.run('team.transfer', { teamId, userId: member.userId }, `member:${member.userId}`));
 
-  /** Whether this caller may change `member`'s role or remove them. */
-  function mayManage(member: TeamMember): boolean {
-    if (member.userId === myUserId || member.role === 'owner') return false;
-    return member.role === 'admin' ? can('members.remove_admin') : can('members.remove_member');
-  }
-
-  if (!members) {
-    return (
-      <div className="hm-skeleton" aria-hidden="true">
-        <div className="hm-skeleton__row" />
-        <div className="hm-skeleton__row" />
-      </div>
-    );
-  }
+  if (!members) return <Skeleton rows={2} />;
 
   return (
     <ul className="hm-team-members">
@@ -85,16 +70,16 @@ export function TeamMembers({
         const key = `member:${member.userId}`;
         const working = page.working(key);
         const failed = page.failed(key);
+        const may = memberRights(team, member, myUserId);
+        const asking = confirming?.userId === member.userId ? confirming.act : null;
         return (
-          <li key={member.userId} className="hm-team-member">
+          <li key={member.userId} className="hm-team-member" data-asking={asking ?? undefined}>
+            <Avatar name={member.displayName} />
             <span className="hm-team-member__who">
               <span className="hm-team-member__name">
-                <span className="hm-avatar" aria-hidden="true">
-                  {member.displayName.slice(0, 1).toUpperCase()}
-                </span>
                 <bdi>{member.displayName}</bdi>
                 {member.userId === myUserId && (
-                  <span className="hm-team-member__you">({strings.youMarker})</span>
+                  <span className="hm-team-member__you"> · {strings.youMarker}</span>
                 )}
               </span>
               {/* Only callers the server trusts with emails ever receive them. */}
@@ -104,75 +89,76 @@ export function TeamMembers({
                 </span>
               )}
               <span className="hm-team-member__meta">
-                {strings.role(member.role)} ·{' '}
                 {strings.memberSince(formatDate(member.joinedAt, lang))}
               </span>
-              {failed && (
-                <span className="hm-field-error" role="alert">
-                  {strings.error(failed)}
-                </span>
+            </span>
+            <span className="hm-team-member__role">{strings.role(member.role)}</span>
+
+            <span className="hm-team-member__actions">
+              {asking ? (
+                <InlineConfirm
+                  question={
+                    asking === 'remove'
+                      ? strings.removeMemberConfirm(member.displayName)
+                      : strings.transferConfirm(member.displayName)
+                  }
+                  confirmLabel={
+                    asking === 'remove' ? strings.removeMember : strings.transferOwnership
+                  }
+                  cancelLabel={strings.keepIt}
+                  tone={asking === 'remove' ? 'danger' : 'plain'}
+                  working={working}
+                  onConfirm={() => void (asking === 'remove' ? remove(member) : transfer(member))}
+                  onCancel={() => setConfirming(null)}
+                />
+              ) : working ? (
+                // Where its controls were: an arc, and what is happening.
+                <Busy label={strings.working} />
+              ) : (
+                <>
+                  {may.promote && (
+                    <button
+                      type="button"
+                      className="hm-btn hm-btn-ghost hm-btn--compact"
+                      onClick={() => void setRole(member.userId, 'admin')}
+                    >
+                      {strings.makeAdmin}
+                    </button>
+                  )}
+                  {may.demote && (
+                    <button
+                      type="button"
+                      className="hm-btn hm-btn-ghost hm-btn--compact"
+                      onClick={() => void setRole(member.userId, 'member')}
+                    >
+                      {strings.makeMember}
+                    </button>
+                  )}
+                  {may.transfer && (
+                    <button
+                      type="button"
+                      className="hm-btn hm-btn-ghost hm-btn--compact"
+                      onClick={() => setConfirming({ userId: member.userId, act: 'transfer' })}
+                    >
+                      {strings.transferOwnership}
+                    </button>
+                  )}
+                  {may.remove && (
+                    <button
+                      type="button"
+                      className="hm-btn hm-btn-ghost hm-btn--compact hm-btn--danger-text"
+                      onClick={() => setConfirming({ userId: member.userId, act: 'remove' })}
+                    >
+                      {strings.removeMember}
+                    </button>
+                  )}
+                </>
               )}
             </span>
 
-            {confirming?.userId === member.userId ? (
-              <InlineConfirm
-                strings={strings}
-                question={
-                  confirming.act === 'remove'
-                    ? strings.removeMemberConfirm(member.displayName)
-                    : strings.transferConfirm(member.displayName)
-                }
-                confirmLabel={
-                  confirming.act === 'remove' ? strings.removeMember : strings.transferOwnership
-                }
-                tone={confirming.act === 'remove' ? 'danger' : 'plain'}
-                working={working}
-                onConfirm={() =>
-                  void (confirming.act === 'remove' ? remove(member) : transfer(member))
-                }
-                onCancel={() => setConfirming(null)}
-              />
-            ) : working ? (
-              // Where its controls were: an arc, and the word only for a screen reader.
-              <span className="hm-spinner" role="status" aria-label={strings.working} />
-            ) : (
-              <span className="hm-team-member__actions">
-                {member.role === 'member' && can('members.promote') && (
-                  <button
-                    type="button"
-                    className="hm-btn hm-btn-ghost"
-                    onClick={() => void setRole(member.userId, 'admin')}
-                  >
-                    {strings.makeAdmin}
-                  </button>
-                )}
-                {member.role === 'admin' && can('members.demote') && (
-                  <button
-                    type="button"
-                    className="hm-btn hm-btn-ghost"
-                    onClick={() => void setRole(member.userId, 'member')}
-                  >
-                    {strings.makeMember}
-                  </button>
-                )}
-                {member.role === 'admin' && can('team.transfer') && (
-                  <button
-                    type="button"
-                    className="hm-btn hm-btn-ghost"
-                    onClick={() => setConfirming({ userId: member.userId, act: 'transfer' })}
-                  >
-                    {strings.transferOwnership}
-                  </button>
-                )}
-                {mayManage(member) && (
-                  <button
-                    type="button"
-                    className="hm-btn hm-btn-ghost"
-                    onClick={() => setConfirming({ userId: member.userId, act: 'remove' })}
-                  >
-                    {strings.removeMember}
-                  </button>
-                )}
+            {failed && (
+              <span className="hm-team-member__alert">
+                <InlineError>{strings.error(failed)}</InlineError>
               </span>
             )}
           </li>

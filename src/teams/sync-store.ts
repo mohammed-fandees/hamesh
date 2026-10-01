@@ -1,3 +1,4 @@
+import { parseFolderRecord } from '@/domain/folder';
 import { createKvStore, type KvStore, type KvStoreOptions } from './idb';
 
 /**
@@ -48,20 +49,7 @@ export interface SyncStore {
 
 const PREFIX = 'sync:';
 
-function parseFolder(value: unknown): CachedFolder | null {
-  if (!value || typeof value !== 'object') return null;
-  const f = value as Record<string, unknown>;
-  if (typeof f.id !== 'string' || typeof f.name !== 'string') return null;
-  if (f.parentId !== null && typeof f.parentId !== 'string') return null;
-  if (typeof f.createdAt !== 'number' || typeof f.updatedAt !== 'number') return null;
-  return {
-    id: f.id,
-    parentId: f.parentId,
-    name: f.name,
-    createdAt: f.createdAt,
-    updatedAt: f.updatedAt,
-  };
-}
+const parseFolder = (value: unknown): CachedFolder | null => parseFolderRecord(value, 'number');
 
 /**
  * Anything that does not parse is treated as no state at all, which costs one

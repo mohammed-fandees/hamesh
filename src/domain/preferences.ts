@@ -25,6 +25,17 @@ export function isAppearanceMode(value: unknown): value is AppearanceMode {
   return typeof value === 'string' && (APPEARANCE_MODES as readonly string[]).includes(value);
 }
 
+export type Theme = 'light' | 'dark';
+
+/**
+ * The theme Hamesh draws in. An explicit choice wins; "Match website" takes
+ * whatever the surface can see — the host page's own background on a web page,
+ * the system's scheme on Hamesh's own pages, which have no website to match.
+ */
+export function resolveTheme(appearance: AppearanceMode, matched: Theme): Theme {
+  return appearance === 'match-website' ? matched : appearance;
+}
+
 /**
  * Contextual text notes ("هوامش") — one nested object rather than two flat
  * fields, so the feature's own settings can grow without reshaping

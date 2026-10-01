@@ -1,4 +1,4 @@
-import { MarginMark } from './MarginMark';
+import { MarginMark } from './kit/MarginMark';
 
 interface SelectionHintProps {
   text: string;

@@ -1,5 +1,6 @@
 import type { Note } from '@/domain/note';
 import { generatePageKey } from '@/domain/page-key';
+import { resolveFolderId } from '@/domain/folder-grouping';
 import type { TeamsClient } from '@/teams/client';
 import { readTeamIndex, toNote, type CachedTeam } from '@/teams/page-cache';
 
@@ -39,17 +40,22 @@ export async function readTeamNotesForLibrary(client: TeamsClient): Promise<Libr
   const snapshots = await Promise.all(
     index.teams.map(async (team) => {
       const result = await client.cache('notes', team.id);
-      return result.ok ? { team, notes: result.data.notes } : null;
+      return result.ok ? { team, notes: result.data.notes, folders: result.data.folders } : null;
     }),
   );
 
   const notes: Note[] = [];
   for (const snapshot of snapshots) {
     if (!snapshot) continue;
+    const knownFolders = new Set(snapshot.folders.map((f) => f.id));
     for (const cached of snapshot.notes) {
       // The same page key the content script asks for its own page with, so a
       // team note lands in the same site group as the reader's own notes on it.
-      notes.push(toNote(cached, generatePageKey(cached.originalUrl), snapshot.team.name));
+      // A folder deleted on the server leaves its notes unfiled — the same rule
+      // every folder view follows — so the Library's "Unfiled" filter finds
+      // them instead of neither filter matching.
+      const filed = { ...cached, folderId: resolveFolderId(cached.folderId, knownFolders) };
+      notes.push(toNote(filed, generatePageKey(cached.originalUrl), snapshot.team.name));
     }
   }
   return { notes, teams: index.teams };

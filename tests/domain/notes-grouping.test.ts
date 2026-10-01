@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  pageLabelFrom,
   groupNotesByDomain,
   getContinueWebsites,
   getPinnedNotes,
@@ -194,7 +195,7 @@ describe('getPinnedNotes', () => {
       makeNote({ id: 'c', pinned: true }),
     ];
     const result = getPinnedNotes(notes);
-    expect(result.map((n) => n.noteId).sort()).toEqual(['a', 'c']);
+    expect(result.map((n) => n.id).sort()).toEqual(['a', 'c']);
   });
 
   it('sorts most recently edited pinned note first', () => {
@@ -211,27 +212,13 @@ describe('getPinnedNotes', () => {
       }),
     ];
     const result = getPinnedNotes(notes);
-    expect(result.map((n) => n.noteId)).toEqual(['new-pin', 'old-pin']);
+    expect(result.map((n) => n.id)).toEqual(['new-pin', 'old-pin']);
   });
 
-  it('includes domain, url, preview, and updatedAt for each pinned note', () => {
-    const notes = [
-      makeNote({
-        id: 'a',
-        pinned: true,
-        originalUrl: 'https://github.com/x',
-        content: 'resume this',
-        updatedAt: '2026-01-01T00:00:00.000Z',
-      }),
-    ];
-    const [item] = getPinnedNotes(notes);
-    expect(item).toEqual({
-      noteId: 'a',
-      domain: 'github.com',
-      url: 'https://github.com/x',
-      preview: 'resume this',
-      updatedAt: '2026-01-01T00:00:00.000Z',
-    });
+  it('returns the notes themselves, unchanged', () => {
+    const pinned = makeNote({ id: 'a', pinned: true, content: 'resume this' });
+    const [item] = getPinnedNotes([pinned]);
+    expect(item).toBe(pinned);
   });
 
   it('spans multiple websites, not grouped by domain', () => {
@@ -359,5 +346,17 @@ describe('derivePageLabel', () => {
       pageContext: { title: '   ' },
     });
     expect(derivePageLabel(note)).toBe('/x');
+  });
+});
+
+describe('pageLabelFrom', () => {
+  it('prefers a trimmed title', () => {
+    expect(pageLabelFrom('  Docs  ', 'https://example.com/a')).toBe('Docs');
+  });
+
+  it('falls back to the path, then the host — the same for every note shape', () => {
+    expect(pageLabelFrom(null, 'https://www.youtube.com/watch?v=1')).toBe('/watch');
+    expect(pageLabelFrom('   ', 'https://example.com/')).toBe('example.com');
+    expect(pageLabelFrom(undefined, 'not a url')).toBe('not a url');
   });
 });

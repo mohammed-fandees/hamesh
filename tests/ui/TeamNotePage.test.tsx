@@ -195,7 +195,7 @@ describe('one shared note', () => {
     view(page);
     await screen.findByText('my shared thought');
 
-    fireEvent.click(screen.getByRole('button', { name: strings.deleteSharedNote }));
+    fireEvent.click(screen.getByRole('button', { name: strings.delete }));
     expect(screen.getByText(strings.deleteSharedConfirm)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: strings.keepIt }));
 
@@ -211,10 +211,8 @@ describe('one shared note', () => {
     await screen.findByText('my shared thought');
 
     expect(screen.queryByRole('button', { name: strings.unshareNote })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: strings.editNote })).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', { name: strings.deleteSharedNote }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: strings.edit })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: strings.delete })).not.toBeInTheDocument();
   });
 
   it('lets an admin delete anyone’s note for everyone, once they have said so', async () => {
@@ -227,8 +225,8 @@ describe('one shared note', () => {
     view(page, undefined, onGone);
     await screen.findByText('my shared thought');
 
-    fireEvent.click(screen.getByRole('button', { name: strings.deleteSharedNote }));
-    confirmWith(strings.deleteSharedNote);
+    fireEvent.click(screen.getByRole('button', { name: strings.delete }));
+    confirmWith(strings.delete);
     await waitFor(() => expect(calls.some((c) => c.op === 'notes.delete')).toBe(true));
     await waitFor(() => expect(onGone).toHaveBeenCalled());
   });
@@ -238,9 +236,9 @@ describe('one shared note', () => {
     view(page);
     await screen.findByText('my shared thought');
 
-    fireEvent.click(screen.getByRole('button', { name: strings.editNote }));
-    fireEvent.change(screen.getByLabelText(strings.editNote), { target: { value: 'reworded' } });
-    fireEvent.click(screen.getByRole('button', { name: strings.saveNote }));
+    fireEvent.click(screen.getByRole('button', { name: strings.edit }));
+    fireEvent.change(screen.getByLabelText(strings.edit), { target: { value: 'reworded' } });
+    fireEvent.click(screen.getByRole('button', { name: strings.save }));
     await waitFor(() => expect(calls.some((c) => c.op === 'notes.update')).toBe(true));
     expect(calls.find((c) => c.op === 'notes.update')!.params).toEqual({
       teamId: TEAM,

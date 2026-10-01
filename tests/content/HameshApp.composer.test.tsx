@@ -379,7 +379,7 @@ describe('HameshApp — the folder a new note is filed into', () => {
     const { activateText, repo } = renderApp({ foldersRepo });
     fireEvent.change(await openComposer(activateText), { target: { value: 'First filed note' } });
 
-    fireEvent.click(await screen.findByRole('button', { name: '+ Create folder' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Create folder' }));
     const name = screen.getByRole('textbox', { name: 'New folder' });
     fireEvent.change(name, { target: { value: 'Research' } });
     fireEvent.keyDown(name, { key: 'Enter' });

@@ -1,74 +1,56 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { browser } from 'wxt/browser';
-import { MarginMark } from '@/ui/MarginMark';
-import { SettingsView } from '@/ui/SettingsView';
-import { getStrings, resolveLang, dirForLang, type Lang } from '@/ui/i18n';
+import { MarginMark } from '@/ui/kit/MarginMark';
+import { EmptyState } from '@/ui/kit/EmptyState';
+import { Skeleton } from '@/ui/kit/Skeleton';
+import { StatusLine } from '@/ui/kit/Feedback';
+import { ChevronIcon, PlusIcon, SettingsIcon } from '@/ui/kit/icons';
+import { SettingsView } from '@/ui/settings/SettingsView';
+import { getStrings, resolveLang, dirForLang } from '@/ui/i18n';
+import { usePreferences, systemTheme } from '@/ui/hooks/usePreferences';
+import { COMMANDS, useShortcuts } from '@/ui/hooks/useShortcuts';
+import { usePageBackground } from '@/ui/hooks/usePageBackground';
 import { createPreferencesRepository } from '@/storage/preferences-repository';
-import type { AppearanceMode } from '@/domain/preferences';
+import { resolveTheme } from '@/domain/preferences';
 import type { PageStateResponse } from '@/messaging/types';
 import '@/ui/tokens.css';
+import '@/ui/pages.css';
 
 const initialLang = resolveLang(browser.i18n?.getUILanguage?.());
-// The popup has no host webpage of its own to detect — the OS-level scheme
-// is the closest analog to "Match website" for Hamesh's own chrome, and
-// matches what the popup already did before Appearance existed.
-const prefersDark =
-  typeof matchMedia !== 'undefined' && matchMedia('(prefers-color-scheme: dark)').matches;
+/** The popup has no web page of its own to match — the system's scheme is the
+ *  closest thing to "Match website" for Hamesh's own chrome. */
+const matched = systemTheme();
 const prefsRepo = createPreferencesRepository();
 
 type View = 'home' | 'settings';
 
+/**
+ * The toolbar popup — a doorway, not a dashboard: how many notes this page
+ * has, the one button that starts a new one, the way to the Library, and the
+ * two settings worth changing in a hurry on a second pane that slides in.
+ */
 export function App() {
   const [count, setCount] = useState<number | null>(null);
   const [active, setActive] = useState(false);
   /** False until the page has answered (or refused to), so the popup shows a
    *  skeleton while it is finding out rather than a dash that reads as "none". */
   const [checked, setChecked] = useState(false);
-  // `null` until the real current binding loads — shortcuts are now
-  // user-customizable (Notes Library → Settings), so this can no longer be
-  // a hardcoded "Alt+H" without going stale the moment someone rebinds it.
-  const [addNoteShortcut, setAddNoteShortcut] = useState<string | null>(null);
   const [view, setView] = useState<View>('home');
-  const [lang, setLang] = useState<Lang>(initialLang);
-  const [appearance, setAppearance] = useState<AppearanceMode>('match-website');
+  const preferences = usePreferences(prefsRepo);
+  const shortcuts = useShortcuts();
   const settingsBtnRef = useRef<HTMLButtonElement>(null);
   const skipFocusRef = useRef(true);
+  const scopeRef = useRef<HTMLDivElement>(null);
 
+  const lang = preferences.prefs?.language ?? initialLang;
+  const appearance = preferences.prefs?.appearance ?? 'match-website';
   const strings = getStrings(lang);
   const dir = dirForLang(lang);
-  const theme =
-    appearance === 'light'
-      ? 'light'
-      : appearance === 'dark'
-        ? 'dark'
-        : prefersDark
-          ? 'dark'
-          : 'light';
-
-  // Load stored preferences (if any) and stay subscribed — `storage.watch`
-  // picks up changes made in the content script's own copy of Settings, or
-  // another open popup, without extra messaging.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const prefs = await prefsRepo.get();
-      if (!cancelled) {
-        setLang(prefs.language ?? initialLang);
-        setAppearance(prefs.appearance);
-      }
-    })();
-    const unwatch = prefsRepo.watch((prefs) => {
-      setLang(prefs.language ?? initialLang);
-      setAppearance(prefs.appearance);
-    });
-    return () => {
-      cancelled = true;
-      unwatch();
-    };
-  }, []);
+  const theme = resolveTheme(appearance, matched);
+  usePageBackground(scopeRef, '--hm-surface', theme);
 
   useEffect(() => {
-    (async () => {
+    void (async () => {
       const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
       if (tab?.id == null) {
         setChecked(true);
@@ -89,26 +71,6 @@ export function App() {
     })();
   }, []);
 
-  useEffect(() => {
-    browser.commands
-      ?.getAll()
-      .then((commands) => {
-        const shortcut = commands.find((c) => c.name === 'activate-hamesh')?.shortcut;
-        if (shortcut) setAddNoteShortcut(shortcut);
-      })
-      .catch(() => {});
-  }, []);
-
-  function handleLanguageChange(next: Lang) {
-    setLang(next); // immediate feedback; persisted below, and re-confirmed by watch()
-    void prefsRepo.setLanguage(next);
-  }
-
-  function handleAppearanceChange(next: AppearanceMode) {
-    setAppearance(next); // immediate feedback; persisted below, and re-confirmed by watch()
-    void prefsRepo.setAppearance(next);
-  }
-
   async function handleAdd() {
     const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
     if (tab?.id == null) return;
@@ -120,13 +82,8 @@ export function App() {
     }
   }
 
-  async function handleOpenNotesLibrary() {
-    await browser.tabs.create({ url: browser.runtime.getURL('/notes.html') });
-    window.close();
-  }
-
-  async function handleOpenFullSettings() {
-    await browser.tabs.create({ url: browser.runtime.getURL('/notes.html?view=settings') });
+  async function open(path: string) {
+    await browser.tabs.create({ url: browser.runtime.getURL(path as '/notes.html') });
     window.close();
   }
 
@@ -142,41 +99,41 @@ export function App() {
     if (view === 'home') settingsBtnRef.current?.focus({ preventScroll: true });
   }, [view]);
 
-  // Escape backs out of Settings, matching the Escape-to-close convention
-  // used throughout Hamesh's content-script UI (selection mode, composer,
-  // viewer).
+  // Escape backs out of Settings, as it backs out of every layer in Hamesh.
   useEffect(() => {
     if (view !== 'settings') return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        setView('home');
-      }
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      setView('home');
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [view]);
 
-  // Slide direction is spatially mirrored for RTL: forward navigation moves
-  // toward the reading direction's "in" side (left in LTR, right in RTL).
+  // Slide direction is mirrored for RTL: forward moves toward the reading
+  // direction's "in" side (left in LTR, right in RTL).
   const sign = dir === 'rtl' ? 1 : -1;
   const trackStyle: CSSProperties = {
     transform: `translateX(${view === 'settings' ? sign * 50 : 0}%)`,
   };
+  const addShortcut = shortcuts[COMMANDS.addNote];
 
   return (
-    <div className="hm-scope hm-popup" dir={dir} data-hm-theme={theme}>
+    <div ref={scopeRef} className="hm-scope hm-popup" dir={dir} data-hm-theme={theme}>
       <div className="hm-popup__viewport">
         <div className="hm-popup__track" style={trackStyle}>
           <div className="hm-popup__pane" aria-hidden={view !== 'home'} inert={view !== 'home'}>
             <div className="hm-popup__head">
-              <MarginMark size={16} strokeWidth={3.5} style={{ color: 'var(--hm-accent)' }} />
-              {lang === 'ar' ? (
-                <span className="hm-popup__brand-ar">{strings.brand}</span>
-              ) : (
-                <span className="hm-popup__brand">{strings.brand}</span>
-              )}
-              {addNoteShortcut && <span className="hm-popup__shortcut">{addNoteShortcut}</span>}
+              <MarginMark size={16} strokeWidth={3.5} className="hm-mark hm-popup__mark" />
+              <span
+                className={
+                  lang === 'ar' ? 'hm-popup__brand hm-popup__brand--ar' : 'hm-popup__brand'
+                }
+              >
+                {strings.brand}
+              </span>
+              {addShortcut && <kbd className="hm-kbd hm-popup__shortcut">{addShortcut}</kbd>}
               <button
                 ref={settingsBtnRef}
                 type="button"
@@ -184,90 +141,47 @@ export function App() {
                 aria-label={strings.settings}
                 onClick={() => setView('settings')}
               >
-                <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-                  <line x1="2" y1="5" x2="14" y2="5" stroke="currentColor" strokeWidth="1.4" />
-                  <circle
-                    cx="10"
-                    cy="5"
-                    r="1.8"
-                    fill="var(--hm-surface)"
-                    stroke="currentColor"
-                    strokeWidth="1.4"
-                  />
-                  <line x1="2" y1="11" x2="14" y2="11" stroke="currentColor" strokeWidth="1.4" />
-                  <circle
-                    cx="6"
-                    cy="11"
-                    r="1.8"
-                    fill="var(--hm-surface)"
-                    stroke="currentColor"
-                    strokeWidth="1.4"
-                  />
-                </svg>
+                <SettingsIcon size={16} />
               </button>
             </div>
 
             {!checked ? (
               // Asking the page: the shape of what is coming, not a placeholder dash.
-              <div className="hm-skeleton hm-popup__skeleton" aria-hidden="true">
-                <div className="hm-skeleton__row" />
-                <div className="hm-skeleton__row" />
+              <div className="hm-popup__body">
+                <Skeleton rows={2} />
               </div>
             ) : !active ? (
               // A page Hamesh cannot work on: what happened, and the control that
               // still does something useful from here.
-              <div className="hm-empty hm-empty--popup hm-fade-in">
-                <MarginMark size={22} strokeWidth={3} />
-                <p className="hm-empty__title">{strings.popupUnavailableTitle}</p>
-                <p className="hm-empty__body">{strings.popupUnavailableBody}</p>
-              </div>
+              <EmptyState
+                size="compact"
+                title={strings.popupUnavailableTitle}
+                body={strings.popupUnavailableBody}
+              />
             ) : (
-              <>
-                <div className="hm-popup__count">
+              <div className="hm-popup__body">
+                <p className="hm-popup__count">
                   {count ?? 0} <span>{strings.notesOnPage(count ?? 0)}</span>
-                </div>
-
+                </p>
                 <button
                   type="button"
-                  className="hm-btn hm-btn-primary"
-                  style={{ width: '100%', marginTop: 'var(--hm-space-4)', padding: '11px' }}
+                  className="hm-btn hm-btn-primary hm-popup__add"
                   onClick={handleAdd}
                 >
-                  + {strings.addNote}
+                  <PlusIcon size={12} />
+                  {strings.addNote}
                 </button>
-
-                <div
-                  className="hm-status hm-status--success"
-                  style={{ marginTop: 'var(--hm-space-3)', marginBottom: 0 }}
-                >
-                  <span className="hm-dot" />
-                  {strings.activeOnPage}
-                </div>
-              </>
+                <StatusLine tone="success">{strings.activeOnPage}</StatusLine>
+              </div>
             )}
 
             <button
               type="button"
-              className="hm-popup__library-link"
-              onClick={handleOpenNotesLibrary}
+              className="hm-popup__link"
+              onClick={() => void open('/notes.html')}
             >
               {strings.openNotesLibrary}
-              <svg
-                width="10"
-                height="10"
-                viewBox="0 0 10 10"
-                aria-hidden="true"
-                style={dir === 'rtl' ? { transform: 'scaleX(-1)' } : undefined}
-              >
-                <path
-                  d="M3 2 L7 5 L3 8"
-                  stroke="currentColor"
-                  strokeWidth="1.4"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  fill="none"
-                />
-              </svg>
+              <ChevronIcon direction="forward" />
             </button>
           </div>
 
@@ -279,13 +193,12 @@ export function App() {
             <SettingsView
               strings={strings}
               lang={lang}
-              dir={dir}
               appearance={appearance}
               active={view === 'settings'}
               onBack={() => setView('home')}
-              onLanguageChange={handleLanguageChange}
-              onAppearanceChange={handleAppearanceChange}
-              onOpenFullSettings={handleOpenFullSettings}
+              onLanguageChange={preferences.setLanguage}
+              onAppearanceChange={preferences.setAppearance}
+              onOpenFullSettings={() => void open('/notes.html?view=settings')}
             />
           </div>
         </div>

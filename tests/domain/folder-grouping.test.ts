@@ -2,7 +2,9 @@ import { describe, it, expect } from 'vitest';
 import {
   buildFolderTree,
   getDescendantFolderIds,
-  flattenFolderTreeForMenu,
+  flattenFolderTree,
+  resolveFolderId,
+  countInFolder,
 } from '@/domain/folder-grouping';
 import type { Folder } from '@/domain/folder';
 import type { Note, ElementAnchor } from '@/domain/note';
@@ -105,11 +107,21 @@ describe('buildFolderTree', () => {
 
   it('falls back a folder with an unknown parentId to top-level', () => {
     const orphan = makeFolder({ id: 'orphan', name: 'Orphan', parentId: 'ghost-parent' });
-    const { tree } = buildFolderTree([orphan], []);
-    // An unknown parentId means this folder is never referenced by any
-    // `childrenByParent` bucket the tree walk starts from (only `null` is
-    // walked as the root), so it's simply absent rather than crashing.
-    expect(tree).toEqual([]);
+    const notes = [makeNote({ id: 'filed', folderId: 'orphan' })];
+    const { tree, unfiledNotes } = buildFolderTree([orphan], notes);
+    // Shown at the top rather than lost — and with it the notes filed into it,
+    // which used to vanish from the folder view altogether.
+    expect(tree.map((n) => n.folder.id)).toEqual(['orphan']);
+    expect(tree[0].notes.map((n) => n.id)).toEqual(['filed']);
+    expect(unfiledNotes).toEqual([]);
+  });
+
+  it('shows folders caught in a parent cycle instead of dropping them', () => {
+    const a = makeFolder({ id: 'a', name: 'A', parentId: 'b' });
+    const b = makeFolder({ id: 'b', name: 'B', parentId: 'a' });
+    const { tree } = buildFolderTree([a, b], []);
+    expect(tree.map((n) => n.folder.id)).toEqual(['a']);
+    expect(tree[0].children.map((n) => n.folder.id)).toEqual(['b']);
   });
 
   it('sorts pinned notes first within a folder', () => {
@@ -160,22 +172,65 @@ describe('getDescendantFolderIds', () => {
   });
 });
 
-describe('flattenFolderTreeForMenu', () => {
-  it('returns an empty list for an empty tree', () => {
-    expect(flattenFolderTreeForMenu([])).toEqual([]);
+describe('flattenFolderTree', () => {
+  it('returns an empty list for no folders', () => {
+    expect(flattenFolderTree([])).toEqual([]);
   });
 
-  it('walks the tree depth-first, recording depth', () => {
+  it('walks parents before children, in name order, recording depth and parent', () => {
     const work = makeFolder({ id: 'work', name: 'Work' });
     const research = makeFolder({ id: 'research', name: 'Research', parentId: 'work' });
     const personal = makeFolder({ id: 'personal', name: 'Personal' });
-    const { tree } = buildFolderTree([work, research, personal], []);
 
-    const flat = flattenFolderTreeForMenu(tree);
-    expect(flat.map((f) => [f.folder.name, f.depth])).toEqual([
-      ['Personal', 0],
-      ['Work', 0],
-      ['Research', 1],
+    const flat = flattenFolderTree([work, research, personal]);
+    expect(flat.map((f) => [f.folder.name, f.depth, f.parent?.id ?? null])).toEqual([
+      ['Personal', 0, null],
+      ['Work', 0, null],
+      ['Research', 1, 'work'],
     ]);
+  });
+
+  it('works on any folder shape — a team folder with epoch timestamps too', () => {
+    const flat = flattenFolderTree([
+      { id: 'b', name: 'B', parentId: 'a', createdAt: 1, updatedAt: 1 },
+      { id: 'a', name: 'A', parentId: null, createdAt: 1, updatedAt: 1 },
+    ]);
+    expect(flat.map((f) => [f.folder.id, f.depth])).toEqual([
+      ['a', 0],
+      ['b', 1],
+    ]);
+  });
+
+  it('lists every folder once, even through a cycle or a missing parent', () => {
+    const flat = flattenFolderTree([
+      makeFolder({ id: 'x', name: 'X', parentId: 'y' }),
+      makeFolder({ id: 'y', name: 'Y', parentId: 'x' }),
+      makeFolder({ id: 'z', name: 'Z', parentId: 'gone' }),
+    ]);
+    expect(flat.map((f) => f.folder.id).sort()).toEqual(['x', 'y', 'z']);
+  });
+});
+
+describe('resolveFolderId', () => {
+  const known = new Set(['work']);
+
+  it('keeps a folder that exists', () => {
+    expect(resolveFolderId('work', known)).toBe('work');
+  });
+
+  it('treats no folder, and a folder that has gone, as unfiled', () => {
+    expect(resolveFolderId(undefined, known)).toBeNull();
+    expect(resolveFolderId(null, known)).toBeNull();
+    expect(resolveFolderId('', known)).toBeNull();
+    expect(resolveFolderId('deleted', known)).toBeNull();
+  });
+});
+
+describe('countInFolder', () => {
+  it('counts a folder, and counts notes in a vanished folder as unfiled', () => {
+    const known = new Set(['work']);
+    const ids = ['work', 'work', null, 'deleted', undefined];
+    expect(countInFolder(ids, known, 'work')).toBe(2);
+    expect(countInFolder(ids, known, null)).toBe(3);
   });
 });

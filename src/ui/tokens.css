@@ -1,9 +1,13 @@
 /*
- * Hamesh design tokens + component styles.
+ * Hamesh design tokens, and everything Hamesh draws on a web page.
  *
  * Source of truth: the approved "Hamesh Brand Identity" design system.
- * This stylesheet is injected into Hamesh's isolated Shadow DOM root and the
- * popup, so class names are namespaced `hm-` and all values come from tokens.
+ * This stylesheet is injected into Hamesh's isolated Shadow DOM root on every
+ * page the content script runs on — and into the popup and the Notes Library,
+ * which import it first. So it holds the tokens, and only the components a web
+ * page needs: the card, the fields and buttons in it, markers, feedback. What
+ * only Hamesh's own pages need lives in `pages.css`, so a web page does not
+ * carry it. Class names are namespaced `hm-`, and every value is a token.
  *
  * Fonts: IBM Plex (Sans / Sans Arabic / Serif / Mono) with robust system
  * fallbacks. Production should self-host the Plex subset (see docs); this build
@@ -41,6 +45,9 @@
   --hm-success: #4b6b4e;
   --hm-warning: #a67c3d;
   --hm-danger: #8c2f27;
+  /* A refusal's own ground, under its rule (`.hm-alert`). Laid on Hamesh's own
+     surfaces only — a card, a page — never straight over a host page. */
+  --hm-danger-tint: rgba(140, 47, 39, 0.07);
 
   /* The accent as bare channels, so a state layer can be the accent at an
      opacity (`rgb(var(--hm-accent-rgb) / …)`) without a second copy of the
@@ -50,7 +57,10 @@
   /* Type — families */
   --hm-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --hm-arabic: 'IBM Plex Sans Arabic', 'IBM Plex Sans', 'Segoe UI', Tahoma, sans-serif;
-  --hm-serif: 'IBM Plex Serif', Georgia, 'Times New Roman', serif;
+  /* Arabic faces follow the Latin ones, so Arabic words inside serif text are
+     drawn in an Arabic face glyph by glyph — Latin serifs have no Arabic. */
+  --hm-serif:
+    'IBM Plex Serif', Georgia, 'Times New Roman', 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, serif;
   --hm-mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Code', Consolas, monospace;
 
   /* Type — scale. Roles rather than sizes, so a rule says what a piece of text
@@ -86,6 +96,10 @@
   --hm-space-4: 16px;
   --hm-space-5: 24px;
   --hm-space-6: 32px;
+  /* One step of nesting — a folder inside a folder, a note inside it, a reply
+     under a comment. Every nested list indents by `--hm-depth` of these, so
+     no two lists can drift apart again. */
+  --hm-indent: 14px;
 
   /* Radius */
   --hm-radius-sm: 3px;
@@ -133,12 +147,14 @@
        emphasized  a whole pane or page changing place
        pop         a small thing appearing with a settle (overshoots a little)
      A transition governs the state it moves TO, so a collapsible sets `exit`
-     on the closed rule and `enter` on the open one. */
-  --hm-motion-state: var(--hm-motion-state);
+     on the closed rule and `enter` on the open one. Never define one in terms
+     of itself: a custom property that refers to itself resolves to nothing,
+     and every consumer silently stops moving (tests/ui/tokens.test.ts). */
+  --hm-motion-state: var(--hm-dur-fast) var(--hm-ease-out);
   --hm-motion-enter: var(--hm-dur-base) var(--hm-ease-out);
   --hm-motion-exit: var(--hm-dur-fast) var(--hm-ease-in);
-  --hm-motion-emphasized: var(--hm-motion-emphasized);
-  --hm-motion-pop: var(--hm-motion-pop);
+  --hm-motion-emphasized: var(--hm-dur-slow) var(--hm-ease-out);
+  --hm-motion-pop: var(--hm-dur-base) var(--hm-ease-settle);
 
   /* State layers — the accent laid over a surface, at an opacity that says what
      the pointer is doing. Hover 8, focus 12, pressed 16; "selected" is
@@ -222,6 +238,7 @@
   --hm-success: #8fb894;
   --hm-warning: #d4a85e;
   --hm-danger: #e07a6e;
+  --hm-danger-tint: rgba(224, 122, 110, 0.12);
 }
 
 /* Enforce host stacking above any host-page element. This rule is injected
@@ -250,11 +267,60 @@
   font-family: var(--hm-arabic);
 }
 
+/* A glyph that points along the line of reading — forward, back — turns with
+   it. The one mirroring rule, so no glyph is flipped by hand. */
+.hm-scope[dir='rtl'] .hm-mirror {
+  transform: scaleX(-1);
+}
+
+/* ---- The two reading voices ----
+   A note's own words are serif italic, wherever they are shown: being
+   written, read in the viewer, previewed in the Library, shared in a team.
+   Anything else in serif — the page text a note is attached to, a release
+   note — is upright, so a note is never mistaken for what it is about.
+   Arabic has no italic, and must never be slanted by the browser: with
+   synthesis off, a glyph whose face has no italic (every Arabic one) stays
+   upright while the Latin around it is set in the face's real italic — so a
+   note mixing both reads right glyph by glyph. (Not `:dir(rtl)`: the build's
+   CSS pipeline lowers it to `:lang()`, which nothing here carries.) */
+.hm-serif,
+.hm-prose {
+  font-family: var(--hm-serif);
+}
+.hm-prose {
+  font-style: italic;
+  font-synthesis: none;
+}
+
+/* The small caps voice: a card's label, a section's name, a group of menu items. */
+.hm-overline {
+  margin: 0;
+  font-size: var(--hm-text-label);
+  line-height: var(--hm-lh-label);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--hm-ink-40);
+}
+
 /* ---- The mark ---- */
 .hm-mark {
   flex: none;
   display: inline-block;
   vertical-align: middle;
+}
+
+/* Present for a screen reader, absent for the eye. */
+.hm-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* ---- Selection mode ---- */
@@ -279,19 +345,18 @@
     width var(--hm-motion-state),
     height var(--hm-motion-state);
 }
-/* Transient "you are here" highlight for the Notes Library's Open Note flow
-   — briefly pulses around the anchored element once it's scrolled into view.
-   Duration (1400ms) is echoed in HameshApp.tsx's cleanup timeout so the DOM
-   node is removed right as the animation finishes; covered by the blanket
-   `.hm-scope *` reduced-motion override above (no separate media query
-   needed here). */
+/* Transient "you are here" highlight for the Notes Library's Open Note flow —
+   briefly pulses around the anchored element once it's scrolled into view. Its
+   length is `--hm-flash`, set on the element from the one constant the script
+   also clears it by (`RESTORE_FLASH_MS`, content/reveal.ts), so the two can
+   never drift. */
 .hm-restore-highlight {
   position: fixed;
   z-index: var(--hm-z-overlay);
   pointer-events: none;
   border: 2px solid var(--hm-accent);
   border-radius: var(--hm-radius-sm);
-  animation: hm-restore-pulse 1400ms var(--hm-ease-out);
+  animation: hm-restore-pulse var(--hm-flash) var(--hm-ease-out);
 }
 @keyframes hm-restore-pulse {
   0% {
@@ -339,7 +404,7 @@
   pointer-events: auto;
 }
 
-/* ---- Card (composer / viewer / popup) ---- */
+/* ---- Card (composer / viewer / cluster list / quick note) ---- */
 .hm-card {
   position: relative;
   width: 300px;
@@ -378,14 +443,14 @@
   align-items: center;
   gap: 6px;
   margin-bottom: var(--hm-space-2);
-  font-size: var(--hm-text-label);
-  line-height: var(--hm-lh-label);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--hm-ink-40);
 }
 .hm-card-label .hm-mark {
   color: var(--hm-accent);
+}
+/* The viewer keeps a pin and a close button in its top corners; its first line
+   starts below the 30px they take. */
+.hm-viewer-card {
+  padding-top: 36px;
 }
 
 /* Video quick-note — a smaller, chrome-less variant of .hm-card: no label
@@ -399,47 +464,85 @@
   min-height: 52px;
 }
 
+/* ---- Fields ---- */
+/* Writing a note: the words sit in a well — paper, inside the card — in the
+   note's own voice (`.hm-prose`, set beside this class). */
 .hm-textarea {
   display: block;
   width: 100%;
   min-height: 92px;
   resize: vertical;
   padding: var(--hm-space-2);
-  font-family: var(--hm-serif);
   font-size: var(--hm-text-prose);
   line-height: var(--hm-lh-prose);
   color: var(--hm-ink);
   background: var(--hm-paper);
   border: 1px solid var(--hm-border);
   border-radius: var(--hm-radius-md);
-  transition: border-color var(--hm-motion-state);
+  transition:
+    border-color var(--hm-motion-state),
+    box-shadow var(--hm-motion-state);
 }
-.hm-scope[dir='rtl'] .hm-textarea,
-.hm-textarea[dir='rtl'] {
-  font-family: var(--hm-arabic);
-}
-.hm-textarea::placeholder {
+.hm-textarea::placeholder,
+.hm-input::placeholder {
   color: var(--hm-ink-40);
 }
-.hm-textarea:focus-visible,
-.hm-textarea:focus {
+/* A single line: a name, an email, an invite link. */
+.hm-input {
+  min-width: 0;
+  padding: 6px var(--hm-space-3);
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-md);
+  background: var(--hm-surface);
+  color: var(--hm-ink);
+  font-family: inherit;
+  font-size: var(--hm-text-body);
+  transition:
+    border-color var(--hm-motion-state),
+    box-shadow var(--hm-motion-state);
+}
+.hm-textarea:focus,
+.hm-input:focus-visible {
   outline: none;
   border-color: var(--hm-accent);
   box-shadow: var(--hm-halo);
 }
+.hm-input:disabled {
+  opacity: var(--hm-state-disabled);
+  cursor: not-allowed;
+}
+/* A native select draws its own list; tell it which scheme it is in, or a
+   dark card opens a glaring white one. */
+.hm-scope[data-hm-theme='dark'] select {
+  color-scheme: dark;
+}
+select.hm-input {
+  cursor: pointer;
+}
 
+/* Naming something in place (`NameField`): the field and its two answers. */
+.hm-name-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--hm-space-2);
+}
+.hm-name-field__input {
+  flex: 1 1 10rem;
+}
+
+.hm-note-editor .hm-alert {
+  margin-top: var(--hm-space-2);
+}
+
+/* ---- Reading a note ---- */
 .hm-note-body {
   margin: 0;
-  font-family: var(--hm-serif);
   font-size: var(--hm-text-prose);
   line-height: var(--hm-lh-prose);
   color: var(--hm-ink);
   white-space: pre-wrap;
   overflow-wrap: break-word;
-}
-.hm-scope[dir='rtl'] .hm-note-body,
-.hm-note-body[dir='rtl'] {
-  font-family: var(--hm-arabic);
 }
 
 .hm-row {
@@ -452,10 +555,13 @@
 .hm-row--between {
   justify-content: space-between;
 }
+.hm-row__group {
+  display: flex;
+  gap: var(--hm-space-4);
+}
 
 .hm-meta {
   font-size: var(--hm-text-label);
-
   line-height: var(--hm-lh-label);
   color: var(--hm-ink-40);
 }
@@ -465,195 +571,9 @@
    the timestamp it sits opposite, warmed to the accent so the eye finds it. */
 .hm-shared-with {
   font-size: var(--hm-text-label);
-
   line-height: var(--hm-lh-label);
   font-weight: 500;
   color: var(--hm-accent-strong);
-}
-
-/* ---- Buttons ---- */
-.hm-btn {
-  font-family: var(--hm-sans);
-  font-size: var(--hm-text-body-sm);
-  font-weight: 500;
-  line-height: 1;
-  padding: 8px 12px;
-  border-radius: var(--hm-radius-md);
-  border: 1px solid transparent;
-  cursor: pointer;
-  transition:
-    background var(--hm-motion-state),
-    color var(--hm-motion-state),
-    border-color var(--hm-motion-state);
-}
-.hm-btn:focus-visible {
-  outline: none;
-  box-shadow:
-    0 0 0 2px var(--hm-surface),
-    0 0 0 4px var(--hm-accent);
-}
-.hm-btn-primary {
-  background: var(--hm-accent);
-  color: #fff;
-  border-color: var(--hm-accent);
-}
-.hm-btn-primary:hover {
-  background: var(--hm-accent-strong);
-  border-color: var(--hm-accent-strong);
-}
-.hm-btn-primary:disabled {
-  opacity: var(--hm-state-disabled);
-  cursor: not-allowed;
-}
-.hm-btn-ghost {
-  background: transparent;
-  color: var(--hm-ink-60);
-  border-color: var(--hm-border);
-}
-.hm-btn-ghost:hover {
-  background: var(--hm-layer-hover);
-  color: var(--hm-ink);
-}
-.hm-btn-ghost:active {
-  background: var(--hm-layer-pressed);
-}
-.hm-btn-danger {
-  background: var(--hm-danger);
-  color: #fff;
-  border-color: var(--hm-danger);
-}
-.hm-btn-danger:hover {
-  filter: brightness(1.08);
-}
-
-/* A control that is acting keeps its own label — "Rename" is still "Rename"
-   while it happens — and gains an arc before it, so the button neither changes
-   width nor swaps its words for a generic "Working…". `aria-busy` is what says
-   so to a screen reader; the arc is the sighted half of the same statement. */
-.hm-btn[aria-busy='true'],
-.hm-link[aria-busy='true'] {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--hm-space-2);
-  cursor: progress;
-}
-.hm-btn[aria-busy='true']::before,
-.hm-link[aria-busy='true']::before,
-.hm-spinner {
-  content: '';
-  flex: none;
-  width: 12px;
-  height: 12px;
-  border: 1.5px solid currentColor;
-  border-top-color: transparent;
-  border-radius: var(--hm-radius-pill);
-  animation: hm-spin 800ms linear infinite;
-}
-/* On its own — where a row's controls have gone while it acts — the arc takes
-   the accent, and the row's name for it is the label a screen reader hears. */
-.hm-spinner {
-  display: inline-block;
-  color: var(--hm-accent);
-}
-@keyframes hm-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* Icon-style ghost action (Edit / Delete in viewer) */
-.hm-link {
-  font-family: var(--hm-sans);
-  font-size: var(--hm-text-body-sm);
-  font-weight: 500;
-  background: none;
-  border: none;
-  padding: 2px 2px;
-  cursor: pointer;
-  color: var(--hm-ink-60);
-  border-radius: var(--hm-radius-sm);
-}
-.hm-link:hover {
-  color: var(--hm-ink);
-}
-.hm-link--danger {
-  color: var(--hm-danger);
-}
-.hm-link:focus-visible {
-  outline: none;
-  box-shadow: var(--hm-ring);
-}
-
-.hm-close {
-  position: absolute;
-  top: 8px;
-  inset-inline-end: 8px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border: none;
-  background: none;
-  border-radius: var(--hm-radius-sm);
-  cursor: pointer;
-  color: var(--hm-ink-40);
-}
-.hm-close:hover {
-  background: var(--hm-layer-hover);
-  color: var(--hm-ink);
-}
-.hm-close:focus-visible {
-  outline: none;
-  background: var(--hm-layer-focus);
-  box-shadow: var(--hm-ring);
-}
-
-/* Mirrors .hm-close (same size/position pattern, opposite corner) — a
-   persistent pin toggle shown across every NoteViewer state. */
-.hm-pin-toggle {
-  position: absolute;
-  top: 8px;
-  inset-inline-start: 8px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border: none;
-  background: none;
-  border-radius: var(--hm-radius-sm);
-  cursor: pointer;
-  color: var(--hm-ink-40);
-  transition:
-    background var(--hm-motion-state),
-    color var(--hm-motion-state),
-    transform var(--hm-motion-state);
-}
-.hm-pin-toggle:hover {
-  background: var(--hm-layer-hover);
-  color: var(--hm-ink);
-}
-.hm-pin-toggle:active {
-  transform: scale(0.88);
-}
-.hm-pin-toggle[aria-pressed='true'] {
-  color: var(--hm-accent-strong);
-}
-.hm-pin-toggle:focus-visible {
-  outline: none;
-  background: var(--hm-layer-focus);
-  box-shadow: var(--hm-ring);
-}
-
-/* NoteViewer's card has both a pin toggle (top-start) and a close button
-   (top-end) absolutely positioned 8px from the edge at 22px tall — the
-   default .hm-card padding-top (16px) isn't enough to clear that 30px-tall
-   corner zone, so the first line of note text rendered underneath it. */
-.hm-viewer-card {
-  padding-top: 36px;
 }
 
 /* ---- Composer folder selector (FolderPicker.tsx) ----
@@ -673,36 +593,15 @@
   flex: none;
   color: var(--hm-ink-40);
 }
-.hm-folder-picker__select,
-.hm-folder-picker__input {
+.hm-folder-picker__row .hm-input {
   flex: 1 1 auto;
-  min-width: 0;
   height: 28px;
-  padding: 0 var(--hm-space-2);
-  font-family: var(--hm-sans);
+  padding-block: 0;
   font-size: var(--hm-text-body-sm);
-  color: var(--hm-ink);
   background: var(--hm-paper);
-  border: 1px solid var(--hm-border);
-  border-radius: var(--hm-radius-md);
-  transition: border-color var(--hm-motion-state);
 }
-.hm-folder-picker__select {
-  cursor: pointer;
-}
-/* The select's own popup is drawn by the browser — tell it which scheme
-   the card is in, or a dark card opens a glaring white list. */
-.hm-scope[data-hm-theme='dark'] .hm-folder-picker__select {
-  color-scheme: dark;
-}
-.hm-folder-picker__select:focus-visible,
-.hm-folder-picker__input:focus-visible {
-  outline: none;
-  border-color: var(--hm-accent);
-  box-shadow: var(--hm-halo);
-}
-.hm-folder-picker__input::placeholder {
-  color: var(--hm-ink-40);
+.hm-folder-picker__row .hm-name-field {
+  flex: 1 1 auto;
 }
 .hm-folder-picker__empty-text {
   flex: 1 1 auto;
@@ -710,39 +609,9 @@
   font-size: var(--hm-text-body-sm);
   color: var(--hm-ink-60);
 }
-.hm-folder-picker__icon-btn {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  padding: 0;
-  border: none;
-  background: none;
-  border-radius: var(--hm-radius-sm);
-  cursor: pointer;
-  color: var(--hm-ink-40);
-  transition:
-    background var(--hm-motion-state),
-    color var(--hm-motion-state);
-}
-.hm-folder-picker__icon-btn:hover:not(:disabled) {
-  background: var(--hm-layer-hover);
-  color: var(--hm-ink);
-}
-.hm-folder-picker__icon-btn:focus-visible {
-  outline: none;
-  background: var(--hm-layer-focus);
-  box-shadow: var(--hm-ring);
-}
 .hm-folder-picker__star[data-default='true'],
 .hm-folder-picker__star[data-default='true']:hover {
   color: var(--hm-accent);
-}
-.hm-folder-picker__star:disabled {
-  opacity: var(--hm-state-disabled);
-  cursor: default;
 }
 /* Indented past the glyph so the caption and the default toggles line up
    under the folder name they describe. */
@@ -778,41 +647,283 @@
   accent-color: var(--hm-accent);
 }
 
-/* ---- Feedback ---- */
-.hm-error {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: var(--hm-space-2);
-  font-size: var(--hm-text-label);
-  line-height: var(--hm-lh-label);
+/* ---- Buttons ---- */
+.hm-btn {
+  font-family: var(--hm-sans);
+  font-size: var(--hm-text-body-sm);
+  font-weight: 500;
+  line-height: 1;
+  padding: 8px 12px;
+  border-radius: var(--hm-radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition:
+    background var(--hm-motion-state),
+    color var(--hm-motion-state),
+    border-color var(--hm-motion-state);
+}
+.hm-btn:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--hm-surface),
+    0 0 0 4px var(--hm-accent);
+}
+/* One answer to "this cannot be pressed now", for every kind of button. */
+.hm-btn:disabled {
+  opacity: var(--hm-state-disabled);
+  cursor: not-allowed;
+}
+/* A busy button is not a refused one: it keeps its full ink (see the arc below). */
+.hm-btn[aria-busy='true']:disabled {
+  opacity: 1;
+  cursor: progress;
+}
+/* Tighter, for a button inside a row or a form beside a field. */
+.hm-btn--compact {
+  padding: 5px 10px;
+}
+.hm-btn-primary {
+  background: var(--hm-accent);
+  color: #fff;
+  border-color: var(--hm-accent);
+}
+.hm-btn-primary:hover:not(:disabled) {
+  background: var(--hm-accent-strong);
+  border-color: var(--hm-accent-strong);
+}
+.hm-btn-ghost {
+  background: transparent;
+  color: var(--hm-ink-60);
+  border-color: var(--hm-border);
+}
+.hm-btn-ghost:hover:not(:disabled) {
+  background: var(--hm-layer-hover);
+  color: var(--hm-ink);
+}
+.hm-btn-ghost:active:not(:disabled) {
+  background: var(--hm-layer-pressed);
+}
+/* A ghost button whose action cannot be taken back — Remove, Delete the team. */
+.hm-btn--danger-text,
+.hm-btn--danger-text:hover:not(:disabled) {
   color: var(--hm-danger);
 }
+.hm-btn-danger {
+  background: var(--hm-danger);
+  color: #fff;
+  border-color: var(--hm-danger);
+}
+.hm-btn-danger:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+/* A control that is acting keeps its own label — "Rename" is still "Rename"
+   while it happens — and gains an arc before it, so the button neither changes
+   width nor swaps its words for a generic "Working…". `aria-busy` is what says
+   so to a screen reader; the arc is the sighted half of the same statement. */
+.hm-btn[aria-busy='true'],
+.hm-link[aria-busy='true'] {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hm-space-2);
+  cursor: progress;
+}
+.hm-btn[aria-busy='true']::before,
+.hm-link[aria-busy='true']::before,
+.hm-spinner {
+  content: '';
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid currentColor;
+  border-top-color: transparent;
+  border-radius: var(--hm-radius-pill);
+  animation: hm-spin 800ms linear infinite;
+}
+.hm-spinner {
+  display: inline-block;
+  color: var(--hm-accent);
+}
+@keyframes hm-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* A text action — Edit, Delete, Check for changes. */
+.hm-link {
+  font-family: var(--hm-sans);
+  font-size: var(--hm-text-body-sm);
+  font-weight: 500;
+  background: none;
+  border: none;
+  padding: 2px 2px;
+  cursor: pointer;
+  color: var(--hm-ink-60);
+  border-radius: var(--hm-radius-sm);
+  transition: color var(--hm-motion-state);
+}
+.hm-link:hover:not(:disabled) {
+  color: var(--hm-ink);
+}
+.hm-link--danger,
+.hm-link--danger:hover:not(:disabled) {
+  color: var(--hm-danger);
+}
+/* The accent for a link that says where the reader can go next. */
+.hm-link--accent,
+.hm-link--accent:hover:not(:disabled) {
+  color: var(--hm-accent-strong);
+}
+.hm-link--accent:hover:not(:disabled) {
+  text-decoration: underline;
+}
+.hm-link:focus-visible {
+  outline: none;
+  box-shadow: var(--hm-ring);
+}
+.hm-link:disabled {
+  opacity: var(--hm-state-disabled);
+  cursor: not-allowed;
+}
+
+/* A glyph that is a control — close, pin, the "⋮", the default-folder star.
+   One rule for all of them: a small square that answers the pointer with the
+   state layers, and takes a larger hit area than it draws (the rule at the
+   foot of this file). */
+.hm-icon-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: var(--hm-radius-sm);
+  cursor: pointer;
+  color: var(--hm-ink-60);
+  transition:
+    background var(--hm-motion-state),
+    color var(--hm-motion-state),
+    transform var(--hm-motion-state);
+}
+.hm-icon-btn:hover:not(:disabled) {
+  background: var(--hm-layer-hover);
+  color: var(--hm-ink);
+}
+.hm-icon-btn:active:not(:disabled) {
+  background: var(--hm-layer-pressed);
+  transform: scale(0.94);
+}
+.hm-icon-btn:focus-visible {
+  outline: none;
+  background: var(--hm-layer-focus);
+  box-shadow: var(--hm-ring);
+}
+.hm-icon-btn:disabled {
+  opacity: var(--hm-state-disabled);
+  cursor: default;
+}
+.hm-icon-btn[aria-pressed='true'] {
+  color: var(--hm-accent-strong);
+}
+/* Quieter and smaller, in a card's corner. */
+.hm-icon-btn--small {
+  width: 22px;
+  height: 22px;
+  color: var(--hm-ink-40);
+}
+.hm-corner-start,
+.hm-corner-end {
+  position: absolute;
+  top: 8px;
+}
+.hm-corner-start {
+  inset-inline-start: 8px;
+}
+.hm-corner-end {
+  inset-inline-end: 8px;
+}
+
+/* ---- Feedback ---- */
+/* A refusal or a failure, beside what failed: a rule down its inline-start
+   edge and a faint ground, with the way out when there is one. */
+.hm-alert {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--hm-space-2);
+  padding: 6px 10px;
+  border-inline-start: 2px solid var(--hm-danger);
+  border-radius: var(--hm-radius-sm);
+  background: var(--hm-danger-tint);
+  color: var(--hm-danger);
+  font-size: var(--hm-text-body-sm);
+}
+.hm-alert__text {
+  flex: 1 1 12rem;
+}
+.hm-alert__action {
+  border-color: currentColor;
+  color: inherit;
+}
+
+/* A standing state — a dot and a line. */
 .hm-status {
   display: flex;
   align-items: center;
   gap: 6px;
+  margin: 0 0 var(--hm-space-2);
   font-size: var(--hm-text-label);
   line-height: var(--hm-lh-label);
-  margin-bottom: var(--hm-space-2);
 }
-.hm-status .hm-dot {
+.hm-dot {
+  flex: none;
   width: 6px;
   height: 6px;
-  border-radius: 50%;
-  flex: none;
+  border-radius: var(--hm-radius-pill);
+  background: currentColor;
 }
 .hm-status--warning {
   color: var(--hm-warning);
 }
-.hm-status--warning .hm-dot {
-  background: var(--hm-warning);
-}
 .hm-status--success {
   color: var(--hm-success);
 }
-.hm-status--success .hm-dot {
-  background: var(--hm-success);
+
+/* A row that is acting says so where its controls were. */
+.hm-busy {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hm-space-2);
+  color: var(--hm-ink-40);
+  font-size: var(--hm-text-body-sm);
+}
+
+/* "Are you sure?", in place. The two answers stay together: when the question
+   needs the whole line, both drop to the next one rather than one of them
+   being orphaned. */
+.hm-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--hm-space-2) var(--hm-space-3);
+}
+.hm-confirm__question {
+  flex: 1 1 12rem;
+  font-size: var(--hm-text-body-sm);
+  color: var(--hm-ink);
+}
+.hm-confirm__answers {
+  display: flex;
+  gap: var(--hm-space-2);
+  margin-inline-start: auto;
+}
+.hm-card .hm-confirm {
+  margin-top: var(--hm-space-3);
 }
 
 /* ---- Marker ---- */
@@ -875,21 +986,6 @@
     0 0 0 2px var(--hm-accent),
     0 0 0 4px var(--hm-accent-tint);
 }
-.hm-marker__badge {
-  position: absolute;
-  top: -2px;
-  inset-inline-end: -2px;
-  min-width: 14px;
-  height: 14px;
-  padding: 0 3px;
-  border-radius: var(--hm-radius-pill);
-  background: var(--hm-accent);
-  color: #fff;
-  font-size: var(--hm-text-micro);
-  font-weight: 600;
-  line-height: 14px;
-  text-align: center;
-}
 
 /* ---- Contextual text notes ---- */
 /* The action chip offered beside a finished text selection. A .hm-marker
@@ -914,35 +1010,27 @@
 }
 
 /* The page text a contextual note is attached to. An accent rule down the
-   inline-start edge — the margin mark's vertical stroke, in prose form. */
+   inline-start edge — the margin mark's vertical stroke, in prose form. Set
+   upright (`.hm-serif`): these are the page's words, not the note's. */
 .hm-attached {
   margin-bottom: var(--hm-space-2);
 }
-.hm-attached__label {
+.hm-attached .hm-overline {
   display: block;
   margin-bottom: var(--hm-space-1);
-  font-size: var(--hm-text-label);
-  line-height: var(--hm-lh-label);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--hm-ink-40);
+  font-weight: 400;
 }
 .hm-attached__quote {
   margin: 0;
   padding-inline-start: var(--hm-space-2);
   border-inline-start: 2px solid var(--hm-accent);
-  font-family: var(--hm-serif);
   font-size: var(--hm-text-body);
-  line-height: 1.5;
   color: var(--hm-ink-60);
   overflow-wrap: break-word;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
-}
-.hm-scope[dir='rtl'] .hm-attached__quote {
-  font-family: var(--hm-arabic);
 }
 .hm-attached--compact .hm-attached__quote {
   -webkit-line-clamp: 1;
@@ -967,9 +1055,7 @@
    pointer events pass straight through to the player. Keyboard activation
    (Tab + Enter/Space) still works — it doesn't go through pointer
    hit-testing — so `:hover`/`:active` below are effectively unreachable by
-   mouse today; left in place as the visual `:focus-visible` neighbors,
-   and PR4's hover-preview work is expected to trigger the same escalation
-   from its own proximity check rather than real `:hover`. */
+   mouse; left in place as the visual `:focus-visible` neighbours. */
 .hm-video-marker {
   position: fixed;
   z-index: var(--hm-z-marker);
@@ -1015,9 +1101,11 @@
   line-height: 1;
 }
 
-/* ---- Video marker hover preview ---- */
-/* Read-only, pointer-events: none (see VideoMarkerPreview.tsx) — fade +
-   scale in, matching the "fast, premium" motion the design calls for. */
+/* ---- A note at a glance (PreviewPill) ----
+   The pill beside a video marker and over highlighted text: an accent dot,
+   the note's first line, and — for a video note — its moment. Read-only and
+   `pointer-events: none` on a video, so it never steals the player's hover;
+   `.hm-text-popup` below carries the one difference for text. */
 .hm-video-preview {
   position: fixed;
   z-index: var(--hm-z-overlay);
@@ -1057,11 +1145,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--hm-ink);
-  font-family: var(--hm-serif);
   font-size: var(--hm-text-body-sm);
-}
-.hm-scope[dir='rtl'] .hm-video-preview__text {
-  font-family: var(--hm-arabic);
 }
 .hm-video-preview__time {
   flex: none;
@@ -1071,12 +1155,9 @@
   line-height: var(--hm-lh-label);
 }
 
-/* Hover preview for highlighted text. It *is* .hm-video-preview (see
-   TextNotePopup.tsx) — same dot, same single line, no timestamp — and this
-   rule only carries the differences: it lives inside a .hm-floating wrapper
-   that already positions it, and unlike the read-only video preview it
-   takes pointer events, because the pointer has to be able to reach it and
-   clicking it opens the note. */
+/* Over highlighted text the pill is a button: it lives inside a .hm-floating
+   wrapper that already places it, takes the pointer (which must be able to
+   travel from the words into it), and opens the note. */
 .hm-text-popup {
   position: static;
   pointer-events: auto;
@@ -1085,6 +1166,9 @@
   text-align: start;
   max-width: 280px;
   transition: background var(--hm-motion-state);
+}
+.hm-text-popup .hm-video-preview__text {
+  font-size: var(--hm-text-body);
 }
 .hm-text-popup:hover {
   /* Opaque, on purpose: this chip is painted over the host page. */
@@ -1095,19 +1179,6 @@
   box-shadow:
     var(--hm-shadow-md),
     0 0 0 2px var(--hm-accent);
-}
-.hm-text-popup__text {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--hm-ink);
-  font-family: var(--hm-serif);
-  font-size: var(--hm-text-body);
-}
-.hm-scope[dir='rtl'] .hm-text-popup__text {
-  font-family: var(--hm-arabic);
 }
 
 /* ---- Video marker cluster list — click-opened, unlike the preview above ---- */
@@ -1156,210 +1227,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--hm-ink);
-  font-family: var(--hm-serif);
   font-size: var(--hm-text-body);
-}
-.hm-scope[dir='rtl'] .hm-video-cluster-list__preview {
-  font-family: var(--hm-arabic);
-}
-
-/* ---- Icon buttons (settings trigger, back navigation) ---- */
-.hm-icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  width: 26px;
-  height: 26px;
-  padding: 0;
-  border: none;
-  background: none;
-  border-radius: var(--hm-radius-sm);
-  cursor: pointer;
-  color: var(--hm-ink-60);
-  transition:
-    background var(--hm-motion-state),
-    color var(--hm-motion-state);
-}
-.hm-icon-btn:hover {
-  background: var(--hm-layer-hover);
-  color: var(--hm-ink);
-}
-.hm-icon-btn:active {
-  background: var(--hm-layer-pressed);
-  transform: scale(0.94);
-}
-.hm-icon-btn:focus-visible {
-  outline: none;
-  background: var(--hm-layer-focus);
-  box-shadow: var(--hm-ring);
-}
-
-/* ---- Popup ---- */
-.hm-popup {
-  width: 300px;
-  background: var(--hm-surface);
-  color: var(--hm-ink);
-}
-.hm-popup__viewport {
-  width: 300px;
-  overflow: hidden;
-  position: relative;
-}
-.hm-popup__track {
-  display: flex;
-  width: 200%;
-  transition: transform var(--hm-motion-emphasized);
-}
-.hm-popup__pane {
-  flex: 0 0 50%;
-  min-width: 0;
-  padding: var(--hm-space-5);
-  box-sizing: border-box;
-}
-.hm-popup__head {
-  display: flex;
-  align-items: center;
-  gap: var(--hm-space-2);
-}
-.hm-popup__brand {
-  font-weight: 600;
-  font-size: var(--hm-text-body);
-}
-.hm-popup__brand-ar {
-  font-family: var(--hm-arabic);
-  font-weight: 600;
-  font-size: var(--hm-text-title);
-  line-height: var(--hm-lh-title);
-}
-.hm-popup__shortcut {
-  margin-inline-start: auto;
-  font-size: var(--hm-text-label);
-  line-height: var(--hm-lh-label);
-  color: var(--hm-ink-40);
-  font-family: var(--hm-mono);
-}
-.hm-popup__count {
-  margin-top: var(--hm-space-4);
-  font-size: var(--hm-text-display);
-  line-height: var(--hm-lh-display);
-  font-weight: 600;
-}
-.hm-popup__count span {
-  font-size: var(--hm-text-body);
-  font-weight: 500;
-  color: var(--hm-ink-40);
-}
-
-/* ---- Settings ---- */
-.hm-settings__header {
-  display: flex;
-  align-items: center;
-  gap: var(--hm-space-2);
-}
-.hm-settings__title {
-  margin: 0;
-  font-size: var(--hm-text-title);
-  line-height: var(--hm-lh-title);
-  font-weight: 600;
-}
-.hm-settings__title:focus-visible {
-  outline: none;
-}
-.hm-settings__body {
-  margin-top: var(--hm-space-4);
-  display: flex;
-  flex-direction: column;
-}
-.hm-setting-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--hm-space-3);
-  padding: var(--hm-space-3) 0;
-  border-bottom: 1px solid var(--hm-border);
-  font-size: var(--hm-text-body);
-}
-.hm-setting-row:last-child {
-  border-bottom: none;
-}
-.hm-setting-row__label {
-  display: flex;
-  align-items: center;
-  gap: var(--hm-space-2);
-  font-weight: 500;
-}
-.hm-setting-row__icon {
-  display: inline-flex;
-  flex: none;
-  color: var(--hm-accent-strong);
-}
-.hm-setting-row__value {
-  color: var(--hm-ink-40);
-  font-size: var(--hm-text-body-sm);
-}
-/* A line of explanation under a row, for settings whose consequences aren't
-   obvious from a two-word label (what exactly gets exported; whether an
-   import can destroy anything). Indented to clear the row's icon so it
-   reads as that row's own second line. */
-.hm-setting-row__hint {
-  margin: calc(-1 * var(--hm-space-2)) 0 0;
-  padding-inline-start: calc(14px + var(--hm-space-2));
-  padding-bottom: var(--hm-space-3);
-  border-bottom: 1px solid var(--hm-border);
-  color: var(--hm-ink-40);
-  font-size: var(--hm-text-body-sm);
-  line-height: 1.5;
-}
-/* A row with a hint hands its separator to the hint, so the hairline lands
-   under the pair instead of striking through the explanation. */
-.hm-setting-row:has(+ .hm-setting-row__hint) {
-  border-bottom: none;
-}
-.hm-settings__body > .hm-setting-row__hint:last-child {
-  border-bottom: none;
-}
-
-/* ---- Segmented control (e.g. Language) ---- */
-.hm-segmented {
-  display: inline-flex;
-  border: 1px solid var(--hm-border);
-  border-radius: var(--hm-radius-md);
-  overflow: hidden;
-  flex: none;
-}
-.hm-segmented__option {
-  position: relative;
-  padding: 5px 10px;
-  font-size: var(--hm-text-body-sm);
-  font-weight: 500;
-  color: var(--hm-ink-60);
-  cursor: pointer;
-  transition:
-    background var(--hm-motion-state),
-    color var(--hm-motion-state);
-}
-.hm-segmented__option:not(:first-child) {
-  border-inline-start: 1px solid var(--hm-border);
-}
-.hm-segmented__option input {
-  position: absolute;
-  inset: 0;
-  margin: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-.hm-segmented__option:hover:not(:has(input:checked)) {
-  background: var(--hm-layer-hover);
-}
-.hm-segmented__option:has(input:checked) {
-  background: var(--hm-accent-tint);
-  color: var(--hm-accent-strong);
-  font-weight: 600;
-}
-.hm-segmented__option:has(input:focus-visible) {
-  outline: none;
-  box-shadow: var(--hm-ring-inset);
 }
 
 /* ---- Hit areas ----
@@ -1369,17 +1237,8 @@
    nothing. Left out on purpose: the marker and the text-selection chip, which
    sit over a host page — an invisible target there would take clicks meant for
    the page's own controls beside them — and the video marker, which takes no
-   pointer events at all. They grow only under a coarse pointer. .hm-close and
-   .hm-pin-toggle are already position: absolute, so the pseudo-element anchors
-   to them as they are. */
-.hm-icon-btn,
-.hm-folder-picker__icon-btn {
-  position: relative;
-}
-.hm-close::after,
-.hm-pin-toggle::after,
-.hm-icon-btn::after,
-.hm-folder-picker__icon-btn::after {
+   pointer events at all. They grow only under a coarse pointer. */
+.hm-icon-btn::after {
   content: '';
   position: absolute;
   inset: min(0px, calc(50% - var(--hm-hit-min) / 2));

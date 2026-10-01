@@ -252,7 +252,7 @@ describe('the Teams page', () => {
     fireEvent.click(screen.getByRole('button', { name: /Unfiled/ }));
     expect(onOpenLibrary).toHaveBeenLastCalledWith({
       teamId: TEAM,
-      folder: { id: null, name: strings.unfiled },
+      folder: { id: null, name: strings.unfiledSection },
     });
     fireEvent.click(screen.getByRole('button', { name: strings.openInLibrary }));
     expect(onOpenLibrary).toHaveBeenLastCalledWith({ teamId: TEAM });
@@ -279,32 +279,38 @@ describe('the Teams page', () => {
     render_(client);
     await screen.findByText('Reading');
 
-    fireEvent.click(screen.getByRole('button', { name: `+ ${strings.newTeamFolder}` }));
-    fireEvent.change(screen.getByLabelText(strings.newTeamFolder), {
-      target: { value: 'Onboarding' },
+    fireEvent.click(screen.getByRole('button', { name: strings.newFolder }));
+    fireEvent.change(screen.getByLabelText(strings.newFolder), {
+      target: { value: '  Onboarding  ' },
     });
     fireEvent.click(screen.getByRole('button', { name: strings.create }));
     await waitFor(() => expect(calls.some((c) => c.op === 'folders.create')).toBe(true));
+    // Trimmed before it is sent, by the one name field every folder name uses.
     expect(calls.find((c) => c.op === 'folders.create')!.params).toEqual({
       teamId: TEAM,
       name: 'Onboarding',
     });
 
-    // Scoped to the tile: the team's own settings panel has a "Rename" too.
-    const tile = screen.getByText('Reading').closest('li')!;
-    fireEvent.click(within(tile).getByRole('button', { name: strings.renameFolder }));
-    fireEvent.change(screen.getByLabelText(strings.renameFolder), { target: { value: 'Papers' } });
-    fireEvent.click(within(tile).getByRole('button', { name: strings.rename }));
+    // A folder's actions are in its own menu, the same one the Library's have.
+    const menu = () => screen.getByRole('button', { name: strings.folderActions('Reading') });
+    fireEvent.click(menu());
+    fireEvent.click(screen.getByRole('menuitem', { name: strings.renameFolder }));
+    fireEvent.change(screen.getByLabelText(strings.renameFolder), {
+      target: { value: ' Papers ' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: strings.save }));
     await waitFor(() => expect(calls.some((c) => c.op === 'folders.rename')).toBe(true));
+    // A rename is trimmed too — it used to keep the spaces around the name.
     expect(calls.find((c) => c.op === 'folders.rename')!.params).toEqual({
       teamId: TEAM,
       folderId: 'FOLDER',
       name: 'Papers',
     });
 
-    fireEvent.click(screen.getByRole('button', { name: strings.deleteFolder }));
-    // Asked on the tile itself, never in a browser dialog, and nothing has happened yet.
-    expect(screen.getByText(strings.deleteFolderConfirm('Reading'))).toBeInTheDocument();
+    fireEvent.click(menu());
+    fireEvent.click(screen.getByRole('menuitem', { name: strings.deleteFolder }));
+    // Asked in place, never in a browser dialog, and nothing has happened yet.
+    expect(screen.getByText(strings.deleteTeamFolderConfirm('Reading'))).toBeInTheDocument();
     expect(calls.some((c) => c.op === 'folders.delete')).toBe(false);
     fireEvent.click(screen.getByRole('button', { name: strings.deleteFolder }));
     await waitFor(() => expect(calls.some((c) => c.op === 'folders.delete')).toBe(true));
@@ -316,8 +322,9 @@ describe('the Teams page', () => {
     render_(client);
     await screen.findByText('Reading');
 
+    expect(screen.queryByRole('button', { name: strings.newFolder })).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('button', { name: `+ ${strings.newTeamFolder}` }),
+      screen.queryByRole('button', { name: strings.folderActions('Reading') }),
     ).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: strings.renameFolder })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: strings.deleteFolder })).not.toBeInTheDocument();
@@ -418,7 +425,7 @@ describe('the Teams page', () => {
     render_(client);
     await screen.findByRole('radio', { name: 'Alpha' });
     expect(screen.queryByText(/Read-only/)).not.toBeInTheDocument();
-    expect(screen.queryByText(strings.stateActive)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Active$/)).not.toBeInTheDocument();
   });
 
   it('reports a failure in the reader’s own words', async () => {

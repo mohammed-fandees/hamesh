@@ -5,7 +5,7 @@ import './styles';
 import { useTeams } from './useTeams';
 import { JoinTeam } from './JoinTeam';
 import { BillingPanel } from './BillingPanel';
-import { SettingsGroup } from '../SettingsGroup';
+import { Panel } from '../kit/Section';
 
 interface TeamsAccountProps {
   lang: Lang;
@@ -34,7 +34,7 @@ export function TeamsAccount({ lang, client, onJoined }: TeamsAccountProps) {
 
   return (
     <>
-      <SettingsGroup title={strings.joinTeam} collapsed>
+      <Panel title={strings.joinTeam}>
         <JoinTeam
           strings={strings}
           page={page}
@@ -43,11 +43,11 @@ export function TeamsAccount({ lang, client, onJoined }: TeamsAccountProps) {
             onJoined(teamId);
           }}
         />
-      </SettingsGroup>
+      </Panel>
 
-      <SettingsGroup title={strings.billing} collapsed>
+      <Panel title={strings.plan}>
         <BillingPanel strings={strings} lang={lang} page={page} me={me} />
-      </SettingsGroup>
+      </Panel>
     </>
   );
 }

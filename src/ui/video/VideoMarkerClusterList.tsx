@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { Note, VideoAnchor } from '@/domain/note';
 import { formatVideoTimestamp, firstLineOf } from '@/domain/video-markers';
 import type { Strings } from '../i18n';
+import { escapeLayer } from '../kit/keys';
 
 export interface VideoMarkerClusterItem {
   note: Note;
@@ -47,11 +48,7 @@ export function VideoMarkerClusterList({
       className="hm-card hm-video-cluster-list"
       role="dialog"
       aria-label={strings.videoClusterLabel(items.length)}
-      onKeyDown={(e) => {
-        if (e.key !== 'Escape') return;
-        e.preventDefault();
-        onClose();
-      }}
+      onKeyDown={escapeLayer(onClose)}
     >
       <ul className="hm-video-cluster-list__items">
         {sorted.map((item, i) => (
@@ -65,7 +62,7 @@ export function VideoMarkerClusterList({
               <span className="hm-video-cluster-list__time">
                 {formatVideoTimestamp(item.anchor.timestamp)}
               </span>
-              <span className="hm-video-cluster-list__preview" dir="auto">
+              <span className="hm-video-cluster-list__preview hm-prose" dir="auto">
                 {firstLineOf(item.note.content)}
               </span>
             </button>

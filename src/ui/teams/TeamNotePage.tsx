@@ -1,19 +1,24 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { TeamAction, TeamMember, TeamResponse } from '@hamesh/teams-contract';
-import type { CachedTeamNote } from '@/teams/page-cache';
+import type { TeamMember, TeamResponse } from '@hamesh/teams-contract';
+import { flattenFolderTree, resolveFolderId } from '@/domain/folder-grouping';
+import { extractDomain, pageLabelFrom } from '@/domain/notes-grouping';
 import type { TeamCacheSnapshot } from '@/teams/messages';
-import { extractDomain } from '@/domain/notes-grouping';
-import type { Lang } from '../i18n';
-import { relativeTime } from '../i18n';
-import { MarginMark } from '../MarginMark';
+import type { CachedTeamNote } from '@/teams/page-cache';
+import { FolderSelect } from '../FolderSelect';
+import { relativeTime } from '../format';
+import { getStrings, type Lang } from '../i18n';
+import { Breadcrumb } from '../kit/Breadcrumb';
+import { EmptyState } from '../kit/EmptyState';
+import { Busy, InlineError } from '../kit/Feedback';
+import { InlineConfirm } from '../kit/InlineConfirm';
+import { Skeleton } from '../kit/Skeleton';
+import { NoteEditor } from '../NoteEditor';
+import { CommentThread } from './CommentThread';
+import { noteRights } from './permissions';
+import type { PersonalNotes } from './personal-notes';
+import type { TeamsRoute } from './route';
 import type { TeamsStrings } from './strings';
 import type { TeamsPage } from './useTeams';
-import type { PersonalNotes } from './personal-notes';
-import { InlineConfirm } from './InlineConfirm';
-import { CommentThread } from './CommentThread';
-import { flattenFolders } from './folders';
-import type { TeamsRoute } from './route';
-import { TeamsBreadcrumb } from './TeamsBreadcrumb';
 
 interface TeamNotePageProps {
   strings: TeamsStrings;
@@ -40,8 +45,8 @@ type Asking = 'delete' | 'unshare';
  * The Library lists a team's notes, and this is the only other place one is
  * looked at — because this is where a note is discussed, edited, filed, taken
  * back or deleted for everyone. Which of those appear is decided by the
- * capabilities the server sent with the team, and the server checks each
- * request again regardless.
+ * capabilities the server sent with the team (`noteRights`), and the server
+ * checks each request again regardless.
  *
  * The note comes from the copy this device already holds; opening the page asks
  * the server for the team's changes, never for a page or a URL.
@@ -59,9 +64,8 @@ export function TeamNotePage({
   onRoute,
 }: TeamNotePageProps) {
   const teamId = team.team.id;
-  const can = (action: TeamAction) => team.capabilities.includes(action);
   const [snapshot, setSnapshot] = useState<TeamCacheSnapshot | null>(null);
-  const [editing, setEditing] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
   const [asking, setAsking] = useState<Asking | null>(null);
 
   /** Pulls first, then reads: after a change, what is shown is what the server has. */
@@ -77,7 +81,7 @@ export function TeamNotePage({
   // effect's synchronous path cascades a render (see `useTeams`).
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    void (async () => {
       const next = await page.cache(teamId, 'sync', 'notes.reload');
       if (!cancelled && next) setSnapshot(next);
     })();
@@ -91,12 +95,7 @@ export function TeamNotePage({
   const key = `note:${noteId}`;
   const working = page.working(key);
   const failed = page.failed(key);
-
-  const mine = note?.authorId === myUserId;
-  const mayEdit = can('notes.edit_any') || (mine && can('notes.edit_own'));
-  const mayFile = can('notes.file_any') || (mine && can('notes.file_own'));
-  const mayDelete = can('notes.delete_any') || (mine && can('notes.delete_own'));
-  const mayUnshare = mine && can('notes.unshare_own');
+  const may = noteRights(team, note?.authorId ?? null, myUserId);
 
   async function move(to: string | null) {
     if (!note) return;
@@ -106,11 +105,10 @@ export function TeamNotePage({
     await reload();
   }
 
-  async function saveEdit() {
-    if (!note || editing === null) return;
-    const content = editing.trim();
-    setEditing(null);
-    if (!content || content === note.content) return;
+  async function saveEdit(content: string) {
+    if (!note) return;
+    setEditing(false);
+    if (content === note.content) return;
     await page.run('notes.update', { teamId, noteId, version: note.version, content }, key);
     await reload();
   }
@@ -133,8 +131,8 @@ export function TeamNotePage({
 
   /** The trail back. What the last step says is the note itself once it is known. */
   const trail = (last: string) => (
-    <TeamsBreadcrumb
-      strings={strings}
+    <Breadcrumb
+      label={strings.breadcrumb}
       items={[
         { label: strings.teams, onClick: () => onRoute({ page: 'overview', teamId: null }) },
         { label: team.team.name, onClick: () => onRoute({ page: 'overview', teamId }) },
@@ -147,10 +145,7 @@ export function TeamNotePage({
     return (
       <>
         {trail(strings.sharedNotes)}
-        <div className="hm-skeleton" aria-hidden="true">
-          <div className="hm-skeleton__row" />
-          <div className="hm-skeleton__row" />
-        </div>
+        <Skeleton rows={2} />
       </>
     );
   }
@@ -159,144 +154,115 @@ export function TeamNotePage({
     return (
       <>
         {trail(strings.sharedNotes)}
-        <div className="hm-empty hm-fade-in">
-          <MarginMark size={28} strokeWidth={3} />
-          <p className="hm-empty__title">{strings.noteGoneTitle}</p>
-          <p className="hm-empty__body">{strings.noteGoneBody}</p>
-          <button type="button" className="hm-btn hm-btn-primary hm-empty__action" onClick={onGone}>
-            {strings.backToTeam(team.team.name)}
-          </button>
-        </div>
+        <EmptyState
+          title={strings.noteGoneTitle}
+          body={strings.noteGoneBody}
+          action={{ label: strings.backToTeam(team.team.name), onClick: onGone }}
+        />
       </>
     );
   }
 
-  const folders = flattenFolders(snapshot.folders);
+  const label = pageLabelFrom(note.pageTitle, note.originalUrl);
+  const folders = flattenFolderTree(snapshot.folders);
   const folderIds = new Set(folders.map((f) => f.folder.id));
 
   return (
     <>
-      {trail(note.pageTitle || extractDomain(note.originalUrl))}
+      {trail(label)}
       <article className="hm-section hm-team-note" data-working={working || undefined}>
         <div className="hm-team-note__head">
           <a
-            className="hm-link hm-team-note__page"
+            className="hm-link hm-link--accent hm-team-note__page"
             href={note.originalUrl}
             target="_blank"
             rel="noopener noreferrer"
             title={strings.openPage}
           >
-            <bdi>{note.pageTitle || extractDomain(note.originalUrl)}</bdi>
+            <bdi>{label}</bdi>
           </a>
           <span className="hm-team-note__domain">{extractDomain(note.originalUrl)}</span>
-          <span className="hm-section__spacer" />
-          <span className="hm-section__meta">
-            {strings.noteEdited(relativeTime(new Date(note.updatedAt).toISOString(), lang))}
+          <span className="hm-team-note__meta">
+            {strings.editedAgo(relativeTime(note.updatedAt, lang))}
           </span>
         </div>
 
-        {editing !== null ? (
-          <textarea
-            className="hm-textarea"
-            dir="auto"
-            autoFocus
-            aria-label={strings.editNote}
-            value={editing}
-            onChange={(e) => setEditing(e.target.value)}
+        {editing ? (
+          <NoteEditor
+            strings={getStrings(lang)}
+            initial={note.content}
+            label={strings.edit}
+            saveLabel={strings.save}
+            saving={working}
+            onCancel={() => setEditing(false)}
+            onSave={(content) => void saveEdit(content)}
           />
         ) : (
-          <p className="hm-team-note__body" dir="auto">
+          <p className="hm-team-note__body hm-prose" dir="auto">
             {note.content}
           </p>
         )}
 
-        {failed && (
-          <p className="hm-field-error" role="alert">
-            {strings.error(failed)}
-          </p>
-        )}
+        {failed && <InlineError>{strings.error(failed)}</InlineError>}
 
         {asking === 'delete' ? (
           <InlineConfirm
-            strings={strings}
             question={strings.deleteSharedConfirm}
-            confirmLabel={strings.deleteSharedNote}
+            confirmLabel={strings.delete}
+            cancelLabel={strings.keepIt}
             working={working}
             onConfirm={() => void remove()}
             onCancel={() => setAsking(null)}
           />
         ) : asking === 'unshare' ? (
           <InlineConfirm
-            strings={strings}
             question={strings.unshareConfirm}
             confirmLabel={strings.unshareNote}
+            cancelLabel={strings.keepIt}
             tone="plain"
             working={working}
             onConfirm={() => void unshare()}
             onCancel={() => setAsking(null)}
           />
-        ) : editing !== null ? (
-          <div className="hm-team-note__actions">
-            <button type="button" className="hm-btn hm-btn-ghost" onClick={() => setEditing(null)}>
-              {strings.cancel}
-            </button>
-            <button
-              type="button"
-              className="hm-btn hm-btn-primary"
-              disabled={working}
-              onClick={() => void saveEdit()}
-              aria-busy={working}
-            >
-              {strings.saveNote}
-            </button>
-          </div>
-        ) : working ? (
-          <span className="hm-spinner" role="status" aria-label={strings.working} />
+        ) : editing ? null : working ? (
+          <Busy label={strings.working} />
         ) : (
           <div className="hm-team-note__actions">
-            {mayFile && folders.length > 0 && (
-              <label className="hm-team-note__move">
-                <span className="hm-visually-hidden">{strings.moveToFolder}</span>
-                <select
-                  className="hm-input hm-input--select"
-                  value={note.folderId && folderIds.has(note.folderId) ? note.folderId : ''}
-                  onChange={(e) => void move(e.target.value || null)}
-                >
-                  <option value="">{strings.noFolderOption}</option>
-                  {folders.map(({ folder, depth }) => (
-                    <option key={folder.id} value={folder.id}>
-                      {' '.repeat(depth * 2)}
-                      {folder.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+            {may.file && folders.length > 0 && (
+              <FolderSelect
+                folders={folders}
+                value={resolveFolderId(note.folderId, folderIds)}
+                label={strings.moveToFolder}
+                noneLabel={strings.noFolderOption}
+                className="hm-team-note__move"
+                onChange={(to) => void move(to)}
+              />
             )}
-            <span className="hm-section__spacer" />
-            {mayEdit && (
-              <button type="button" className="hm-link" onClick={() => setEditing(note.content)}>
-                {strings.editNote}
+            <span className="hm-team-note__spacer" />
+            {may.edit && (
+              <button type="button" className="hm-link" onClick={() => setEditing(true)}>
+                {strings.edit}
               </button>
             )}
-            {mayUnshare && (
+            {may.unshare && (
               <button type="button" className="hm-link" onClick={() => setAsking('unshare')}>
                 {strings.unshareNote}
               </button>
             )}
-            {mayDelete && (
+            {may.delete && (
               <button
                 type="button"
                 className="hm-link hm-link--danger"
                 onClick={() => setAsking('delete')}
               >
-                {strings.deleteSharedNote}
+                {strings.delete}
               </button>
             )}
           </div>
         )}
       </article>
 
-      <h2 className="hm-subheading">{strings.comments}</h2>
+      <h2 className="hm-overline hm-team-note__comments-title">{strings.comments}</h2>
       <CommentThread
         strings={strings}
         lang={lang}
