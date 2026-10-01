@@ -8,6 +8,7 @@ import type {
   PageResult,
   ThreadLine,
   ThreadPreview,
+  ThreadText,
 } from './page-channel';
 import { readPageBucket, readTeamIndex } from './page-cache';
 import type { TeamsService } from './service';
@@ -123,18 +124,33 @@ async function readThread(
   lines.sort((a, b) => a.createdAt - b.createdAt);
 
   const members = await service.perform('members.list', { teamId });
-  const people = new Map(members.ok ? members.data.members.map((m) => [m.userId, m] as const) : []);
-  const names = new Map([...people].map(([id, m]) => [id, m.displayName] as const));
+  const names = new Map(
+    members.ok ? members.data.members.map((m) => [m.userId, m.displayName] as const) : [],
+  );
   const latest: ThreadLine[] = lines.slice(-PREVIEW_LINES).map((line) => ({
     id: line.id,
     author: line.authorId ? (names.get(line.authorId) ?? null) : null,
-    avatarUrl: line.authorId ? (people.get(line.authorId)?.avatarUrl ?? null) : null,
     authorId: line.authorId,
-    // Mentions as the names they stand for: the page holds no member list.
-    body: line.body.replace(MENTION_PATTERN, (_, id: string) => `@${names.get(id) ?? '…'}`),
+    parts: partsOf(line.body, names),
     createdAt: line.createdAt,
   }));
   return { ok: true, data: { total, latest } };
+}
+
+/**
+ * A comment's words, its mentions turned into the names they stand for: the
+ * page holds no member list, and draws a name as a name, not as an id.
+ */
+export function partsOf(body: string, names: ReadonlyMap<string, string>): ThreadText[] {
+  const parts: ThreadText[] = [];
+  let from = 0;
+  for (const match of body.matchAll(MENTION_PATTERN)) {
+    if (match.index > from) parts.push({ text: body.slice(from, match.index) });
+    parts.push({ mention: names.get(match[1]) ?? '…' });
+    from = match.index + match[0].length;
+  }
+  if (from < body.length) parts.push({ text: body.slice(from) });
+  return parts;
 }
 
 /** The teams a new note can go to, each with its folders as last pulled. */

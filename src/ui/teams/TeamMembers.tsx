@@ -74,7 +74,7 @@ export function TeamMembers({
         const asking = confirming?.userId === member.userId ? confirming.act : null;
         return (
           <li key={member.userId} className="hm-team-member" data-asking={asking ?? undefined}>
-            <Avatar name={member.displayName} src={member.avatarUrl} />
+            <Avatar name={member.displayName} src={member.avatarUrl} seed={member.userId} />
             <span className="hm-team-member__who">
               <span className="hm-team-member__name">
                 <bdi>{member.displayName}</bdi>

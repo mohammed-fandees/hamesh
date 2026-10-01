@@ -741,21 +741,27 @@
 }
 
 /* ---- Chrome's side panel ----
-   Narrow, beside the page: one column, the header kept in view while the
-   discussion scrolls under it. */
+   Narrow, beside the page: one column on the paper, the header kept in view
+   above it and the reply field kept in view below it while the discussion
+   scrolls between them. */
 .hm-panel-page {
   min-height: 100vh;
   background: var(--hm-paper);
 }
+.hm-panel-view {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
 .hm-panel-view__head {
   position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: 2;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--hm-space-2);
-  padding: var(--hm-space-3) var(--hm-space-4);
+  gap: 10px;
+  padding: 14px var(--hm-space-4);
   border-bottom: 1px solid var(--hm-border);
   background: var(--hm-surface);
   color: var(--hm-accent);
@@ -763,20 +769,23 @@
 .hm-panel-view__brand {
   flex: 1;
   color: var(--hm-ink);
-  font-size: var(--hm-text-body);
+  font-size: var(--hm-text-title);
   font-weight: 600;
 }
 .hm-panel-view__body {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: var(--hm-space-4);
   padding: var(--hm-space-4);
 }
+
+/* The note the discussion is about. */
 .hm-panel-note {
   display: flex;
   flex-direction: column;
-  gap: var(--hm-space-2);
-  padding: var(--hm-card-pad-dense);
+  gap: 10px;
+  padding: 14px;
   border: 1px solid var(--hm-border);
   border-radius: var(--hm-radius-lg);
   background: var(--hm-surface);
@@ -784,11 +793,12 @@
 .hm-panel-note__head {
   display: flex;
   align-items: center;
-  gap: var(--hm-space-2);
+  gap: 10px;
 }
 .hm-panel-note__head .hm-avatar {
   width: 28px;
   height: 28px;
+  font-size: var(--hm-text-body-sm);
 }
 .hm-panel-note__who {
   display: flex;
@@ -796,6 +806,7 @@
   min-width: 0;
 }
 .hm-panel-note__author {
+  color: var(--hm-ink);
   font-size: var(--hm-text-body);
   font-weight: 600;
 }
@@ -804,19 +815,34 @@
   font-size: var(--hm-text-label);
   line-height: var(--hm-lh-label);
 }
+.hm-panel-note__team {
+  color: var(--hm-accent-strong);
+  font-weight: 600;
+}
 .hm-panel-note__quote {
+  display: -webkit-box;
   margin: 0;
+  overflow: hidden;
   padding-inline-start: var(--hm-space-2);
   border-inline-start: 2px solid var(--hm-accent);
   color: var(--hm-ink-60);
   font-size: var(--hm-text-body-sm);
+  line-height: 1.5;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 .hm-panel-note__body {
   margin: 0;
+  color: var(--hm-ink);
+  font-family: var(--hm-serif);
   font-size: var(--hm-text-prose);
+  font-style: italic;
   line-height: var(--hm-lh-prose);
+  white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+/* Every shared note on the page, to pick one. */
 .hm-panel-notes {
   margin: 0;
   padding: 0;
@@ -830,7 +856,7 @@
   flex-direction: column;
   gap: var(--hm-space-1);
   width: 100%;
-  padding: var(--hm-card-pad-dense);
+  padding: 14px;
   border: 1px solid var(--hm-border);
   border-radius: var(--hm-radius-lg);
   background: var(--hm-surface);
@@ -853,9 +879,111 @@
   line-height: var(--hm-lh-label);
 }
 .hm-panel-notes__body {
-  font-size: var(--hm-text-body);
   display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
   overflow: hidden;
+  font-family: var(--hm-serif);
+  font-size: var(--hm-text-prose);
+  font-style: italic;
+  line-height: var(--hm-lh-prose);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+/* The discussion, beside the page: no card, the faces larger, replies stepped
+   in under the comment they answer, and the field at the panel's foot. */
+.hm-discussion--panel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--hm-space-4);
+}
+.hm-discussion__heading {
+  margin: 0;
+  color: var(--hm-ink-40);
+  font-size: var(--hm-text-label);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+.hm-discussion--panel > .hm-comments {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.hm-discussion--panel .hm-comments > li + li {
+  border-top: none;
+}
+.hm-discussion--panel .hm-comments .hm-comments {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.hm-discussion--panel .hm-comment {
+  gap: 10px;
+  padding: 0;
+}
+.hm-discussion--panel .hm-comment > .hm-avatar {
+  width: 28px;
+  height: 28px;
+  font-size: var(--hm-text-body-sm);
+}
+.hm-discussion--panel .hm-comment[data-reply='true'] {
+  gap: var(--hm-space-2);
+  padding-inline-start: 38px;
+}
+.hm-discussion--panel .hm-comment[data-reply='true'] > .hm-avatar {
+  width: 22px;
+  height: 22px;
+  font-size: var(--hm-text-micro);
+}
+.hm-discussion--panel .hm-comment__content {
+  gap: var(--hm-space-1);
+}
+.hm-discussion--panel .hm-comment__meta {
+  font-size: var(--hm-text-label);
+}
+.hm-discussion--panel .hm-comment__author {
+  font-size: var(--hm-text-body);
+  font-weight: 600;
+}
+.hm-discussion--panel .hm-comment[data-reply='true'] .hm-comment__author {
+  font-size: var(--hm-text-label);
+}
+.hm-discussion--panel .hm-comment__body {
+  line-height: 1.6;
+}
+.hm-discussion--panel .hm-comment__actions {
+  gap: var(--hm-space-3);
+  margin-top: 0;
+}
+.hm-discussion--panel .hm-comment__actions .hm-link {
+  color: var(--hm-ink-60);
+  font-size: var(--hm-text-body-sm);
+}
+.hm-discussion--panel .hm-comment__actions .hm-link--danger {
+  color: var(--hm-danger);
+}
+/* A name in what was said, set apart as the canvas has it. */
+.hm-discussion--panel .hm-mention {
+  padding: 0 3px;
+  border-radius: var(--hm-radius-sm);
+  background: var(--hm-marker-hover);
+}
+.hm-discussion--panel .hm-discussion__compose {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  margin: auto calc(-1 * var(--hm-space-4)) calc(-1 * var(--hm-space-4));
+  padding: var(--hm-space-3) var(--hm-space-4) var(--hm-space-4);
+  border-top: 1px solid var(--hm-border);
+  background: var(--hm-surface);
+}
+.hm-discussion--panel .hm-discussion__compose .hm-textarea {
+  min-height: 76px;
+  border-radius: var(--hm-radius-lg);
+}
+/* The field is at the foot, so the people to name open above it. */
+.hm-discussion--panel .hm-discussion__compose .hm-mention-picker {
+  top: auto;
+  bottom: 100%;
+  margin: 0 0 6px;
 }

@@ -73,10 +73,10 @@ const sameTeams = (a: readonly string[], b: readonly string[]) =>
 export function createPeople(deps: PeopleDeps) {
   let running: Promise<void> | null = null;
 
-  async function gather(teamIds: string[], force: boolean): Promise<void> {
+  async function gather(teamIds: string[], me: string, force: boolean): Promise<void> {
     const current = await deps.read();
     const fresh = deps.now() - current.syncedAt < PEOPLE_TTL;
-    if (!force && fresh && sameTeams(current.teamIds, teamIds)) return;
+    if (!force && fresh && current.me === me && sameTeams(current.teamIds, teamIds)) return;
 
     const people: Record<string, CachedPerson> = {};
     let count = 0;
@@ -103,18 +103,18 @@ export function createPeople(deps: PeopleDeps) {
         count += 1;
       }
     }
-    await deps.write({ people, teamIds: [...teamIds], syncedAt: deps.now() });
+    await deps.write({ people, me, teamIds: [...teamIds], syncedAt: deps.now() });
   }
 
   return {
     /**
-     * Gathers the directory for these teams, unless it was just gathered for
-     * them; `force` gathers it regardless. One at a time: a second ask while
+     * Gathers the directory for these teams, as seen by this user, unless it
+     * was just gathered for them; `force` gathers it regardless. One at a time: a second ask while
      * one runs waits for it and is then satisfied by what it wrote.
      */
-    async refresh(teamIds: string[], force = false): Promise<void> {
+    async refresh(teamIds: string[], me: string, force = false): Promise<void> {
       while (running) await running.catch(() => {});
-      running = gather(teamIds, force).finally(() => {
+      running = gather(teamIds, me, force).finally(() => {
         running = null;
       });
       return running;

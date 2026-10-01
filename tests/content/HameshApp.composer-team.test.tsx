@@ -71,12 +71,13 @@ function teamSource(share: TeamNotesSource['share']): TeamNotesSource {
   return {
     read: vi.fn(async (): Promise<Note[]> => []),
     watch: () => () => {},
-    people: vi.fn(async () => ({ people: {}, teamIds: [], syncedAt: 0 })),
+    people: vi.fn(async () => ({ people: {}, me: null, teamIds: [], syncedAt: 0 })),
     watchPeople: () => () => {},
     label: () => undefined,
     thread: vi.fn(),
     reply: vi.fn(),
     openDiscussion: vi.fn(),
+    openInHamesh: vi.fn(),
     destinations: vi.fn(async () => ({
       ok: true as const,
       data: [

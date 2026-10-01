@@ -40,8 +40,10 @@ export interface TeamNotesSource {
   thread(teamId: string, noteId: string): Promise<PageResult<ThreadPreview>>;
   /** Adds a comment to a team note's discussion. */
   reply(teamId: string, noteId: string, body: string): Promise<PageResult<null>>;
-  /** Opens the note's whole discussion in Hamesh's own page. */
+  /** Opens the note's whole discussion beside the page, in the side panel. */
   openDiscussion(teamId: string, noteId: string): Promise<void>;
+  /** Opens the note's own page in Hamesh, in a tab. */
+  openInHamesh(teamId: string, noteId: string): Promise<void>;
   /** The teams a new note can go to, with their folders. */
   destinations(): Promise<PageResult<Destination[]>>;
   /** Shares a note this device holds for this page; the local copy then goes. */
@@ -89,6 +91,9 @@ export function createTeamNotesSource(): TeamNotesSource {
       ask({ op: 'reply', teamId, noteId, body, requestId: newRequestId() }),
     openDiscussion: async (teamId, noteId) => {
       await ask({ op: 'open', teamId, noteId });
+    },
+    openInHamesh: async (teamId, noteId) => {
+      await ask({ op: 'open', teamId, noteId, in: 'hamesh' });
     },
     destinations: () => ask({ op: 'destinations' }),
     share: (noteId, teamId, folderId) => ask({ op: 'share', noteId, teamId, folderId }),

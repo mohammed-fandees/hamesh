@@ -104,6 +104,7 @@ export function MentionsInbox({ lang, client, onRead, onOpenNote }: MentionsInbo
               <Avatar
                 name={author}
                 src={entry.authorId ? people[entry.authorId]?.avatarUrl : null}
+                seed={entry.authorId}
               />
               <div className="hm-mention-entry__content">
                 <span className="hm-mention-entry__meta">

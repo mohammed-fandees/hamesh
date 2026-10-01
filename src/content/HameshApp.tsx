@@ -65,10 +65,11 @@ import {
 } from '@/ui/video/VideoMarkerClusterList';
 import { getStrings, dirForLang, type Lang, type Strings } from '@/ui/i18n';
 import type { TeamNotesSource } from '@/teams/page-notes';
-import { NoteDiscussion } from '@/ui/teams/NoteDiscussion';
 import { ComposerDestination, type NoteDestination } from '@/ui/teams/ComposerDestination';
 import { ShareConsent } from '@/ui/teams/ShareConsent';
-import { TeamPin, TeamPinStyles } from '@/ui/teams/TeamPin';
+import { TeamPin, TeamPinCluster, TeamPinStyles } from '@/ui/teams/TeamPin';
+import { TeamPinList } from '@/ui/teams/TeamPinList';
+import { SharedNotePopup } from '@/ui/teams/SharedNotePopup';
 import type { PeopleDirectory } from '@/teams/people-cache';
 import { getTeamsStrings } from '@/ui/teams/strings';
 import type { Destination } from '@/teams/page-channel';
@@ -196,6 +197,8 @@ function isOnHameshUi(e: Event): boolean {
       n instanceof HTMLElement &&
       (n.classList?.contains('hm-card') ||
         n.classList?.contains('hm-marker') ||
+        // A shared note's popup's menu, drawn apart from the popup itself.
+        n.classList?.contains('hm-menu__panel') ||
         // The consent asked before a note goes to a team: answering it is
         // not a click on the page.
         n.classList?.contains('hm-consent')),
@@ -290,7 +293,21 @@ function useViewportFrame(active: boolean): number {
 const MARK = {
   own: { width: 24, height: 28 },
   pin: { width: 30, height: 30 },
+  /** Two faces, overlapping. */
+  cluster: { width: 50, height: 30 },
+  /** Two faces and "+n". */
+  clusterMore: { width: 66, height: 30 },
 } as const;
+
+/** One mark beside an element: a note's, or several shared notes' together. */
+interface MarkerItem {
+  notes: Note[];
+  element: Element;
+  top: number;
+  left: number;
+}
+
+const NO_PEOPLE: PeopleDirectory = { people: {}, me: null, teamIds: [], syncedAt: 0 };
 
 export function HameshApp({
   repo,
@@ -460,7 +477,9 @@ export function HameshApp({
    *  never one this device stored. */
   const teamNotesRef = useRef<Note[]>([]);
   /** Who wrote the shared notes: the faces on their pins. Teams only. */
-  const [people, setPeople] = useState<PeopleDirectory['people']>({});
+  const [people, setPeople] = useState<PeopleDirectory>(NO_PEOPLE);
+  /** The cluster pin whose list of shared notes is open, by its first note. */
+  const [openCluster, setOpenCluster] = useState<string | null>(null);
   /** Last pass's resolved ranges, keyed by note id. Feeding these back into
    *  the next pass turns the common case into one string compare per note —
    *  no DOM walk, no page-text index. Rebuilt every pass, never a cache with
@@ -652,12 +671,18 @@ export function HameshApp({
       }
     };
     void load();
-    const unwatch = source.watch(pageKey, () => void load());
+    // A note shared from here or from the Library leaves this device as it
+    // arrives in the team's shelf: read both halves again, so it is never drawn
+    // twice — once as a personal note, once as the team's.
+    const unwatch = source.watch(pageKey, () => {
+      void load();
+      void loadNotes();
+    });
     return () => {
       cancelled = true;
       unwatch();
     };
-  }, [teamNotes, pageKey, commitTeamNotes]);
+  }, [teamNotes, pageKey, commitTeamNotes, loadNotes]);
 
   // The faces for the pins, again from what the worker keeps — no request.
   useEffect(() => {
@@ -666,11 +691,11 @@ export function HameshApp({
     let cancelled = false;
     void source.people().then(
       (directory) => {
-        if (!cancelled) setPeople(directory.people);
+        if (!cancelled) setPeople(directory);
       },
       () => {},
     );
-    const unwatch = source.watchPeople((directory) => setPeople(directory.people));
+    const unwatch = source.watchPeople(setPeople);
     return () => {
       cancelled = true;
       unwatch();
@@ -1268,6 +1293,12 @@ export function HameshApp({
           setError(teamStrings.shareFailedKept(teamStrings.error(shared.error)));
           return;
         }
+        // Shared, the note has moved: the worker let this device's copy go, so
+        // the page does too, and draws the team's copy alone once it arrives.
+        commitNotes(notesRef.current.filter((n) => n.id !== note.id));
+        setComposer(null);
+        setPendingSelection(null);
+        return;
       }
       // Seeds the new note's range so its highlight appears immediately and
       // exactly over the captured text, instead of waiting for the resolution
@@ -1278,7 +1309,7 @@ export function HameshApp({
       setComposer(null);
       setPendingSelection(null);
     },
-    [composer, mutations, pageKey, destination, destinations, teamNotes, prefs, lang],
+    [composer, mutations, pageKey, destination, destinations, teamNotes, prefs, lang, commitNotes],
   );
 
   // No busy or error on screen, unlike `handleSave` — the quick-note popup has
@@ -1362,36 +1393,51 @@ export function HameshApp({
     void frame; // recompute positions each viewport frame
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    // How far down each element's column of marks already reaches.
-    const perElement = new Map<Element, number>();
-    const items: {
-      note: Note;
-      element: Element;
-      top: number;
-      left: number;
-    }[] = [];
+    // Each element's notes, in order: its own first, then the team's — which
+    // share one pin between them when there are several.
+    const byElement = new Map<Element, { own: Note[]; team: Note[] }>();
     for (const r of resolved) {
       if (!r.element) continue;
-      const rect = r.element.getBoundingClientRect();
+      const group = byElement.get(r.element) ?? { own: [], team: [] };
+      (r.note.team ? group.team : group.own).push(r.note);
+      byElement.set(r.element, group);
+    }
+    const items: MarkerItem[] = [];
+    for (const [element, group] of byElement) {
+      const rect = element.getBoundingClientRect();
       if (rect.bottom < 0 || rect.top > vh || rect.right < 0 || rect.left > vw) continue;
-      // A shared note's pin (its author's face) is a little larger than the
-      // margin mark; marks on one element stack down its edge either way.
-      const size = r.note.team ? MARK.pin : MARK.own;
-      const below = perElement.get(r.element) ?? 0;
-      perElement.set(r.element, below + size.height + 2);
-      const top = Math.max(2, rect.top + below);
-      const reach = size.width + 2;
-      let left =
-        dir === 'rtl'
-          ? Math.min(vw - reach, rect.right + 2)
-          : rect.left - reach < 2
-            ? rect.left + 2
-            : rect.left - reach;
-      left = Math.max(2, left);
-      items.push({ note: r.note, element: r.element, top, left });
+      const marks: { notes: Note[]; size: { width: number; height: number } }[] = [
+        ...group.own.map((note) => ({ notes: [note], size: MARK.own })),
+      ];
+      if (group.team.length === 1) marks.push({ notes: group.team, size: MARK.pin });
+      if (group.team.length > 1) {
+        marks.push({
+          notes: group.team,
+          size: group.team.length > 2 ? MARK.clusterMore : MARK.cluster,
+        });
+      }
+      // Marks on one element stack down its edge.
+      let below = 0;
+      for (const mark of marks) {
+        const top = Math.max(2, rect.top + below);
+        below += mark.size.height + 2;
+        const reach = mark.size.width + 2;
+        let left =
+          dir === 'rtl'
+            ? Math.min(vw - reach, rect.right + 2)
+            : rect.left - reach < 2
+              ? rect.left + 2
+              : rect.left - reach;
+        left = Math.max(2, left);
+        items.push({ notes: mark.notes, element, top, left });
+      }
     }
     return items;
   }, [resolved, dir, frame]);
+  // The cluster pin whose list is open, while it is still on the screen.
+  const openClusterItem = openCluster
+    ? markerItems.find((m) => m.notes.length > 1 && m.notes[0].id === openCluster)
+    : undefined;
 
   // ---- Derived: video marker placements ----
   const videoMarkerItems = useMemo(() => {
@@ -1572,6 +1618,7 @@ export function HameshApp({
       if (!isOnHameshUi(e)) {
         setViewerId(null);
         setVideoOpenClusterKey(null);
+        setOpenCluster(null);
       }
     };
 
@@ -1782,22 +1829,6 @@ export function HameshApp({
       : undefined;
 
   const viewerNote = viewerId ? notes.find((n) => n.id === viewerId) : null;
-  // "Shared with <team>", and only in a build that has Teams: the constant folds
-  // away in every other build, and with it the module this comes from.
-  const viewerSharedLabel =
-    import.meta.env.WXT_TEAMS_API_ORIGIN && viewerNote && teamNotes
-      ? teamNotes.label(viewerNote, lang)
-      : undefined;
-  // A team note's discussion at the foot of its popup — again only with Teams.
-  const viewerDiscussion =
-    import.meta.env.WXT_TEAMS_API_ORIGIN && viewerNote?.team && teamNotes ? (
-      <NoteDiscussion
-        key={viewerNote.id}
-        note={viewerNote as Note & { team: NonNullable<Note['team']> }}
-        lang={lang}
-        source={teamNotes}
-      />
-    ) : undefined;
   const viewerIsVideo = viewerNote?.anchor.type === 'video';
   const viewerIsText = viewerNote?.anchor.type === 'text';
   const viewerTextResolved =
@@ -1883,30 +1914,79 @@ export function HameshApp({
 
       {markerItems.map((m) => {
         const style = { top: m.top, left: m.left, pointerEvents: 'auto' } as const;
-        if (import.meta.env.WXT_TEAMS_API_ORIGIN && m.note.team) {
-          const author = m.note.team.authorId ? people[m.note.team.authorId] : undefined;
+        const [first] = m.notes;
+        if (import.meta.env.WXT_TEAMS_API_ORIGIN && first.team) {
+          const personOf = (n: Note) =>
+            n.team?.authorId ? people.people[n.team.authorId] : undefined;
+          if (m.notes.length > 1) {
+            return (
+              <TeamPinCluster
+                key={`cluster:${first.id}`}
+                people={m.notes.map((n) => ({
+                  id: n.team?.authorId ?? null,
+                  person: personOf(n),
+                }))}
+                label={getTeamsStrings(lang).clusterPin(m.notes.length)}
+                style={style}
+                onOpen={() => {
+                  setViewerId(null);
+                  setOpenCluster((open) => (open === first.id ? null : first.id));
+                }}
+              />
+            );
+          }
+          const author = personOf(first);
           return (
             <TeamPin
-              key={m.note.id}
+              key={first.id}
               person={author}
+              seed={first.team.authorId}
               label={getTeamsStrings(lang).notePin(author?.name ?? null)}
               style={style}
-              onOpen={() => openViewer(m.note.id)}
+              onOpen={() => {
+                setOpenCluster(null);
+                openViewer(first.id);
+              }}
             />
           );
         }
         return (
           <Marker
-            key={m.note.id}
+            key={first.id}
             label={strings.viewNote}
             flip={dir === 'rtl'}
             style={style}
-            onOpen={() => openViewer(m.note.id)}
+            onOpen={() => openViewer(first.id)}
           />
         );
       })}
-      {import.meta.env.WXT_TEAMS_API_ORIGIN && markerItems.some((m) => m.note.team) && (
+      {import.meta.env.WXT_TEAMS_API_ORIGIN && markerItems.some((m) => m.notes[0].team) && (
         <TeamPinStyles />
+      )}
+      {import.meta.env.WXT_TEAMS_API_ORIGIN && openClusterItem && (
+        <FloatingCard
+          getRect={() => ({
+            left: openClusterItem.left,
+            top: openClusterItem.top,
+            width: 0,
+            height: MARK.cluster.height,
+          })}
+          placement="below"
+          width={280}
+        >
+          <TeamPinList
+            items={openClusterItem.notes.map((note) => ({
+              note,
+              person: note.team?.authorId ? people.people[note.team.authorId] : undefined,
+            }))}
+            lang={lang}
+            onSelect={(noteId) => {
+              setOpenCluster(null);
+              openViewer(noteId);
+            }}
+            onClose={() => setOpenCluster(null)}
+          />
+        </FloatingCard>
       )}
 
       {effectiveVideoControlsVisible &&
@@ -2049,37 +2129,61 @@ export function HameshApp({
         />
       )}
 
-      {viewerNote && (
+      {viewerNote &&
         // Keyed so the viewer starts from a clean state per note, and so
         // opening an already-open note straight into edit mode (the hover
         // popup's Edit) actually re-initializes it.
-        <FloatingViewer
-          key={`${viewerNote.id}:${viewerEditing ? 'edit' : 'view'}`}
-          getRect={viewerRect}
-          placement={viewerIsVideo ? 'above' : 'below'}
-          note={viewerNote}
-          anchorAvailable={
-            viewerIsVideo
-              ? viewerVideoResolved?.quality === ResolutionQuality.Exact
-              : viewerIsText
-                ? !!viewerTextResolved?.range
-                : !!viewerResolved?.element
-          }
-          unavailableLabel={viewerIsText ? strings.textAnchorUnavailable : undefined}
-          attachedText={viewerNote.anchor.type === 'text' ? viewerNote.anchor.exact : undefined}
-          initialEditing={viewerEditing}
-          sharedLabel={viewerSharedLabel}
-          discussion={viewerDiscussion}
-          strings={strings}
-          lang={lang}
-          saving={mutations.busy(viewerNote.id)}
-          error={error}
-          onUpdate={(content) => handleUpdate(viewerNote.id, content)}
-          onDelete={() => void handleDelete(viewerNote.id)}
-          onTogglePin={() => handleTogglePin(viewerNote.id)}
-          onClose={() => setViewerId(null)}
-        />
-      )}
+        (import.meta.env.WXT_TEAMS_API_ORIGIN && viewerNote.team && teamNotes ? (
+          <FloatingCard
+            key={viewerNote.id}
+            getRect={viewerRect}
+            placement={viewerIsVideo ? 'above' : 'below'}
+            width={380}
+          >
+            <SharedNotePopup
+              note={viewerNote as Note & { team: NonNullable<Note['team']> }}
+              lang={lang}
+              source={teamNotes}
+              people={people}
+              anchorAvailable={
+                viewerIsVideo
+                  ? viewerVideoResolved?.quality === ResolutionQuality.Exact
+                  : viewerIsText
+                    ? !!viewerTextResolved?.range
+                    : !!viewerResolved?.element
+              }
+              unavailableLabel={
+                viewerIsText ? strings.textAnchorUnavailable : strings.anchorUnavailable
+              }
+              onClose={() => setViewerId(null)}
+            />
+          </FloatingCard>
+        ) : (
+          <FloatingViewer
+            key={`${viewerNote.id}:${viewerEditing ? 'edit' : 'view'}`}
+            getRect={viewerRect}
+            placement={viewerIsVideo ? 'above' : 'below'}
+            note={viewerNote}
+            anchorAvailable={
+              viewerIsVideo
+                ? viewerVideoResolved?.quality === ResolutionQuality.Exact
+                : viewerIsText
+                  ? !!viewerTextResolved?.range
+                  : !!viewerResolved?.element
+            }
+            unavailableLabel={viewerIsText ? strings.textAnchorUnavailable : undefined}
+            attachedText={viewerNote.anchor.type === 'text' ? viewerNote.anchor.exact : undefined}
+            initialEditing={viewerEditing}
+            strings={strings}
+            lang={lang}
+            saving={mutations.busy(viewerNote.id)}
+            error={error}
+            onUpdate={(content) => handleUpdate(viewerNote.id, content)}
+            onDelete={() => void handleDelete(viewerNote.id)}
+            onTogglePin={() => handleTogglePin(viewerNote.id)}
+            onClose={() => setViewerId(null)}
+          />
+        ))}
     </div>
   );
 }
@@ -2217,6 +2321,26 @@ function FloatingVideoClusterList({
         onSelect={onSelect}
         onClose={onClose}
       />
+    </div>
+  );
+}
+
+/** Any card that floats beside what it belongs to, at a width of its own. */
+function FloatingCard({
+  getRect,
+  placement,
+  width,
+  children,
+}: {
+  getRect: () => AnchorRect | null;
+  placement: 'below' | 'above';
+  width: number;
+  children: React.ReactNode;
+}) {
+  const { cardRef, style } = useFloating(getRect, { placement });
+  return (
+    <div ref={cardRef} className="hm-floating" style={{ ...style, width }}>
+      {children}
     </div>
   );
 }

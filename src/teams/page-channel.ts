@@ -17,7 +17,8 @@ import type { TeamsErrorCode } from './errors';
  *   page's say-so);
  * - `share`: only a note this device holds for that page — the worker reads
  *   the note itself, so no text from the page is trusted as the note;
- * - `open`: opens the note's discussion in Hamesh's own page; carries no data.
+ * - `open`: opens the note's discussion beside the page (Chrome's side panel),
+ *   or its page in Hamesh (`in: 'hamesh'`); carries no data.
  *
  * The server still decides every one of them, as it does for the Library.
  */
@@ -30,7 +31,7 @@ export type PageRequest =
   | { op: 'reply'; teamId: string; noteId: string; body: string; requestId: string }
   | { op: 'share'; noteId: string; teamId: string; folderId: string | null }
   | { op: 'destinations' }
-  | { op: 'open'; teamId: string; noteId: string };
+  | { op: 'open'; teamId: string; noteId: string; in?: 'panel' | 'hamesh' };
 
 export interface TeamsPageMessage {
   type: 'TEAMS_PAGE';
@@ -38,14 +39,17 @@ export interface TeamsPageMessage {
 }
 
 /** One line of a discussion, as the page shows it: who, when, what. */
+/** A run of what was said: words, or a person named with @ (by name). */
+export type ThreadText = { text: string } | { mention: string };
+
 export interface ThreadLine {
   id: string;
-  /** The author's name as the team lists them; null once they have left. */
+  /** The author's name as the team lists them; null once they have left. Their
+   *  face is the page's own copy (`people-cache.ts`), found by `authorId`. */
   author: string | null;
-  /** Their profile picture, when they have one. */
-  avatarUrl: string | null;
   authorId: string | null;
-  body: string;
+  /** What was said, with each @ already the name it stands for. */
+  parts: ThreadText[];
   createdAt: number;
 }
 
@@ -74,8 +78,13 @@ export function isTeamsPageMessage(message: unknown): message is TeamsPageMessag
   const r = m.request as Record<string, unknown>;
   switch (r.op) {
     case 'thread':
-    case 'open':
       return isId(r.teamId) && isId(r.noteId);
+    case 'open':
+      return (
+        isId(r.teamId) &&
+        isId(r.noteId) &&
+        (r.in === undefined || r.in === 'panel' || r.in === 'hamesh')
+      );
     case 'reply':
       return (
         isId(r.teamId) &&

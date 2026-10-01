@@ -872,6 +872,24 @@ select.hm-input {
   height: 100%;
   object-fit: cover;
 }
+/* A monogram's tone, one per person (`toneOf` in kit/Avatar.tsx): the
+   semantic hues, its letter in the surface colour — white on a deep tone in
+   light, dark on a pale one in dark. */
+.hm-avatar[data-tone] {
+  color: var(--hm-surface);
+}
+.hm-avatar[data-tone='0'] {
+  background: var(--hm-success);
+}
+.hm-avatar[data-tone='1'] {
+  background: var(--hm-info);
+}
+.hm-avatar[data-tone='2'] {
+  background: var(--hm-warning);
+}
+.hm-avatar[data-tone='3'] {
+  background: var(--hm-accent-strong);
+}
 .hm-avatar[data-unknown] {
   background: var(--hm-paper-dim);
   color: var(--hm-ink-40);

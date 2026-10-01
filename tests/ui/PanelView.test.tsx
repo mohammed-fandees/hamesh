@@ -99,7 +99,7 @@ describe('Hamesh in the side panel', () => {
     );
 
     expect(await screen.findByText('The heart of the paper.')).toBeInTheDocument();
-    expect(screen.getByText('Self-attention, at once.')).toBeInTheDocument();
+    expect(screen.getByText('«Self-attention, at once.»')).toBeInTheDocument();
     expect(screen.getByText('Sara')).toBeInTheDocument();
     expect(container.querySelector('.hm-panel-note img')).toHaveAttribute('src', PHOTO);
     expect(calls.some((c) => c.op === 'comments.list')).toBe(true);
