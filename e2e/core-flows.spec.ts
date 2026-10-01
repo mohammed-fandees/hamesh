@@ -150,7 +150,8 @@ test.describe('Hamesh core flows', () => {
     await expect(page.locator('.hm-card .hm-note-body')).toHaveText(edited);
 
     // Delete (with confirmation)
-    await page.getByRole('button', { name: 'Delete' }).click();
+    await page.getByRole('button', { name: 'Note actions' }).click();
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'Delete' }).click();
     await expect(page.locator('.hm-marker')).toHaveCount(0);
 

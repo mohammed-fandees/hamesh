@@ -380,9 +380,8 @@ test.describe('Hamesh contextual text notes', () => {
     await expect(
       page.locator('.hm-viewer-card').getByRole('button', { name: 'Edit' }),
     ).toBeVisible();
-    await expect(
-      page.locator('.hm-viewer-card').getByRole('button', { name: 'Delete' }),
-    ).toBeVisible();
+    await page.locator('.hm-viewer-card').getByRole('button', { name: 'Note actions' }).click();
+    await expect(page.getByRole('menuitem', { name: 'Delete' })).toBeVisible();
 
     await page.close();
   });
@@ -532,7 +531,8 @@ test.describe('Hamesh contextual text notes', () => {
     await page.mouse.move(afterReload.x, afterReload.y);
     await expect(page.locator('.hm-text-popup')).toContainText('Edited contextual note.');
     await page.locator('.hm-text-popup').click();
-    await page.locator('.hm-viewer-card').getByRole('button', { name: 'Delete' }).click();
+    await page.locator('.hm-viewer-card').getByRole('button', { name: 'Note actions' }).click();
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'Delete', exact: true }).click();
 
     await expect.poll(() => highlightCount(page)).toBe(0);

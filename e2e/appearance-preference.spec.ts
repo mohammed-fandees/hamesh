@@ -253,7 +253,9 @@ test.describe('Hamesh appearance preference', () => {
     await page.getByRole('button', { name: 'Save changes' }).click();
     await expect(page.locator('.hm-card .hm-note-body')).toHaveText(edited);
 
-    await page.getByRole('button', { name: 'Delete' }).click();
+    // Delete is in the note's menu, then confirmed.
+    await page.getByRole('button', { name: 'Note actions' }).click();
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'Delete' }).click();
     await expect(page.locator('.hm-marker')).toHaveCount(0);
 

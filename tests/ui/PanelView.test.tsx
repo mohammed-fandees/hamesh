@@ -113,7 +113,8 @@ describe('Hamesh in the side panel', () => {
     expect(screen.getByText('«Self-attention, at once.»')).toBeInTheDocument();
     expect(screen.getByText('Sara')).toBeInTheDocument();
     expect(container.querySelector('.hm-panel-note img')).toHaveAttribute('src', PHOTO);
-    expect(calls.some((c) => c.op === 'comments.list')).toBe(true);
+    // The discussion is asked for once the team is known — on its own turn.
+    await waitFor(() => expect(calls.some((c) => c.op === 'comments.list')).toBe(true));
   });
 
   it('lists every shared note on the page, and opens the one picked', async () => {
