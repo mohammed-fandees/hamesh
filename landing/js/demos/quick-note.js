@@ -104,8 +104,7 @@ export function createQuickNoteDemo(root) {
     .to(hint, { scale: 1, duration: 0.16, ease: 'back.out(2)' }, '>');
 
   /* 3 — playback stops where the thought happened, and one field opens. */
-  tl.to(played, { timeScale: 0, duration: 0 }, '>')
-    .to(hint, { opacity: 0, y: places.hint.y - 8, duration: 0.24 }, '>')
+  tl.to(hint, { opacity: 0, y: places.hint.y - 8, duration: 0.24 }, '>')
     .to(quick, { opacity: 1, scale: 1, duration: 0.3, ease: 'power3.out' }, '<+0.04')
     .to(caret, { opacity: 1, duration: 0.12 }, '>');
 

@@ -663,10 +663,99 @@
   align-items: flex-start;
   gap: var(--hm-space-3);
 }
-.hm-billing__price {
+/* The plans on offer: one card each, the chosen one in the accent. */
+.hm-plans {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hm-space-2);
+  width: min(100%, 32rem);
   margin: var(--hm-space-2) 0 0;
+  padding: 0;
+  border: 0;
+  min-inline-size: 0;
+}
+.hm-plans > legend {
+  padding: 0;
+  margin-bottom: var(--hm-space-2);
+}
+.hm-plan {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hm-space-1);
+  width: min(100%, 32rem);
+  padding: var(--hm-space-3) var(--hm-space-4);
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-md);
+  background: var(--hm-surface);
+}
+.hm-plans .hm-plan {
+  width: 100%;
+}
+.hm-plan--choice {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: var(--hm-space-3);
+  cursor: pointer;
+  transition: border-color var(--hm-dur-fast) var(--hm-ease-out);
+}
+.hm-plan--choice:hover {
+  border-color: var(--hm-ink-40);
+}
+.hm-plan--choice:has(.hm-plan__radio:checked) {
+  border-color: var(--hm-accent);
+  background: var(--hm-accent-tint);
+}
+.hm-plan--choice:has(.hm-plan__radio:focus-visible) {
+  box-shadow: var(--hm-ring);
+}
+.hm-plan__radio {
+  margin: 4px 0 0;
+  accent-color: var(--hm-accent);
+}
+.hm-plan__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hm-space-1);
+  min-width: 0;
+}
+.hm-plan__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--hm-space-2);
+}
+.hm-plan__name {
+  font-weight: 600;
+}
+.hm-plan__badge {
+  padding: 1px var(--hm-space-2);
+  border-radius: var(--hm-radius-pill);
+  background: var(--hm-ink-10);
+  color: var(--hm-ink-60);
+  font-size: var(--hm-text-micro);
+  line-height: var(--hm-lh-micro);
+}
+.hm-plan__description,
+.hm-plan__limits {
+  color: var(--hm-ink-60);
+  font-size: var(--hm-text-body-sm);
+  line-height: var(--hm-lh-body-sm);
+}
+.hm-plan__price {
   font-size: var(--hm-text-title);
   line-height: var(--hm-lh-title);
+  font-weight: 600;
+}
+.hm-plan__was {
+  margin-inline-end: var(--hm-space-2);
+  color: var(--hm-ink-40);
+  font-size: var(--hm-text-body);
+  font-weight: 400;
+}
+.hm-plan__discount {
+  align-self: flex-start;
+  color: var(--hm-accent-strong);
+  font-size: var(--hm-text-body-sm);
   font-weight: 600;
 }
 /* How to pay, and how much of it: the method beside the month count. */

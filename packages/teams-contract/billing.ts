@@ -75,6 +75,55 @@ export const PlansResponse = z.strictObject({
 });
 export type PlansResponse = z.infer<typeof PlansResponse>;
 
+/** Words for a person, in both of the extension's languages. */
+export const Localized = z.strictObject({
+  ar: z.string().max(300),
+  en: z.string().max(300),
+});
+export type Localized = z.infer<typeof Localized>;
+
+/**
+ * A discount running on a plan right now. The plan's `price` is already the
+ * discounted one — what a payment will cost; this says what it was before,
+ * and until when.
+ */
+export const PlanDiscount = z.strictObject({
+  kind: z.enum(['percent', 'amount']),
+  /** How much off, for a `percent` discount; null for a sale price. */
+  percent: z.number().int().min(1).max(90).nullable(),
+  /** The price per period before the discount, in minor units. */
+  listAmountMinor: z.number().int().positive(),
+  /** When it stops applying (epoch ms). */
+  endsAt: z.number().int(),
+  /** An optional name for it, e.g. "Back to school". */
+  label: Localized.nullable(),
+});
+export type PlanDiscount = z.infer<typeof PlanDiscount>;
+
+/**
+ * A plan as a client that can choose between plans sees it: the same offer,
+ * with a name to show, what it is for, and any discount running on it.
+ */
+export const PlanOfferV2 = PlanOffer.extend({
+  details: z.strictObject({
+    name: Localized,
+    description: Localized.nullable(),
+  }),
+  discount: PlanDiscount.nullable(),
+});
+export type PlanOfferV2 = z.infer<typeof PlanOfferV2>;
+
+/**
+ * GET /v1/plans?v=2 — every plan on offer, best-ranked last, for the plan
+ * picker. Asked for explicitly because `PlansResponse` is strict: a 2.0.0
+ * client refuses any field it does not know, so it keeps getting exactly the
+ * shape it was built against — with a discount already in its price.
+ */
+export const PlansResponseV2 = PlansResponse.extend({
+  plans: z.array(PlanOfferV2),
+});
+export type PlansResponseV2 = z.infer<typeof PlansResponseV2>;
+
 /**
  * POST /v1/billing/payments — "I paid this much, here is the reference."
  * `periods` is how many periods were paid for; the server computes the amount

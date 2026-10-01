@@ -247,3 +247,24 @@ p {
 .site-footer a:hover {
   color: var(--ink);
 }
+
+/* The page's glyphs, defined once and never drawn where they sit. */
+.sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+/* A section's call to action, and the line that follows it. */
+.section__cta {
+  margin-top: 20px;
+}
+
+.section__cta--wide {
+  margin-block: 22px;
+}
+
+.section__after {
+  color: var(--ink-60);
+}
