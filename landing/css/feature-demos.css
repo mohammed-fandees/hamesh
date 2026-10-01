@@ -2,8 +2,9 @@
  *
  * Every demo is built from real elements — a window, a paragraph, a note
  * card, a cursor — so GSAP animates actual UI states rather than replaying a
- * recording. The vocabulary below mirrors the extension's own: clay marks,
- * surface cards docked to what they belong to, no modals, nothing dimmed.
+ * recording. The vocabulary below is the extension's own, drawn a little
+ * smaller: the margin mark on a white chip, the composer with the words it is
+ * attached to, the Library with its sidebar, menus with their icons.
  *
  * Only `transform` and `opacity` are animated. Where something must appear to
  * grow — a selection sweeping across words, text being typed — it is a mask
@@ -24,6 +25,11 @@
 :root[dir='rtl'] .demo {
   --reveal-origin: left;
   --sweep-origin: right;
+}
+
+/* An arrow that points along the line of reading turns round in Arabic. */
+:root[dir='rtl'] .ui-mirror {
+  transform: scaleX(-1);
 }
 
 /* ---- Window --------------------------------------------------------- */
@@ -61,15 +67,18 @@
 
 .ui-window__url {
   flex: 1;
+  min-width: 0;
   height: 20px;
   border-radius: var(--radius-pill);
   background: var(--paper-dim);
   display: flex;
   align-items: center;
   padding-inline: 10px;
+  overflow: hidden;
   font-size: 0.64rem;
   color: var(--ink-40);
   letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .ui-page {
@@ -80,12 +89,22 @@
   color: var(--ink);
 }
 
+:root[lang='ar'] .ui-page {
+  font-family: var(--page-ar);
+  font-size: 1rem;
+}
+
 .ui-page__title {
   font-family: var(--serif);
   font-size: 1.18rem;
   font-weight: 600;
   letter-spacing: -0.01em;
   margin-bottom: 14px;
+}
+
+:root[lang='ar'] .ui-page__title {
+  font-family: var(--page-ar);
+  letter-spacing: 0;
 }
 
 .ui-page p + p {
@@ -104,88 +123,115 @@
   display: inline-block;
   max-width: 100%;
   border-radius: 2px;
+  isolation: isolate;
 }
 
-/* The sweep: a tinted band scaled across the words, as a drag would. */
+/* The sweep: the browser's own selection, scaled across the words as a drag
+   would draw it. */
 .ui-sel {
   position: absolute;
-  inset: -2px -3px;
-  background: var(--accent-tint);
+  inset: -1px -2px;
+  background: var(--selection);
   border-radius: 2px;
   transform: scaleX(0);
   transform-origin: var(--sweep-origin);
   z-index: -1;
 }
 
-/* What stays afterwards: the extension underlines a contextual note's text
-   in clay rather than filling it, so the page still reads as the page. */
+/* What stays afterwards, exactly as the extension leaves it: the words
+   tinted in clay, with a clay underline — an annotation sitting in the page,
+   not a stuck selection. */
+.ui-highlight {
+  position: absolute;
+  inset: -1px -2px;
+  background: rgb(var(--accent-rgb) / 0.26);
+  border-radius: 2px;
+  transform: scaleX(0);
+  transform-origin: var(--sweep-origin);
+  z-index: -1;
+}
+
 .ui-underline {
   position: absolute;
   inset-inline: -1px;
-  bottom: -2px;
-  height: 1.5px;
-  background: var(--accent);
+  bottom: 1px;
+  height: 1px;
+  background: rgb(var(--accent-rgb) / 0.85);
   transform: scaleX(0);
   transform-origin: var(--sweep-origin);
+}
+
+/* A note already on the page, drawn in its resting state. */
+.ui-highlight.is-on,
+.ui-underline.is-on {
+  transform: none;
 }
 
 /* Floating pieces are placed by measurement — the demos compute where each
    belongs from the real elements — so they all start at the demo's origin and
    are moved from there on `x`/`y`. */
 .ui-action,
-.ui-margin-mark,
+.ui-marker,
 .ui-card,
 .ui-pill,
 .ui-quick,
-.ui-hint {
+.ui-hint,
+.ui-tip,
+.ui-pin,
+.ui-popup,
+.ui-menu {
+  position: absolute;
   top: 0;
   left: 0;
 }
 
 /* ---- Marks ----------------------------------------------------------- */
 
-/* The action that appears beside a selection. */
+/* The chip that appears beside a selection: the margin mark, nothing else —
+   the extension's own `hm-text-action`. */
 .ui-action {
-  position: absolute;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 9px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 24px;
   background: var(--surface);
-  border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
-  font-size: 0.68rem;
-  font-weight: 500;
-  color: var(--ink-60);
+  box-shadow:
+    0 0 0 1px var(--border),
+    var(--shadow-sm);
   opacity: 0;
-  transform-origin: center bottom;
-  white-space: nowrap;
 }
 
 .ui-action.is-hover {
-  border-color: var(--accent);
-  color: var(--ink);
+  background: var(--surface-hover);
+  box-shadow:
+    0 0 0 1px var(--accent),
+    var(--shadow-md);
 }
 
-/* The quiet mark left in the margin of an annotated element. */
-.ui-margin-mark {
-  position: absolute;
+/* The mark left beside an element that carries a note — an opaque white chip
+   with a hairline, so it reads on any page. */
+.ui-marker {
   display: grid;
   place-items: center;
   width: 22px;
   height: 26px;
-  border-radius: var(--radius-sm);
-  background: var(--accent-tint);
-  color: var(--accent);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow:
+    0 0 0 1px var(--border),
+    var(--shadow-sm);
   opacity: 0;
 }
 
-/* ---- Note card ------------------------------------------------------- */
+.mark {
+  stroke-width: 3.6;
+}
+
+/* ---- Note card (the composer) ---------------------------------------- */
 
 .ui-card {
-  position: absolute;
-  width: 244px;
+  width: 248px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -193,21 +239,30 @@
   padding: 12px;
   opacity: 0;
   transform-origin: top center;
+  font-family: var(--sans);
+}
+
+:root[lang='ar'] .ui-card {
+  font-family: var(--arabic);
 }
 
 .ui-card__label {
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 0.58rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-size: 0.64rem;
+  font-weight: 500;
+  color: var(--ink-60);
+}
+
+.ui-card__overline {
+  margin-top: 8px;
+  font-size: 0.56rem;
   color: var(--ink-40);
 }
 
 .ui-card__attached {
-  margin-top: 8px;
+  margin-top: 4px;
   padding-inline-start: 8px;
   border-inline-start: 2px solid var(--accent);
   font-family: var(--serif);
@@ -216,6 +271,12 @@
   line-height: 1.5;
 }
 
+:root[lang='ar'] .ui-card__attached {
+  font-family: var(--arabic);
+}
+
+/* The field, focused: paper inside, a clay edge and a soft halo — the
+   extension's textarea, mid-sentence. */
 .ui-field {
   position: relative;
   margin-top: 10px;
@@ -223,7 +284,8 @@
   padding: 8px 9px;
   border: 1px solid var(--accent);
   border-radius: var(--radius-md);
-  background: var(--accent-tint);
+  background: var(--paper);
+  box-shadow: 0 0 0 3px var(--accent-tint);
   font-family: var(--serif);
   font-size: 0.78rem;
   line-height: 1.55;
@@ -231,8 +293,13 @@
   overflow: hidden;
 }
 
+:root[lang='ar'] .ui-field {
+  font-family: var(--arabic);
+}
+
 .ui-field--plain {
   border-color: var(--border);
+  box-shadow: none;
   background: var(--surface-2);
 }
 
@@ -240,7 +307,7 @@
 .ui-reveal {
   position: absolute;
   inset: 0;
-  background: var(--accent-tint);
+  background: var(--paper);
   transform-origin: var(--reveal-origin);
   pointer-events: none;
 }
@@ -261,26 +328,47 @@
 }
 
 .ui-caret--search {
-  top: 6px;
-  inset-inline-start: 9px;
+  top: 7px;
+  inset-inline-start: 12px;
   height: 13px;
+}
+
+/* Where the note will be filed — the composer's folder row. */
+.ui-card__folder {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 9px;
+  font-size: 0.62rem;
+  color: var(--ink-60);
+}
+
+.ui-card__folder svg {
+  flex: none;
+  color: var(--ink-40);
+}
+
+.ui-card__folder-chevron {
+  margin-inline-start: auto;
 }
 
 .ui-actions {
   display: flex;
-  justify-content: flex-end;
-  gap: 7px;
+  gap: 6px;
   margin-top: 10px;
 }
 
 .ui-btn {
-  padding: 4px 11px;
-  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 11px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--border);
-  font-size: 0.68rem;
+  font-size: 0.64rem;
   font-weight: 500;
   color: var(--ink-60);
-  background: var(--surface);
+  background: transparent;
+  white-space: nowrap;
 }
 
 .ui-btn--primary {
@@ -301,7 +389,6 @@
 
 /* The note, restored: a small pill on hover rather than a panel. */
 .ui-pill {
-  position: absolute;
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -311,7 +398,6 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
-  font-family: var(--serif);
   font-size: 0.74rem;
   color: var(--ink);
   opacity: 0;
@@ -332,16 +418,15 @@
   position: relative;
 }
 
-/* The outline Hamesh draws around whatever is under the pointer: a clay edge
-   and a tinted ring, exactly what the extension puts on screen. Each
-   candidate owns its overlay and they cross-fade, rather than one box being
-   resized between them — resizing would stretch the border. */
+/* The frame Hamesh draws around whatever is under the pointer. Each candidate
+   owns its frame and they cross-fade, rather than one box being resized
+   between them — resizing would stretch the border. */
 .ui-hl {
   position: absolute;
   inset: -5px -8px;
   border: 1.5px solid var(--accent);
   border-radius: 4px;
-  box-shadow: 0 0 0 3px var(--accent-tint);
+  background: rgb(var(--accent-rgb) / 0.05);
   opacity: 0;
   pointer-events: none;
 }
@@ -363,6 +448,26 @@
   font-size: 0.66rem;
   direction: ltr;
   display: inline-block;
+}
+
+/* The pill that rides beside the pointer while Hamesh is choosing. */
+.ui-tip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: var(--radius-md);
+  background: #1e1b18;
+  color: #f7f3ec;
+  font-size: 0.62rem;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+}
+
+.ui-tip .mark {
+  color: #e08b5c;
 }
 
 /* ---- Video ----------------------------------------------------------- */
@@ -424,6 +529,7 @@
   position: absolute;
   inset-inline-start: 12px;
   bottom: 22px;
+  font-family: var(--sans);
   font-size: 0.6rem;
   color: rgba(255, 255, 255, 0.72);
   font-variant-numeric: tabular-nums;
@@ -431,12 +537,11 @@
 
 /* The quick note: one field, no chrome, saved on Enter. */
 .ui-quick {
-  position: absolute;
   width: 230px;
   padding: 9px;
   background: var(--surface);
-  border: 1px solid var(--accent);
-  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   opacity: 0;
   transform-origin: bottom center;
@@ -446,9 +551,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 0.58rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-size: 0.6rem;
   color: var(--ink-40);
   margin-bottom: 6px;
 }
@@ -458,16 +561,16 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* A keystroke, shown as it is pressed. */
 .ui-hint {
-  position: absolute;
   direction: ltr;
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 5px 10px;
   border-radius: var(--radius-pill);
-  background: var(--ink);
-  color: var(--paper);
+  background: #1e1b18;
+  color: #f7f3ec;
   font-size: 0.66rem;
   font-weight: 500;
   opacity: 0;
@@ -475,68 +578,81 @@
 }
 
 .ui-hint kbd {
-  background: rgba(128, 128, 128, 0.28);
+  background: rgba(255, 255, 255, 0.16);
   border: none;
   color: inherit;
   padding: 1px 5px;
   font-size: 0.62rem;
 }
 
-/* ---- Notes Library --------------------------------------------------- */
+/* ---- The Library ------------------------------------------------------ */
 
-.ui-library {
+/* The Notes Library as it is: a sidebar of places, and the page beside it. */
+.ui-app {
   display: grid;
-  grid-template-columns: 138px 1fr;
-  min-height: 236px;
+  grid-template-columns: 132px minmax(0, 1fr);
+  min-height: 248px;
+  font-family: var(--sans);
 }
 
-.ui-library__side {
+:root[lang='ar'] .ui-app {
+  font-family: var(--arabic);
+}
+
+.ui-app__side {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 8px;
   border-inline-end: 1px solid var(--border-soft);
-  background: var(--surface-2);
-  padding: 12px 10px;
+  background: var(--paper-dim);
 }
 
-.ui-site {
+.ui-app__brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.ui-nav {
   display: flex;
   align-items: center;
   gap: 7px;
   padding: 6px 8px;
   border-radius: var(--radius-md);
-  font-size: 0.7rem;
+  font-size: 0.66rem;
   color: var(--ink-60);
+  white-space: nowrap;
 }
 
-.ui-site + .ui-site {
-  margin-top: 2px;
-}
-
-.ui-site i {
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
-  background: var(--accent-tint);
+.ui-nav svg {
   flex: none;
 }
 
-.ui-site.is-active {
+.ui-nav.is-active {
   background: var(--accent-tint);
-  color: var(--ink);
+  color: var(--accent-strong);
+  font-weight: 500;
 }
 
-.ui-library__main {
+.ui-app__main {
   padding: 12px 14px;
+  background: var(--paper);
 }
 
 .ui-search {
   position: relative;
-  height: 26px;
-  border-radius: var(--radius-md);
+  height: 28px;
+  border-radius: var(--radius-pill);
   border: 1px solid var(--border);
-  background: var(--surface-2);
+  background: var(--surface);
   display: flex;
   align-items: center;
-  padding-inline: 9px;
-  font-size: 0.68rem;
+  padding-inline: 12px 6px;
+  font-size: 0.66rem;
   color: var(--ink-40);
   overflow: hidden;
 }
@@ -547,29 +663,72 @@
 }
 
 .ui-search__typed .ui-reveal {
-  background: var(--surface-2);
+  background: var(--surface);
+}
+
+.ui-search__key {
+  margin-inline-start: auto;
+  padding: 0 5px;
+  font-size: 0.56rem;
+  border-bottom-width: 1px;
+}
+
+/* A segmented control: the chosen segment filled in ink. */
+.ui-seg {
+  display: inline-flex;
+  gap: 2px;
+  margin-top: 9px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  font-size: 0.58rem;
+  color: var(--ink-60);
+}
+
+.ui-seg > span {
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+
+.ui-seg > .is-on {
+  background: var(--ink);
+  color: var(--paper);
 }
 
 .ui-note-row {
   position: relative;
   margin-top: 8px;
-  padding: 9px 10px;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-md);
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   background: var(--surface);
 }
 
 .ui-note-row__text {
+  padding-inline-end: 16px;
   font-family: var(--serif);
   font-size: 0.74rem;
   line-height: 1.5;
   color: var(--ink);
 }
 
+:root[lang='ar'] .ui-note-row__text {
+  font-family: var(--arabic);
+}
+
 .ui-note-row__meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   margin-top: 5px;
-  font-size: 0.6rem;
+  font-size: 0.58rem;
   color: var(--ink-40);
+}
+
+.ui-note-row__meta svg {
+  flex: none;
 }
 
 .ui-note-row.is-focus {
@@ -590,35 +749,81 @@
   opacity: 0;
 }
 
-/* ---- Folders --------------------------------------------------------- */
+/* ---- Folders, in their space ----------------------------------------- */
+
+.ui-spaces {
+  padding: 14px;
+  background: var(--paper);
+  font-family: var(--sans);
+  min-height: 248px;
+}
+
+:root[lang='ar'] .ui-spaces {
+  font-family: var(--arabic);
+}
+
+/* One space per owner, as the Library draws them: this device's notes, then
+   each team's. */
+.ui-space {
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.ui-space__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px 8px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--ink-60);
+}
+
+.ui-space__title {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.ui-space__meta {
+  font-size: 0.58rem;
+  color: var(--ink-40);
+}
 
 .ui-folder {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 5px 8px;
+  gap: 6px;
+  padding: 5px 6px;
   border-radius: var(--radius-md);
-  font-size: 0.7rem;
-  color: var(--ink-60);
+  font-size: 0.68rem;
+  color: var(--ink);
+  white-space: nowrap;
 }
 
 .ui-folder svg {
   flex: none;
-  opacity: 0.75;
+  color: var(--ink-40);
+}
+
+.ui-folder__chevron {
+  transform: rotate(0deg);
 }
 
 /* Nesting is the point — a folder holds folders, so the children are simply
    indented under their parent. */
 .ui-folder--child {
-  margin-inline-start: 14px;
-  font-size: 0.66rem;
-  color: var(--ink-40);
+  margin-inline-start: 26px;
+  font-size: 0.64rem;
+  color: var(--ink-60);
 }
 
 .ui-folder__count {
   margin-inline-start: auto;
-  font-size: 0.62rem;
+  font-size: 0.6rem;
   font-variant-numeric: tabular-nums;
   color: var(--ink-40);
 }
@@ -639,19 +844,27 @@
   position: relative;
 }
 
+.ui-note-row--in-space {
+  margin-top: 10px;
+  background: var(--paper);
+}
+
 /* The row's own menu button. */
 .ui-note-row__more {
   position: absolute;
-  top: 7px;
+  top: 8px;
   inset-inline-end: 8px;
-  width: 16px;
+  width: 18px;
   height: 18px;
   display: grid;
   place-items: center;
   border-radius: var(--radius-sm);
   color: var(--ink-40);
-  font-size: 0.8rem;
-  line-height: 1;
+}
+
+.ui-note-row__more.is-hover {
+  background: var(--layer-hover);
+  color: var(--ink);
 }
 
 /* Where a filed note says where it lives. */
@@ -663,46 +876,56 @@
   padding: 2px 7px;
   border-radius: var(--radius-pill);
   background: var(--accent-tint);
-  color: var(--accent);
-  font-size: 0.58rem;
+  color: var(--accent-strong);
+  font-size: 0.56rem;
   font-weight: 600;
 }
 
-/* The note actions menu, hanging from the button that opened it. */
+/* A note's menu, hanging from the button that opened it: what can be done,
+   with the icons the extension uses. */
 .ui-menu {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 152px;
-  padding: 6px;
+  width: 164px;
+  padding: 4px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
   opacity: 0;
   z-index: 5;
+  font-family: var(--sans);
+}
+
+:root[lang='ar'] .ui-menu {
+  font-family: var(--arabic);
 }
 
 .ui-menu__label {
-  padding: 3px 8px 5px;
+  padding: 4px 8px 5px;
   font-size: 0.56rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
   color: var(--ink-40);
 }
 
 .ui-menu__item {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   padding: 5px 8px;
   border-radius: var(--radius-sm);
-  font-size: 0.68rem;
+  font-size: 0.66rem;
   color: var(--ink);
 }
 
-.ui-menu__item::before {
+.ui-menu__item svg {
+  flex: none;
+  color: var(--ink-60);
+}
+
+.ui-menu__item--danger,
+.ui-menu__item--danger svg {
+  color: var(--danger);
+}
+
+.ui-menu__item--choice::before {
   content: '';
   width: 9px;
   height: 9px;
@@ -712,11 +935,12 @@
 }
 
 .ui-menu__item.is-hover {
-  background: var(--accent-tint);
+  background: var(--surface-hover);
 }
 
-.ui-menu__item.is-hover::before {
+.ui-menu__item--choice.is-hover::before {
   border-color: var(--accent);
+  background: radial-gradient(circle, var(--accent) 0 2.5px, transparent 3px);
 }
 
 /* ---- The cursor ------------------------------------------------------ */
@@ -732,7 +956,7 @@
   height: 20px;
   opacity: 0;
   pointer-events: none;
-  z-index: 6;
+  z-index: 8;
   will-change: transform;
 }
 

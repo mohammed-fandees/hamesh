@@ -24,6 +24,7 @@ export function createElementNoteDemo(root) {
   const hlFirst = qs('[data-el="hl-1"]', root);
   const hlSecond = qs('[data-el="hl-2"]', root);
   const hint = qs('[data-el="hint"]', root);
+  const tip = qs('[data-el="tip"]', root);
   const card = qs('[data-el="card"]', root);
   const fieldText = qs('[data-el="field-text"]', root);
   const caret = qs('[data-el="caret"]', root);
@@ -41,6 +42,18 @@ export function createElementNoteDemo(root) {
   const cardBox = rectIn(root, card);
   const windowBox = rectIn(root, qs('.ui-window', root));
   const rootWidth = root.getBoundingClientRect().width;
+  const tipBox = tip ? rectIn(root, tip) : { width: 120, height: 22 };
+
+  /* The dark pill the extension shows while choosing rides just below and
+     after the pointer, kept inside the demo. */
+  const tipAt = (point) => ({
+    x: gsap.utils.clamp(
+      8,
+      Math.max(8, rootWidth - tipBox.width - 8),
+      rtl ? point.x - tipBox.width - 6 : point.x + 14,
+    ),
+    y: point.y + 22,
+  });
 
   /* The composer opens under the element it is attached to, and is allowed to
      reach past the bottom of the window — it is a floating card over the page,
@@ -71,7 +84,10 @@ export function createElementNoteDemo(root) {
     hint: { x: windowBox.x + windowBox.width / 2 - 40, y: windowBox.y + 46 },
   };
 
-  gsap.set([card, marginMark, hint], { top: 0, left: 0, opacity: 0 });
+  gsap.set([card, marginMark, hint, tip], { top: 0, left: 0, opacity: 0 });
+  const overFirstPoint = { x: firstBox.centerX, y: firstBox.centerY };
+  const overSecondPoint = { x: secondBox.centerX, y: secondBox.centerY };
+  gsap.set(tip, { ...tipAt(overFirstPoint), scale: 0.96 });
   gsap.set(card, { x: places.card.x, y: places.card.y, scale: 0.96 });
   gsap.set(marginMark, { x: places.marginMark.x, y: places.marginMark.y, scale: 0.7 });
   gsap.set(hint, { x: places.hint.x, y: places.hint.y, scale: 0.96 });
@@ -104,35 +120,24 @@ export function createElementNoteDemo(root) {
   /* 2 — moving across the page, the outline follows what is under the
      pointer. This is the whole feature: it picks the element, not a
      rectangle you have to draw. */
-  cursor?.moveTo(
-    tl,
-    { x: firstBox.centerX, y: firstBox.centerY },
-    { at: '>+0.1', bend: 0.8, label: 'overFirst' },
-  );
+  cursor?.moveTo(tl, overFirstPoint, { at: '>+0.1', bend: 0.8, label: 'overFirst' });
   /* Slightly *before* the arrival, not after it: a real hover fires as the
      pointer crosses the element's edge, so the outline is already there when
      the cursor settles. */
-  tl.to(hlFirst, { opacity: 1, duration: 0.16 }, 'overFirst-=0.1').to(
-    hint,
-    { opacity: 0, y: places.hint.y - 8, duration: 0.24 },
-    '<',
-  );
+  tl.to(hlFirst, { opacity: 1, duration: 0.16 }, 'overFirst-=0.1')
+    .to(hint, { opacity: 0, y: places.hint.y - 8, duration: 0.24 }, '<')
+    .to(tip, { opacity: 1, scale: 1, duration: 0.2 }, '<');
 
-  cursor?.moveTo(
-    tl,
-    { x: secondBox.centerX, y: secondBox.centerY },
-    { at: 'overFirst+=0.55', bend: -0.9, label: 'overSecond' },
-  );
-  tl.to(hlFirst, { opacity: 0, duration: 0.16 }, 'overSecond-=0.14').to(
-    hlSecond,
-    { opacity: 1, duration: 0.16 },
-    'overSecond-=0.1',
-  );
+  cursor?.moveTo(tl, overSecondPoint, { at: 'overFirst+=0.55', bend: -0.9, label: 'overSecond' });
+  tl.to(hlFirst, { opacity: 0, duration: 0.16 }, 'overSecond-=0.14')
+    .to(hlSecond, { opacity: 1, duration: 0.16 }, 'overSecond-=0.1')
+    .to(tip, { ...tipAt(overSecondPoint), duration: 0.5, ease: 'power2.inOut' }, 'overSecond-=0.5');
 
   /* 3 — chosen. */
   cursor?.settle(tl, { duration: 0.18 });
   cursor?.press(tl, {});
 
+  tl.to(tip, { opacity: 0, duration: 0.14 }, '>-0.1');
   tl.to(card, { opacity: 1, scale: 1, duration: 0.32, ease: 'power3.out' }, '>-0.08').to(
     caret,
     { opacity: 1, duration: 0.12 },
@@ -167,6 +172,7 @@ export function createElementNoteDemo(root) {
     .set(reveal, { scaleX: 1 })
     .set(caret, { x: 0 })
     .set(hint, { y: places.hint.y })
+    .set(tip, { ...tipAt(overFirstPoint), scale: 0.96 })
     .call(() =>
       cursor?.placeAt({ x: firstBox.centerX - 40 * flip, y: windowBox.y + windowBox.height + 30 }),
     );

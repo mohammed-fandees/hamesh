@@ -100,6 +100,9 @@ test.describe('Landing page', () => {
       '#feature-3',
       '#feature-4',
       '#feature-5',
+      '#teams',
+      '#feature-6',
+      '#feature-7',
       '#privacy',
       '#install',
     ]) {
@@ -127,7 +130,15 @@ test.describe('Landing page', () => {
     // Each scene is built from real elements and animated by GSAP, so the
     // evidence that a demo is alive is its cursor or its keyboard hint
     // becoming visible. Scenes start when scrolled into view.
-    for (const scene of ['contextual', 'element', 'quick', 'library', 'folders']) {
+    for (const scene of [
+      'contextual',
+      'element',
+      'quick',
+      'library',
+      'folders',
+      'team-write',
+      'team-talk',
+    ]) {
       const selector = `[data-scene="${scene}"]`;
       await page.locator(selector).scrollIntoViewIfNeeded();
 
@@ -321,35 +332,73 @@ test.describe('Landing page', () => {
     }
   });
 
-  test('the margin mark stays inside the page it annotates', async ({ page }) => {
-    test.setTimeout(90000);
-    // It is docked in the page's own margin, the way the extension docks it.
-    // Placed outside the window it gets cut in half by the containment that
-    // stops demos widening the document.
+  test('the marks a note leaves stay inside the page they annotate', async ({ page }) => {
+    test.setTimeout(120000);
+    // A mark is docked in the page's own margin, the way the extension docks
+    // it. Placed outside the window it gets cut in half by the containment
+    // that stops demos widening the document — on a phone, where the margin
+    // is narrowest, most of all.
     for (const lang of ['ar', 'en'] as const) {
       await page.setViewportSize({ width: 390, height: 860 });
       await page.addInitScript((value) => localStorage.setItem('hamesh-lang', value), lang);
       await page.goto(origin);
 
-      const mark = await page.evaluate(async () => {
-        const el = document.querySelector('.hero [data-el="margin-mark"]') as HTMLElement;
-        const win = document.querySelector('.hero .ui-window') as HTMLElement;
-        const began = Date.now();
-        while (Date.now() - began < 25000) {
-          if (Number(getComputedStyle(el).opacity) > 0.6) {
-            const m = el.getBoundingClientRect();
-            const w = win.getBoundingClientRect();
-            return { left: m.left - w.left, right: w.right - m.right };
+      for (const selector of [
+        '#feature-2 [data-el="margin-mark"]',
+        '#feature-6 [data-el="my-pin"]',
+        '#feature-7 [data-el="pin"]',
+      ]) {
+        await page.locator(selector).scrollIntoViewIfNeeded();
+        const mark = await page.evaluate(async (sel) => {
+          const el = document.querySelector(sel) as HTMLElement;
+          const win = el.closest('.demo')!.querySelector('.ui-window') as HTMLElement;
+          const began = Date.now();
+          while (Date.now() - began < 30000) {
+            if (Number(getComputedStyle(el).opacity) > 0.9) {
+              const m = el.getBoundingClientRect();
+              const w = win.getBoundingClientRect();
+              return { left: m.left - w.left, right: w.right - m.right };
+            }
+            await new Promise((r) => setTimeout(r, 100));
           }
-          await new Promise((r) => setTimeout(r, 100));
-        }
-        return null;
-      });
+          return null;
+        }, selector);
 
-      expect(mark, `the mark never appeared in ${lang}`).not.toBeNull();
-      expect(mark!.left, `mark escaped the window's start edge in ${lang}`).toBeGreaterThan(-1);
-      expect(mark!.right, `mark escaped the window's end edge in ${lang}`).toBeGreaterThan(-1);
+        expect(mark, `${selector} never appeared in ${lang}`).not.toBeNull();
+        expect(mark!.left, `${selector} escaped the window's left edge in ${lang}`).toBeGreaterThan(
+          -1,
+        );
+        expect(
+          mark!.right,
+          `${selector} escaped the window's right edge in ${lang}`,
+        ).toBeGreaterThan(-1);
+      }
     }
+  });
+
+  test('the hero keeps telling its story after the language is switched', async ({ page }) => {
+    // Regression: switching language rebuilds the hero's demo (every position
+    // is measured, and in the other language it mirrors). The rebuilt
+    // timeline was left paused, so the hero froze for anyone who switched.
+    await page.goto(origin);
+    await page.waitForFunction(
+      () => Number(getComputedStyle(document.querySelector('.hero .demo-cursor')!).opacity) > 0.5,
+      null,
+      { timeout: 15000 },
+    );
+    await page.locator('#langToggle').click();
+
+    const alive = await page.waitForFunction(
+      () => {
+        const sel = document.querySelector('.hero [data-el="selection"]') as HTMLElement;
+        const cursor = document.querySelector('.hero .demo-cursor') as HTMLElement;
+        const moving = new DOMMatrix(getComputedStyle(sel).transform).a > 0.05;
+        return Number(getComputedStyle(cursor).opacity) > 0.5 && moving;
+      },
+      null,
+      { timeout: 15000 },
+    );
+    expect(await alive.jsonValue()).toBeTruthy();
   });
 
   test('the hero demo starts once, rather than starting again after the loader', async ({

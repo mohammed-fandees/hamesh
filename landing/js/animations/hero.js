@@ -36,10 +36,15 @@ export function createHeroIntro(hero) {
      beginning again. */
   let handedOver = false;
 
+  /* Rebuilt on a resize or a change of language — positions are measured,
+     and in Arabic everything mirrors. A builder hands back a paused timeline,
+     so once the intro has handed over, the new one has to be started here:
+     leaving it paused froze the hero for anyone who switched language. */
   function buildDemo() {
     demo?.kill();
     demo = demoRoot ? createContextualNoteDemo(demoRoot) : null;
-    if (!handedOver || !visible) demo?.pause();
+    if (handedOver && visible) demo?.restart();
+    else demo?.pause();
   }
 
   buildDemo();
