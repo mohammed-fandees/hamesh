@@ -1,5 +1,7 @@
 # Reviewer Notes / Testing Instructions
 
+> **2.0.0 (Hamesh Teams in the store build):** see [`V2-TEAMS-SUBMISSION.md`](V2-TEAMS-SUBMISSION.md) — it supersedes this file's "no data leaves the device" answers for 2.0.0 and later. What follows remains true for personal notes.
+
 Paste into the dashboard's reviewer notes / "notes for the reviewer" field (exact field name/availability varies by submission flow — see `SUBMISSION_GUIDE.md`).
 
 ## What the extension does

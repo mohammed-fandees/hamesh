@@ -11,6 +11,8 @@ export type HameshMessage =
   | { type: 'GET_PAGE_STATE' }
   | { type: 'CONTENT_READY' }
   | { type: 'RESTORE_NOTE'; noteId: string }
+  /** From a note's menu on a page: the Library, opened on that note. */
+  | { type: 'OPEN_IN_LIBRARY'; noteId: string }
   | { type: 'GET_SHORTCUTS' };
 
 export interface PageStateResponse {

@@ -710,7 +710,8 @@ test.describe('Video Notes — capture + timeline markers', () => {
     await expect(page.locator('.hm-card .hm-note-body')).toHaveText('Edited video note text');
 
     // Delete.
-    await page.getByRole('button', { name: 'Delete', exact: true }).click();
+    await page.getByRole('button', { name: 'Note actions' }).click();
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'Delete', exact: true }).click();
     await expect(page.locator('.hm-card')).toHaveCount(0);
     await expect(page.locator('.hm-video-marker')).toHaveCount(0);

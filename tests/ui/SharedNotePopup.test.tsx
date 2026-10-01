@@ -4,11 +4,13 @@ import { render, screen, cleanup, fireEvent, waitFor, within } from '@testing-li
 import '@testing-library/jest-dom/vitest';
 import { SharedNotePopup } from '@/ui/teams/SharedNotePopup';
 import { getTeamsStrings } from '@/ui/teams/strings';
+import { getStrings } from '@/ui/i18n';
 import type { TeamNotesSource } from '@/teams/page-notes';
 import type { PeopleDirectory } from '@/teams/people-cache';
 import type { Note } from '@/domain/note';
 
 const strings = getTeamsStrings('en');
+const common = getStrings('en');
 const TEAM = '01J0000000000000000000000A';
 const SARA = '01J0000000000000000000000S';
 const ME = '01J0000000000000000000000M';
@@ -74,6 +76,7 @@ function source(overrides: Partial<TeamNotesSource> = {}): TeamNotesSource {
     reply: vi.fn(async () => ({ ok: true as const, data: null })),
     openDiscussion: vi.fn(async () => {}),
     openInHamesh: vi.fn(async () => {}),
+    remove: vi.fn(async () => ({ ok: true as const, data: null })),
     destinations: vi.fn(async () => ({ ok: true as const, data: [] })),
     share: vi.fn(async () => ({ ok: true as const, data: null })),
     ...overrides,
@@ -81,13 +84,13 @@ function source(overrides: Partial<TeamNotesSource> = {}): TeamNotesSource {
 }
 
 const onClose = vi.fn();
-const popup = (src: TeamNotesSource, anchorAvailable = true) =>
+const popup = (src: TeamNotesSource, anchorAvailable = true, who: PeopleDirectory = people) =>
   render(
     <SharedNotePopup
       note={note}
       lang="en"
       source={src}
-      people={people}
+      people={who}
       anchorAvailable={anchorAvailable}
       unavailableLabel="Its place on the page has changed"
       onClose={onClose}
@@ -122,9 +125,49 @@ describe('a shared note’s popup on the page', () => {
   it('opens the note in Hamesh from its menu', async () => {
     const src = source();
     popup(src);
-    fireEvent.click(screen.getByRole('button', { name: strings.noteActions }));
-    fireEvent.click(await screen.findByRole('menuitem', { name: strings.openInHamesh }));
+    fireEvent.click(screen.getByRole('button', { name: common.noteActions }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: common.openInHamesh }));
     expect(src.openInHamesh).toHaveBeenCalledWith(TEAM, note.id);
+  });
+
+  it('copies its words from its menu', async () => {
+    const writeText = vi.fn(async () => {});
+    Object.assign(navigator, { clipboard: { writeText } });
+    popup(source());
+    fireEvent.click(screen.getByRole('button', { name: common.noteActions }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: common.copyNote }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith('The heart of the paper.'));
+  });
+
+  it('offers its author to delete it, asked first, and closes once it is gone', async () => {
+    const src = source();
+    popup(src, true, { ...people, me: SARA });
+    fireEvent.click(screen.getByRole('button', { name: common.noteActions }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: common.delete }));
+    expect(screen.getByText(strings.deleteSharedConfirm)).toBeInTheDocument();
+    expect(src.remove).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: common.delete }));
+    await waitFor(() => expect(src.remove).toHaveBeenCalledWith(TEAM, note.id));
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+  });
+
+  it('offers no delete to someone who did not share it, and says why one was refused', async () => {
+    popup(source());
+    fireEvent.click(screen.getByRole('button', { name: common.noteActions }));
+    await screen.findByRole('menuitem', { name: common.copyNote });
+    expect(screen.queryByRole('menuitem', { name: common.delete })).toBeNull();
+    cleanup();
+
+    const src = source({
+      remove: vi.fn(async () => ({ ok: false as const, error: 'forbidden' as const })),
+    });
+    popup(src, true, { ...people, me: SARA });
+    fireEvent.click(screen.getByRole('button', { name: common.noteActions }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: common.delete }));
+    fireEvent.click(screen.getByRole('button', { name: common.delete }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(strings.error('forbidden'));
+    expect(onClose).not.toHaveBeenCalled();
   });
 
   it('closes from its button, and on Escape', () => {

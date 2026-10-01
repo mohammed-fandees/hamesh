@@ -51,6 +51,8 @@ import type { AdapterVideoMatch } from '@/content/video-adapters/registry';
 import { Composer, type ComposerProps } from '@/ui/Composer';
 import type { FolderPickerSource } from '@/ui/FolderPicker';
 import { NoteViewer } from '@/ui/NoteViewer';
+import { browser } from 'wxt/browser';
+import type { HameshMessage } from '@/messaging/types';
 import { Marker } from '@/ui/Marker';
 import { SelectionHint } from '@/ui/SelectionHint';
 import { TextSelectionAction } from '@/ui/TextSelectionAction';
@@ -2181,6 +2183,11 @@ export function HameshApp({
             onUpdate={(content) => handleUpdate(viewerNote.id, content)}
             onDelete={() => void handleDelete(viewerNote.id)}
             onTogglePin={() => handleTogglePin(viewerNote.id)}
+            onOpenInHamesh={() => {
+              // A content script cannot open the Library itself; the worker does.
+              const message: HameshMessage = { type: 'OPEN_IN_LIBRARY', noteId: viewerNote.id };
+              void browser.runtime.sendMessage(message).catch(() => {});
+            }}
             onClose={() => setViewerId(null)}
           />
         ))}

@@ -85,6 +85,9 @@ export interface Strings {
   /** The name of a folder's "⋮": what it acts on. */
   folderActions: (folder: string) => string;
   noteActions: string;
+  /** A note's menu: open it where it lives in Hamesh, and copy its words. */
+  openInHamesh: string;
+  copyNote: string;
   textNoteAction: string;
   attachedText: string;
   textAnchorUnavailable: string;
@@ -207,6 +210,8 @@ const en: Strings = {
   addSubfolder: 'Add sub-folder',
   folderActions: (folder) => `Actions for ${folder}`,
   noteActions: 'Note actions',
+  openInHamesh: 'Open in Hamesh',
+  copyNote: 'Copy the note',
   textNoteAction: 'Add a note to the selected text',
   attachedText: 'Attached text',
   textAnchorUnavailable: "Page changed — couldn't find this text",
@@ -338,6 +343,8 @@ const ar: Strings = {
   addSubfolder: 'إضافة فولدر فرعي',
   folderActions: (folder) => `إجراءات ${folder}`,
   noteActions: 'خيارات الملاحظة',
+  openInHamesh: 'افتح في هامش',
+  copyNote: 'انسخ نص الملاحظة',
   textNoteAction: 'أضف ملاحظة على النص المحدد',
   attachedText: 'النص المرتبط',
   textAnchorUnavailable: 'تغيّرت الصفحة — تعذّر العثور على هذا النص',

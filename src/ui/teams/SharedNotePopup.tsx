@@ -1,13 +1,16 @@
+import { useState } from 'react';
 import type { Note } from '@/domain/note';
 import type { TeamNotesSource } from '@/teams/page-notes';
 import type { PeopleDirectory } from '@/teams/people-cache';
+import type { TeamsErrorCode } from '@/teams/errors';
 import { relativeTime } from '../format';
-import type { Lang } from '../i18n';
+import { getStrings, type Lang } from '../i18n';
 import { Avatar } from '../kit/Avatar';
-import { StatusLine } from '../kit/Feedback';
+import { InlineError, StatusLine } from '../kit/Feedback';
 import { CloseIcon, SidePanelIcon } from '../kit/icons';
+import { InlineConfirm } from '../kit/InlineConfirm';
 import { escapeLayer } from '../kit/keys';
-import { Menu, MenuItem } from '../kit/Menu';
+import { NoteMenu } from '../NoteMenu';
 import { NoteDiscussion } from './NoteDiscussion';
 import { getTeamsStrings } from './strings';
 import css from './page.css?inline';
@@ -28,10 +31,12 @@ interface SharedNotePopupProps {
  * A team's note, opened on the page it belongs to: whose it is and where it
  * was shared, what it says, the latest of its discussion and a field to reply.
  * The whole discussion opens beside the page, in the side panel; the note's
- * own page in Hamesh is in its menu.
+ * menu opens it in Hamesh, copies it, and — for the one who shared it —
+ * deletes it, asked first.
  *
- * Read-only here, like every shared note on a page: it is changed from
- * Hamesh's own pages, the only ones that may ask the server.
+ * Its words are changed from Hamesh's own pages, the only ones that may ask
+ * the server for that; a delete goes through the worker's page channel, which
+ * answers only for a note it holds for this very page.
  *
  * Escape closes it — after the menu, which takes the key first when open.
  */
@@ -45,8 +50,25 @@ export function SharedNotePopup({
   onClose,
 }: SharedNotePopupProps) {
   const strings = getTeamsStrings(lang);
+  const common = getStrings(lang);
   const { id: teamId, name: teamName, authorId } = note.team;
   const author = authorId ? people.people[authorId] : undefined;
+  // This page knows no one's role, only who shared the note: theirs to delete
+  // here. The server decides either way.
+  const mine = !!authorId && authorId === people.me;
+  const [asking, setAsking] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [failed, setFailed] = useState<TeamsErrorCode | null>(null);
+
+  async function remove() {
+    setDeleting(true);
+    setFailed(null);
+    const gone = await source.remove(teamId, note.id);
+    setDeleting(false);
+    setAsking(false);
+    if (gone.ok) onClose();
+    else setFailed(gone.error);
+  }
 
   return (
     <div
@@ -78,28 +100,12 @@ export function SharedNotePopup({
           >
             <SidePanelIcon />
           </button>
-          <Menu label={strings.noteActions}>
-            {(close) => (
-              <>
-                <MenuItem
-                  onSelect={() => {
-                    close();
-                    void source.openInHamesh(teamId, note.id);
-                  }}
-                >
-                  {strings.openInHamesh}
-                </MenuItem>
-                <MenuItem
-                  onSelect={() => {
-                    close();
-                    void navigator.clipboard?.writeText(note.content).catch(() => {});
-                  }}
-                >
-                  {strings.copyNote}
-                </MenuItem>
-              </>
-            )}
-          </Menu>
+          <NoteMenu
+            strings={common}
+            text={note.content}
+            onOpenInHamesh={() => void source.openInHamesh(teamId, note.id)}
+            onDelete={mine ? () => setAsking(true) : undefined}
+          />
           <button
             type="button"
             className="hm-icon-btn"
@@ -121,6 +127,22 @@ export function SharedNotePopup({
       <p className="hm-shared-card__body" dir="auto">
         {note.content}
       </p>
+
+      {(asking || failed) && (
+        <div className="hm-shared-card__status">
+          {asking && (
+            <InlineConfirm
+              question={strings.deleteSharedConfirm}
+              confirmLabel={common.delete}
+              cancelLabel={common.keepIt}
+              working={deleting}
+              onConfirm={() => void remove()}
+              onCancel={() => setAsking(false)}
+            />
+          )}
+          {failed && <InlineError>{strings.error(failed)}</InlineError>}
+        </div>
+      )}
 
       <NoteDiscussion note={note} lang={lang} source={source} people={people} />
     </div>

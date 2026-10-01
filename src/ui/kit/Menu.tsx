@@ -143,9 +143,19 @@ export function Menu({ label, children, form = false, layoutKey, onClose, classN
 
   useEffect(() => {
     if (!open) return;
+    // Read from the event's path, not its target: on a web page the menu lives
+    // in Hamesh's shadow root, and a listener on the document sees every press
+    // inside it as a press on the shadow's host — which would close the menu
+    // before the item that was pressed could take the click.
+    const within = (e: Event) => {
+      const path = e.composedPath();
+      return (
+        (!!triggerRef.current && path.includes(triggerRef.current)) ||
+        (!!panelRef.current && path.includes(panelRef.current))
+      );
+    };
     const onPointerDown = (e: PointerEvent) => {
-      const target = e.target as Node;
-      if (triggerRef.current?.contains(target) || panelRef.current?.contains(target)) return;
+      if (within(e)) return;
       close(false);
     };
     // Capture, so scrolling inside the panel (an edit box) is seen and ignored.
@@ -153,7 +163,7 @@ export function Menu({ label, children, form = false, layoutKey, onClose, classN
     // trigger can itself scroll an `overflow: hidden` ancestor, and closing on
     // that made the menu vanish the moment it opened.
     const onScroll = (e: Event) => {
-      if (panelRef.current?.contains(e.target as Node)) return;
+      if (panelRef.current && e.composedPath().includes(panelRef.current)) return;
       const trigger = triggerRef.current;
       if (!trigger) return;
       const rect = trigger.getBoundingClientRect();

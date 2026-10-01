@@ -47,8 +47,23 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
 
+      # From 2.0.0 the store package includes Hamesh Teams. Both values are
+      # public (an origin and an OAuth client id, both visible in any installed
+      # copy), kept as repository *variables* — not secrets — so they never
+      # live in the source. A release without them would silently ship without
+      # Teams, so it stops instead.
       - name: Build production extension package
-        run: pnpm zip
+        env:
+          WXT_TEAMS_API_ORIGIN: ${{ vars.WXT_TEAMS_API_ORIGIN }}
+          WXT_GOOGLE_CLIENT_ID: ${{ vars.WXT_GOOGLE_CLIENT_ID }}
+        run: |
+          if [ -z "$WXT_TEAMS_API_ORIGIN" ] || [ -z "$WXT_GOOGLE_CLIENT_ID" ]; then
+            echo "::error::Set the repository variables WXT_TEAMS_API_ORIGIN and WXT_GOOGLE_CLIENT_ID (Settings → Secrets and variables → Actions → Variables)."
+            exit 1
+          fi
+          pnpm zip
+          grep -q '"sidePanel"' .output/chrome-mv3/manifest.json \
+            || { echo "::error::The package was built without Teams."; exit 1; }
 
       - name: Resolve tag, artifact & notes
         id: meta

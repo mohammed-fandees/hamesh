@@ -13,12 +13,12 @@ export type Moment = string | number | Date;
 const toTime = (when: Moment): number =>
   when instanceof Date ? when.getTime() : new Date(when).getTime();
 
-/** An Arabic count of a unit, as it is said: "دقيقة", "دقيقتين", "3 دقائق", "11 دقيقة". */
-function arabicCount(n: number, one: string, two: string, few: string): string {
+/** An Arabic count of a unit, as it is said: "يوم", "يومين", "3 أيام", "11 يومًا". */
+function arabicCount(n: number, one: string, two: string, few: string, many = one): string {
   if (n === 1) return one;
   if (n === 2) return two;
   if (n >= 3 && n <= 10) return `${n} ${few}`;
-  return `${n} ${one}`;
+  return `${n} ${many}`;
 }
 
 /** Compact relative time — "just now", "5m ago", "منذ 3 ساعات". */
@@ -33,7 +33,7 @@ export function relativeTime(when: Moment, lang: Lang): string {
     if (min < 1) return 'الآن';
     if (min < 60) return `منذ ${arabicCount(min, 'دقيقة', 'دقيقتين', 'دقائق')}`;
     if (hr < 24) return `منذ ${arabicCount(hr, 'ساعة', 'ساعتين', 'ساعات')}`;
-    return `منذ ${arabicCount(day, 'يوم', 'يومين', 'أيام')}`;
+    return `منذ ${arabicCount(day, 'يوم', 'يومين', 'أيام', 'يومًا')}`;
   }
   if (min < 1) return 'just now';
   if (min < 60) return `${min}m ago`;

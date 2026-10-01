@@ -153,12 +153,11 @@ export interface TeamsStrings extends SharedStrings {
   openWholeDiscussion: (count: number) => string;
   /** A shared note's popup on the page: its header's buttons, and its menu. */
   openBeside: string;
-  noteActions: string;
-  openInHamesh: string;
-  copyNote: string;
   close: string;
   /** Sends a comment, where the field is the discussion's last word. */
   send: string;
+  /** The side panel's way to the note's own page in the Library. */
+  discussionInLibrary: string;
   /** The side panel's heading over a discussion, with how long it is. */
   discussionHeading: (count: number) => string;
   /** One pin standing for several shared notes on one element, read out. */
@@ -391,11 +390,9 @@ const en: TeamsOwnStrings = {
   openWholeDiscussion: (count) =>
     count === 0 ? 'View the discussion' : `View the whole discussion (${count})`,
   openBeside: 'Open the discussion beside the page',
-  noteActions: 'Actions',
-  openInHamesh: 'Open in Hamesh',
-  copyNote: 'Copy the note',
   close: 'Close',
   send: 'Send',
+  discussionInLibrary: 'Open the discussion in the Hamesh library',
   discussionHeading: (count) => (count === 0 ? 'Discussion' : `Discussion · ${count}`),
   clusterPin: (count) => `${count} shared notes`,
   postComment: 'Comment',
@@ -674,11 +671,9 @@ const ar: TeamsOwnStrings = {
   quickReplyPlaceholder: 'اكتب ردًا…',
   openWholeDiscussion: (count) => (count === 0 ? 'عرض المحادثة' : `عرض المحادثة كاملة (${count})`),
   openBeside: 'افتح المحادثة في اللوحة الجانبية',
-  noteActions: 'إجراءات',
-  openInHamesh: 'افتح في هامش',
-  copyNote: 'انسخ نص الملحوظة',
   close: 'إغلاق',
   send: 'إرسال',
+  discussionInLibrary: 'افتح النقاش في مكتبة هامش',
   discussionHeading: (count) => (count === 0 ? 'المحادثة' : `المحادثة · ${count}`),
   clusterPin: (count) =>
     count === 2

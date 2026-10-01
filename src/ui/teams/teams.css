@@ -802,8 +802,32 @@
 }
 .hm-panel-note__who {
   display: flex;
+  flex: 1;
   flex-direction: column;
   min-width: 0;
+}
+/* The way to the note's own page in the Library, at the foot of its card. */
+.hm-panel-note__open {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--hm-accent-strong);
+  font-family: inherit;
+  font-size: var(--hm-text-body-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+.hm-panel-note__open:hover {
+  color: var(--hm-accent);
+}
+.hm-panel-note__open:focus-visible {
+  outline: none;
+  border-radius: var(--hm-radius-sm);
+  box-shadow: var(--hm-ring);
 }
 .hm-panel-note__author {
   color: var(--hm-ink);

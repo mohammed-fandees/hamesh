@@ -37,6 +37,45 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    version: '2.0.0',
+    date: '2026-10-01',
+    title: { en: 'Hamesh Teams', ar: 'فرق هامش' },
+    items: [
+      {
+        en: 'Hamesh Teams: share notes with your team, and talk about them right on the page. Optional, and off until you turn it on from Settings → Teams. Your personal notes still never leave your device.',
+        ar: 'فرق هامش: شارك ملاحظاتك مع فريقك، وتناقشوا فيها على الصفحة نفسها. ميزة اختيارية ومتوقفة حتى تفعّلها من الإعدادات ← الفرق. وملاحظاتك الشخصية ما زالت لا تغادر جهازك أبدًا.',
+      },
+      {
+        en: 'A shared note shows its author’s face on the page. Open it to read the discussion and reply, or open the whole conversation in the side panel beside the page.',
+        ar: 'الملحوظة المشتركة تظهر على الصفحة بصورة كاتبها. افتحها لتقرأ النقاش وترد، أو افتح المحادثة كاملة في اللوحة الجانبية بجانب الصفحة.',
+      },
+      {
+        en: 'Write a note straight into a team, or drop one from your notes onto a team’s folder in the Library. Name people with @, and find where you were named in Mentions.',
+        ar: 'اكتب ملحوظتك مباشرة في فريق، أو اسحب ملاحظة من ملاحظاتك إلى مجلد الفريق في المكتبة. اذكر الأشخاص بـ @، وتجد ما ذُكرت فيه في «الإشارات».',
+      },
+      {
+        en: 'Every note has a menu: open it in the Notes Library, copy its words, or delete it. The Library opens right on the note.',
+        ar: 'لكل ملاحظة قائمة: افتحها في مكتبة الملاحظات، أو انسخ نصها، أو احذفها. وتفتح المكتبة على الملاحظة نفسها مباشرة.',
+      },
+      {
+        en: 'The popup, the Notes Library, Settings and the notes on the page now share one design: the same buttons, the same text sizes, the same way of answering your clicks.',
+        ar: 'النافذة المنبثقة ومكتبة الملاحظات والإعدادات والملاحظات على الصفحة أصبحت بتصميم واحد: نفس الأزرار، ونفس أحجام النصوص، ونفس الاستجابة لنقراتك.',
+      },
+      {
+        en: 'Settings is a stack of cards, and What’s New opens on what you have not read yet.',
+        ar: 'الإعدادات أصبحت بطاقات مرتبة، وصفحة «ما الجديد» تفتح على ما لم تقرأه بعد.',
+      },
+      {
+        en: 'Small buttons are easier to hit, and on a page Hamesh cannot work on, the popup says what to do.',
+        ar: 'الأزرار الصغيرة أسهل في الضغط، وعلى الصفحات التي لا يعمل عليها هامش تخبرك النافذة المنبثقة بما يمكنك فعله.',
+      },
+      {
+        en: 'Times in Arabic read naturally: «منذ ساعتين», «منذ 5 ساعات».',
+        ar: 'الأوقات بالعربية تُقرأ بشكل طبيعي: «منذ ساعتين»، «منذ 5 ساعات».',
+      },
+    ],
+  },
+  {
     version: '1.4.0',
     date: '2026-09-26',
     title: { en: 'Write first, file as you go', ar: 'اكتب أولًا، ورتّب وأنت تكتب' },

@@ -1,20 +1,27 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { PanelView } from '@/ui/teams/PanelView';
 import { getTeamsStrings } from '@/ui/teams/strings';
+import { getStrings } from '@/ui/i18n';
 import { projectPage, type CachedTeamNote } from '@/teams/page-cache';
 import type { Note } from '@/domain/note';
 import type { TeamsClient } from '@/teams/client';
 
 const pageNotes = vi.hoisted(() => ({ value: [] as Note[] }));
+const tabs = vi.hoisted(() => ({ create: vi.fn(async () => ({})) }));
+vi.mock('wxt/browser', () => ({
+  browser: { tabs, runtime: { getURL: (path: string) => `chrome-extension://hamesh${path}` } },
+}));
 vi.mock('@/teams/page-cache', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/teams/page-cache')>()),
   readPageNotes: vi.fn(async () => pageNotes.value),
+  watchPageNotes: vi.fn(() => () => {}),
 }));
 
 const strings = getTeamsStrings('en');
+const common = getStrings('en');
 const TEAM = '01J0000000000000000000000A';
 const ME = '01J0000000000000000000000Z';
 const SARA = '01J0000000000000000000000S';
@@ -46,12 +53,15 @@ function cached(id: string, content: string, authorId: string): CachedTeamNote {
 }
 
 /** A client whose answers a test steers, recording what was asked. */
-function fakeClient(state: 'signed_in' | 'signed_out' = 'signed_in') {
+function fakeClient(
+  state: 'signed_in' | 'signed_out' = 'signed_in',
+  capabilities = ['team.view', 'comments.create'],
+) {
   const calls: { op: string; params: unknown }[] = [];
   const answers: Record<string, unknown> = {
     'team.get': {
       team: { id: TEAM, name: 'Research', role: 'member', state: 'active', readOnlyUntil: null },
-      capabilities: ['team.view', 'comments.create'],
+      capabilities,
       serverTime: 1,
     },
     'members.list': {
@@ -61,6 +71,7 @@ function fakeClient(state: 'signed_in' | 'signed_out' = 'signed_in') {
       ],
     },
     'comments.list': { comments: [], nextAfter: null },
+    // A delete answers with nothing at all, as the API does.
   };
   const client = {
     send: vi.fn(async () => ({
@@ -102,7 +113,8 @@ describe('Hamesh in the side panel', () => {
     expect(screen.getByText('«Self-attention, at once.»')).toBeInTheDocument();
     expect(screen.getByText('Sara')).toBeInTheDocument();
     expect(container.querySelector('.hm-panel-note img')).toHaveAttribute('src', PHOTO);
-    expect(calls.some((c) => c.op === 'comments.list')).toBe(true);
+    // The discussion is asked for once the team is known — on its own turn.
+    await waitFor(() => expect(calls.some((c) => c.op === 'comments.list')).toBe(true));
   });
 
   it('lists every shared note on the page, and opens the one picked', async () => {
@@ -137,5 +149,43 @@ describe('Hamesh in the side panel', () => {
     expect(await screen.findByText(strings.signedOutTitle)).toBeInTheDocument();
     expect(screen.queryByText('The heart of the paper.')).toBeNull();
     expect(calls).toEqual([]);
+  });
+
+  it('opens the discussion in the Hamesh library, on the note’s own page', async () => {
+    const { client } = fakeClient();
+    render(<PanelView lang="en" client={client} teamId={TEAM} noteId={N1} pageKey={PAGE} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: strings.discussionInLibrary }));
+    expect(tabs.create).toHaveBeenCalledWith({
+      url: `chrome-extension://hamesh/notes.html?view=teams&team=${TEAM}&page=note&note=${N1}`,
+    });
+  });
+
+  it('deletes the note for one who may, asked first, and goes back to the page’s notes', async () => {
+    const { client, calls } = fakeClient('signed_in', [
+      'team.view',
+      'comments.create',
+      'notes.delete_any',
+    ]);
+    render(<PanelView lang="en" client={client} teamId={TEAM} noteId={N1} pageKey={PAGE} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: common.noteActions }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: common.delete }));
+    expect(screen.getByText(strings.deleteSharedConfirm)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: common.delete }));
+
+    await waitFor(() =>
+      expect(calls).toContainEqual({ op: 'notes.delete', params: { teamId: TEAM, noteId: N1 } }),
+    );
+    expect(await screen.findByRole('radio', { name: strings.panelWholePage(1) })).toBeChecked();
+    expect(screen.queryByText('The heart of the paper.')).toBeNull();
+  });
+
+  it('offers no delete to one who may not', async () => {
+    const { client } = fakeClient();
+    render(<PanelView lang="en" client={client} teamId={TEAM} noteId={N1} pageKey={PAGE} />);
+    fireEvent.click(await screen.findByRole('button', { name: common.noteActions }));
+    await screen.findByRole('menuitem', { name: common.copyNote });
+    expect(screen.queryByRole('menuitem', { name: common.delete })).toBeNull();
   });
 });
