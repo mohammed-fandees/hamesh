@@ -44,6 +44,8 @@ export interface TeamNotesSource {
   openDiscussion(teamId: string, noteId: string): Promise<void>;
   /** Opens the note's own page in Hamesh, in a tab. */
   openInHamesh(teamId: string, noteId: string): Promise<void>;
+  /** Deletes a team note on this page, if the server lets this member. */
+  remove(teamId: string, noteId: string): Promise<PageResult<null>>;
   /** The teams a new note can go to, with their folders. */
   destinations(): Promise<PageResult<Destination[]>>;
   /** Shares a note this device holds for this page; the local copy then goes. */
@@ -95,6 +97,7 @@ export function createTeamNotesSource(): TeamNotesSource {
     openInHamesh: async (teamId, noteId) => {
       await ask({ op: 'open', teamId, noteId, in: 'hamesh' });
     },
+    remove: (teamId, noteId) => ask({ op: 'delete', teamId, noteId }),
     destinations: () => ask({ op: 'destinations' }),
     share: (noteId, teamId, folderId) => ask({ op: 'share', noteId, teamId, folderId }),
   };

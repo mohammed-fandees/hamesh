@@ -215,43 +215,6 @@
   padding: 0 var(--hm-space-4) var(--hm-space-3);
 }
 
-/* ---- The popup's menu ----
-   Hamesh's own pages style it in pages.css, which a web page does not have. */
-.hm-menu {
-  display: inline-flex;
-  flex: none;
-}
-.hm-menu__panel {
-  z-index: var(--hm-z-toast);
-  min-width: 190px;
-  padding: var(--hm-space-1);
-  background: var(--hm-surface);
-  border: 1px solid var(--hm-border);
-  border-radius: var(--hm-radius-md);
-  box-shadow: var(--hm-elev-2);
-  pointer-events: auto;
-}
-.hm-menu__item {
-  display: flex;
-  align-items: center;
-  gap: var(--hm-space-2);
-  width: 100%;
-  padding: 7px var(--hm-space-2);
-  border: none;
-  background: none;
-  border-radius: var(--hm-radius-sm);
-  cursor: pointer;
-  text-align: start;
-  font-family: var(--hm-sans);
-  font-size: var(--hm-text-body-sm);
-  color: var(--hm-ink);
-}
-.hm-menu__item:hover,
-.hm-menu__item:focus-visible {
-  outline: none;
-  background: var(--hm-surface-hover);
-}
-
 /* ---- The list a cluster pin opens ---- */
 .hm-card.hm-pin-list {
   width: 100%;

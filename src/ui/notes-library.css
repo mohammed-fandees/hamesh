@@ -347,6 +347,12 @@
     background var(--hm-motion-state),
     opacity var(--hm-motion-state);
 }
+/* The note a link opened the Library on, marked for a moment. */
+.hm-note-row[data-focus='true'] {
+  border-radius: var(--hm-radius-md);
+  box-shadow: 0 0 0 2px var(--hm-accent);
+  transition: box-shadow var(--hm-motion-emphasized);
+}
 .hm-note-row:hover {
   background: var(--hm-layer-hover);
 }

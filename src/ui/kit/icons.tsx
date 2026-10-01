@@ -100,6 +100,26 @@ export function PencilIcon({ size = 12, className }: IconProps) {
   );
 }
 
+/** A box with an arrow leaving it — opens something somewhere else. */
+export function OpenElsewhereIcon({ size = 13, className }: IconProps) {
+  return (
+    <Glyph size={size} className={withClass(className, 'hm-mirror')}>
+      <path d="M8.2 2.5 H11.5 V5.8 M11.5 2.5 L6.6 7.4" />
+      <path d="M10 8.6 V10.9 A1.1 1.1 0 0 1 8.9 12 H3.1 A1.1 1.1 0 0 1 2 10.9 V5.1 A1.1 1.1 0 0 1 3.1 4 H5.4" />
+    </Glyph>
+  );
+}
+
+/** Two sheets, one over the other — copies. */
+export function CopyIcon({ size = 13, className }: IconProps) {
+  return (
+    <Glyph size={size} className={className}>
+      <rect x="4.6" y="4.6" width="7.2" height="7.2" rx="1.2" />
+      <path d="M9.4 4.6 V3.3 A1.1 1.1 0 0 0 8.3 2.2 H3.3 A1.1 1.1 0 0 0 2.2 3.3 V8.3 A1.1 1.1 0 0 0 3.3 9.4 H4.6" />
+    </Glyph>
+  );
+}
+
 export function TrashIcon({ size = 12, className }: IconProps) {
   return (
     <Glyph size={size} className={className}>

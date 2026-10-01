@@ -75,6 +75,16 @@ export async function handlePageRequest(
     }
     case 'destinations':
       return { ok: true, data: await destinations(deps.service) };
+    case 'delete': {
+      if (!(await onThisPage(request.teamId, request.noteId))) return notFound();
+      // The pull that follows a delete takes it off this page's shelf, and the
+      // page redraws from that, as it does for any change.
+      const gone = await deps.service.perform('notes.delete', {
+        teamId: request.teamId,
+        noteId: request.noteId,
+      });
+      return gone.ok ? { ok: true, data: null } : gone;
+    }
     case 'open': {
       const params = new URLSearchParams({
         view: 'teams',

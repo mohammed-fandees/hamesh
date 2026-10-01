@@ -70,6 +70,9 @@ interface Place {
   teams: TeamsRoute;
   /** In Settings, the panel to open and bring into view. */
   focus: SettingsFocus | null;
+  /** In the Library, a note to find and show — `?view=library&note=<id>`,
+   *  from a note's menu on a page. */
+  note: string | null;
 }
 function placeFrom(search: string): Place {
   const params = new URLSearchParams(search);
@@ -78,6 +81,7 @@ function placeFrom(search: string): Place {
     view: DEEP_LINKS.includes(requested as View) ? (requested as View) : 'library',
     teams: routeFromParams(params),
     focus: params.get('focus') === 'plan' ? 'plan' : null,
+    note: requested === 'library' ? params.get('note') : null,
   };
 }
 const initialPlace = placeFrom(location.search);
@@ -130,7 +134,7 @@ export function App() {
    */
   const navigate = useCallback(
     (next: View, teams: TeamsRoute = OVERVIEW, focus: SettingsFocus | null = null) => {
-      const target: Place = { view: next, teams, focus };
+      const target: Place = { view: next, teams, focus, note: null };
       const deep = next === 'teams' && teams.page !== 'overview';
       if (deep) {
         // Remember where this entry is before stepping past it.
@@ -535,6 +539,7 @@ export function App() {
       <LibraryView
         strings={strings}
         lang={lang}
+        focusNoteId={place.note}
         notes={notes}
         teamNotes={shared.notes}
         teams={shared.teams}

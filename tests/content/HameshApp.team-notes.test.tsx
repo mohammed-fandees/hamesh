@@ -108,6 +108,7 @@ function source(notes: Note[], people: PeopleDirectory['people'] = {}) {
     reply: vi.fn(async () => ({ ok: true as const, data: null })),
     openDiscussion: vi.fn(async () => {}),
     openInHamesh: vi.fn(async () => {}),
+    remove: vi.fn(async () => ({ ok: true as const, data: null })),
     destinations: vi.fn(async () => ({ ok: true as const, data: [] })),
     share: vi.fn(async () => ({ ok: true as const, data: null })),
   };
@@ -192,7 +193,11 @@ describe('a team’s notes on the page they belong to', () => {
     await openTheMarker();
 
     expect(await screen.findByRole('button', { name: 'Edit' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument();
+    // Delete is in the note's menu, beside opening it in Hamesh and copying it.
+    fireEvent.click(screen.getByRole('button', { name: 'Note actions' }));
+    expect(await screen.findByRole('menuitem', { name: 'Delete' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Open in Hamesh' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Copy the note' })).toBeInTheDocument();
     expect(screen.queryByText(/Shared with/)).not.toBeInTheDocument();
   });
 

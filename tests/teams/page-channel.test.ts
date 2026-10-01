@@ -226,6 +226,40 @@ describe('a shared note’s discussion, from the page', () => {
   });
 });
 
+describe('deleting a shared note from the page', () => {
+  it('asks the server to delete a note this device holds for that page', async () => {
+    const { all, perform } = deps();
+    const result = await handlePageRequest(all, { op: 'delete', teamId: TEAM, noteId: NOTE }, PAGE);
+    expect(result).toEqual({ ok: true, data: null });
+    expect(perform).toHaveBeenCalledWith('notes.delete', { teamId: TEAM, noteId: NOTE });
+  });
+
+  it('deletes nothing that is not on the page asking, and says why the server refused', async () => {
+    const { all, perform } = deps();
+    const elsewhere = await handlePageRequest(
+      all,
+      { op: 'delete', teamId: TEAM, noteId: NOTE },
+      ELSEWHERE,
+    );
+    expect(elsewhere).toEqual({ ok: false, error: 'not_found' });
+    expect(perform).not.toHaveBeenCalled();
+
+    perform.mockResolvedValueOnce({ ok: false, error: 'forbidden' } as never);
+    const refused = await handlePageRequest(
+      all,
+      { op: 'delete', teamId: TEAM, noteId: NOTE },
+      PAGE,
+    );
+    expect(refused).toEqual({ ok: false, error: 'forbidden' });
+  });
+
+  it('is a well-formed request only with real ids', () => {
+    const message = (request: object) => ({ type: 'TEAMS_PAGE', request });
+    expect(isTeamsPageMessage(message({ op: 'delete', teamId: TEAM, noteId: NOTE }))).toBe(true);
+    expect(isTeamsPageMessage(message({ op: 'delete', teamId: TEAM, noteId: 'x' }))).toBe(false);
+  });
+});
+
 describe('sharing from the page', () => {
   it('shares the note as this device holds it, then lets the local copy go', async () => {
     const { all, perform, notes } = deps();

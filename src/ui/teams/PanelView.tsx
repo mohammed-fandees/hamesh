@@ -1,17 +1,24 @@
 import { useEffect, useState } from 'react';
+import { browser } from 'wxt/browser';
 import type { TeamMember, TeamResponse } from '@hamesh/teams-contract';
 import type { CachedFolder } from '@/teams/sync-store';
 import type { Note } from '@/domain/note';
 import type { TeamsClient } from '@/teams/client';
-import { readPageNotes } from '@/teams/page-cache';
+import { readPageNotes, watchPageNotes } from '@/teams/page-cache';
 import { relativeTime } from '../format';
-import type { Lang } from '../i18n';
+import { getStrings, type Lang } from '../i18n';
 import { Avatar } from '../kit/Avatar';
 import { EmptyState } from '../kit/EmptyState';
+import { OpenElsewhereIcon } from '../kit/icons';
+import { InlineError } from '../kit/Feedback';
+import { InlineConfirm } from '../kit/InlineConfirm';
 import { MarginMark } from '../kit/MarginMark';
 import { SegmentedControl } from '../kit/SegmentedControl';
 import { Skeleton } from '../kit/Skeleton';
+import { NoteMenu } from '../NoteMenu';
 import { CommentThread } from './CommentThread';
+import { noteRights } from './permissions';
+import { routeToParams } from './route';
 import { getTeamsStrings } from './strings';
 import './styles';
 import { useTeams } from './useTeams';
@@ -39,7 +46,9 @@ interface PanelViewProps {
  */
 export function PanelView({ lang, client, teamId, noteId, pageKey }: PanelViewProps) {
   const strings = getTeamsStrings(lang);
+  const common = getStrings(lang);
   const page = useTeams(client);
+  const [asking, setAsking] = useState(false);
   const [pageNotes, setPageNotes] = useState<Note[] | null>(null);
   const [selected, setSelected] = useState(teamId && noteId ? { teamId, noteId } : null);
   const [mode, setMode] = useState<PanelMode>(selected ? 'note' : 'page');
@@ -47,17 +56,42 @@ export function PanelView({ lang, client, teamId, noteId, pageKey }: PanelViewPr
   const [members, setMembers] = useState<TeamMember[] | null>(null);
   const [folders, setFolders] = useState<CachedFolder[]>([]);
 
-  // The page's shared notes, from the worker's cache — no request.
+  // The page's shared notes, from the worker's cache — no request — and again
+  // whenever the worker rewrites them (a note shared, edited or deleted).
   useEffect(() => {
     if (!pageKey) return;
     let cancelled = false;
-    void readPageNotes(pageKey).then((notes) => {
-      if (!cancelled) setPageNotes(notes);
-    });
+    const load = () =>
+      void readPageNotes(pageKey).then((notes) => {
+        if (!cancelled) setPageNotes(notes);
+      });
+    load();
+    const unwatch = watchPageNotes(pageKey, load);
     return () => {
       cancelled = true;
+      unwatch();
     };
   }, [pageKey]);
+
+  /** The note's own page in Hamesh's Library, where the whole of it lives. */
+  function openInHamesh(where: { teamId: string; noteId: string }) {
+    const params = new URLSearchParams({
+      view: 'teams',
+      ...routeToParams({ page: 'note', teamId: where.teamId, noteId: where.noteId }),
+    });
+    void browser.tabs.create({
+      url: browser.runtime.getURL(`/notes.html?${params}` as '/notes.html'),
+    });
+  }
+
+  async function remove(where: { teamId: string; noteId: string }) {
+    const gone = await page.run('notes.delete', where, 'note.delete');
+    setAsking(false);
+    if (gone === null) return;
+    setPageNotes((notes) => notes?.filter((n) => n.id !== where.noteId) ?? null);
+    setSelected(null);
+    setMode('page');
+  }
 
   // The selected note's team and who is in it: what the discussion needs —
   // asked only once the worker says there is a session to ask with.
@@ -137,6 +171,7 @@ export function PanelView({ lang, client, teamId, noteId, pageKey }: PanelViewPr
     }
     if (!team || !page.me) return <Skeleton rows={2} />;
     const author = personOf(note?.team?.authorId ?? null);
+    const rights = noteRights(team, note?.team?.authorId ?? null, page.me.user.id);
     const folder = folders.find((f) => f.id === note?.team?.folderId);
     return (
       <>
@@ -164,6 +199,12 @@ export function PanelView({ lang, client, teamId, noteId, pageKey }: PanelViewPr
                   {relativeTime(note.updatedAt, lang)}
                 </span>
               </span>
+              <NoteMenu
+                strings={common}
+                text={note.content}
+                onOpenInHamesh={() => openInHamesh(selected)}
+                onDelete={rights.delete ? () => setAsking(true) : undefined}
+              />
             </header>
             {note.anchor.type === 'text' && (
               <blockquote className="hm-panel-note__quote" dir="auto">
@@ -173,6 +214,27 @@ export function PanelView({ lang, client, teamId, noteId, pageKey }: PanelViewPr
             <p className="hm-panel-note__body hm-prose" dir="auto">
               {note.content}
             </p>
+            {asking && (
+              <InlineConfirm
+                question={strings.deleteSharedConfirm}
+                confirmLabel={common.delete}
+                cancelLabel={common.keepIt}
+                working={page.working('note.delete')}
+                onConfirm={() => void remove(selected)}
+                onCancel={() => setAsking(false)}
+              />
+            )}
+            {page.failed('note.delete') && (
+              <InlineError>{strings.error(page.failed('note.delete')!)}</InlineError>
+            )}
+            <button
+              type="button"
+              className="hm-panel-note__open"
+              onClick={() => openInHamesh(selected)}
+            >
+              <OpenElsewhereIcon />
+              {strings.discussionInLibrary}
+            </button>
           </article>
         )}
         <CommentThread

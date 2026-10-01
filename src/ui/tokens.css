@@ -17,6 +17,9 @@
 
 :host,
 .hm-scope {
+  /* A person's monogram tone: lightness and chroma; the hue is theirs. */
+  --hm-avatar-l: 0.52;
+  --hm-avatar-c: 0.1;
   /* Neutrals — light theme (default) */
   --hm-ink: #1e1b18;
   --hm-ink-60: rgba(30, 27, 24, 0.62);
@@ -211,6 +214,8 @@
 /* Dark theme — applied when host background is dark or via prefers-color-scheme */
 :host([data-hm-theme='dark']),
 .hm-scope[data-hm-theme='dark'] {
+  --hm-avatar-l: 0.8;
+  --hm-avatar-c: 0.085;
   --hm-ink: #f3ede3;
   --hm-ink-60: rgba(243, 237, 227, 0.62);
   --hm-ink-40: rgba(243, 237, 227, 0.45);
@@ -847,6 +852,12 @@ select.hm-input {
 .hm-corner-end {
   inset-inline-end: 8px;
 }
+/* A note's menu and its close, side by side in the card's corner. */
+.hm-viewer-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
 
 /* A person, as a round monogram — on Hamesh's pages and over a web page alike
    (a shared note's discussion). */
@@ -872,23 +883,37 @@ select.hm-input {
   height: 100%;
   object-fit: cover;
 }
-/* A monogram's tone, one per person (`toneOf` in kit/Avatar.tsx): the
-   semantic hues, its letter in the surface colour — white on a deep tone in
-   light, dark on a pale one in dark. */
+/* A monogram's tone, one per person (`toneOf` in kit/Avatar.tsx): eight hues
+   around the wheel at one lightness and chroma, so no tone shouts over another
+   and two people side by side are told apart. Deep with a white letter in
+   light; pale with a dark one in dark (`--hm-avatar-l/-c` per theme). */
 .hm-avatar[data-tone] {
+  background: oklch(var(--hm-avatar-l) var(--hm-avatar-c) var(--hm-avatar-hue));
   color: var(--hm-surface);
 }
 .hm-avatar[data-tone='0'] {
-  background: var(--hm-success);
+  --hm-avatar-hue: 25;
 }
 .hm-avatar[data-tone='1'] {
-  background: var(--hm-info);
+  --hm-avatar-hue: 70;
 }
 .hm-avatar[data-tone='2'] {
-  background: var(--hm-warning);
+  --hm-avatar-hue: 120;
 }
 .hm-avatar[data-tone='3'] {
-  background: var(--hm-accent-strong);
+  --hm-avatar-hue: 155;
+}
+.hm-avatar[data-tone='4'] {
+  --hm-avatar-hue: 195;
+}
+.hm-avatar[data-tone='5'] {
+  --hm-avatar-hue: 240;
+}
+.hm-avatar[data-tone='6'] {
+  --hm-avatar-hue: 285;
+}
+.hm-avatar[data-tone='7'] {
+  --hm-avatar-hue: 330;
 }
 .hm-avatar[data-unknown] {
   background: var(--hm-paper-dim);
