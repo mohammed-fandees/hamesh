@@ -213,6 +213,35 @@ describe('the operation table', () => {
     expect(operations()['mentions.list'].params.safeParse({ before: 'nope' }).success).toBe(false);
   });
 
+  it('asks for the plans in the shape that carries names and discounts', () => {
+    const plans = operations()['billing.plans'];
+    expect(plans.request({}).path).toBe('/v1/plans?v=2');
+    // The old shape, without them, is refused: a v1 answer is not a v2 one.
+    const v1 = {
+      plans: [
+        {
+          code: 'teams',
+          price: { amountMinor: 45_000, currency: 'EGP', periodDays: 30 },
+          limits: { ownedTeams: 3, membersPerTeam: 10, notesPerTeam: 5000 },
+        },
+      ],
+      payment: { accounts: [], confirm: null },
+      terms: { version: 'v', termsUrl: 'https://a.test/t', privacyUrl: 'https://a.test/p' },
+    };
+    expect(plans.result.safeParse(v1).success).toBe(false);
+    const v2 = {
+      ...v1,
+      plans: [
+        {
+          ...v1.plans[0],
+          details: { name: { ar: 'فرق', en: 'Teams' }, description: null },
+          discount: null,
+        },
+      ],
+    };
+    expect(plans.result.safeParse(v2).success).toBe(true);
+  });
+
   it('mints a request id the server will accept', () => {
     const ids = new Set(Array.from({ length: 50 }, newRequestId));
     expect(ids.size).toBe(50);

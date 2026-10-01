@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { MeResponse, PaymentMethod, PaymentView, PlansResponse } from '@hamesh/teams-contract';
+import type {
+  MeResponse,
+  PaymentMethod,
+  PaymentView,
+  PlanDiscount,
+  PlanOfferV2,
+  PlansResponseV2,
+} from '@hamesh/teams-contract';
 import type { Lang } from '../i18n';
 import { InlineError, StatusLine } from '../kit/Feedback';
 import { SegmentedControl } from '../kit/SegmentedControl';
@@ -21,7 +28,7 @@ const MAX_PERIODS = 12;
 const whatsappLink = (number: string) => `https://wa.me/${number.replace(/\D/g, '')}`;
 
 /**
- * The plan, and how to pay for it.
+ * The plans on offer, and how to pay for the one chosen.
  *
  * Every number here — price, currency, period, limits, dates, status, and where
  * the money goes — comes from the server. The extension's source is public and
@@ -33,9 +40,13 @@ const whatsappLink = (number: string) => `https://wa.me/${number.replace(/\D/g, 
  * Paying is agreeing to the terms. A first payment asks for that agreement
  * outright; later ones say what they are made under. Either way the version the
  * payer saw travels with the payment, and the server refuses a stale one.
+ *
+ * A discount is the server's too: the price it sends is already the one a
+ * payment costs, and the price before it is only shown, struck through.
  */
 export function BillingPanel({ strings, lang, page, me }: BillingPanelProps) {
-  const [plans, setPlans] = useState<PlansResponse | null>(null);
+  const [plans, setPlans] = useState<PlansResponseV2 | null>(null);
+  const [planCode, setPlanCode] = useState<string | null>(null);
   const [payments, setPayments] = useState<PaymentView[] | null>(null);
   const [method, setMethod] = useState<PaymentMethod | null>(null);
   const [reference, setReference] = useState('');
@@ -45,9 +56,17 @@ export function BillingPanel({ strings, lang, page, me }: BillingPanelProps) {
   const [submitted, setSubmitted] = useState(false);
 
   const adopt = useCallback(
-    (offered: PlansResponse | null, history: { payments: PaymentView[] } | null) => {
+    (offered: PlansResponseV2 | null, history: { payments: PaymentView[] } | null) => {
       if (offered) {
         setPlans(offered);
+        // Keep a choice still on offer; otherwise start from the plan this
+        // account is on, or the first one offered.
+        setPlanCode((current) => {
+          const has = (code: string | null) => offered.plans.some((p) => p.code === code);
+          if (has(current)) return current;
+          if (has(me.entitlement.plan)) return me.entitlement.plan;
+          return offered.plans[0]?.code ?? null;
+        });
         setMethod((current) =>
           current && offered.payment.accounts.some((a) => a.method === current)
             ? current
@@ -56,6 +75,8 @@ export function BillingPanel({ strings, lang, page, me }: BillingPanelProps) {
       }
       if (history) setPayments(history.payments);
     },
+    // `me` only seeds the first choice.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
 
@@ -84,7 +105,7 @@ export function BillingPanel({ strings, lang, page, me }: BillingPanelProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const plan = plans?.plans[0] ?? null;
+  const plan = plans?.plans.find((p) => p.code === planCode) ?? null;
   const account = plans?.payment.accounts.find((a) => a.method === method) ?? null;
   /** No payment yet: this one is where the terms are agreed to. */
   const first = payments !== null && payments.length === 0;
@@ -133,6 +154,63 @@ export function BillingPanel({ strings, lang, page, me }: BillingPanelProps) {
     return strings.planNone;
   }
 
+  function discountLine(discount: PlanDiscount): string {
+    const name =
+      discount.label?.[lang] ||
+      (discount.percent !== null
+        ? strings.discountPercent(discount.percent)
+        : strings.discountSale);
+    return `${name} · ${strings.discountUntil(formatDate(discount.endsAt, lang))}`;
+  }
+
+  function planCard(offer: PlanOfferV2, choosable: boolean) {
+    const current = me.entitlement.state === 'active' && me.entitlement.plan === offer.code;
+    const money = (minor: number) => formatMoney(minor, offer.price.currency, lang);
+    const body = (
+      <>
+        <span className="hm-plan__head">
+          <span className="hm-plan__name">{offer.details.name[lang]}</span>
+          {current && <span className="hm-plan__badge">{strings.yourPlan}</span>}
+        </span>
+        {offer.details.description && (
+          <span className="hm-plan__description">{offer.details.description[lang]}</span>
+        )}
+        <span className="hm-plan__price">
+          {offer.discount && (
+            <s className="hm-plan__was">
+              <span className="hm-visually-hidden">{strings.wasPrice} </span>
+              {money(offer.discount.listAmountMinor)}
+            </s>
+          )}
+          {strings.price(money(offer.price.amountMinor), offer.price.periodDays)}
+        </span>
+        {offer.discount && (
+          <span className="hm-plan__discount">{discountLine(offer.discount)}</span>
+        )}
+        <span className="hm-plan__limits">
+          {strings.planLimits(
+            offer.limits.ownedTeams,
+            offer.limits.membersPerTeam,
+            offer.limits.notesPerTeam,
+          )}
+        </span>
+      </>
+    );
+    if (!choosable) return <div className="hm-plan">{body}</div>;
+    return (
+      <label key={offer.code} className="hm-plan hm-plan--choice">
+        <input
+          type="radio"
+          name="hm-plan"
+          className="hm-plan__radio"
+          checked={offer.code === planCode}
+          onChange={() => setPlanCode(offer.code)}
+        />
+        <span className="hm-plan__body">{body}</span>
+      </label>
+    );
+  }
+
   const days = plan?.price.periodDays ?? 30;
   const totalAmount = plan
     ? formatMoney(plan.price.amountMinor * periods, plan.price.currency, lang)
@@ -167,9 +245,14 @@ export function BillingPanel({ strings, lang, page, me }: BillingPanelProps) {
 
       {plan && plans && (
         <form className="hm-billing" onSubmit={submit}>
-          <p className="hm-billing__price">
-            {strings.price(formatMoney(plan.price.amountMinor, plan.price.currency, lang), days)}
-          </p>
+          {plans.plans.length > 1 ? (
+            <fieldset className="hm-plans">
+              <legend className="hm-overline">{strings.choosePlan}</legend>
+              {plans.plans.map((offer) => planCard(offer, true))}
+            </fieldset>
+          ) : (
+            planCard(plan, false)
+          )}
 
           {plans.payment.accounts.length === 0 || !method || !account ? (
             <p className="hm-supporting">{strings.paymentsClosed}</p>
