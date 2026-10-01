@@ -1,5 +1,7 @@
 import { browser } from 'wxt/browser';
 import { teamsConfig } from './config';
+import { isContentScriptSender, isTeamsPageMessage } from './page-channel';
+import { createNotesRepository } from '@/storage/notes-repository';
 import {
   isTeamsCacheRequest,
   isTeamsDevSignIn,
@@ -53,6 +55,33 @@ export function registerTeams(): void {
     (service ??= import('./worker').then((worker) => worker.createService(config)));
 
   browser.runtime.onMessage.addListener((message, sender, sendResponse): true | undefined => {
+    // A web page's content script, for the few things its popup and composer
+    // need (see ./page-channel.ts). Answered only to this extension's own
+    // content script in a page's top frame, and checked against that page.
+    if (isTeamsPageMessage(message)) {
+      if (!isContentScriptSender(sender, browser.runtime.id)) return undefined;
+      const pageUrl = sender.url as string;
+      void (async () => {
+        const [service, { handlePageRequest }] = await Promise.all([
+          getService(),
+          import('./page-handler'),
+        ]);
+        return handlePageRequest(
+          {
+            service,
+            notes: createNotesRepository(),
+            openPage: async (path) => {
+              await browser.tabs.create({
+                url: browser.runtime.getURL(path as '/notes.html'),
+              });
+            },
+          },
+          message.request,
+          pageUrl,
+        );
+      })().then(sendResponse, (err: unknown) => sendResponse({ ok: false, error: codeOf(err) }));
+      return true;
+    }
     const account = isTeamsRequest(message);
     const cache = !account && isTeamsCacheRequest(message);
     // Only a build that asked for it handles this at all: the constant folds

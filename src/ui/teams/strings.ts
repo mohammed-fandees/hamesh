@@ -128,6 +128,9 @@ export interface TeamsStrings extends SharedStrings {
   comments: string;
   discuss: string;
   commentPlaceholder: string;
+  /** The popup's own reply field: plain text, its mentions are in the full view. */
+  quickReplyPlaceholder: string;
+  openWholeDiscussion: (count: number) => string;
   postComment: string;
   replyTo: string;
   replyPlaceholder: string;
@@ -336,6 +339,9 @@ const en: TeamsOwnStrings = {
   comments: 'Comments',
   discuss: 'Discuss',
   commentPlaceholder: 'Say something… type @ to name someone',
+  quickReplyPlaceholder: 'Write a reply…',
+  openWholeDiscussion: (count) =>
+    count === 0 ? 'Open the discussion' : `Open the whole discussion (${count})`,
   postComment: 'Comment',
   replyTo: 'Reply',
   replyPlaceholder: 'Write a reply…',
@@ -593,6 +599,9 @@ const ar: TeamsOwnStrings = {
   comments: 'التعليقات',
   discuss: 'مناقشة',
   commentPlaceholder: 'قل شيئًا… اكتب @ لذكر أحدهم',
+  quickReplyPlaceholder: 'اكتب ردًا…',
+  openWholeDiscussion: (count) =>
+    count === 0 ? 'افتح المحادثة' : `افتح المحادثة كاملة (${count})`,
   postComment: 'تعليق',
   replyTo: 'رد',
   replyPlaceholder: 'اكتب ردًا…',

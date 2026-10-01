@@ -443,26 +443,6 @@
   box-shadow: var(--hm-ring);
 }
 
-/* A person, as a round monogram. */
-.hm-avatar {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: var(--hm-radius-pill);
-  background: var(--hm-accent-tint);
-  color: var(--hm-accent-strong);
-  font-size: var(--hm-text-label);
-  line-height: var(--hm-lh-label);
-  font-weight: 600;
-}
-.hm-avatar[data-unknown] {
-  background: var(--hm-paper-dim);
-  color: var(--hm-ink-40);
-}
-
 /* ---- The row menu ---- */
 .hm-menu {
   display: inline-flex;
