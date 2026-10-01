@@ -67,7 +67,12 @@ export function registerTeams(): void {
       // the panel open, and it only counts until this handler yields.
       const request = message.request;
       const tabId = sender.tab?.id;
-      if (request.op === 'open' && tabId !== undefined && browser.sidePanel) {
+      if (
+        request.op === 'open' &&
+        request.in !== 'hamesh' &&
+        tabId !== undefined &&
+        browser.sidePanel
+      ) {
         const params = new URLSearchParams({
           view: 'panel',
           team: request.teamId,

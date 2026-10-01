@@ -30,20 +30,22 @@ export interface CachedPerson {
 export interface PeopleDirectory {
   /** By user id, across every team this account is in. */
   people: Record<string, CachedPerson>;
+  /** This account's own user id — whose face goes beside the reply field. */
+  me: string | null;
   /** The teams this was gathered from, in the order asked. */
   teamIds: string[];
   /** When the worker last wrote it, or 0 when it never has. */
   syncedAt: number;
 }
 
-const EMPTY: PeopleDirectory = { people: {}, teamIds: [], syncedAt: 0 };
+const EMPTY: PeopleDirectory = { people: {}, me: null, teamIds: [], syncedAt: 0 };
 
 /** Only a picture this worker produced: an image as a base64 `data:` URL. */
 const PHOTO = /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/;
 
 export function parsePeople(data: unknown): PeopleDirectory {
   if (!data || typeof data !== 'object') return EMPTY;
-  const raw = data as { people?: unknown; teamIds?: unknown; syncedAt?: unknown };
+  const raw = data as { people?: unknown; me?: unknown; teamIds?: unknown; syncedAt?: unknown };
   const people: Record<string, CachedPerson> = {};
   if (raw.people && typeof raw.people === 'object') {
     for (const [id, value] of Object.entries(raw.people).slice(0, MAX_PEOPLE)) {
@@ -60,7 +62,12 @@ export function parsePeople(data: unknown): PeopleDirectory {
   const teamIds = Array.isArray(raw.teamIds)
     ? raw.teamIds.filter((id): id is string => typeof id === 'string')
     : [];
-  return { people, teamIds, syncedAt: typeof raw.syncedAt === 'number' ? raw.syncedAt : 0 };
+  return {
+    people,
+    me: typeof raw.me === 'string' ? raw.me : null,
+    teamIds,
+    syncedAt: typeof raw.syncedAt === 'number' ? raw.syncedAt : 0,
+  };
 }
 
 export function readPeople(): Promise<PeopleDirectory> {

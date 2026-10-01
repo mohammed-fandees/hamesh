@@ -13,7 +13,15 @@ export type Moment = string | number | Date;
 const toTime = (when: Moment): number =>
   when instanceof Date ? when.getTime() : new Date(when).getTime();
 
-/** Compact relative time — "just now", "5m ago", "قبل ٣ ساعة". */
+/** An Arabic count of a unit, as it is said: "دقيقة", "دقيقتين", "3 دقائق", "11 دقيقة". */
+function arabicCount(n: number, one: string, two: string, few: string): string {
+  if (n === 1) return one;
+  if (n === 2) return two;
+  if (n >= 3 && n <= 10) return `${n} ${few}`;
+  return `${n} ${one}`;
+}
+
+/** Compact relative time — "just now", "5m ago", "منذ 3 ساعات". */
 export function relativeTime(when: Moment, lang: Lang): string {
   const then = toTime(when);
   if (Number.isNaN(then)) return String(when);
@@ -23,9 +31,9 @@ export function relativeTime(when: Moment, lang: Lang): string {
   const day = Math.round(diffMs / 86400000);
   if (lang === 'ar') {
     if (min < 1) return 'الآن';
-    if (min < 60) return `قبل ${min} دقيقة`;
-    if (hr < 24) return `قبل ${hr} ساعة`;
-    return `قبل ${day} يوم`;
+    if (min < 60) return `منذ ${arabicCount(min, 'دقيقة', 'دقيقتين', 'دقائق')}`;
+    if (hr < 24) return `منذ ${arabicCount(hr, 'ساعة', 'ساعتين', 'ساعات')}`;
+    return `منذ ${arabicCount(day, 'يوم', 'يومين', 'أيام')}`;
   }
   if (min < 1) return 'just now';
   if (min < 60) return `${min}m ago`;

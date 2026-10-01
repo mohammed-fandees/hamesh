@@ -108,7 +108,7 @@ export function createTeamsService(deps: TeamsServiceDeps) {
     if (shared.people) {
       const force = peopleChanged;
       peopleChanged = false;
-      void shared.people.refresh(ids, force).catch(() => {});
+      void shared.people.refresh(ids, me.user.id, force).catch(() => {});
     }
   }
 

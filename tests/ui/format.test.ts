@@ -16,7 +16,18 @@ describe('relativeTime', () => {
 
   it('formats in Arabic', () => {
     expect(relativeTime(isoMinutesAgo(0), 'ar')).toBe('الآن');
-    expect(relativeTime(isoMinutesAgo(5), 'ar')).toContain('دقيقة');
+    expect(relativeTime(isoMinutesAgo(5), 'ar')).toBe('منذ 5 دقائق');
+  });
+
+  it('counts in Arabic as it is said: one, two, a few, many', () => {
+    expect(relativeTime(isoMinutesAgo(1), 'ar')).toBe('منذ دقيقة');
+    expect(relativeTime(isoMinutesAgo(2), 'ar')).toBe('منذ دقيقتين');
+    expect(relativeTime(isoMinutesAgo(11), 'ar')).toBe('منذ 11 دقيقة');
+    expect(relativeTime(isoMinutesAgo(60), 'ar')).toBe('منذ ساعة');
+    expect(relativeTime(isoMinutesAgo(120), 'ar')).toBe('منذ ساعتين');
+    expect(relativeTime(isoMinutesAgo(300), 'ar')).toBe('منذ 5 ساعات');
+    expect(relativeTime(isoMinutesAgo(60 * 24 * 3), 'ar')).toBe('منذ 3 أيام');
+    expect(relativeTime(isoMinutesAgo(60 * 24 * 30), 'ar')).toBe('منذ 30 يوم');
   });
 
   it('returns the raw value for an unparseable date', () => {

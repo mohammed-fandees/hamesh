@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { TeamMember, TeamResponse } from '@hamesh/teams-contract';
+import type { CachedFolder } from '@/teams/sync-store';
 import type { Note } from '@/domain/note';
 import type { TeamsClient } from '@/teams/client';
 import { readPageNotes } from '@/teams/page-cache';
@@ -44,6 +45,7 @@ export function PanelView({ lang, client, teamId, noteId, pageKey }: PanelViewPr
   const [mode, setMode] = useState<PanelMode>(selected ? 'note' : 'page');
   const [team, setTeam] = useState<TeamResponse | null>(null);
   const [members, setMembers] = useState<TeamMember[] | null>(null);
+  const [folders, setFolders] = useState<CachedFolder[]>([]);
 
   // The page's shared notes, from the worker's cache — no request.
   useEffect(() => {
@@ -65,13 +67,16 @@ export function PanelView({ lang, client, teamId, noteId, pageKey }: PanelViewPr
     if (!selectedTeam) return;
     let cancelled = false;
     void (async () => {
-      const [t, m] = await Promise.all([
+      const [t, m, held] = await Promise.all([
         page.run('team.get', { teamId: selectedTeam }),
         page.run('members.list', { teamId: selectedTeam }),
+        // The team's folders, as this device holds them — to say which one.
+        page.cache(selectedTeam),
       ]);
       if (cancelled) return;
       setTeam(t);
       setMembers(m?.members ?? null);
+      setFolders(held?.folders ?? []);
     })();
     return () => {
       cancelled = true;
@@ -132,24 +137,37 @@ export function PanelView({ lang, client, teamId, noteId, pageKey }: PanelViewPr
     }
     if (!team || !page.me) return <Skeleton rows={2} />;
     const author = personOf(note?.team?.authorId ?? null);
+    const folder = folders.find((f) => f.id === note?.team?.folderId);
     return (
       <>
         {note && (
           <article className="hm-panel-note">
             <header className="hm-panel-note__head">
-              <Avatar name={author?.displayName ?? null} src={author?.avatarUrl} />
+              <Avatar
+                name={author?.displayName ?? null}
+                src={author?.avatarUrl}
+                seed={note.team?.authorId}
+              />
               <span className="hm-panel-note__who">
                 <bdi className="hm-panel-note__author">
                   {author?.displayName ?? strings.formerMember}
                 </bdi>
                 <span className="hm-panel-note__meta">
-                  <bdi>{team.team.name}</bdi> · {relativeTime(note.updatedAt, lang)}
+                  <bdi className="hm-panel-note__team">{team.team.name}</bdi>
+                  {folder && (
+                    <>
+                      {' · '}
+                      <bdi>{folder.name}</bdi>
+                    </>
+                  )}
+                  {' · '}
+                  {relativeTime(note.updatedAt, lang)}
                 </span>
               </span>
             </header>
             {note.anchor.type === 'text' && (
               <blockquote className="hm-panel-note__quote" dir="auto">
-                {note.anchor.exact}
+                «{note.anchor.exact}»
               </blockquote>
             )}
             <p className="hm-panel-note__body hm-prose" dir="auto">
@@ -165,6 +183,7 @@ export function PanelView({ lang, client, teamId, noteId, pageKey }: PanelViewPr
           noteId={selected.noteId}
           myUserId={page.me.user.id}
           members={members}
+          variant="panel"
         />
       </>
     );

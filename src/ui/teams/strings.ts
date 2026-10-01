@@ -151,6 +151,18 @@ export interface TeamsStrings extends SharedStrings {
   /** The popup's own reply field: plain text, its mentions are in the full view. */
   quickReplyPlaceholder: string;
   openWholeDiscussion: (count: number) => string;
+  /** A shared note's popup on the page: its header's buttons, and its menu. */
+  openBeside: string;
+  noteActions: string;
+  openInHamesh: string;
+  copyNote: string;
+  close: string;
+  /** Sends a comment, where the field is the discussion's last word. */
+  send: string;
+  /** The side panel's heading over a discussion, with how long it is. */
+  discussionHeading: (count: number) => string;
+  /** One pin standing for several shared notes on one element, read out. */
+  clusterPin: (count: number) => string;
   postComment: string;
   replyTo: string;
   replyPlaceholder: string;
@@ -377,7 +389,15 @@ const en: TeamsOwnStrings = {
   commentPlaceholder: 'Say something… type @ to name someone',
   quickReplyPlaceholder: 'Write a reply…',
   openWholeDiscussion: (count) =>
-    count === 0 ? 'Open the discussion' : `Open the whole discussion (${count})`,
+    count === 0 ? 'View the discussion' : `View the whole discussion (${count})`,
+  openBeside: 'Open the discussion beside the page',
+  noteActions: 'Actions',
+  openInHamesh: 'Open in Hamesh',
+  copyNote: 'Copy the note',
+  close: 'Close',
+  send: 'Send',
+  discussionHeading: (count) => (count === 0 ? 'Discussion' : `Discussion · ${count}`),
+  clusterPin: (count) => `${count} shared notes`,
   postComment: 'Comment',
   replyTo: 'Reply',
   replyPlaceholder: 'Write a reply…',
@@ -385,7 +405,7 @@ const en: TeamsOwnStrings = {
   deleteCommentConfirm: 'Delete this comment?',
   commentDeleted: 'This comment was deleted.',
   commentEdited: 'edited',
-  commentedAgo: (when) => `Said ${when}`,
+  commentedAgo: (when) => when,
   showReplies: (count) => (count === 1 ? 'Show the reply' : `Show all ${count} replies`),
   formerMember: 'someone who has left',
   mentionNobody: 'Nobody in this team by that name.',
@@ -652,8 +672,20 @@ const ar: TeamsOwnStrings = {
   discuss: 'مناقشة',
   commentPlaceholder: 'قل شيئًا… اكتب @ لذكر أحدهم',
   quickReplyPlaceholder: 'اكتب ردًا…',
-  openWholeDiscussion: (count) =>
-    count === 0 ? 'افتح المحادثة' : `افتح المحادثة كاملة (${count})`,
+  openWholeDiscussion: (count) => (count === 0 ? 'عرض المحادثة' : `عرض المحادثة كاملة (${count})`),
+  openBeside: 'افتح المحادثة في اللوحة الجانبية',
+  noteActions: 'إجراءات',
+  openInHamesh: 'افتح في هامش',
+  copyNote: 'انسخ نص الملحوظة',
+  close: 'إغلاق',
+  send: 'إرسال',
+  discussionHeading: (count) => (count === 0 ? 'المحادثة' : `المحادثة · ${count}`),
+  clusterPin: (count) =>
+    count === 2
+      ? 'ملحوظتان مشتركتان'
+      : count <= 10
+        ? `${count} ملحوظات مشتركة`
+        : `${count} ملحوظة مشتركة`,
   postComment: 'تعليق',
   replyTo: 'رد',
   replyPlaceholder: 'اكتب ردًا…',
@@ -661,7 +693,7 @@ const ar: TeamsOwnStrings = {
   deleteCommentConfirm: 'حذف هذا التعليق؟',
   commentDeleted: 'حُذِف هذا التعليق.',
   commentEdited: 'مُعدّل',
-  commentedAgo: (when) => `قاله ${when}`,
+  commentedAgo: (when) => when,
   showReplies: (count) => (count === 1 ? 'عرض الرد' : `عرض الردود الـ ${count}`),
   formerMember: 'عضو غادر الفريق',
   mentionNobody: 'لا أحد في هذا الفريق بهذا الاسم.',

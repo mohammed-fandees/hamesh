@@ -22,6 +22,9 @@ interface CommentThreadProps {
   noteId: string;
   myUserId: string;
   members: TeamMember[] | null;
+  /** `panel`: beside a page, in the side panel — no card around it, a heading
+   *  with how long it is, and the field kept at the panel's foot. */
+  variant?: 'card' | 'panel';
 }
 
 /**
@@ -44,6 +47,7 @@ export function CommentThread({
   noteId,
   myUserId,
   members,
+  variant = 'card',
 }: CommentThreadProps) {
   const [comments, setComments] = useState<Comment[] | null>(null);
   const [nextAfter, setNextAfter] = useState<string | null>(null);
@@ -171,6 +175,7 @@ export function CommentThread({
         <Avatar
           name={comment.deleted ? null : author}
           src={comment.deleted ? null : person?.avatarUrl}
+          seed={comment.authorId}
         />
         <div className="hm-comment__content">
           <span className="hm-comment__meta">
@@ -288,8 +293,15 @@ export function CommentThread({
 
   if (comments === null) return <Skeleton rows={2} />;
 
+  const panel = variant === 'panel';
+  const said = comments.reduce(
+    (n, c) => n + (c.deleted ? 0 : 1) + (c.replyCount ?? c.replies?.length ?? 0),
+    0,
+  );
+
   return (
-    <div className="hm-section hm-discussion">
+    <div className={panel ? 'hm-discussion hm-discussion--panel' : 'hm-section hm-discussion'}>
+      {panel && <h2 className="hm-discussion__heading">{strings.discussionHeading(said)}</h2>}
       {comments.length === 0 && (
         <EmptyState
           size="inline"
@@ -315,7 +327,7 @@ export function CommentThread({
             strings={strings}
             members={members}
             placeholder={strings.commentPlaceholder}
-            submitLabel={strings.postComment}
+            submitLabel={panel ? strings.send : strings.postComment}
             busy={page.working('comments.create')}
             hint={strings.composeHint}
             onSubmit={(next, mentions) => void post(next, mentions)}

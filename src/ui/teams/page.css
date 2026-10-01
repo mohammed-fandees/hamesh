@@ -1,20 +1,90 @@
 /*
- * Teams inside a web page: a shared note's discussion in its popup, and where
- * a new note goes, in the composer.
+ * Teams inside a web page: a shared note's popup and its discussion, the pin
+ * that stands for several shared notes, and where a new note goes, in the
+ * composer.
  *
  * Applied inside the content script's shadow root by the component that needs
  * it (read as a string, so a build without Teams carries none of it), on top
  * of tokens.css, which the shadow root already has.
  */
+
+/* ---- A shared note's popup ----
+   Whose it is, what it says, then the discussion on a slightly warmer ground,
+   and the reply field across the foot. Its own padding, section by section. */
+.hm-card.hm-shared-card {
+  width: 100%;
+  padding: 0;
+  border-radius: 12px;
+}
+.hm-shared-card__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px var(--hm-space-4) 10px;
+}
+.hm-shared-card__head > .hm-avatar {
+  width: 28px;
+  height: 28px;
+  font-size: var(--hm-text-body-sm);
+}
+.hm-shared-card__who {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+.hm-shared-card__author {
+  overflow: hidden;
+  color: var(--hm-ink);
+  font-size: var(--hm-text-body);
+  font-weight: 600;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hm-shared-card__meta {
+  color: var(--hm-ink-40);
+  font-size: var(--hm-text-label);
+  line-height: var(--hm-lh-label);
+}
+.hm-shared-card__team {
+  color: var(--hm-accent-strong);
+  font-weight: 600;
+}
+.hm-shared-card__tools {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+}
+.hm-shared-card__tools .hm-icon-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--hm-radius-md);
+}
+.hm-shared-card__status {
+  padding: 0 var(--hm-space-4) var(--hm-space-2);
+}
+.hm-shared-card__body {
+  margin: 0;
+  padding: 0 var(--hm-space-4) 14px;
+  color: var(--hm-ink);
+  font-family: var(--hm-serif);
+  font-size: var(--hm-text-prose);
+  font-style: italic;
+  line-height: var(--hm-lh-prose);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ---- Its discussion ---- */
 .hm-thread {
   display: flex;
   flex-direction: column;
   gap: var(--hm-space-3);
-  margin: var(--hm-space-3) calc(-1 * var(--hm-space-4)) calc(-1 * var(--hm-space-4));
-  padding: var(--hm-space-3) var(--hm-space-4) var(--hm-space-4);
+  padding: var(--hm-space-3) var(--hm-space-4);
   border-top: 1px solid var(--hm-ink-10);
-  background: var(--hm-paper);
-  border-radius: 0 0 var(--hm-radius-lg) var(--hm-radius-lg);
+  background: color-mix(in srgb, var(--hm-paper) 45%, var(--hm-surface));
 }
 .hm-thread__lines {
   margin: 0;
@@ -26,7 +96,7 @@
 }
 .hm-thread__line {
   display: flex;
-  gap: var(--hm-space-2);
+  gap: 10px;
   align-items: flex-start;
 }
 .hm-thread__said {
@@ -46,7 +116,9 @@
 }
 .hm-thread__body {
   margin: 0;
+  color: var(--hm-ink);
   font-size: var(--hm-text-body);
+  line-height: 1.55;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -57,25 +129,60 @@
 }
 .hm-thread__open {
   align-self: flex-start;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--hm-accent-strong);
+  font-family: inherit;
+  font-size: var(--hm-text-body-sm);
+  font-weight: 600;
+  cursor: pointer;
 }
+.hm-thread__open:hover {
+  color: var(--hm-accent);
+}
+.hm-thread__open:focus-visible {
+  outline: none;
+  border-radius: var(--hm-radius-sm);
+  box-shadow: var(--hm-ring);
+}
+/* A person named with @: set apart, the way the full discussion does it. */
+.hm-mention {
+  padding: 0 3px;
+  border-radius: var(--hm-radius-sm);
+  background: var(--hm-marker-hover);
+  color: var(--hm-accent-strong);
+  font-weight: 500;
+}
+
+/* ---- The reply field across its foot: your face, the field, send ---- */
 .hm-reply {
   display: flex;
   align-items: flex-end;
   gap: var(--hm-space-2);
+  padding: var(--hm-space-3) var(--hm-space-4) 14px;
+  border-top: 1px solid var(--hm-ink-10);
+}
+.hm-reply > .hm-avatar {
+  width: 24px;
+  height: 24px;
+  margin-bottom: 6px;
+  font-size: var(--hm-text-micro);
 }
 .hm-reply__field {
   flex: 1;
+  min-width: 0;
   min-height: 36px;
   max-height: 8rem;
   resize: none;
-  padding: 8px 12px;
+  padding: 9px 12px;
   border: 1px solid var(--hm-border);
   border-radius: 18px;
   background: var(--hm-surface);
   color: var(--hm-ink);
   font-family: var(--hm-sans);
   font-size: var(--hm-text-body);
-  line-height: 1.4;
+  line-height: 1.3;
 }
 .hm-reply__field:focus {
   outline: none;
@@ -103,6 +210,97 @@
 .hm-reply__send:focus-visible {
   outline: none;
   box-shadow: var(--hm-ring);
+}
+.hm-reply__failed {
+  padding: 0 var(--hm-space-4) var(--hm-space-3);
+}
+
+/* ---- The popup's menu ----
+   Hamesh's own pages style it in pages.css, which a web page does not have. */
+.hm-menu {
+  display: inline-flex;
+  flex: none;
+}
+.hm-menu__panel {
+  z-index: var(--hm-z-toast);
+  min-width: 190px;
+  padding: var(--hm-space-1);
+  background: var(--hm-surface);
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-md);
+  box-shadow: var(--hm-elev-2);
+  pointer-events: auto;
+}
+.hm-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--hm-space-2);
+  width: 100%;
+  padding: 7px var(--hm-space-2);
+  border: none;
+  background: none;
+  border-radius: var(--hm-radius-sm);
+  cursor: pointer;
+  text-align: start;
+  font-family: var(--hm-sans);
+  font-size: var(--hm-text-body-sm);
+  color: var(--hm-ink);
+}
+.hm-menu__item:hover,
+.hm-menu__item:focus-visible {
+  outline: none;
+  background: var(--hm-surface-hover);
+}
+
+/* ---- The list a cluster pin opens ---- */
+.hm-card.hm-pin-list {
+  width: 100%;
+  padding: var(--hm-space-1);
+}
+.hm-pin-list__items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.hm-pin-list__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: var(--hm-space-2);
+  border: none;
+  border-radius: var(--hm-radius-md);
+  background: none;
+  color: var(--hm-ink);
+  font-family: var(--hm-sans);
+  text-align: start;
+  cursor: pointer;
+}
+.hm-pin-list__item:hover,
+.hm-pin-list__item:focus-visible {
+  outline: none;
+  background: var(--hm-surface-hover);
+}
+.hm-pin-list__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.hm-pin-list__who {
+  color: var(--hm-ink-40);
+  font-size: var(--hm-text-label);
+}
+.hm-pin-list__who bdi {
+  color: var(--hm-ink);
+  font-weight: 600;
+}
+.hm-pin-list__body {
+  overflow: hidden;
+  font-family: var(--hm-serif);
+  font-size: var(--hm-text-body);
+  font-style: italic;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ---- Where a new note goes, in the composer ---- */

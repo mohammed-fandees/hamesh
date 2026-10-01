@@ -129,6 +129,26 @@ export function CloseIcon({ size = 12, className }: IconProps) {
   );
 }
 
+/** A window with a pane down one side — opens something beside the page, in
+ *  the browser's side panel. */
+export function SidePanelIcon({ size = 16, className }: IconProps) {
+  return (
+    <Glyph size={size} className={className}>
+      <rect x="1.75" y="2.2" width="10.5" height="9.6" rx="1.3" />
+      <path d="M5.25 2.2 V11.8" />
+    </Glyph>
+  );
+}
+
+/** An arrow along the line of reading — sends what was written. */
+export function SendIcon({ size = 16, className }: IconProps) {
+  return (
+    <Glyph size={size} className={withClass(className, 'hm-mirror')}>
+      <path d="M2.2 7 H11 M7.5 3.5 L11 7 L7.5 10.5" strokeWidth="1.5" />
+    </Glyph>
+  );
+}
+
 // ---- Things a note is, or has ---------------------------------------------
 
 /** A folder outline — wherever a folder is named. */

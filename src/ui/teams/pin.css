@@ -14,9 +14,40 @@
   height: 24px;
   border-radius: var(--hm-radius-pill);
   border-start-end-radius: 3px;
-  font-size: 11px;
+  font-size: var(--hm-text-label);
 }
 /* Pressed, the ring fills with the accent and the face stays a face. */
 .hm-marker.hm-pin:active {
   background: var(--hm-accent);
+}
+
+/* ---- Several shared notes on one element: one pin with their faces ---- */
+.hm-marker.hm-pin-cluster {
+  width: auto;
+  height: 30px;
+  gap: 4px;
+  padding-block: 0;
+  padding-inline: 4px 8px;
+  border-radius: var(--hm-radius-pill);
+  border-start-end-radius: 4px;
+  font-family: var(--hm-sans);
+}
+.hm-pin-cluster__faces {
+  display: inline-flex;
+}
+/* The ring is drawn outside the face, so the face stays its full size. */
+.hm-pin-cluster__faces .hm-avatar {
+  box-sizing: content-box;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--hm-surface);
+  font-size: var(--hm-text-micro);
+}
+.hm-pin-cluster__faces .hm-avatar + .hm-avatar {
+  margin-inline-start: -8px;
+}
+.hm-pin-cluster__more {
+  color: var(--hm-ink-60);
+  font-size: var(--hm-text-label);
+  font-weight: 600;
 }

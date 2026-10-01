@@ -82,16 +82,16 @@ describe('keeping the team-note cache in step with the account', () => {
     const { service, shared } = setup();
     await service.status();
     await settle();
-    expect(shared.people!.refresh).toHaveBeenLastCalledWith([TEAM], false);
+    expect(shared.people!.refresh).toHaveBeenLastCalledWith([TEAM], me.user.id, false);
 
     await service.accountChanged();
     await settle();
-    expect(shared.people!.refresh).toHaveBeenLastCalledWith([TEAM], true);
+    expect(shared.people!.refresh).toHaveBeenLastCalledWith([TEAM], me.user.id, true);
 
     // Forced once, not from then on.
     await service.status();
     await settle();
-    expect(shared.people!.refresh).toHaveBeenLastCalledWith([TEAM], false);
+    expect(shared.people!.refresh).toHaveBeenLastCalledWith([TEAM], me.user.id, false);
   });
 
   it('pulls once for a team, however many times it is asked at once', async () => {

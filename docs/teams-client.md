@@ -174,7 +174,8 @@ a team note the worker has cached for the very page asking, `share` for a note
 this device holds for that page (the worker reads the note itself — nothing the
 page sends is trusted as the note), `destinations` (the teams and folders a new
 note can go to) and `open` (opens the note's discussion in Chrome's side panel
-beside the page, or its page in Hamesh where there is no side panel). The side
+beside the page, or its page in Hamesh — asked for by the popup's menu with
+`in: 'hamesh'`, and the fallback where there is no side panel). The side
 panel is `notes.html?view=panel` (`src/ui/teams/PanelView.tsx`) — one of
 Hamesh's own pages, so it asks the worker like any other and the web page
 beside it is handed nothing; the `sidePanel` permission is added only to a

@@ -101,12 +101,13 @@ function source(notes: Note[], people: PeopleDirectory['people'] = {}) {
         announce = null;
       };
     },
-    people: vi.fn(async () => ({ people, teamIds: [], syncedAt: 1 })),
+    people: vi.fn(async () => ({ people, me: null, teamIds: [], syncedAt: 1 })),
     watchPeople: () => () => {},
     label: (n, lang) => (n.team ? sharedWithTeam(n.team.name, lang) : undefined),
     thread: vi.fn(async () => ({ ok: true as const, data: { total: 0, latest: [] } })),
     reply: vi.fn(async () => ({ ok: true as const, data: null })),
     openDiscussion: vi.fn(async () => {}),
+    openInHamesh: vi.fn(async () => {}),
     destinations: vi.fn(async () => ({ ok: true as const, data: [] })),
     share: vi.fn(async () => ({ ok: true as const, data: null })),
   };
@@ -179,7 +180,8 @@ describe('a team’s notes on the page they belong to', () => {
     await openTheMarker();
 
     expect(await screen.findByText('what the team said')).toBeInTheDocument();
-    expect(screen.getByText('Shared with Alpha')).toBeInTheDocument();
+    // Its popup names the team in its header.
+    expect(screen.getByText('Alpha')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /pin/i })).not.toBeInTheDocument();
@@ -202,6 +204,50 @@ describe('a team’s notes on the page they belong to', () => {
 
     cached.set([teamNote()]);
     await waitFor(() => expect(screen.getAllByRole('button', { name: MARK })).toHaveLength(1));
+  });
+
+  it('draws a note that moved to a team once — as the team’s, never also as this device’s', async () => {
+    const repo = repoWith([note()]);
+    const cached = source([]);
+    renderApp(repo, cached.teamNotes);
+    expect(await screen.findByRole('button', { name: /view note/i })).toBeInTheDocument();
+
+    // Shared from the Library: the local copy is gone, and the team's arrives.
+    vi.mocked(repo.getForPage).mockResolvedValue([]);
+    cached.set([teamNote()]);
+
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: /view note/i })).not.toBeInTheDocument(),
+    );
+    expect(screen.getAllByRole('button', { name: MARK })).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'A shared note' })).toBeInTheDocument();
+  });
+
+  it('gathers several shared notes on one element into one pin, and lists them', async () => {
+    const SARA = '01J0000000000000000000000S';
+    const second = teamNote({
+      id: '01J0000000000000000000000O',
+      content: 'a second thought',
+      team: {
+        id: '01J0000000000000000000000A',
+        name: 'Alpha',
+        version: 1,
+        authorId: SARA,
+        folderId: null,
+      },
+    });
+    renderApp(
+      repoWith([]),
+      source([teamNote(), second], { [SARA]: { name: 'Sara', photo: PHOTO, source: null } })
+        .teamNotes,
+    );
+
+    const cluster = await screen.findByRole('button', { name: '2 shared notes' });
+    expect(cluster.querySelectorAll('.hm-avatar')).toHaveLength(2);
+    fireEvent.click(cluster);
+    fireEvent.click(await screen.findByRole('button', { name: /a second thought/ }));
+
+    expect(await screen.findByRole('dialog', { name: 'Sara’s shared note' })).toBeInTheDocument();
   });
 
   it('marks a shared note with its author’s face, and one of this device’s own with the margin mark', async () => {

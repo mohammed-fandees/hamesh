@@ -15,6 +15,7 @@ const ALPHA = '01J0000000000000000000000A';
 const BETA = '01J0000000000000000000000B';
 const SARA = '01J0000000000000000000000S';
 const OMAR = '01J0000000000000000000000O';
+const ME = '01J0000000000000000000000M';
 const PICTURE = 'https://lh3.googleusercontent.com/a/sara=s96-c';
 const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
 const PNG_URL = 'data:image/png;base64,iVBORw==';
@@ -31,6 +32,7 @@ describe('the people directory a page reads', () => {
     const unwatch = watchPeople((d) => seen.push(d));
     const directory = {
       people: { [SARA]: { name: 'Sara', photo: PNG_URL, source: PICTURE } },
+      me: ME,
       teamIds: [ALPHA],
       syncedAt: 5,
     };
@@ -39,7 +41,7 @@ describe('the people directory a page reads', () => {
     expect(seen).toEqual([directory]);
 
     await clearPeople();
-    expect(await readPeople()).toEqual({ people: {}, teamIds: [], syncedAt: 0 });
+    expect(await readPeople()).toEqual({ people: {}, me: null, teamIds: [], syncedAt: 0 });
     unwatch();
   });
 
@@ -59,7 +61,7 @@ describe('the people directory a page reads', () => {
     expect(parsed.people.c.photo).toBeNull();
     expect(parsed.people.d.photo).toBe(PNG_URL);
     expect(Object.keys(parsed.people)).toEqual(['a', 'b', 'c', 'd']);
-    expect(parsePeople('nonsense')).toEqual({ people: {}, teamIds: [], syncedAt: 0 });
+    expect(parsePeople('nonsense')).toEqual({ people: {}, me: null, teamIds: [], syncedAt: 0 });
   });
 
   it('holds no more than its limit', () => {
@@ -131,7 +133,7 @@ describe('gathering who is in the teams', () => {
       [ALPHA]: [{ ...sara, avatarUrl: PICTURE, email: 'sara@example.test' }, omar],
       [BETA]: [{ ...sara, avatarUrl: PICTURE }],
     });
-    await people.refresh([ALPHA, BETA]);
+    await people.refresh([ALPHA, BETA], ME);
 
     const directory = await readPeople();
     expect(directory.people).toEqual({
@@ -146,51 +148,51 @@ describe('gathering who is in the teams', () => {
 
   it('asks nothing again for the same teams until it is stale, or told to', async () => {
     const { people, api, clock } = setup({ [ALPHA]: [sara] });
-    await people.refresh([ALPHA]);
-    await people.refresh([ALPHA]);
+    await people.refresh([ALPHA], ME);
+    await people.refresh([ALPHA], ME);
     expect(api.run).toHaveBeenCalledTimes(1);
 
-    await people.refresh([ALPHA], true);
+    await people.refresh([ALPHA], ME, true);
     expect(api.run).toHaveBeenCalledTimes(2);
 
     clock.now += PEOPLE_TTL;
-    await people.refresh([ALPHA]);
+    await people.refresh([ALPHA], ME);
     expect(api.run).toHaveBeenCalledTimes(3);
   });
 
   it('asks again at once when the teams themselves change', async () => {
     const { people, api } = setup({ [ALPHA]: [sara], [BETA]: [omar] });
-    await people.refresh([ALPHA]);
-    await people.refresh([ALPHA, BETA]);
+    await people.refresh([ALPHA], ME);
+    await people.refresh([ALPHA, BETA], ME);
     expect(api.run).toHaveBeenCalledTimes(3);
     expect(Object.keys((await readPeople()).people)).toEqual([SARA, OMAR]);
   });
 
   it('keeps a picture it already has, and fetches one that changed', async () => {
     const { people, fetcher } = setup({ [ALPHA]: [{ ...sara, avatarUrl: PICTURE }] });
-    await people.refresh([ALPHA]);
-    await people.refresh([ALPHA], true);
+    await people.refresh([ALPHA], ME);
+    await people.refresh([ALPHA], ME, true);
     expect(fetcher).toHaveBeenCalledTimes(1);
 
     const later = 'https://lh3.googleusercontent.com/a/later=s96-c';
     const next = setup({ [ALPHA]: [{ ...sara, avatarUrl: later }] });
-    await next.people.refresh([ALPHA], true);
+    await next.people.refresh([ALPHA], ME, true);
     expect(next.fetcher).toHaveBeenCalledWith(later, expect.anything());
     expect((await readPeople()).people[SARA].source).toBe(later);
   });
 
   it('leaves the directory as it was when a team cannot be asked', async () => {
     const { people } = setup({ [ALPHA]: [sara] });
-    await people.refresh([ALPHA]);
+    await people.refresh([ALPHA], ME);
     const before = await readPeople();
 
-    await expect(people.refresh([ALPHA, BETA], true)).rejects.toThrow('offline');
+    await expect(people.refresh([ALPHA, BETA], ME, true)).rejects.toThrow('offline');
     expect(await readPeople()).toEqual(before);
   });
 
   it('runs one gathering at a time', async () => {
     const { people, api } = setup({ [ALPHA]: [sara] });
-    await Promise.all([people.refresh([ALPHA]), people.refresh([ALPHA])]);
+    await Promise.all([people.refresh([ALPHA], ME), people.refresh([ALPHA], ME)]);
     expect(api.run).toHaveBeenCalledTimes(1);
   });
 });
