@@ -1,9 +1,9 @@
-import { test, expect, chromium, type BrowserContext, type Page } from '@playwright/test';
+import { test, expect, type BrowserContext, type Page } from '@playwright/test';
 import path from 'node:path';
 import fs from 'node:fs';
-import os from 'node:os';
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
+import { launchExtension, type ExtensionProfile } from './support/profile';
 
 /**
  * Writing a note, end to end against the real extension:
@@ -22,7 +22,6 @@ import type { AddressInfo } from 'node:net';
  * Requires the extension to be built first: `pnpm build`.
  */
 
-const EXTENSION_PATH = path.resolve(import.meta.dirname, '..', '.output', 'chrome-mv3');
 const FIXTURE_HTML = fs.readFileSync(
   path.resolve(import.meta.dirname, 'fixtures', 'test-page.html'),
   'utf8',
@@ -41,18 +40,6 @@ function startServer(): Promise<{ origin: string; close: () => Promise<void> }> 
         close: () => new Promise((r) => server.close(() => r())),
       });
     });
-  });
-}
-
-async function launch(): Promise<BrowserContext> {
-  const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hamesh-e2e-composer-'));
-  return chromium.launchPersistentContext(userDataDir, {
-    headless: false,
-    args: [
-      '--headless=new',
-      `--disable-extensions-except=${EXTENSION_PATH}`,
-      `--load-extension=${EXTENSION_PATH}`,
-    ],
   });
 }
 
@@ -126,15 +113,17 @@ async function createFolderFromComposer(page: Page, name: string): Promise<void>
 }
 
 test.describe('Composer — closing it', () => {
+  let profile: ExtensionProfile | undefined;
   let context: BrowserContext;
   let server: { origin: string; close: () => Promise<void> };
 
   test.beforeEach(async () => {
     server = await startServer();
-    context = await launch();
+    profile = await launchExtension('composer');
+    context = profile.context;
   });
   test.afterEach(async () => {
-    await context.close();
+    await profile?.close();
     await server.close();
   });
 
@@ -184,17 +173,19 @@ test.describe('Composer — closing it', () => {
 });
 
 test.describe('Composer — choosing a folder', () => {
+  let profile: ExtensionProfile | undefined;
   let context: BrowserContext;
   let server: { origin: string; close: () => Promise<void> };
   let extensionId: string;
 
   test.beforeEach(async () => {
     server = await startServer();
-    context = await launch();
+    profile = await launchExtension('composer');
+    context = profile.context;
     extensionId = await getExtensionId(context);
   });
   test.afterEach(async () => {
-    await context.close();
+    await profile?.close();
     await server.close();
   });
 
@@ -271,6 +262,7 @@ test.describe('Composer — choosing a folder', () => {
 });
 
 test.describe('Notes Library — long notes', () => {
+  let profile: ExtensionProfile | undefined;
   let context: BrowserContext;
   let server: { origin: string; close: () => Promise<void> };
   let extensionId: string;
@@ -282,7 +274,8 @@ test.describe('Notes Library — long notes', () => {
 
   test.beforeEach(async () => {
     server = await startServer();
-    context = await launch();
+    profile = await launchExtension('composer');
+    context = profile.context;
     extensionId = await getExtensionId(context);
 
     const page = await openPage(context, `${server.origin}/test-page.html`);
@@ -297,7 +290,7 @@ test.describe('Notes Library — long notes', () => {
     await save(page, LONG_NOTE);
   });
   test.afterEach(async () => {
-    await context.close();
+    await profile?.close();
     await server.close();
   });
 
