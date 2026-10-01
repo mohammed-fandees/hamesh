@@ -172,8 +172,22 @@ describe('a shared note’s discussion, from the page', () => {
       data: {
         total: 3,
         latest: [
-          { id: 'c3', author: null, authorId: null, body: 'from someone gone', createdAt: 2 },
-          { id: 'c2', author: 'Sara', authorId: SARA, body: 'thanks @Sara', createdAt: 3 },
+          {
+            id: 'c3',
+            author: null,
+            avatarUrl: null,
+            authorId: null,
+            body: 'from someone gone',
+            createdAt: 2,
+          },
+          {
+            id: 'c2',
+            author: 'Sara',
+            avatarUrl: null,
+            authorId: SARA,
+            body: 'thanks @Sara',
+            createdAt: 3,
+          },
         ],
       },
     });

@@ -42,6 +42,8 @@ export interface ThreadLine {
   id: string;
   /** The author's name as the team lists them; null once they have left. */
   author: string | null;
+  /** Their profile picture, when they have one. */
+  avatarUrl: string | null;
   authorId: string | null;
   body: string;
   createdAt: number;

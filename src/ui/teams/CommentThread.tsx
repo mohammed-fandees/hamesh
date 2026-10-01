@@ -55,10 +55,11 @@ export function CommentThread({
   const [confirming, setConfirming] = useState<string | null>(null);
   const teamId = team.team.id;
 
-  const nameOf = useCallback(
-    (userId: string) => members?.find((m) => m.userId === userId)?.displayName,
+  const personOf = useCallback(
+    (userId: string) => members?.find((m) => m.userId === userId),
     [members],
   );
+  const nameOf = useCallback((userId: string) => personOf(userId)?.displayName, [personOf]);
 
   /** Reads the thread from the start: short, and always the server's version. */
   const load = useCallback(async () => {
@@ -162,11 +163,15 @@ export function CommentThread({
 
   function one(comment: Comment, isReply: boolean) {
     const key = `comment:${comment.id}`;
-    const author = comment.authorId ? nameOf(comment.authorId) : undefined;
+    const person = comment.authorId ? personOf(comment.authorId) : undefined;
+    const author = person?.displayName;
     const may = commentRights(team, comment.authorId, myUserId);
     return (
       <li key={comment.id} className="hm-comment" data-reply={isReply}>
-        <Avatar name={comment.deleted ? null : author} />
+        <Avatar
+          name={comment.deleted ? null : author}
+          src={comment.deleted ? null : person?.avatarUrl}
+        />
         <div className="hm-comment__content">
           <span className="hm-comment__meta">
             <bdi className="hm-comment__author">{author ?? strings.formerMember}</bdi> ·{' '}

@@ -123,12 +123,12 @@ async function readThread(
   lines.sort((a, b) => a.createdAt - b.createdAt);
 
   const members = await service.perform('members.list', { teamId });
-  const names = new Map(
-    members.ok ? members.data.members.map((m) => [m.userId, m.displayName] as const) : [],
-  );
+  const people = new Map(members.ok ? members.data.members.map((m) => [m.userId, m] as const) : []);
+  const names = new Map([...people].map(([id, m]) => [id, m.displayName] as const));
   const latest: ThreadLine[] = lines.slice(-PREVIEW_LINES).map((line) => ({
     id: line.id,
     author: line.authorId ? (names.get(line.authorId) ?? null) : null,
+    avatarUrl: line.authorId ? (people.get(line.authorId)?.avatarUrl ?? null) : null,
     authorId: line.authorId,
     // Mentions as the names they stand for: the page holds no member list.
     body: line.body.replace(MENTION_PATTERN, (_, id: string) => `@${names.get(id) ?? '…'}`),

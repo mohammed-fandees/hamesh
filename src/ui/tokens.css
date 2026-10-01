@@ -864,6 +864,14 @@ select.hm-input {
   line-height: var(--hm-lh-label);
   font-weight: 600;
 }
+.hm-avatar {
+  overflow: hidden;
+}
+.hm-avatar__picture {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 .hm-avatar[data-unknown] {
   background: var(--hm-paper-dim);
   color: var(--hm-ink-40);

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { MentionEntry } from '@hamesh/teams-contract';
+import type { MentionEntry, TeamMember } from '@hamesh/teams-contract';
 import type { TeamsClient } from '@/teams/client';
 import { relativeTime } from '../format';
 import type { Lang } from '../i18n';
@@ -37,16 +37,16 @@ export function MentionsInbox({ lang, client, onRead, onOpenNote }: MentionsInbo
   const page = useTeams(client);
   const [entries, setEntries] = useState<MentionEntry[] | null>(null);
   const [nextBefore, setNextBefore] = useState<string | null>(null);
-  const [names, setNames] = useState<Record<string, string>>({});
+  const [people, setPeople] = useState<Record<string, TeamMember>>({});
   const myUserId = page.me?.user.id ?? null;
 
-  /** Learns the names of whoever these entries involve, one team at a time. */
-  async function learnNames(from: MentionEntry[], known: Record<string, string>) {
+  /** Learns who these entries involve — names and pictures — one team at a time. */
+  async function learnPeople(from: MentionEntry[], known: Record<string, TeamMember>) {
     const teams = [...new Set(from.map((entry) => entry.teamId))];
     const lists = await Promise.all(teams.map((teamId) => page.run('members.list', { teamId })));
     const next = { ...known };
     for (const list of lists) {
-      for (const member of list?.members ?? []) next[member.userId] = member.displayName;
+      for (const member of list?.members ?? []) next[member.userId] = member;
     }
     return next;
   }
@@ -64,8 +64,8 @@ export function MentionsInbox({ lang, client, onRead, onOpenNote }: MentionsInbo
       // behind some "mark as read" nobody would press.
       const newest = result.mentions[0]?.commentId;
       if (newest) onRead(newest);
-      const learned = await learnNames(result.mentions, {});
-      if (!cancelled) setNames(learned);
+      const learned = await learnPeople(result.mentions, {});
+      if (!cancelled) setPeople(learned);
     })();
     return () => {
       cancelled = true;
@@ -80,10 +80,11 @@ export function MentionsInbox({ lang, client, onRead, onOpenNote }: MentionsInbo
     if (!result) return;
     setEntries((prev) => [...(prev ?? []), ...result.mentions]);
     setNextBefore(result.nextBefore);
-    setNames(await learnNames(result.mentions, names));
+    setPeople(await learnPeople(result.mentions, people));
   }
 
-  const nameOf = (userId: string) => (userId === myUserId ? strings.youMarker : names[userId]);
+  const nameOf = (userId: string) =>
+    userId === myUserId ? strings.youMarker : people[userId]?.displayName;
 
   if (page.status && page.status.state !== 'signed_in') {
     return <EmptyState title={strings.signedOutTitle} body={strings.signedOutBody} />;
@@ -100,7 +101,10 @@ export function MentionsInbox({ lang, client, onRead, onOpenNote }: MentionsInbo
           const author = entry.authorId ? nameOf(entry.authorId) : undefined;
           return (
             <li key={entry.commentId} className="hm-mention-entry">
-              <Avatar name={author} />
+              <Avatar
+                name={author}
+                src={entry.authorId ? people[entry.authorId]?.avatarUrl : null}
+              />
               <div className="hm-mention-entry__content">
                 <span className="hm-mention-entry__meta">
                   <bdi className="hm-mention-entry__author">{author ?? strings.formerMember}</bdi>{' '}
