@@ -168,7 +168,7 @@ export function CommentComposer({
                   pick(member.userId);
                 }}
               >
-                <Avatar name={member.displayName} />
+                <Avatar name={member.displayName} src={member.avatarUrl} />
                 <bdi>{member.displayName}</bdi>
               </button>
             </li>

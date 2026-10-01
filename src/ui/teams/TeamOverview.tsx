@@ -264,7 +264,7 @@ export function TeamOverview({
           <ul className="hm-chips">
             {members.map((member) => (
               <li key={member.userId} className="hm-chip">
-                <Avatar name={member.displayName} />
+                <Avatar name={member.displayName} src={member.avatarUrl} />
                 <span className="hm-chip__name">
                   <bdi>{member.displayName}</bdi>
                   {member.userId === myUserId ? (

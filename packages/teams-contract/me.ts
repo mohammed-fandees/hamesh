@@ -30,6 +30,8 @@ export const MeResponse = z.strictObject({
     id: z.string(),
     email: z.string(),
     displayName: z.string(),
+    /** Their Google profile picture, if they have one (see `TeamMember`). */
+    avatarUrl: z.string().url().nullable().optional(),
   }),
   entitlement: EntitlementSummary,
   subscription: SubscriptionSummary,

@@ -37,8 +37,22 @@ function source(overrides: Partial<TeamNotesSource> = {}): TeamNotesSource {
       data: {
         total: 4,
         latest: [
-          { id: 'c1', author: 'Sara', authorId: 'S', body: 'worth a look', createdAt: Date.now() },
-          { id: 'c2', author: null, authorId: null, body: 'agreed', createdAt: Date.now() },
+          {
+            id: 'c1',
+            author: 'Sara',
+            avatarUrl: null,
+            authorId: 'S',
+            body: 'worth a look',
+            createdAt: Date.now(),
+          },
+          {
+            id: 'c2',
+            author: null,
+            avatarUrl: null,
+            authorId: null,
+            body: 'agreed',
+            createdAt: Date.now(),
+          },
         ],
       },
     })),

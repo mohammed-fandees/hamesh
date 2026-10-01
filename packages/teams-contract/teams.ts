@@ -91,6 +91,9 @@ export const TeamMember = z.strictObject({
   email: z.string().optional(),
   role: TeamRole,
   joinedAt: z.number().int(),
+  /** Their Google profile picture, if they have one. Optional so a client and
+   *  a server a release apart still understand each other. */
+  avatarUrl: z.string().url().nullable().optional(),
 });
 export type TeamMember = z.infer<typeof TeamMember>;
 

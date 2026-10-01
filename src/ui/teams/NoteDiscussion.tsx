@@ -77,7 +77,7 @@ export function NoteDiscussion({ note, lang, source }: NoteDiscussionProps) {
         <ol className="hm-thread__lines">
           {preview.latest.map((line) => (
             <li key={line.id} className="hm-thread__line">
-              <Avatar name={line.author} />
+              <Avatar name={line.author} src={line.avatarUrl} />
               <span className="hm-thread__said">
                 <span className="hm-thread__meta">
                   <bdi className="hm-thread__author">{line.author ?? strings.formerMember}</bdi>
