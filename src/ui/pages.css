@@ -1,0 +1,651 @@
+/*
+ * What Hamesh's own pages share — the popup and the Notes Library (with
+ * Settings, What's New, Teams and Mentions inside it).
+ *
+ * Kept out of `tokens.css`, which is injected into every web page the content
+ * script runs on: nothing here is ever drawn over a web page, so no web page
+ * carries it. Both pages import this after `tokens.css`, so the popup gets the
+ * same loading and empty states as the Library — it used to render them with
+ * no styles at all.
+ */
+
+/* ---- A page beside the sidebar ---- */
+.hm-page {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  padding: var(--hm-space-6);
+}
+.hm-page__inner {
+  max-width: 680px;
+  margin: 0 auto;
+}
+/* Grids of cards want more room than lines of text do. */
+.hm-page__inner--wide {
+  max-width: 920px;
+}
+/* A phone's width: the page keeps a 16px gutter and no more. */
+@media (max-width: 720px) {
+  .hm-page {
+    padding: var(--hm-space-5) var(--hm-space-4);
+  }
+}
+
+.hm-page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--hm-space-2) var(--hm-space-3);
+  margin-bottom: var(--hm-space-5);
+}
+.hm-page-header__mark {
+  align-self: center;
+  color: var(--hm-accent);
+}
+.hm-page-header__title {
+  margin: 0;
+  font-size: var(--hm-text-title-lg);
+  line-height: var(--hm-lh-title-lg);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.hm-page-header__meta {
+  color: var(--hm-ink-40);
+  font-size: var(--hm-text-body-sm);
+}
+.hm-page-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--hm-space-2);
+  margin-inline-start: auto;
+}
+/* Reached from another page: the breadcrumb above says from where. */
+.hm-page-header--sub {
+  margin-bottom: var(--hm-space-4);
+}
+
+/* ---- The trail back ---- */
+.hm-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--hm-space-2);
+  margin: 0 0 var(--hm-space-3);
+  padding: 0;
+  list-style: none;
+  color: var(--hm-ink-40);
+  font-size: var(--hm-text-body-sm);
+}
+.hm-breadcrumb__item + .hm-breadcrumb__item::before {
+  content: '/';
+  margin-inline-end: var(--hm-space-2);
+}
+.hm-breadcrumb .hm-link {
+  font-size: var(--hm-text-body-sm);
+  color: var(--hm-accent-strong);
+}
+.hm-breadcrumb .hm-link:hover {
+  text-decoration: underline;
+}
+.hm-breadcrumb [aria-current='page'] {
+  color: var(--hm-ink);
+}
+
+/* ---- Cards ---- */
+.hm-section {
+  margin-top: var(--hm-space-4);
+  padding: var(--hm-card-pad);
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-lg);
+  background: var(--hm-surface);
+}
+.hm-section:first-child {
+  margin-top: 0;
+}
+/* Its rows run edge to edge and carry their own padding. */
+.hm-section--flush {
+  padding: 0;
+  overflow: hidden;
+}
+.hm-section__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--hm-space-2) var(--hm-space-3);
+  margin-bottom: var(--hm-space-3);
+}
+.hm-section--flush > .hm-section__head {
+  margin: 0;
+  padding: var(--hm-card-pad);
+  border-bottom: 1px solid var(--hm-ink-10);
+}
+.hm-section__title {
+  margin: 0;
+  font-size: var(--hm-text-title);
+  line-height: var(--hm-lh-title);
+  font-weight: 600;
+}
+.hm-section__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hm-space-2);
+  color: var(--hm-ink-40);
+  font-size: var(--hm-text-body-sm);
+}
+.hm-section__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--hm-space-3);
+  margin-inline-start: auto;
+}
+.hm-section__intro {
+  margin: 0 0 var(--hm-space-2);
+  color: var(--hm-ink-60);
+  font-size: var(--hm-text-body-sm);
+}
+
+/* A card that stays shut until it is wanted. */
+.hm-panel {
+  margin-top: var(--hm-space-4);
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-lg);
+  background: var(--hm-surface);
+}
+.hm-panel__summary {
+  display: flex;
+  align-items: center;
+  gap: var(--hm-space-3);
+  padding: var(--hm-card-pad);
+  border-radius: var(--hm-radius-lg);
+  font-size: var(--hm-text-body);
+  font-weight: 500;
+  cursor: pointer;
+  list-style: none;
+  transition: background var(--hm-motion-state);
+}
+.hm-panel__summary::-webkit-details-marker {
+  display: none;
+}
+/* The chevron is drawn from two borders, so it turns with the reading
+   direction by itself. */
+.hm-panel__summary::before {
+  content: '';
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-inline-end: 1.5px solid var(--hm-ink-40);
+  border-block-end: 1.5px solid var(--hm-ink-40);
+  transform: rotate(-45deg);
+  transition: transform var(--hm-motion-state);
+}
+.hm-scope[dir='rtl'] .hm-panel__summary::before {
+  transform: rotate(45deg);
+}
+.hm-panel[open] > .hm-panel__summary::before {
+  transform: rotate(45deg);
+}
+.hm-scope[dir='rtl'] .hm-panel[open] > .hm-panel__summary::before {
+  transform: rotate(135deg);
+}
+.hm-panel__summary:hover {
+  background: var(--hm-layer-hover);
+}
+.hm-panel__summary:focus-visible {
+  outline: none;
+  background: var(--hm-layer-focus);
+  box-shadow: var(--hm-ring-inset);
+}
+.hm-panel[open] > .hm-panel__summary {
+  border-end-start-radius: 0;
+  border-end-end-radius: 0;
+}
+.hm-panel__title {
+  margin: 0;
+  font-size: var(--hm-text-body);
+  line-height: var(--hm-lh-body);
+  font-weight: 500;
+}
+.hm-panel__hint {
+  color: var(--hm-ink-40);
+  font-weight: 400;
+  font-size: var(--hm-text-body-sm);
+}
+.hm-panel__body {
+  padding: 0 var(--hm-space-5) var(--hm-space-4);
+}
+
+/* A line of help under a control — what a field is for, what happens next. */
+.hm-supporting {
+  margin: var(--hm-space-2) 0 0;
+  color: var(--hm-ink-40);
+  font-size: var(--hm-text-body-sm);
+}
+
+/* ---- Nothing here yet, and not here yet ---- */
+.hm-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--hm-space-6) var(--hm-space-4);
+  color: var(--hm-ink-60);
+}
+.hm-empty .hm-mark {
+  color: var(--hm-accent);
+  opacity: 0.7;
+  margin-bottom: var(--hm-space-3);
+}
+.hm-empty__title {
+  margin: 0 0 var(--hm-space-2);
+  font-size: var(--hm-text-title);
+  line-height: var(--hm-lh-title);
+  font-weight: 600;
+  color: var(--hm-ink);
+}
+.hm-empty__body {
+  margin: 0;
+  max-width: 320px;
+  font-size: var(--hm-text-body);
+}
+.hm-empty__action {
+  margin-top: var(--hm-space-3);
+}
+/* Inside a card, rather than filling a page. */
+.hm-empty--inline {
+  padding: var(--hm-space-4);
+}
+/* The popup: one thing to say, in 252px. */
+.hm-empty--compact {
+  padding: var(--hm-space-4) 0 var(--hm-space-2);
+}
+.hm-empty--compact .hm-empty__title {
+  font-size: var(--hm-text-body);
+}
+
+.hm-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hm-space-3);
+  padding: var(--hm-space-2) 0;
+}
+.hm-skeleton__row {
+  height: 44px;
+  border-radius: var(--hm-radius-md);
+  background: var(--hm-paper-dim);
+  animation: hm-skeleton-pulse 1.4s var(--hm-ease-out) infinite;
+}
+.hm-skeleton__row:nth-child(2) {
+  animation-delay: 120ms;
+}
+.hm-skeleton__row:nth-child(3) {
+  animation-delay: 240ms;
+}
+/* Shaped like what is loading: a wrap of tiles, a line of chips. */
+.hm-skeleton--tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
+}
+.hm-skeleton--chips .hm-skeleton__row {
+  width: 60%;
+  height: 32px;
+  border-radius: var(--hm-radius-pill);
+}
+@keyframes hm-skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* One-shot entrance; lists stagger it (`stagger()`, kit/motion.ts). */
+@keyframes hm-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.hm-fade-in {
+  animation: hm-fade-in var(--hm-motion-emphasized) both;
+}
+
+/* ---- Choosing ---- */
+/* One of a few, in a pill; the chosen one inverts — ink on paper — the same
+   way the filter chips mark theirs, so the accent stays the mark's. */
+.hm-segmented {
+  display: inline-flex;
+  flex: none;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-pill);
+  background: var(--hm-surface);
+}
+.hm-segmented__option {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 12px;
+  border-radius: var(--hm-radius-pill);
+  font-size: var(--hm-text-body-sm);
+  font-weight: 500;
+  color: var(--hm-ink-60);
+  cursor: pointer;
+  transition:
+    background var(--hm-motion-state),
+    color var(--hm-motion-state);
+}
+.hm-segmented__option[data-icon] {
+  padding-inline: 9px;
+}
+.hm-segmented__option input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.hm-segmented__option:hover:not(:has(input:checked)) {
+  background: var(--hm-layer-hover);
+  color: var(--hm-ink);
+}
+.hm-segmented__option:has(input:checked) {
+  background: var(--hm-ink);
+  color: var(--hm-paper);
+}
+.hm-segmented__option:has(input:focus-visible) {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--hm-surface),
+    0 0 0 4px var(--hm-accent);
+}
+
+/* On or off. The thumb rides to the inline-end when on, in either direction. */
+.hm-switch {
+  position: relative;
+  flex: none;
+  width: 34px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--hm-ink-20);
+  border-radius: var(--hm-radius-pill);
+  background: var(--hm-paper-dim);
+  cursor: pointer;
+  transition:
+    background var(--hm-motion-state),
+    border-color var(--hm-motion-state);
+}
+.hm-switch__thumb {
+  position: absolute;
+  top: 2px;
+  inset-inline-start: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: var(--hm-radius-pill);
+  background: var(--hm-surface);
+  box-shadow: var(--hm-elev-1);
+  transition: inset-inline-start var(--hm-motion-enter);
+}
+.hm-switch[aria-checked='true'] {
+  background: var(--hm-accent);
+  border-color: var(--hm-accent);
+}
+.hm-switch[aria-checked='true'] .hm-switch__thumb {
+  inset-inline-start: 16px;
+}
+.hm-switch:hover:not(:disabled) {
+  border-color: var(--hm-accent);
+}
+.hm-switch:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--hm-surface),
+    0 0 0 4px var(--hm-accent);
+}
+.hm-switch:disabled {
+  opacity: var(--hm-state-disabled);
+  cursor: not-allowed;
+}
+
+/* "+ New folder", "+ New team", "+ Invite someone" — an outline that says
+   there could be more here, set apart from the solid things beside it. */
+.hm-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1px dashed var(--hm-ink-20);
+  border-radius: var(--hm-radius-pill);
+  background: none;
+  color: var(--hm-ink-60);
+  font-family: inherit;
+  font-size: var(--hm-text-body-sm);
+  cursor: pointer;
+  transition:
+    border-color var(--hm-motion-state),
+    color var(--hm-motion-state),
+    background var(--hm-motion-state);
+}
+.hm-add:hover {
+  border-color: var(--hm-accent);
+  color: var(--hm-accent-strong);
+}
+.hm-add:focus-visible {
+  outline: none;
+  box-shadow: var(--hm-ring);
+}
+
+/* A person, as a round monogram. */
+.hm-avatar {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--hm-radius-pill);
+  background: var(--hm-accent-tint);
+  color: var(--hm-accent-strong);
+  font-size: var(--hm-text-label);
+  line-height: var(--hm-lh-label);
+  font-weight: 600;
+}
+.hm-avatar[data-unknown] {
+  background: var(--hm-paper-dim);
+  color: var(--hm-ink-40);
+}
+
+/* ---- The row menu ---- */
+.hm-menu {
+  display: inline-flex;
+  flex: none;
+}
+.hm-menu__panel {
+  z-index: 1000;
+  min-width: 190px;
+  max-width: min(320px, calc(100vw - 16px));
+  max-height: min(420px, calc(100vh - 16px));
+  overflow-y: auto;
+  padding: var(--hm-space-1);
+  background: var(--hm-surface);
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-md);
+  box-shadow: var(--hm-elev-2);
+  animation: hm-menu-in var(--hm-motion-enter);
+}
+@keyframes hm-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+}
+.hm-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--hm-space-2);
+  width: 100%;
+  padding: 7px var(--hm-space-2);
+  padding-inline-start: calc(var(--hm-space-2) + var(--hm-depth, 0) * var(--hm-indent));
+  border: none;
+  background: none;
+  border-radius: var(--hm-radius-sm);
+  cursor: pointer;
+  text-align: start;
+  font-family: var(--hm-sans);
+  font-size: var(--hm-text-body-sm);
+  color: var(--hm-ink);
+  transition: background var(--hm-motion-state);
+}
+.hm-menu__item svg {
+  flex: none;
+  color: var(--hm-ink-60);
+}
+.hm-menu__item-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hm-menu__item:hover:not(:disabled),
+.hm-menu__item:focus-visible {
+  outline: none;
+  background: var(--hm-layer-hover);
+}
+.hm-menu__item:focus-visible {
+  box-shadow: var(--hm-ring-inset);
+}
+.hm-menu__item:disabled {
+  opacity: var(--hm-state-disabled);
+  cursor: default;
+}
+.hm-menu__item[aria-checked='true'] {
+  color: var(--hm-accent-strong);
+  font-weight: 600;
+}
+.hm-menu__item[aria-checked='true'] .hm-menu__check {
+  color: var(--hm-accent-strong);
+}
+.hm-menu__item--accent,
+.hm-menu__item--accent svg {
+  color: var(--hm-accent-strong);
+}
+.hm-menu__item--danger,
+.hm-menu__item--danger svg {
+  color: var(--hm-danger);
+}
+.hm-menu__divider {
+  height: 1px;
+  margin: var(--hm-space-1) 2px;
+  background: var(--hm-border);
+}
+.hm-menu__label {
+  padding: 6px var(--hm-space-2) 2px;
+  font-size: var(--hm-text-label);
+  line-height: var(--hm-lh-label);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--hm-ink-40);
+}
+.hm-menu__label[role='alert'] {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+  color: var(--hm-danger);
+}
+/* A form or a question inside the menu — a name, an edit, "delete this?". */
+.hm-menu__form {
+  width: 280px;
+  padding: var(--hm-space-2);
+}
+
+/* ---- Settings rows ---- */
+.hm-settings__body {
+  display: flex;
+  flex-direction: column;
+}
+.hm-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--hm-space-3);
+  padding: var(--hm-space-3) 0;
+  border-bottom: 1px solid var(--hm-border);
+  font-size: var(--hm-text-body);
+}
+.hm-setting-row:last-child {
+  border-bottom: none;
+}
+.hm-setting-row__label {
+  display: flex;
+  align-items: center;
+  gap: var(--hm-space-2);
+  font-weight: 500;
+}
+.hm-setting-row__icon {
+  display: inline-flex;
+  flex: none;
+  color: var(--hm-accent-strong);
+}
+.hm-setting-row__value {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hm-space-3);
+  min-width: 0;
+  color: var(--hm-ink-40);
+  font-size: var(--hm-text-body-sm);
+}
+/* A line of explanation under a row, indented to clear the row's icon so it
+   reads as that row's own second line. */
+.hm-setting-row__hint {
+  margin: calc(-1 * var(--hm-space-2)) 0 0;
+  padding-inline-start: calc(14px + var(--hm-space-2));
+  padding-bottom: var(--hm-space-3);
+  border-bottom: 1px solid var(--hm-border);
+  color: var(--hm-ink-40);
+  font-size: var(--hm-text-body-sm);
+}
+/* A row with a hint hands its separator to the hint, so the hairline lands
+   under the pair instead of striking through the explanation. */
+.hm-setting-row:has(+ .hm-setting-row__hint) {
+  border-bottom: none;
+}
+.hm-settings__body > .hm-setting-row__hint:last-child {
+  border-bottom: none;
+}
+/* Rows inside a card: the card already pads, so the list starts at its edge. */
+.hm-section > .hm-settings__body:first-child > .hm-setting-row:first-child {
+  padding-top: 0;
+}
+.hm-section > .hm-settings__body:last-child > .hm-setting-row:last-child,
+.hm-section > .hm-settings__body:last-child > .hm-setting-row__hint:last-child {
+  padding-bottom: 0;
+}
+/* A lone button in a column would otherwise stretch across the whole page. */
+.hm-settings__body > .hm-btn {
+  align-self: flex-start;
+}
+/* A link that follows a card's rows — "Change in Chrome settings". */
+.hm-section__after {
+  margin-top: var(--hm-space-3);
+}
+
+/* A key binding, read-only — a flat tinted chip. */
+.hm-kbd {
+  font-family: var(--hm-mono);
+  font-size: var(--hm-text-body-sm);
+  font-style: normal;
+  padding: var(--hm-space-1) var(--hm-space-2);
+  background: var(--hm-paper-dim);
+  border-radius: var(--hm-radius-sm);
+  color: var(--hm-ink-60);
+}

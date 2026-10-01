@@ -14,23 +14,22 @@ import {
   clusterMarkers,
   formatVideoTimestamp,
   firstLineOf,
+  type RailPlacement,
 } from '@/domain/video-markers';
 import { generatePageKey } from '@/domain/page-key';
-import { getDeepestEligibleElement } from '@/utils/dom';
+import {
+  elementAtPoint,
+  getDeepestEligibleElement,
+  revealElement,
+  RESTORE_FLASH_MS,
+} from '@/utils/dom';
 import { onNavigationChange } from '@/content/navigation';
 import { detectHostTheme, type HostTheme } from '@/content/theme';
-import type {
-  AppearanceMode,
-  FolderDefaultPreferences,
-  Preferences,
-  TextNotePreferences,
-} from '@/domain/preferences';
 import {
   DEFAULT_FOLDER_DEFAULT_PREFERENCES,
   DEFAULT_TEXT_NOTE_PREFERENCES,
   resolveDefaultFolderId,
-  withGlobalDefaultFolder,
-  withPageDefaultFolder,
+  resolveTheme,
 } from '@/domain/preferences';
 import {
   captureTextSelection,
@@ -44,7 +43,7 @@ import {
   paintTextHighlights,
   setTextHoverCursor,
 } from '@/content/text-highlights';
-import { useFloating, useFloatingAbove, type AnchorRect } from '@/content/useFloating';
+import { useFloating, type AnchorRect } from '@/content/useFloating';
 import { holdPlayback } from '@/content/video-playback';
 import { getVideoAdapters, getActiveAdapterMatch } from '@/content/video-adapters/registry';
 import type { VideoPlayerAdapter } from '@/content/video-adapters/types';
@@ -66,6 +65,9 @@ import {
 } from '@/ui/video/VideoMarkerClusterList';
 import { getStrings, dirForLang, type Lang, type Strings } from '@/ui/i18n';
 import type { TeamNotesSource } from '@/teams/page-notes';
+import { usePreferences } from '@/ui/hooks/usePreferences';
+import { useFolders } from '@/ui/hooks/useFolders';
+import { useNoteMutations } from '@/ui/hooks/useNoteMutations';
 
 interface Resolved {
   note: Note;
@@ -102,9 +104,9 @@ const TEXT_POPUP_GRACE_MS = 220;
  *  the text shouldn't leave the user staring at nothing. */
 const TEXT_RESTORE_GRACE_MS = 3000;
 
-/** Mirrors the video restore highlight's duration in tokens.css — long
- *  enough to catch the eye after a scroll, short enough not to linger. */
-const TEXT_FLASH_MS = 1400;
+/** Until folders have loaded, there are none to offer — the same empty list
+ *  every time, so nothing downstream sees a change that isn't one. */
+const NO_FOLDERS: Folder[] = [];
 
 interface VideoMarkerItem {
   note: Note;
@@ -198,12 +200,6 @@ function rangeAnchorRect(range: Range): AnchorRect {
   return { left: r.left, top: r.top, width: r.width, height: r.height };
 }
 
-interface RailPlacement {
-  left: number;
-  width: number;
-  top: number;
-}
-
 /** Where to draw the timeline rail: a native-timeline adapter (YouTube)
  *  aligns to the site's own progress-bar rect; otherwise Hamesh's own rail
  *  overlaps the video element's own bottom edge (a few px *inside* it, not
@@ -292,69 +288,25 @@ export function HameshApp({
   registerRestoreNote,
   teamNotes,
 }: HameshAppProps) {
-  const [lang, setLang] = useState<Lang>(initialLang);
-  const [appearance, setAppearance] = useState<AppearanceMode>('match-website');
-  const [textNotes, setTextNotes] = useState<TextNotePreferences>(DEFAULT_TEXT_NOTE_PREFERENCES);
-  const [folderDefaults, setFolderDefaults] = useState<FolderDefaultPreferences>(
-    DEFAULT_FOLDER_DEFAULT_PREFERENCES,
-  );
-  const [folders, setFolders] = useState<Folder[]>([]);
+  // The reader's preferences and folders, kept live — a choice made in the
+  // popup, the Library or another tab reaches this page through storage's own
+  // change events, with no messaging of its own.
+  const preferences = usePreferences(prefsRepo);
+  const prefs = preferences.prefs;
+  const lang: Lang = prefs?.language ?? initialLang;
+  const appearance = prefs?.appearance ?? 'match-website';
+  const textNotes = prefs?.textNotes ?? DEFAULT_TEXT_NOTE_PREFERENCES;
+  const folderDefaults = prefs?.folderDefaults ?? DEFAULT_FOLDER_DEFAULT_PREFERENCES;
+  const { folders: loadedFolders, create: createFolder } = useFolders(foldersRepo);
+  const folders = loadedFolders ?? NO_FOLDERS;
   const strings = getStrings(lang);
   const dir = dirForLang(lang);
-
-  // Load stored preferences (if any) and stay subscribed for changes made
-  // elsewhere — the popup's Settings screen, or another tab. `storage.watch`
-  // is backed by `chrome.storage.onChanged`, which already broadcasts to
-  // every extension context, so no custom messaging is needed.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const prefs = await prefsRepo.get();
-      if (!cancelled) {
-        setLang(prefs.language ?? initialLang);
-        setAppearance(prefs.appearance);
-        setTextNotes(prefs.textNotes);
-        setFolderDefaults(prefs.folderDefaults);
-      }
-    })();
-    const unwatch = prefsRepo.watch((prefs) => {
-      setLang(prefs.language ?? initialLang);
-      setAppearance(prefs.appearance);
-      setTextNotes(prefs.textNotes);
-      setFolderDefaults(prefs.folderDefaults);
-    });
-    return () => {
-      cancelled = true;
-      unwatch();
-    };
-  }, [prefsRepo, initialLang]);
-
-  // Folders for the composer's selector — kept live the same way, so a
-  // folder created or deleted in the Notes Library shows up in a composer
-  // that's already open in another tab.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const all = await foldersRepo.getAll();
-        if (!cancelled) setFolders(all);
-      } catch {
-        if (!cancelled) setFolders([]);
-      }
-    })();
-    const unwatch = foldersRepo.watch(setFolders);
-    return () => {
-      cancelled = true;
-      unwatch();
-    };
-  }, [foldersRepo]);
 
   // `hostTheme` is always kept up to date regardless of `appearance`, so
   // switching back to "Match website" is instant rather than needing a
   // fresh detection pass.
   const [hostTheme, setHostTheme] = useState<HostTheme>(() => detectHostTheme());
-  const theme: HostTheme =
-    appearance === 'light' ? 'light' : appearance === 'dark' ? 'dark' : hostTheme;
+  const theme: HostTheme = resolveTheme(appearance, hostTheme);
 
   // Re-detect on host-side theme changes while "Match website" is active:
   // a class/style change on <html>/<body> (dark-mode toggles, theme CSS that
@@ -401,7 +353,8 @@ export function HameshApp({
   /** Set when the viewer is opened straight into edit mode (the hover
    *  popup's Edit button) — see the `key` on `FloatingViewer` below. */
   const [viewerEditing, setViewerEditing] = useState(false);
-  const [busy, setBusy] = useState(false);
+  /** What the open card has to say about a failure — one card is open at a
+   *  time, so one line, cleared whenever a card opens. */
   const [error, setError] = useState<string | null>(null);
 
   // ---- Video notes ----
@@ -1002,18 +955,13 @@ export function HameshApp({
   // mutating.
   useEffect(() => {
     if (!highlightElement) return;
-    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
-    highlightElement.scrollIntoView({
-      behavior: reduceMotion ? 'auto' : 'smooth',
-      block: 'center',
-    });
-    // Mirrors the CSS animation duration in tokens.css (.hm-restore-highlight)
-    // — this just unmounts the highlight overlay once that animation has
-    // finished, not a readiness/timing guess.
+    revealElement(highlightElement);
+    // The ring's own animation lasts exactly this long (it reads the same
+    // constant), so this unmounts it as it finishes — not a timing guess.
     const timer = window.setTimeout(() => {
       setHighlightId(null);
       setHighlightElement(null);
-    }, 1400);
+    }, RESTORE_FLASH_MS);
     return () => clearTimeout(timer);
   }, [highlightElement]);
 
@@ -1154,7 +1102,7 @@ export function HameshApp({
     // host's own box is 0×0 (overlay), so with the overlay ignored the probe
     // sees straight through to the page.
     if (capture) capture.style.pointerEvents = 'none';
-    const raw = document.elementFromPoint(x, y);
+    const raw = elementAtPoint(x, y);
     if (capture) capture.style.pointerEvents = 'auto';
     if (!raw || raw === host) return null;
     return getDeepestEligibleElement(raw);
@@ -1192,110 +1140,84 @@ export function HameshApp({
     [folderDefaults, pageKey, folders],
   );
 
-  // Each default setter applies its change locally first — the checkbox it
-  // came from is controlled by these values, and would otherwise spring
-  // back until the storage write resolves — then adopts what was actually
-  // written. A failed write puts back whatever storage really holds.
-  // `prefsRepo.watch` carries changes made from any other tab.
+  // A default that could not be written is put back by `usePreferences`
+  // (to what storage really holds), and said on the card.
   const folderPicker = useMemo((): FolderPickerSource => {
-    const persist = (write: Promise<Preferences>) => {
-      write
-        .then((prefs) => setFolderDefaults(prefs.folderDefaults))
-        .catch(() => {
-          setError(strings.saveError);
-          prefsRepo
-            .get()
-            .then((prefs) => setFolderDefaults(prefs.folderDefaults))
-            .catch(() => {});
-        });
-    };
+    const report = (write: Promise<boolean>) =>
+      void write.then((ok) => {
+        if (!ok) setError(strings.saveError);
+      });
     return {
       folders,
       pageDefaultId: folderDefaults.pages[pageKey] ?? null,
       globalDefaultId: folderDefaults.global,
-      onSetPageDefault: (folderId) => {
-        setFolderDefaults((prev) => withPageDefaultFolder(prev, pageKey, folderId));
-        persist(prefsRepo.setPageDefaultFolder(pageKey, folderId));
-      },
-      onSetGlobalDefault: (folderId) => {
-        setFolderDefaults((prev) => withGlobalDefaultFolder(prev, folderId));
-        persist(prefsRepo.setGlobalDefaultFolder(folderId));
-      },
-      onCreateFolder: async (name) => {
-        const folder = await foldersRepo.create({ name });
-        // Added here as well as by `foldersRepo.watch`, so the selector can
-        // show the new folder the moment it's chosen — deduplicated by id,
-        // since the watch may already have delivered it.
-        setFolders((prev) => (prev.some((f) => f.id === folder.id) ? prev : [...prev, folder]));
-        return folder.id;
-      },
+      onSetPageDefault: (folderId) => report(preferences.setPageDefaultFolder(pageKey, folderId)),
+      onSetGlobalDefault: (folderId) => report(preferences.setGlobalDefaultFolder(folderId)),
+      onCreateFolder: async (name) => (await createFolder({ name })).id,
     };
-  }, [folders, folderDefaults, pageKey, prefsRepo, foldersRepo, strings.saveError]);
+  }, [folders, folderDefaults, pageKey, preferences, createFolder, strings.saveError]);
 
   // ---- Persistence ----
+  // Every change to a note goes through the same mutations the Library uses:
+  // find it, refuse a team's (`mayMutateNote`), write it, commit the result.
+  // A failure is said on the one open card.
+  const mutations = useNoteMutations(
+    repo,
+    useMemo(() => ({ current: () => notesRef.current, commit: commitNotes }), [commitNotes]),
+    { onFailure: () => setError(strings.saveError) },
+  );
+
   // One create path for element and contextual text notes alike — same
   // repository, same `CreateNoteInput`, same page key. The only difference
   // between them by this point is which anchor the composer is carrying.
   const handleSave = useCallback(
     async (content: string, folderId: string | undefined) => {
       if (!composer) return;
-      setBusy(true);
       setError(null);
-      try {
-        const note = await repo.create({
-          content,
-          pageKey,
-          originalUrl: location.href,
-          anchor: composer.anchor,
-          pageContext: document.title ? { title: document.title } : undefined,
-          folderId,
-        });
-        // Seeds the new note's range so its highlight appears immediately
-        // and exactly over the captured text, instead of waiting for the
-        // resolution pass below to re-derive it.
-        if (composer.kind === 'text') {
-          previousTextRangesRef.current.set(note.id, composer.range);
-        }
-        setComposer(null);
-        setPendingSelection(null);
-        commitNotes([...notesRef.current, note]);
-      } catch {
-        setError(strings.saveError);
-      } finally {
-        setBusy(false);
+      const note = await mutations.create({
+        content,
+        pageKey,
+        originalUrl: location.href,
+        anchor: composer.anchor,
+        pageContext: document.title ? { title: document.title } : undefined,
+        folderId,
+      });
+      if (!note) return;
+      // Seeds the new note's range so its highlight appears immediately and
+      // exactly over the captured text, instead of waiting for the resolution
+      // pass below to re-derive it.
+      if (composer.kind === 'text') {
+        previousTextRangesRef.current.set(note.id, composer.range);
       }
+      setComposer(null);
+      setPendingSelection(null);
     },
-    [composer, repo, pageKey, commitNotes, strings.saveError],
+    [composer, mutations, pageKey],
   );
 
-  // No busy/error state, unlike `handleSave` — the quick-note popup has no
-  // UI for either (spec: "extremely lightweight, never interrupt
-  // watching"). A failed save is dropped silently, same as a cancel; a
-  // persistent storage failure would already be visible via element notes.
+  // No busy or error on screen, unlike `handleSave` — the quick-note popup has
+  // none (spec: "extremely lightweight, never interrupt watching"). A failed
+  // save is dropped like a cancel; a lasting storage failure would already
+  // show on element notes.
   const handleSaveVideoNote = useCallback(
     async (content: string) => {
       if (!videoComposer) return;
       const anchor = buildVideoAnchor(videoComposer.video, videoComposer.adapter);
       setVideoComposer(null);
       if (!anchor) return;
-      try {
-        const note = await repo.create({
-          content,
-          pageKey,
-          originalUrl: location.href,
-          anchor,
-          pageContext: document.title ? { title: document.title } : undefined,
-          // No selector here — the quick note stays a bare textarea — but a
-          // page or global default still applies, so a video note lands
-          // where every other new note on this page does.
-          folderId: defaultFolderId ?? undefined,
-        });
-        commitNotes([...notesRef.current, note]);
-      } catch {
-        /* dropped — see comment above */
-      }
+      await mutations.create({
+        content,
+        pageKey,
+        originalUrl: location.href,
+        anchor,
+        pageContext: document.title ? { title: document.title } : undefined,
+        // No selector here — the quick note stays a bare textarea — but a
+        // page or global default still applies, so a video note lands
+        // where every other new note on this page does.
+        folderId: defaultFolderId ?? undefined,
+      });
     },
-    [videoComposer, repo, pageKey, commitNotes, defaultFolderId],
+    [videoComposer, mutations, pageKey, defaultFolderId],
   );
 
   // Clicking a marker both seeks *and* opens the note's viewer — the only
@@ -1323,70 +1245,30 @@ export function HameshApp({
     setVideoSeekRequest({ timestamp: item.anchor.timestamp, nonce: videoSeekNonceRef.current });
   }, []);
 
-  /**
-   * A team note is not this device's to change. Every local write goes through
-   * this first: the marker, the card and the viewer already hide the controls,
-   * and this is what makes hiding them beside the point.
-   */
-  const isLocal = useCallback(
-    (noteId: string) => !notesRef.current.find((n) => n.id === noteId)?.team,
-    [],
-  );
-
   const handleUpdate = useCallback(
     async (noteId: string, content: string) => {
-      if (!isLocal(noteId)) return;
-      setBusy(true);
       setError(null);
-      try {
-        const updated = await repo.update(noteId, pageKey, { content });
-        if (updated) {
-          commitNotes(notesRef.current.map((n) => (n.id === noteId ? updated : n)));
-        }
-      } catch {
-        setError(strings.saveError);
-      } finally {
-        setBusy(false);
-      }
+      return (await mutations.update(noteId, content)) !== null;
     },
-    [repo, pageKey, commitNotes, strings.saveError, isLocal],
+    [mutations],
   );
 
-  // Pinning is a metadata toggle, not a save — deliberately doesn't touch
-  // `busy`/`error` the way create/update/delete do, so it stays instant
-  // rather than showing a saving state for something this quick.
   const handleTogglePin = useCallback(
-    async (noteId: string) => {
-      const current = notesRef.current.find((n) => n.id === noteId);
-      if (!current || current.team) return;
-      try {
-        const updated = await repo.setPinned(noteId, pageKey, !current.pinned);
-        if (updated) {
-          commitNotes(notesRef.current.map((n) => (n.id === noteId ? updated : n)));
-        }
-      } catch {
-        setError(strings.saveError);
-      }
+    (noteId: string) => {
+      setError(null);
+      void mutations.togglePin(noteId);
     },
-    [repo, pageKey, commitNotes, strings.saveError],
+    [mutations],
   );
 
   const handleDelete = useCallback(
     async (noteId: string) => {
-      if (!isLocal(noteId)) return;
-      setBusy(true);
-      try {
-        await repo.delete(noteId, pageKey);
-        setViewerId(null);
-        previousTextRangesRef.current.delete(noteId);
-        commitNotes(notesRef.current.filter((n) => n.id !== noteId));
-      } catch {
-        setError(strings.saveError);
-      } finally {
-        setBusy(false);
-      }
+      setError(null);
+      if (!(await mutations.remove(noteId))) return;
+      setViewerId(null);
+      previousTextRangesRef.current.delete(noteId);
     },
-    [repo, pageKey, commitNotes, strings.saveError, isLocal],
+    [mutations],
   );
 
   // ---- Derived: marker placements ----
@@ -1751,17 +1633,11 @@ export function HameshApp({
     if (!scrollToTextId) return;
     const target = textResolvedRef.current.find((item) => item.note.id === scrollToTextId);
     const anchorElement = target?.range?.startContainer.parentElement ?? null;
-    if (anchorElement) {
-      const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
-      anchorElement.scrollIntoView({
-        behavior: reduceMotion ? 'auto' : 'smooth',
-        block: 'center',
-      });
-    }
+    if (anchorElement) revealElement(anchorElement);
     const timer = window.setTimeout(() => {
       setFlashTextId(null);
       setScrollToTextId(null);
-    }, TEXT_FLASH_MS);
+    }, RESTORE_FLASH_MS);
     return () => clearTimeout(timer);
   }, [scrollToTextId]);
 
@@ -1838,6 +1714,26 @@ export function HameshApp({
   const viewerVideoGroup = viewerIsVideo
     ? videoMarkerGroups.find((g) => g.items.some((i) => i.note.id === viewerId))
     : undefined;
+  // Where the open viewer attaches, most precise first: the highlighted
+  // words (not their whole paragraph), the element, the note's own dot on the
+  // rail, the video — or the middle of the view, when there is nothing on the
+  // page to attach to.
+  const viewerRange = viewerTextResolved?.range ?? null;
+  const viewerElement = viewerResolved?.element ?? null;
+  const viewerVideo = viewerIsVideo
+    ? (viewerVideoResolved?.video ?? videoMatch?.video ?? null)
+    : null;
+  const markerLeft = viewerVideoGroup?.left;
+  const markerTop = viewerVideoGroup?.top;
+  const viewerRect = useCallback((): AnchorRect | null => {
+    if (viewerRange) return rangeAnchorRect(viewerRange);
+    if (viewerElement) return toAnchorRect(viewerElement);
+    if (markerLeft !== undefined && markerTop !== undefined) {
+      return { left: markerLeft, top: markerTop, width: 0, height: 0 };
+    }
+    if (viewerVideo) return toAnchorRect(viewerVideo);
+    return centred();
+  }, [viewerRange, viewerElement, markerLeft, markerTop, viewerVideo]);
 
   // Not gated on visibility — proximity to a group is exactly what
   // (re)reveals it via `effectiveVideoControlsVisible` above; gating this
@@ -1975,7 +1871,12 @@ export function HameshApp({
         />
       )}
 
-      {highlightRect && <div className="hm-restore-highlight" style={highlightRect} />}
+      {highlightRect && (
+        <div
+          className="hm-restore-highlight"
+          style={{ ...highlightRect, '--hm-flash': `${RESTORE_FLASH_MS}ms` } as React.CSSProperties}
+        />
+      )}
 
       {composer && (
         <FloatingComposer
@@ -1983,7 +1884,7 @@ export function HameshApp({
           folderPicker={folderPicker}
           initialFolderId={defaultFolderId}
           strings={strings}
-          busy={busy}
+          busy={mutations.creating}
           error={error}
           onSave={handleSave}
           onCancel={() => setComposer(null)}
@@ -1999,46 +1900,32 @@ export function HameshApp({
         />
       )}
 
-      {viewerNote && !viewerIsVideo && (
+      {viewerNote && (
         // Keyed so the viewer starts from a clean state per note, and so
         // opening an already-open note straight into edit mode (the hover
         // popup's Edit) actually re-initializes it.
         <FloatingViewer
           key={`${viewerNote.id}:${viewerEditing ? 'edit' : 'view'}`}
+          getRect={viewerRect}
+          placement={viewerIsVideo ? 'above' : 'below'}
           note={viewerNote}
-          element={viewerResolved?.element ?? null}
-          range={viewerTextResolved?.range ?? null}
-          anchorAvailable={viewerIsText ? !!viewerTextResolved?.range : !!viewerResolved?.element}
+          anchorAvailable={
+            viewerIsVideo
+              ? viewerVideoResolved?.quality === ResolutionQuality.Exact
+              : viewerIsText
+                ? !!viewerTextResolved?.range
+                : !!viewerResolved?.element
+          }
           unavailableLabel={viewerIsText ? strings.textAnchorUnavailable : undefined}
           attachedText={viewerNote.anchor.type === 'text' ? viewerNote.anchor.exact : undefined}
           initialEditing={viewerEditing}
           sharedLabel={viewerSharedLabel}
           strings={strings}
           lang={lang}
-          busy={busy}
+          saving={mutations.busy(viewerNote.id)}
           error={error}
           onUpdate={(content) => handleUpdate(viewerNote.id, content)}
-          onDelete={() => handleDelete(viewerNote.id)}
-          onTogglePin={() => handleTogglePin(viewerNote.id)}
-          onClose={() => setViewerId(null)}
-        />
-      )}
-
-      {viewerNote && viewerIsVideo && (
-        <FloatingVideoViewer
-          note={viewerNote}
-          video={viewerVideoResolved?.video ?? videoMatch?.video ?? null}
-          markerRect={
-            viewerVideoGroup ? { left: viewerVideoGroup.left, top: viewerVideoGroup.top } : null
-          }
-          anchorAvailable={viewerVideoResolved?.quality === ResolutionQuality.Exact}
-          sharedLabel={viewerSharedLabel}
-          strings={strings}
-          lang={lang}
-          busy={busy}
-          error={error}
-          onUpdate={(content) => handleUpdate(viewerNote.id, content)}
-          onDelete={() => handleDelete(viewerNote.id)}
+          onDelete={() => void handleDelete(viewerNote.id)}
           onTogglePin={() => handleTogglePin(viewerNote.id)}
           onClose={() => setViewerId(null)}
         />
@@ -2108,7 +1995,7 @@ function FloatingTextPopup({
   onPointerLeave: () => void;
 }) {
   const getRect = useCallback((): AnchorRect => rangeAnchorRect(range), [range]);
-  const { cardRef, style } = useFloatingAbove(getRect);
+  const { cardRef, style } = useFloating(getRect, { placement: 'above' });
   return (
     <div ref={cardRef} className="hm-floating" style={style}>
       <TextNotePopup
@@ -2133,11 +2020,11 @@ function FloatingVideoQuickNote({
   onSave: (content: string) => void;
   onCancel: () => void;
 }) {
-  // Anchored above the video (never below/over it — see useFloatingAbove),
+  // Anchored above the video (never below/over it — see `placeAbove` in useFloating),
   // not below-first like the element composer: a video can be most of the
   // viewport, so "just below the anchor's top edge" would sit on top of it.
   const getRect = useCallback(() => toAnchorRect(video), [video]);
-  const { cardRef, style } = useFloatingAbove(getRect, { autoFocus: true });
+  const { cardRef, style } = useFloating(getRect, { placement: 'above', autoFocus: true });
   return (
     <div ref={cardRef} className="hm-floating" style={style}>
       <VideoQuickNote
@@ -2168,7 +2055,7 @@ function FloatingVideoClusterList({
     (): AnchorRect => ({ left: group.left, top: group.top, width: 0, height: 0 }),
     [group.left, group.top],
   );
-  const { cardRef, style } = useFloatingAbove(getRect);
+  const { cardRef, style } = useFloating(getRect, { placement: 'above' });
   return (
     <div ref={cardRef} className="hm-floating" style={style}>
       <VideoMarkerClusterList
@@ -2181,140 +2068,29 @@ function FloatingVideoClusterList({
   );
 }
 
-/** The video-note counterpart of `FloatingViewer` below — same `NoteViewer`
- *  component (edit/delete/pin are already anchor-agnostic; nothing about
- *  them needed to change), positioned above the video via
- *  `useFloatingAbove` instead of anchored to a resolved DOM element, since
- *  a video note has no page element to anchor to. */
-function FloatingVideoViewer({
-  note,
-  video,
-  markerRect,
-  anchorAvailable,
-  sharedLabel,
-  strings,
-  lang,
-  busy,
-  error,
-  onUpdate,
-  onDelete,
-  onTogglePin,
-  onClose,
-}: {
-  note: Note;
-  video: HTMLVideoElement | null;
-  /** The note's own marker position on the rail, if it currently has one
-   *  (i.e. its dot is visible) — preferred over `video` so the viewer opens
-   *  right above the dot the user clicked, not above the whole player. */
-  markerRect: { left: number; top: number } | null;
-  anchorAvailable: boolean;
-  sharedLabel?: string;
-  strings: Strings;
-  lang: Lang;
-  busy: boolean;
-  error: string | null;
-  onUpdate: (content: string) => void;
-  onDelete: () => void;
-  onTogglePin: () => void;
-  onClose: () => void;
-}) {
-  const getRect = useCallback((): AnchorRect | null => {
-    if (markerRect) return { left: markerRect.left, top: markerRect.top, width: 0, height: 0 };
-    if (video) return toAnchorRect(video);
-    return {
-      left: window.innerWidth / 2 - 150,
-      top: window.innerHeight / 2 - 80,
-      width: 0,
-      height: 0,
-    };
-  }, [markerRect, video]);
-  const { cardRef, style } = useFloatingAbove(getRect);
-  return (
-    <div ref={cardRef} className="hm-floating" style={{ ...style, width: 300 }}>
-      <NoteViewer
-        note={note}
-        strings={strings}
-        lang={lang}
-        anchorAvailable={anchorAvailable}
-        sharedLabel={sharedLabel}
-        saving={busy}
-        error={error}
-        onUpdate={onUpdate}
-        onDelete={onDelete}
-        onTogglePin={onTogglePin}
-        onClose={onClose}
-      />
-    </div>
-  );
-}
+/** Where a viewer sits when its note has nothing on the page to attach to. */
+const CENTRED: AnchorRect = { left: 0, top: 0, width: 0, height: 0 };
+const centred = (): AnchorRect => ({
+  ...CENTRED,
+  left: window.innerWidth / 2 - 150,
+  top: window.innerHeight / 2 - 80,
+});
 
+/** The one floating viewer, for every kind of note: beside an element or the
+ *  highlighted words (below them), or above a video's marker — a video can be
+ *  most of the viewport, and the card must never cover it. */
 function FloatingViewer({
-  note,
-  element,
-  range,
-  anchorAvailable,
-  unavailableLabel,
-  attachedText,
-  initialEditing,
-  sharedLabel,
-  strings,
-  lang,
-  busy,
-  error,
-  onUpdate,
-  onDelete,
-  onTogglePin,
-  onClose,
+  getRect,
+  placement,
+  ...viewer
 }: {
-  note: Note;
-  element: Element | null;
-  /** A contextual text note's resolved range, when it has one — preferred
-   *  over `element` so the viewer opens beside the highlighted words rather
-   *  than beside their whole paragraph. */
-  range?: Range | null;
-  anchorAvailable: boolean;
-  unavailableLabel?: string;
-  attachedText?: string;
-  initialEditing?: boolean;
-  sharedLabel?: string;
-  strings: Strings;
-  lang: Lang;
-  busy: boolean;
-  error: string | null;
-  onUpdate: (content: string) => void;
-  onDelete: () => void;
-  onTogglePin: () => void;
-  onClose: () => void;
-}) {
-  const getRect = useCallback((): AnchorRect | null => {
-    if (range) return rangeAnchorRect(range);
-    if (element) return toAnchorRect(element);
-    return {
-      left: window.innerWidth / 2 - 150,
-      top: window.innerHeight / 2 - 80,
-      width: 0,
-      height: 0,
-    };
-  }, [element, range]);
-  const { cardRef, style } = useFloating(getRect);
+  getRect: () => AnchorRect | null;
+  placement: 'below' | 'above';
+} & React.ComponentProps<typeof NoteViewer>) {
+  const { cardRef, style } = useFloating(getRect, { placement });
   return (
     <div ref={cardRef} className="hm-floating" style={{ ...style, width: 300 }}>
-      <NoteViewer
-        note={note}
-        strings={strings}
-        lang={lang}
-        anchorAvailable={anchorAvailable}
-        unavailableLabel={unavailableLabel}
-        attachedText={attachedText}
-        initialEditing={initialEditing}
-        sharedLabel={sharedLabel}
-        saving={busy}
-        error={error}
-        onUpdate={onUpdate}
-        onDelete={onDelete}
-        onTogglePin={onTogglePin}
-        onClose={onClose}
-      />
+      <NoteViewer {...viewer} />
     </div>
   );
 }

@@ -90,6 +90,10 @@ test.describe("Notes Library — What's New", () => {
     );
     await expect(versions.first()).toHaveText(manifestVersion);
     await expect(versions.last()).toHaveText('0.1.0');
+    // The newest are open; the rest of the history waits in a panel that stays
+    // shut until it is wanted, and is all still there once it is opened.
+    await expect(page.getByText('Video notes and folders')).toBeHidden();
+    await page.locator('summary', { hasText: 'Earlier releases' }).click();
     await expect(page.getByText('Video notes and folders')).toBeVisible();
 
     // The installed build is marked, and it is that same manifest version.
@@ -109,6 +113,7 @@ test.describe("Notes Library — What's New", () => {
 
     await page.getByRole('button', { name: 'ما الجديد' }).click();
     await expect(page.locator('h1')).toHaveText('ما الجديد');
+    await page.locator('summary', { hasText: 'الإصدارات السابقة' }).click();
     await expect(page.getByText('ملاحظات الفيديو والفولدرات')).toBeVisible();
     await expect(page.locator('.hm-scope')).toHaveAttribute('dir', 'rtl');
     // Version numbers stay Latin digits — they're identifiers, not prose.
@@ -136,7 +141,8 @@ test.describe("Notes Library — What's New", () => {
     await expect(page.locator('.hm-sidebar__dot')).toBeVisible();
 
     await page.getByRole('button', { name: "What's New" }).click();
-    await expect(page.locator('.hm-whats-new__list')).toBeVisible();
+    // The newest releases are open; the older ones sit in their own list below.
+    await expect(page.locator('.hm-whats-new__list').first()).toBeVisible();
 
     // Opening it is reading it — and that survives a reload, since it's
     // recorded in the same preferences store as everything else.

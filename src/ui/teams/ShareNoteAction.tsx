@@ -1,9 +1,10 @@
-import { useState } from 'react';
 import type { Note } from '@/domain/note';
 import type { TeamsClient } from '@/teams/client';
 import type { TeamsErrorCode } from '@/teams/errors';
 import type { Lang } from '../i18n';
+import { MenuDivider, MenuItem, MenuLabel } from '../kit/Menu';
 import { getTeamsStrings } from './strings';
+import { Failure, failureOf, useWork } from '../hooks/useWork';
 
 interface ShareNoteActionProps {
   note: Note;
@@ -35,18 +36,19 @@ interface ShareNoteActionProps {
  */
 export function ShareNoteAction({ note, lang, client, teams, open, onDone }: ShareNoteActionProps) {
   const strings = getTeamsStrings(lang);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<TeamsErrorCode | null>(null);
+  const work = useWork((error) => failureOf<TeamsErrorCode>(error, 'internal'));
+  const busy = work.working('share');
+  const error = work.failed('share');
 
   // A note that is already a team's is read here and changed there.
   if (open) {
     return (
       <>
-        <div className="hm-folder-menu__divider" role="separator" />
-        <button type="button" role="menuitem" className="hm-folder-menu__item" onClick={open}>
+        <MenuDivider />
+        <MenuItem tone="accent" onSelect={open}>
           {strings.openInTeams}
-        </button>
-        <div className="hm-folder-menu__section-label">{strings.teamNoteHint}</div>
+        </MenuItem>
+        <MenuLabel>{strings.teamNoteHint}</MenuLabel>
       </>
     );
   }
@@ -54,46 +56,35 @@ export function ShareNoteAction({ note, lang, client, teams, open, onDone }: Sha
   if (teams.length === 0) return null;
 
   async function share(teamId: string) {
-    setBusy(true);
-    setError(null);
-    const result = await client.request('notes.share', {
-      teamId,
-      // The note's own id: a retry of the same share returns the one team note.
-      requestId: note.id,
-      originalUrl: note.originalUrl,
-      ...(note.pageContext?.title ? { pageTitle: note.pageContext.title } : {}),
-      content: note.content,
-      anchor: note.anchor,
+    const shared = await work.run('share', async () => {
+      const result = await client.request('notes.share', {
+        teamId,
+        // The note's own id: a retry of the same share returns the one team note.
+        requestId: note.id,
+        originalUrl: note.originalUrl,
+        ...(note.pageContext?.title ? { pageTitle: note.pageContext.title } : {}),
+        content: note.content,
+        anchor: note.anchor,
+      });
+      if (!result.ok) throw new Failure(result.error);
+      return true;
     });
-    setBusy(false);
     // Only a success closes the menu: a refusal has to stay on screen long
     // enough to be read.
-    if (result.ok) await onDone();
-    else setError(result.error);
+    if (shared) await onDone();
   }
 
   return (
     <>
-      <div className="hm-folder-menu__divider" role="separator" />
-      <div className="hm-folder-menu__section-label">{strings.shareWithTeam}</div>
+      <MenuDivider />
+      <MenuLabel>{strings.shareWithTeam}</MenuLabel>
       {teams.map((team) => (
-        <button
-          key={team.id}
-          type="button"
-          role="menuitem"
-          className="hm-folder-menu__item"
-          disabled={busy}
-          onClick={() => void share(team.id)}
-        >
+        <MenuItem key={team.id} disabled={busy} onSelect={() => void share(team.id)}>
           <bdi>{team.name}</bdi>
-        </button>
+        </MenuItem>
       ))}
-      {busy && <div className="hm-folder-menu__section-label">{strings.sharingNote}</div>}
-      {error && (
-        <div className="hm-folder-menu__section-label" role="alert">
-          {strings.error(error)}
-        </div>
-      )}
+      {busy && <MenuLabel>{strings.sharingNote}</MenuLabel>}
+      {error && <MenuLabel alert>{strings.error(error)}</MenuLabel>}
     </>
   );
 }

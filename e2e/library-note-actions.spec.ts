@@ -129,12 +129,12 @@ test.describe('Notes Library — note actions menu', () => {
       // Domain groups start collapsed — expand the (single, since both
       // notes share a host) group to reveal the rows and their menus.
       await library.locator('.hm-group__header').first().click();
-      await expect(library.locator('.hm-folder-menu__trigger').first()).toBeVisible();
+      await expect(library.locator('.hm-note-row .hm-menu__trigger').first()).toBeVisible();
     });
 
     test('shows pin/unpin, edit, and delete, but not move-to-folder', async () => {
-      await library.locator('.hm-folder-menu__trigger').first().click();
-      const panel = library.locator('.hm-folder-menu__panel');
+      await library.locator('.hm-note-row .hm-menu__trigger').first().click();
+      const panel = library.locator('.hm-menu__panel');
       await expect(panel).toBeVisible();
       const items = await panel.getByRole('menuitem').allInnerTexts();
       expect(items).toEqual(
@@ -144,27 +144,27 @@ test.describe('Notes Library — note actions menu', () => {
       // folder" section here (folder-tree-only, see NoteActionsMenu.tsx).
       await expect(panel.getByText('Move to folder')).toHaveCount(0);
       await expect(panel.getByText('No folder')).toHaveCount(0);
-      await expect(panel.getByRole('menuitem', { name: '+ New folder' })).toHaveCount(0);
+      await expect(panel.getByRole('menuitem', { name: 'New folder' })).toHaveCount(0);
     });
 
     test('pins and unpins a note', async () => {
       const row = library.locator('.hm-note-row').first();
       await expect(row.locator('.hm-note-row__title svg')).toHaveCount(0);
 
-      await library.locator('.hm-folder-menu__trigger').first().click();
+      await library.locator('.hm-note-row .hm-menu__trigger').first().click();
       await library.getByRole('menuitem', { name: 'Pin this note', exact: true }).click();
       await expect(row.locator('.hm-note-row__title svg')).toBeVisible();
 
-      await library.locator('.hm-folder-menu__trigger').first().click();
+      await library.locator('.hm-note-row .hm-menu__trigger').first().click();
       await library.getByRole('menuitem', { name: 'Unpin this note', exact: true }).click();
       await expect(row.locator('.hm-note-row__title svg')).toHaveCount(0);
     });
 
     test('edits a note’s content in place', async () => {
-      await library.locator('.hm-folder-menu__trigger').first().click();
+      await library.locator('.hm-note-row .hm-menu__trigger').first().click();
       await library.getByRole('menuitem', { name: 'Edit', exact: true }).click();
 
-      const textarea = library.locator('.hm-folder-menu__edit textarea');
+      const textarea = library.locator('.hm-menu__panel textarea');
       await expect(textarea).toBeVisible();
       await textarea.fill('Edited from the library');
       await library.getByRole('button', { name: 'Save changes' }).click();
@@ -176,9 +176,9 @@ test.describe('Notes Library — note actions menu', () => {
 
     test('cancelling an edit steps back to the menu, leaving the note unchanged', async () => {
       const originalText = await library.locator('.hm-note-row__preview').first().innerText();
-      await library.locator('.hm-folder-menu__trigger').first().click();
+      await library.locator('.hm-note-row .hm-menu__trigger').first().click();
       await library.getByRole('menuitem', { name: 'Edit', exact: true }).click();
-      await library.locator('.hm-folder-menu__edit textarea').fill('Should not be saved');
+      await library.locator('.hm-menu__panel textarea').fill('Should not be saved');
       await library.getByRole('button', { name: 'Cancel' }).click();
 
       // Cancel steps back to the main menu view (same "one level at a time"
@@ -189,7 +189,7 @@ test.describe('Notes Library — note actions menu', () => {
 
     test('deletes a note after a confirm step', async () => {
       await expect(library.locator('.hm-note-row')).toHaveCount(2);
-      await library.locator('.hm-folder-menu__trigger').first().click();
+      await library.locator('.hm-note-row .hm-menu__trigger').first().click();
       await library.getByRole('menuitem', { name: 'Delete', exact: true }).click();
 
       // Two-step confirm — the menu swaps to a "keep it / delete" panel,
@@ -211,12 +211,12 @@ test.describe('Notes Library — note actions menu', () => {
     test.beforeEach(async () => {
       await library.getByRole('radio', { name: 'By folder' }).check();
       await library.locator('.hm-folder-node--unfiled .hm-folder-node__name').click();
-      await expect(library.locator('.hm-folder-menu__trigger').first()).toBeVisible();
+      await expect(library.locator('.hm-note-row .hm-menu__trigger').first()).toBeVisible();
     });
 
     test('the same menu also offers pin/unpin, edit, and delete alongside move-to-folder', async () => {
-      await library.locator('.hm-folder-menu__trigger').first().click();
-      const panel = library.locator('.hm-folder-menu__panel');
+      await library.locator('.hm-note-row .hm-menu__trigger').first().click();
+      const panel = library.locator('.hm-menu__panel');
       // The move-to-folder list items use `menuitemradio` (one is always
       // "checked" — the note's current folder, or "No folder") rather than
       // plain `menuitem`, so both roles need collecting here.
@@ -234,22 +234,19 @@ test.describe('Notes Library — note actions menu', () => {
     });
 
     test('marks the note’s current folder in the move-to-folder list, and updates it after moving', async () => {
-      await library.locator('.hm-folder-menu__trigger').first().click();
-      const panel = library.locator('.hm-folder-menu__panel');
+      await library.locator('.hm-note-row .hm-menu__trigger').first().click();
+      const panel = library.locator('.hm-menu__panel');
       // Unfiled, so "No folder" starts checked.
       await expect(panel.getByRole('menuitemradio', { name: 'No folder' })).toHaveAttribute(
         'aria-checked',
         'true',
       );
 
-      await panel.getByRole('menuitem', { name: '+ New folder' }).click();
-      await library.locator('.hm-folder-menu__input').fill('Target Folder');
-      await library
-        .locator('.hm-folder-menu__create')
-        .getByRole('button', { name: 'Save' })
-        .click();
+      await panel.getByRole('menuitem', { name: 'New folder' }).click();
+      await panel.locator('.hm-name-field__input').fill('Target Folder');
+      await panel.getByRole('button', { name: 'Create' }).click();
 
-      // "+ New folder" moves the note there immediately, so it's no longer
+      // "New folder" moves the note there immediately, so it's no longer
       // in Unfiled — expand the new top-level folder and reopen the menu
       // on the note now inside it (the only one there) to confirm the pick
       // stuck. Scoped to the top-level `<li>` itself (which wraps both the
@@ -260,7 +257,7 @@ test.describe('Notes Library — note actions menu', () => {
         hasText: 'Target Folder',
       });
       await targetFolderLi.locator('.hm-folder-node__name').click();
-      const noteTrigger = targetFolderLi.locator('.hm-folder-menu__trigger');
+      const noteTrigger = targetFolderLi.locator('.hm-note-row .hm-menu__trigger');
       await noteTrigger.click();
       await expect(
         library.getByRole('menuitemradio', { name: 'Target Folder', exact: true }),
@@ -273,7 +270,7 @@ test.describe('Notes Library — note actions menu', () => {
       // occasionally racing the panel closed between two checks against the
       // same instance (observed once in CI, never locally).
       await library.keyboard.press('Escape');
-      await expect(library.locator('.hm-folder-menu__panel')).toHaveCount(0);
+      await expect(library.locator('.hm-menu__panel')).toHaveCount(0);
       await noteTrigger.click();
       await expect(library.getByRole('menuitemradio', { name: 'No folder' })).toHaveAttribute(
         'aria-checked',
@@ -288,9 +285,9 @@ test.describe('Notes Library — note actions menu', () => {
       // the collapse animation relies on — so the panel could close the
       // instant it opened, depending purely on timing. Scrolling such a
       // container while the panel is open reproduces it deterministically.
-      const trigger = library.locator('.hm-folder-menu__trigger').first();
+      const trigger = library.locator('.hm-note-row .hm-menu__trigger').first();
       await trigger.click();
-      await expect(library.locator('.hm-folder-menu__panel')).toBeVisible();
+      await expect(library.locator('.hm-menu__panel')).toBeVisible();
 
       await library.evaluate(() => {
         for (const el of document.querySelectorAll('.hm-folder-tree, .hm-folder-node__body')) {
@@ -300,21 +297,21 @@ test.describe('Notes Library — note actions menu', () => {
 
       // Still open, still anchored — not dismissed by a scroll that never
       // moved the trigger off screen.
-      await expect(library.locator('.hm-folder-menu__panel')).toBeVisible();
+      await expect(library.locator('.hm-menu__panel')).toBeVisible();
       await expect(library.getByRole('menuitemradio', { name: 'No folder' })).toBeVisible();
     });
 
     test('pins a note from folder mode', async () => {
       const row = library.locator('.hm-note-row').first();
-      await library.locator('.hm-folder-menu__trigger').first().click();
+      await library.locator('.hm-note-row .hm-menu__trigger').first().click();
       await library.getByRole('menuitem', { name: 'Pin this note', exact: true }).click();
       await expect(row.locator('.hm-note-row__title svg')).toBeVisible();
     });
 
     test('edits a note from folder mode', async () => {
-      await library.locator('.hm-folder-menu__trigger').first().click();
+      await library.locator('.hm-note-row .hm-menu__trigger').first().click();
       await library.getByRole('menuitem', { name: 'Edit', exact: true }).click();
-      await library.locator('.hm-folder-menu__edit textarea').fill('Edited in folder mode');
+      await library.locator('.hm-menu__panel textarea').fill('Edited in folder mode');
       await library.getByRole('button', { name: 'Save changes' }).click();
       await expect(library.locator('.hm-note-row__preview').first()).toHaveText(
         'Edited in folder mode',
@@ -323,7 +320,7 @@ test.describe('Notes Library — note actions menu', () => {
 
     test('deletes a note from folder mode', async () => {
       await expect(library.locator('.hm-note-row')).toHaveCount(2);
-      await library.locator('.hm-folder-menu__trigger').first().click();
+      await library.locator('.hm-note-row .hm-menu__trigger').first().click();
       await library.getByRole('menuitem', { name: 'Delete', exact: true }).click();
       await library.getByRole('button', { name: 'Delete', exact: true }).click();
       await expect(library.locator('.hm-note-row')).toHaveCount(1);
@@ -335,14 +332,14 @@ test.describe('Notes Library — note actions menu', () => {
       // Pin the first note via the domain-mode menu so it surfaces in
       // Pinned, then work from there.
       await library.locator('.hm-group__header').first().click();
-      await library.locator('.hm-folder-menu__trigger').first().click();
+      await library.locator('.hm-note-row .hm-menu__trigger').first().click();
       await library.getByRole('menuitem', { name: 'Pin this note', exact: true }).click();
       await expect(library.locator('.hm-pinned')).toBeVisible();
     });
 
     test('offers pin/unpin, edit, and delete, but not move-to-folder', async () => {
-      await library.locator('.hm-pinned__row .hm-folder-menu__trigger').first().click();
-      const panel = library.locator('.hm-folder-menu__panel');
+      await library.locator('.hm-pinned .hm-menu__trigger').first().click();
+      const panel = library.locator('.hm-menu__panel');
       const items = await panel.getByRole('menuitem').allInnerTexts();
       expect(items).toEqual(
         expect.arrayContaining([expect.stringContaining('Unpin this note'), 'Edit', 'Delete']),
@@ -351,25 +348,29 @@ test.describe('Notes Library — note actions menu', () => {
     });
 
     test('unpinning from the Pinned section removes it from Pinned', async () => {
-      await library.locator('.hm-pinned__row .hm-folder-menu__trigger').first().click();
+      await library.locator('.hm-pinned .hm-menu__trigger').first().click();
       await library.getByRole('menuitem', { name: 'Unpin this note', exact: true }).click();
       await expect(library.locator('.hm-pinned')).toHaveCount(0);
     });
 
     test('edits a note from the Pinned section', async () => {
-      await library.locator('.hm-pinned__row .hm-folder-menu__trigger').first().click();
+      await library.locator('.hm-pinned .hm-menu__trigger').first().click();
       await library.getByRole('menuitem', { name: 'Edit', exact: true }).click();
-      await library.locator('.hm-folder-menu__edit textarea').fill('Edited from Pinned');
+      await library.locator('.hm-menu__panel textarea').fill('Edited from Pinned');
       await library.getByRole('button', { name: 'Save changes' }).click();
-      await expect(library.locator('.hm-pinned__preview').first()).toHaveText('Edited from Pinned');
+      await expect(library.locator('.hm-pinned .hm-note-row__preview').first()).toHaveText(
+        'Edited from Pinned',
+      );
     });
 
     test('deletes a note from the Pinned section', async () => {
-      await expect(library.locator('.hm-note-row')).toHaveCount(2);
-      await library.locator('.hm-pinned__row .hm-folder-menu__trigger').first().click();
+      // Pinned shows the same note rows as the site groups; count the groups'.
+      const groupRows = library.locator('.hm-groups .hm-note-row');
+      await expect(groupRows).toHaveCount(2);
+      await library.locator('.hm-pinned .hm-menu__trigger').first().click();
       await library.getByRole('menuitem', { name: 'Delete', exact: true }).click();
       await library.getByRole('button', { name: 'Delete', exact: true }).click();
-      await expect(library.locator('.hm-note-row')).toHaveCount(1);
+      await expect(groupRows).toHaveCount(1);
       await expect(library.locator('.hm-pinned')).toHaveCount(0);
     });
   });

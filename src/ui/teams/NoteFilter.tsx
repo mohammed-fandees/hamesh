@@ -1,10 +1,8 @@
-import type { Note } from '@/domain/note';
+import type { NoteOwner } from '@/domain/note-owner';
 import type { CachedTeam } from '@/teams/page-cache';
 import type { Lang } from '../i18n';
+import { CloseIcon } from '../kit/icons';
 import { getTeamsStrings } from './strings';
-
-/** Whose notes the Library is showing: everyone's, only mine, or one team's. */
-export type NoteOwner = 'all' | 'mine' | { teamId: string };
 
 interface NoteFilterProps {
   lang: Lang;
@@ -13,22 +11,22 @@ interface NoteFilterProps {
   onChange: (value: NoteOwner) => void;
 }
 
-/** Whether `note` belongs in the list `owner` asked for. */
-export function matchesOwner(note: Note, owner: NoteOwner): boolean {
-  if (owner === 'all') return true;
-  if (owner === 'mine') return !note.team;
-  return note.team?.id === owner.teamId;
-}
-
 const keyOf = (owner: NoteOwner) => (typeof owner === 'string' ? owner : owner.teamId);
 
 /**
- * Pills for narrowing the Library to one team's notes, or to the reader's own.
+ * Filter chips for narrowing the Library to one team's notes, or to the
+ * reader's own. The chosen one inverts — ink on paper — as the chosen segment
+ * of a segmented control does beside it.
  *
  * Only shown when this account is in a team — with no teams there is nothing to
  * tell apart, and the row would be three buttons that all do the same thing.
  * Toggle buttons rather than a segmented control: the list is as long as the
  * number of teams, which the segmented control's fixed row does not suit.
+ *
+ * A team's pill can also be narrowed to one folder, which the Teams page sets
+ * when a folder is opened from there. That shows as a chip beside the pills,
+ * with the one control that undoes it: the pill itself stays on, so the reader
+ * always sees which team the folder belongs to.
  */
 export function NoteFilter({ lang, teams, value, onChange }: NoteFilterProps) {
   const strings = getTeamsStrings(lang);
@@ -39,6 +37,7 @@ export function NoteFilter({ lang, teams, value, onChange }: NoteFilterProps) {
     { owner: 'mine', label: strings.filterMine },
     ...teams.map((team) => ({ owner: { teamId: team.id }, label: team.name })),
   ];
+  const folder = typeof value === 'string' ? undefined : value.folder;
 
   return (
     <div className="hm-owner-filter" role="group" aria-label={strings.filterEverything}>
@@ -60,6 +59,17 @@ export function NoteFilter({ lang, teams, value, onChange }: NoteFilterProps) {
           </button>
         );
       })}
+      {folder && typeof value !== 'string' && (
+        <button
+          type="button"
+          className="hm-owner-filter__scope"
+          aria-label={strings.clearFolderFilter(folder.name)}
+          onClick={() => onChange({ teamId: value.teamId })}
+        >
+          <bdi>{folder.name}</bdi>
+          <CloseIcon size={9} />
+        </button>
+      )}
     </div>
   );
 }

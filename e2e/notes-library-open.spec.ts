@@ -214,7 +214,7 @@ test.describe('Notes Library — Open Note flow', () => {
     // Clicking the pinned entry restores it too, same as any other note.
     const [restoredPage] = await Promise.all([
       context.waitForEvent('page'),
-      pinnedSection.locator('.hm-pinned__item').click(),
+      pinnedSection.locator('.hm-note-row__link').click(),
     ]);
     await expect(restoredPage.locator('.hm-card .hm-note-body')).toHaveText(pinnedText, {
       timeout: 10000,

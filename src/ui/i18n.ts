@@ -6,8 +6,6 @@
  * *content* direction is handled separately with `dir="auto"` so mixed
  * Arabic/Latin text lays out correctly regardless of UI language.
  */
-import type { TeamsErrorCode } from '@/teams/errors';
-
 export type Lang = 'en' | 'ar';
 
 export interface Strings {
@@ -30,6 +28,10 @@ export interface Strings {
   addNote: string;
   notesOnPage: (n: number) => string;
   activeOnPage: string;
+  /** Said in the popup on a page Hamesh cannot work on (a browser page, the
+   *  store, a PDF viewer) — what happened, and what to do instead. */
+  popupUnavailableTitle: string;
+  popupUnavailableBody: string;
   brand: string;
   settings: string;
   settingsBack: string;
@@ -77,6 +79,8 @@ export interface Strings {
   moveToFolder: string;
   noFolderOption: string;
   addSubfolder: string;
+  /** The name of a folder's "⋮": what it acts on. */
+  folderActions: (folder: string) => string;
   noteActions: string;
   textNoteAction: string;
   attachedText: string;
@@ -91,6 +95,8 @@ export interface Strings {
   whatsNewIntro: string;
   whatsNewCurrentBadge: string;
   whatsNewNewBadge: string;
+  whatsNewEarlier: string;
+  whatsNewEarlierHint: (count: number) => string;
   whatsNewReleaseDate: (date: string) => string;
   settingsBackup: string;
   backupExport: string;
@@ -98,7 +104,6 @@ export interface Strings {
   backupImport: string;
   backupImportHint: string;
   backupChooseFile: string;
-  backupWorking: string;
   backupExported: (notes: number, folders: number) => string;
   backupImported: (notes: number, folders: number) => string;
   backupImportedNothingNew: string;
@@ -107,28 +112,10 @@ export interface Strings {
   backupErrorUnsupported: string;
   backupErrorEmpty: string;
   backupErrorFailed: string;
-  settingsTeams: string;
-  settingsMentions: string;
-  teamsIntro: string;
-  teamsTurnOn: string;
-  teamsTurnOnHint: string;
-  teamsTurnOff: string;
-  teamsPermissionDenied: string;
-  teamsSignIn: string;
-  teamsSignInHint: string;
-  teamsSignOut: string;
-  teamsChecking: string;
-  teamsAccount: string;
-  teamsPlan: string;
-  teamsPlanActive: (until: string) => string;
-  teamsPlanNone: string;
-  teamsYourTeams: string;
-  teamsMemberOf: (n: number) => string;
-  teamsError: (code: TeamsErrorCode) => string;
   composerFolder: string;
   composerNoFolders: string;
   composerCreateFolder: string;
-  composerCreateFolderSubmit: string;
+  create: string;
   composerNewFolderOption: string;
   defaultFolderMenu: string;
   defaultFolderForPage: string;
@@ -136,6 +123,10 @@ export interface Strings {
   defaultFolderCaption: (page: boolean, global: boolean) => string;
   showMore: string;
   showLess: string;
+  working: string;
+  retry: string;
+  /** Said when a note runs past what one note may hold. */
+  noteTooLong: string;
 }
 
 const en: Strings = {
@@ -158,6 +149,9 @@ const en: Strings = {
   addNote: 'Add a note',
   notesOnPage: (n) => (n === 1 ? 'note on this page' : 'notes on this page'),
   activeOnPage: 'Active on this page',
+  popupUnavailableTitle: 'Notes can’t go on this page',
+  popupUnavailableBody:
+    'Hamesh works on ordinary websites. Open one, or read the notes you have already made.',
   brand: 'Hamesh',
   settings: 'Settings',
   settingsBack: 'Back',
@@ -206,6 +200,7 @@ const en: Strings = {
   moveToFolder: 'Move to folder',
   noFolderOption: 'No folder',
   addSubfolder: 'Add sub-folder',
+  folderActions: (folder) => `Actions for ${folder}`,
   noteActions: 'Note actions',
   textNoteAction: 'Add a note to the selected text',
   attachedText: 'Attached text',
@@ -220,6 +215,8 @@ const en: Strings = {
   whatsNewIntro: 'Everything that has changed in Hamesh, newest first.',
   whatsNewCurrentBadge: 'Installed',
   whatsNewNewBadge: 'New',
+  whatsNewEarlier: 'Earlier releases',
+  whatsNewEarlierHint: (count) => (count === 1 ? '1 release' : `${count} releases`),
   whatsNewReleaseDate: (date) => date,
   settingsBackup: 'Backup',
   backupExport: 'Export',
@@ -227,7 +224,6 @@ const en: Strings = {
   backupImport: 'Import',
   backupImportHint: 'Restore from a backup file. Nothing is ever deleted.',
   backupChooseFile: 'Choose a backup file',
-  backupWorking: 'Working…',
   backupExported: (notes, folders) =>
     `Saved ${notes} ${notes === 1 ? 'note' : 'notes'} and ${folders} ${
       folders === 1 ? 'folder' : 'folders'
@@ -242,50 +238,10 @@ const en: Strings = {
   backupErrorUnsupported: 'That backup was made by a newer version of Hamesh.',
   backupErrorEmpty: 'That backup has no notes or folders in it.',
   backupErrorFailed: "Couldn't finish — your existing notes are untouched.",
-  settingsTeams: 'Teams',
-  settingsMentions: 'Mentions',
-  teamsIntro:
-    'Share notes with the people you work with. Your personal notes stay on this device either way.',
-  teamsTurnOn: 'Turn on Teams',
-  teamsTurnOnHint:
-    'Hamesh will ask to reach its Teams server and to open Google sign-in. Nothing is sent until you sign in.',
-  teamsTurnOff: 'Turn off Teams',
-  teamsPermissionDenied: "Permission wasn't granted, so Teams stays off.",
-  teamsSignIn: 'Sign in with Google',
-  teamsSignInHint: 'Your Google name and email identify you to your teammates.',
-  teamsSignOut: 'Sign out',
-  teamsChecking: 'Checking…',
-  teamsAccount: 'Account',
-  teamsPlan: 'Plan',
-  teamsPlanActive: (until) => `Active until ${until}`,
-  teamsPlanNone: 'No plan',
-  teamsYourTeams: 'Your teams',
-  teamsMemberOf: (n) =>
-    n === 0 ? 'Not in a team yet' : n === 1 ? 'Member of 1 team' : `Member of ${n} teams`,
-  teamsError: (code) => {
-    switch (code) {
-      case 'network':
-      case 'unavailable':
-        return "Couldn't reach Hamesh Teams. Check your connection and try again.";
-      case 'cancelled':
-        return 'Sign-in was cancelled.';
-      case 'account_disabled':
-        return 'This account has been disabled.';
-      case 'permission_missing':
-        return 'Teams needs its permissions. Turn it on again.';
-      case 'rate_limited':
-        return 'Too many attempts. Try again in a minute.';
-      case 'unauthenticated':
-      case 'signed_out':
-        return 'You were signed out. Sign in again.';
-      default:
-        return 'Something went wrong. Try again.';
-    }
-  },
   composerFolder: 'Folder',
   composerNoFolders: 'No folders yet.',
   composerCreateFolder: 'Create folder',
-  composerCreateFolderSubmit: 'Create',
+  create: 'Create',
   composerNewFolderOption: '+ New folder…',
   defaultFolderMenu: 'Default folder',
   defaultFolderForPage: 'Default for this page',
@@ -298,6 +254,9 @@ const en: Strings = {
         : 'Default for all pages',
   showMore: 'Show more',
   showLess: 'Show less',
+  working: 'Working…',
+  retry: 'Try again',
+  noteTooLong: 'That is longer than a note can be. Shorten it a little.',
 };
 
 const ar: Strings = {
@@ -320,6 +279,8 @@ const ar: Strings = {
   addNote: 'إضافة ملاحظة',
   notesOnPage: () => 'ملاحظات على هذه الصفحة',
   activeOnPage: 'نشِط على هذه الصفحة',
+  popupUnavailableTitle: 'لا يمكن وضع ملاحظات على هذه الصفحة',
+  popupUnavailableBody: 'يعمل هامش على المواقع العادية. افتح موقعًا، أو اقرأ ملاحظاتك السابقة.',
   brand: 'هامش',
   settings: 'الإعدادات',
   settingsBack: 'رجوع',
@@ -368,6 +329,7 @@ const ar: Strings = {
   moveToFolder: 'نقل إلى فولدر',
   noFolderOption: 'بدون فولدر',
   addSubfolder: 'إضافة فولدر فرعي',
+  folderActions: (folder) => `إجراءات ${folder}`,
   noteActions: 'خيارات الملاحظة',
   textNoteAction: 'أضف ملاحظة على النص المحدد',
   attachedText: 'النص المرتبط',
@@ -382,6 +344,8 @@ const ar: Strings = {
   whatsNewIntro: 'كل ما تغيّر في هامش، الأحدث أولًا.',
   whatsNewCurrentBadge: 'المثبّتة',
   whatsNewNewBadge: 'جديد',
+  whatsNewEarlier: 'الإصدارات السابقة',
+  whatsNewEarlierHint: (count) => (count === 1 ? 'إصدار واحد' : `${count} إصدارات`),
   whatsNewReleaseDate: (date) => date,
   settingsBackup: 'النسخ الاحتياطي',
   backupExport: 'تصدير',
@@ -389,7 +353,6 @@ const ar: Strings = {
   backupImport: 'استيراد',
   backupImportHint: 'استعد ملاحظاتك من ملف نسخة احتياطية. لا يُحذف أي شيء أبدًا.',
   backupChooseFile: 'اختر ملف نسخة احتياطية',
-  backupWorking: 'جارٍ التنفيذ…',
   backupExported: (notes, folders) => `حُفظت ${notes} ملاحظة و${folders} فولدر.`,
   backupImported: (notes, folders) => `استُعيدت ${notes} ملاحظة و${folders} فولدر.`,
   backupImportedNothingNew: 'كل ما في الملف موجود لديك بالفعل.',
@@ -398,57 +361,10 @@ const ar: Strings = {
   backupErrorUnsupported: 'هذه النسخة الاحتياطية من إصدار أحدث من هامش.',
   backupErrorEmpty: 'لا توجد ملاحظات أو فولدرات في هذه النسخة.',
   backupErrorFailed: 'تعذّر إكمال العملية — ملاحظاتك الحالية لم تتأثّر.',
-  settingsTeams: 'الفرق',
-  settingsMentions: 'الإشارات',
-  teamsIntro: 'شارك الملاحظات مع من تعمل معهم. ملاحظاتك الشخصية تبقى على جهازك في كل الأحوال.',
-  teamsTurnOn: 'تفعيل الفرق',
-  teamsTurnOnHint:
-    'سيطلب هامش إذنًا بالاتصال بخادم الفرق وفتح تسجيل الدخول بحساب Google. لا يُرسل أي شيء قبل أن تسجّل دخولك.',
-  teamsTurnOff: 'إيقاف الفرق',
-  teamsPermissionDenied: 'لم يُمنح الإذن، لذا تبقى الفرق متوقفة.',
-  teamsSignIn: 'تسجيل الدخول بحساب Google',
-  teamsSignInHint: 'اسمك وبريدك في Google يعرّفان بك لزملائك في الفريق.',
-  teamsSignOut: 'تسجيل الخروج',
-  teamsChecking: 'جارٍ التحقق…',
-  teamsAccount: 'الحساب',
-  teamsPlan: 'الاشتراك',
-  teamsPlanActive: (until) => `فعّال حتى ${until}`,
-  teamsPlanNone: 'لا يوجد اشتراك',
-  teamsYourTeams: 'فرقك',
-  teamsMemberOf: (n) =>
-    n === 0
-      ? 'لست في أي فريق بعد'
-      : n === 1
-        ? 'عضو في فريق واحد'
-        : n === 2
-          ? 'عضو في فريقين'
-          : n <= 10
-            ? `عضو في ${n} فرق`
-            : `عضو في ${n} فريقًا`,
-  teamsError: (code) => {
-    switch (code) {
-      case 'network':
-      case 'unavailable':
-        return 'تعذّر الوصول إلى خادم الفرق. تحقّق من اتصالك وحاول مرة أخرى.';
-      case 'cancelled':
-        return 'أُلغي تسجيل الدخول.';
-      case 'account_disabled':
-        return 'هذا الحساب معطّل.';
-      case 'permission_missing':
-        return 'تحتاج الفرق إلى أذوناتها. فعّلها مرة أخرى.';
-      case 'rate_limited':
-        return 'محاولات كثيرة. حاول مرة أخرى بعد دقيقة.';
-      case 'unauthenticated':
-      case 'signed_out':
-        return 'انتهت جلستك. سجّل دخولك مرة أخرى.';
-      default:
-        return 'حدث خطأ ما. حاول مرة أخرى.';
-    }
-  },
   composerFolder: 'الفولدر',
   composerNoFolders: 'لا توجد فولدرات بعد.',
   composerCreateFolder: 'إنشاء فولدر',
-  composerCreateFolderSubmit: 'إنشاء',
+  create: 'إنشاء',
   composerNewFolderOption: '+ فولدر جديد…',
   defaultFolderMenu: 'الفولدر الافتراضي',
   defaultFolderForPage: 'افتراضي لهذه الصفحة',
@@ -461,6 +377,9 @@ const ar: Strings = {
         : 'افتراضي لكل الصفحات',
   showMore: 'عرض المزيد',
   showLess: 'عرض أقل',
+  working: 'جارٍ التنفيذ…',
+  retry: 'حاول مرة أخرى',
+  noteTooLong: 'هذا أطول مما تتسع له ملاحظة. اختصره قليلًا.',
 };
 
 export function resolveLang(uiLanguage?: string): Lang {
@@ -474,24 +393,4 @@ export function getStrings(lang: Lang): Strings {
 
 export function dirForLang(lang: Lang): 'rtl' | 'ltr' {
   return lang === 'ar' ? 'rtl' : 'ltr';
-}
-
-/** Compact relative time for note timestamps, localized to en/ar. */
-export function relativeTime(iso: string, lang: Lang): string {
-  const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return iso;
-  const diffMs = Date.now() - then;
-  const min = Math.round(diffMs / 60000);
-  const hr = Math.round(diffMs / 3600000);
-  const day = Math.round(diffMs / 86400000);
-  if (lang === 'ar') {
-    if (min < 1) return 'الآن';
-    if (min < 60) return `قبل ${min} دقيقة`;
-    if (hr < 24) return `قبل ${hr} ساعة`;
-    return `قبل ${day} يوم`;
-  }
-  if (min < 1) return 'just now';
-  if (min < 60) return `${min}m ago`;
-  if (hr < 24) return `${hr}h ago`;
-  return `${day}d ago`;
 }

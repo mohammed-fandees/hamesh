@@ -1,5 +1,36 @@
-import type { Lang } from '../i18n';
+import { getStrings, type Lang, type Strings } from '../i18n';
 import type { TeamsErrorCode } from '@/teams/errors';
+
+/**
+ * The words Teams says exactly as the rest of Hamesh does — Cancel, Keep it,
+ * Delete, a folder, "Edited …". They live once, in the core table, and the
+ * Teams table is composed from them, so the same button can never be worded
+ * two ways on two pages.
+ */
+const SHARED = [
+  'cancel',
+  'keepIt',
+  'save',
+  'edit',
+  'delete',
+  'create',
+  'working',
+  'retry',
+  'editedAgo',
+  'showMore',
+  'newFolder',
+  'folderNamePlaceholder',
+  'renameFolder',
+  'deleteFolder',
+  'addSubfolder',
+  'folderActions',
+  'unfiledSection',
+  'noFolderOption',
+  'moveToFolder',
+] as const satisfies readonly (keyof Strings)[];
+
+export type SharedStrings = Pick<Strings, (typeof SHARED)[number]>;
+type TeamsOwnStrings = Omit<TeamsStrings, keyof SharedStrings>;
 
 /**
  * Wording for the Teams page, kept beside it rather than in the shared
@@ -9,22 +40,20 @@ import type { TeamsErrorCode } from '@/teams/errors';
  * Nothing here states a price, a limit, or what a role may do — those come
  * from the server, and the page prints what it is given.
  */
-export interface TeamsStrings {
+export interface TeamsStrings extends SharedStrings {
   teams: string;
+  /** Said beside the Teams page's title: what a team is for. */
+  tagline: string;
+  /** Under the comment box: how to send, and how to start a new line. */
+  composeHint: string;
   yourTeams: string;
-  noTeams: string;
   createTeam: string;
   teamNamePlaceholder: string;
-  create: string;
-  cancel: string;
-  working: string;
-  retry: string;
   signedOutTitle: string;
   signedOutBody: string;
   goToSettings: string;
 
   role: (role: 'owner' | 'admin' | 'member') => string;
-  stateActive: string;
   stateReadOnly: (until: string) => string;
   stateReadOnlyNoDate: string;
   stateLocked: string;
@@ -61,74 +90,48 @@ export interface TeamsStrings {
   joinInvitedTo: (team: string, role: string) => string;
   joinInvitedBy: (who: string) => string;
   joinAccept: string;
-  joinedTeam: (team: string) => string;
 
   renameTeam: string;
   rename: string;
   leaveTeam: string;
   leaveConfirm: (team: string) => string;
   deleteTeam: string;
-  deleteConfirm: (team: string) => string;
-  dangerZone: string;
+  deleteTeamConfirm: (team: string) => string;
 
   sharedNotes: string;
-  sharedNotesHint: string;
-  noSharedNotes: string;
   shareWithTeam: string;
   sharingNote: string;
-  noteShared: (team: string) => string;
   refreshNotes: string;
   syncedAgo: (when: string) => string;
   neverSynced: string;
-  noteEdited: (when: string) => string;
-  editNote: string;
-  saveNote: string;
   unshareNote: string;
   unshareConfirm: string;
-  deleteSharedNote: string;
   deleteSharedConfirm: string;
   openPage: string;
 
   teamFolders: string;
-  newTeamFolder: string;
-  folderNamePlaceholder: string;
-  renameFolder: string;
-  deleteFolder: string;
-  deleteFolderConfirm: (name: string) => string;
-  noTeamFolders: string;
-  unfiled: string;
-  moveToFolder: string;
-  noFolderOption: string;
+  deleteTeamFolderConfirm: (name: string) => string;
 
   comments: string;
   discuss: string;
-  hideComments: string;
-  noComments: string;
   commentPlaceholder: string;
   postComment: string;
   replyTo: string;
   replyPlaceholder: string;
   postReply: string;
-  editComment: string;
-  saveComment: string;
-  deleteComment: string;
   deleteCommentConfirm: string;
   commentDeleted: string;
   commentEdited: string;
   commentedAgo: (when: string) => string;
   showReplies: (count: number) => string;
-  moreComments: string;
   formerMember: string;
   mentionNobody: string;
   mentionHint: string;
 
-  mentions: string;
-  noMentions: string;
+  mentionsTitle: string;
   mentionIn: (team: string) => string;
   openNote: string;
   moreMentions: string;
-
-  keepIt: string;
   manage: string;
   openInLibrary: string;
   whoIsIn: (team: string) => string;
@@ -149,12 +152,24 @@ export interface TeamsStrings {
 
   filterEverything: string;
   filterMine: string;
-  filterTeam: (team: string) => string;
-  sharedWithLabel: (team: string) => string;
   openInTeams: string;
   teamNoteHint: string;
+  /** The chip that says the Library is narrowed to one folder, and its way out. */
+  clearFolderFilter: (folder: string) => string;
+  /** Said when a team, or one of its folders, has no notes to show in the Library. */
+  filterEmptyTitle: string;
+  filterEmptyBody: string;
+  filterShowAll: string;
+  /** A folder nested in another, named by where it sits. */
+  folderIn: (parent: string) => string;
+  /** The Teams pages' trail back to where the reader came from. */
+  breadcrumb: string;
+  whoIsInIt: string;
+  noteGoneTitle: string;
+  noteGoneBody: string;
+  backToTeam: (team: string) => string;
 
-  billing: string;
+  plan: string;
   planActive: (until: string) => string;
   planNone: string;
   planPending: string;
@@ -175,24 +190,34 @@ export interface TeamsStrings {
   paymentLine: (amount: string, date: string) => string;
 
   error: (code: TeamsErrorCode) => string;
+
+  // Settings → Teams: the account, and turning Teams on and off.
+  mentions: string;
+  intro: string;
+  turnOn: string;
+  turnOnHint: string;
+  turnOff: string;
+  permissionDenied: string;
+  signIn: string;
+  signInHint: string;
+  signOut: string;
+  checking: string;
+  account: string;
+  memberOf: (n: number) => string;
 }
 
-const en: TeamsStrings = {
+const en: TeamsOwnStrings = {
   teams: 'Teams',
+  tagline: 'Notes you keep together',
+  composeHint: 'Enter sends · Shift+Enter starts a new line',
   yourTeams: 'Your teams',
-  noTeams: "You're not in a team yet. Create one, or join with an invite link.",
   createTeam: 'Create a team',
   teamNamePlaceholder: 'Team name…',
-  create: 'Create',
-  cancel: 'Cancel',
-  working: 'Working…',
-  retry: 'Try again',
   signedOutTitle: 'Teams is off',
   signedOutBody: 'Turn on Teams and sign in from Settings to share notes with your team.',
   goToSettings: 'Open Settings',
 
   role: (role) => ({ owner: 'Owner', admin: 'Admin', member: 'Member' })[role],
-  stateActive: 'Active',
   stateReadOnly: (until) => `Read-only until ${until}`,
   stateReadOnlyNoDate: 'Read-only',
   stateLocked: 'Locked',
@@ -230,76 +255,47 @@ const en: TeamsStrings = {
   joinInvitedTo: (team, role) => `You have been invited to ${team} as ${role}.`,
   joinInvitedBy: (who) => `Invited by ${who}.`,
   joinAccept: 'Join',
-  joinedTeam: (team) => `You are now in ${team}.`,
-
   renameTeam: 'Team name',
   rename: 'Rename',
   leaveTeam: 'Leave team',
   leaveConfirm: (team) => `Leave ${team}? You lose access to its notes.`,
   deleteTeam: 'Delete team',
-  deleteConfirm: (team) => `Delete ${team} and everything in it? This cannot be undone.`,
-  dangerZone: 'Team',
-
+  deleteTeamConfirm: (team) => `Delete ${team} and everything in it? This cannot be undone.`,
   sharedNotes: 'Shared notes',
-  sharedNotesHint:
-    'These appear on the pages they belong to, for everyone in the team. Your own notes stay on this device until you share them.',
-  noSharedNotes: 'Nothing has been shared with this team yet.',
   shareWithTeam: 'Share with team',
   sharingNote: 'Sharing…',
-  noteShared: (team) => `Shared with ${team}.`,
   refreshNotes: 'Check for changes',
   syncedAgo: (when) => `Up to date as of ${when}`,
   neverSynced: 'Not loaded on this device yet',
-  noteEdited: (when) => `Edited ${when}`,
-  editNote: 'Edit',
-  saveNote: 'Save',
   unshareNote: 'Stop sharing',
   unshareConfirm: 'Take this note out of the team? It stays yours, on your device.',
-  deleteSharedNote: 'Delete',
   deleteSharedConfirm: 'Delete this note for everyone in the team?',
   openPage: 'Open the page',
 
   teamFolders: 'Folders',
-  newTeamFolder: 'New folder',
-  folderNamePlaceholder: 'Folder name…',
-  renameFolder: 'Rename',
-  deleteFolder: 'Delete',
-  deleteFolderConfirm: (name) => `Delete ${name}? The notes in it stay, unfiled.`,
-  noTeamFolders: 'No folders yet.',
-  unfiled: 'Unfiled',
-  moveToFolder: 'Move to',
-  noFolderOption: 'No folder',
-
+  deleteTeamFolderConfirm: (name) => `Delete ${name}? The notes in it stay, unfiled.`,
   comments: 'Comments',
   discuss: 'Discuss',
-  hideComments: 'Hide the discussion',
-  noComments: 'Nothing said about this one yet.',
   commentPlaceholder: 'Say something… type @ to name someone',
   postComment: 'Comment',
   replyTo: 'Reply',
   replyPlaceholder: 'Write a reply…',
   postReply: 'Send the reply',
-  editComment: 'Edit',
-  saveComment: 'Save',
-  deleteComment: 'Delete',
   deleteCommentConfirm: 'Delete this comment?',
   commentDeleted: 'This comment was deleted.',
   commentEdited: 'edited',
   commentedAgo: (when) => `Said ${when}`,
   showReplies: (count) => (count === 1 ? 'Show the reply' : `Show all ${count} replies`),
-  moreComments: 'Show more',
   formerMember: 'someone who has left',
   mentionNobody: 'Nobody in this team by that name.',
   mentionHint:
     'Only people in this team can be named, and they are named by who they are — so a change of name reaches every comment at once.',
 
-  mentions: 'Where you were named',
-  noMentions: 'Nobody has named you yet.',
+  mentionsTitle: 'Where you were named',
   mentionIn: (team) => `in ${team}`,
   openNote: 'Open the page',
   moreMentions: 'Show older',
 
-  keepIt: 'Keep it',
   manage: 'Manage',
   openInLibrary: 'Open in the Library',
   whoIsIn: (team) => `Who\u2019s in ${team}`,
@@ -323,13 +319,21 @@ const en: TeamsStrings = {
 
   filterEverything: 'Everything',
   filterMine: 'Only mine',
-  filterTeam: (team) => team,
-  sharedWithLabel: (team) => `Shared with ${team}`,
   openInTeams: 'Open in Teams',
   teamNoteHint:
     'This one lives in a team. It is read where it is, and changed from the team it belongs to.',
+  clearFolderFilter: (folder) => `Show all of the team’s notes, not only ${folder}`,
+  filterEmptyTitle: 'Nothing here yet',
+  filterEmptyBody: 'No notes match this filter. Show everything to see the rest.',
+  filterShowAll: 'Show everything',
+  folderIn: (parent) => `in ${parent}`,
+  breadcrumb: 'Breadcrumb',
+  whoIsInIt: 'Who’s in it',
+  noteGoneTitle: 'This note is no longer here',
+  noteGoneBody: 'It was taken back, or deleted for everyone.',
+  backToTeam: (team) => `Back to ${team}`,
 
-  billing: 'Plan',
+  plan: 'Plan',
   planActive: (until) => `Active until ${until}`,
   planNone: 'No plan',
   planPending: 'Waiting for your payment to be checked',
@@ -361,6 +365,10 @@ const en: TeamsStrings = {
       case 'network':
       case 'unavailable':
         return "Couldn't reach Hamesh Teams. Check your connection and try again.";
+      case 'cancelled':
+        return 'Sign-in was cancelled.';
+      case 'account_disabled':
+        return 'This account has been disabled.';
       case 'signed_out':
       case 'unauthenticated':
         return 'You were signed out. Sign in again from Settings.';
@@ -399,24 +407,36 @@ const en: TeamsStrings = {
         return 'Something went wrong. Try again.';
     }
   },
+
+  mentions: 'Mentions',
+  intro:
+    'Share notes with the people you work with. Your personal notes stay on this device either way.',
+  turnOn: 'Turn on Teams',
+  turnOnHint:
+    'Hamesh will ask to reach its Teams server and to open Google sign-in. Nothing is sent until you sign in.',
+  turnOff: 'Turn off Teams',
+  permissionDenied: "Permission wasn't granted, so Teams stays off.",
+  signIn: 'Sign in with Google',
+  signInHint: 'Your Google name and email identify you to your teammates.',
+  signOut: 'Sign out',
+  checking: 'Checking…',
+  account: 'Account',
+  memberOf: (n) =>
+    n === 0 ? 'Not in a team yet' : n === 1 ? 'Member of 1 team' : `Member of ${n} teams`,
 };
 
-const ar: TeamsStrings = {
+const ar: TeamsOwnStrings = {
   teams: 'الفرق',
+  tagline: 'ملاحظات تحتفظون بها معًا',
+  composeHint: 'Enter للإرسال · Shift+Enter لسطر جديد',
   yourTeams: 'فرقك',
-  noTeams: 'لست في أي فريق بعد. أنشئ فريقًا، أو انضم برابط دعوة.',
   createTeam: 'إنشاء فريق',
   teamNamePlaceholder: 'اسم الفريق…',
-  create: 'إنشاء',
-  cancel: 'إلغاء',
-  working: 'جارٍ التنفيذ…',
-  retry: 'حاول مرة أخرى',
   signedOutTitle: 'الفرق متوقفة',
   signedOutBody: 'فعّل الفرق وسجّل دخولك من الإعدادات لمشاركة الملاحظات مع فريقك.',
   goToSettings: 'فتح الإعدادات',
 
   role: (role) => ({ owner: 'المالك', admin: 'مشرف', member: 'عضو' })[role],
-  stateActive: 'فعّال',
   stateReadOnly: (until) => `للقراءة فقط حتى ${until}`,
   stateReadOnlyNoDate: 'للقراءة فقط',
   stateLocked: 'مقفل',
@@ -454,76 +474,47 @@ const ar: TeamsStrings = {
   joinInvitedTo: (team, role) => `أنت مدعو إلى ${team} بصفة ${role}.`,
   joinInvitedBy: (who) => `الدعوة من ${who}.`,
   joinAccept: 'انضمام',
-  joinedTeam: (team) => `أنت الآن في ${team}.`,
-
   renameTeam: 'اسم الفريق',
   rename: 'إعادة تسمية',
   leaveTeam: 'مغادرة الفريق',
   leaveConfirm: (team) => `مغادرة ${team}؟ ستفقد الوصول إلى ملاحظاته.`,
   deleteTeam: 'حذف الفريق',
-  deleteConfirm: (team) => `حذف ${team} وكل ما فيه؟ لا يمكن التراجع عن هذا.`,
-  dangerZone: 'الفريق',
-
+  deleteTeamConfirm: (team) => `حذف ${team} وكل ما فيه؟ لا يمكن التراجع عن هذا.`,
   sharedNotes: 'الملاحظات المشتركة',
-  sharedNotesHint:
-    'تظهر هذه على الصفحات التي تنتمي إليها، لكل من في الفريق. وملاحظاتك الخاصة تبقى على جهازك حتى تشاركها.',
-  noSharedNotes: 'لم تُشارَك أي ملاحظة مع هذا الفريق بعد.',
   shareWithTeam: 'مشاركة مع فريق',
   sharingNote: 'جارٍ المشاركة…',
-  noteShared: (team) => `شُوركت مع ${team}.`,
   refreshNotes: 'تحقق من التغييرات',
   syncedAgo: (when) => `محدَّثة حتى ${when}`,
   neverSynced: 'لم تُحمَّل على هذا الجهاز بعد',
-  noteEdited: (when) => `عُدِّلت ${when}`,
-  editNote: 'تعديل',
-  saveNote: 'حفظ',
   unshareNote: 'إيقاف المشاركة',
   unshareConfirm: 'إخراج هذه الملاحظة من الفريق؟ تبقى لك على جهازك.',
-  deleteSharedNote: 'حذف',
   deleteSharedConfirm: 'حذف هذه الملاحظة لكل من في الفريق؟',
   openPage: 'فتح الصفحة',
 
   teamFolders: 'المجلدات',
-  newTeamFolder: 'مجلد جديد',
-  folderNamePlaceholder: 'اسم المجلد…',
-  renameFolder: 'إعادة تسمية',
-  deleteFolder: 'حذف',
-  deleteFolderConfirm: (name) => `حذف ${name}؟ الملاحظات التي فيه تبقى، دون مجلد.`,
-  noTeamFolders: 'لا توجد مجلدات بعد.',
-  unfiled: 'دون مجلد',
-  moveToFolder: 'نقل إلى',
-  noFolderOption: 'دون مجلد',
-
+  deleteTeamFolderConfirm: (name) => `حذف ${name}؟ الملاحظات التي فيه تبقى، دون مجلد.`,
   comments: 'التعليقات',
   discuss: 'مناقشة',
-  hideComments: 'إخفاء المناقشة',
-  noComments: 'لا شيء عن هذه بعد.',
   commentPlaceholder: 'قل شيئًا… اكتب @ لذكر أحدهم',
   postComment: 'تعليق',
   replyTo: 'رد',
   replyPlaceholder: 'اكتب ردًا…',
   postReply: 'إرسال الرد',
-  editComment: 'تعديل',
-  saveComment: 'حفظ',
-  deleteComment: 'حذف',
   deleteCommentConfirm: 'حذف هذا التعليق؟',
   commentDeleted: 'حُذِف هذا التعليق.',
   commentEdited: 'مُعدّل',
   commentedAgo: (when) => `قاله ${when}`,
   showReplies: (count) => (count === 1 ? 'عرض الرد' : `عرض الردود الـ ${count}`),
-  moreComments: 'عرض المزيد',
   formerMember: 'عضو غادر الفريق',
   mentionNobody: 'لا أحد في هذا الفريق بهذا الاسم.',
   mentionHint:
     'يُذكر أعضاء هذا الفريق وحدهم، ويُذكرون بمن هم — فتغيير الاسم يصل إلى كل التعليقات دفعة واحدة.',
 
-  mentions: 'حيث ذُكِرت',
-  noMentions: 'لم يذكرك أحد بعد.',
+  mentionsTitle: 'حيث ذُكِرت',
   mentionIn: (team) => `في ${team}`,
   openNote: 'فتح الصفحة',
   moreMentions: 'عرض الأقدم',
 
-  keepIt: '\u0623\u0628\u0642\u0650\u0647\u0627',
   manage: '\u0625\u062f\u0627\u0631\u0629',
   openInLibrary: '\u0641\u062a\u062d \u0641\u064a \u0627\u0644\u0645\u0643\u062a\u0628\u0629',
   whoIsIn: (team) => `\u0645\u0646 \u0641\u064a ${team}`,
@@ -559,13 +550,25 @@ const ar: TeamsStrings = {
 
   filterEverything: '\u0627\u0644\u0643\u0644',
   filterMine: '\u0644\u064a \u0648\u062d\u062f\u064a',
-  filterTeam: (team) => team,
-  sharedWithLabel: (team) => `\u0645\u064f\u0634\u0627\u0631\u0643\u0629 \u0645\u0639 ${team}`,
   openInTeams: '\u0641\u062a\u062d \u0641\u064a \u0627\u0644\u0641\u0631\u0642',
+  clearFolderFilter: (folder) =>
+    `\u0639\u0631\u0636 \u0643\u0644 \u0645\u0644\u0627\u062d\u0638\u0627\u062a \u0627\u0644\u0641\u0631\u064a\u0642\u060c \u0644\u0627 ${folder} \u0641\u0642\u0637`,
+  filterEmptyTitle: '\u0644\u0627 \u0634\u064a\u0621 \u0647\u0646\u0627 \u0628\u0639\u062f',
+  filterEmptyBody:
+    '\u0644\u0627 \u062a\u0648\u062c\u062f \u0645\u0644\u0627\u062d\u0638\u0627\u062a \u062a\u0637\u0627\u0628\u0642 \u0647\u0630\u0627 \u0627\u0644\u0641\u0644\u062a\u0631. \u0627\u0639\u0631\u0636 \u0627\u0644\u0643\u0644 \u0644\u062a\u0631\u0649 \u0627\u0644\u0628\u0627\u0642\u064a.',
+  filterShowAll: '\u0639\u0631\u0636 \u0627\u0644\u0643\u0644',
+  folderIn: (parent) => `\u062f\u0627\u062e\u0644 ${parent}`,
+  breadcrumb: '\u0645\u0633\u0627\u0631 \u0627\u0644\u062a\u0646\u0642\u0644',
+  whoIsInIt: '\u0645\u0646 \u0641\u064a\u0647',
+  noteGoneTitle:
+    '\u0647\u0630\u0647 \u0627\u0644\u0645\u0644\u0627\u062d\u0638\u0629 \u0644\u0645 \u062a\u0639\u062f \u0647\u0646\u0627',
+  noteGoneBody:
+    '\u0627\u0633\u062a\u064f\u0639\u064a\u062f\u062a\u060c \u0623\u0648 \u062d\u064f\u0630\u0641\u062a \u0644\u0644\u062c\u0645\u064a\u0639.',
+  backToTeam: (team) => `\u0627\u0644\u0639\u0648\u062f\u0629 \u0625\u0644\u0649 ${team}`,
   teamNoteHint:
     '\u0647\u0630\u0647 \u062a\u0639\u064a\u0634 \u0641\u064a \u0641\u0631\u064a\u0642. \u062a\u064f\u0642\u0631\u0623 \u0641\u064a \u0645\u0643\u0627\u0646\u0647\u0627\u060c \u0648\u062a\u064f\u063a\u064a\u0651\u0631 \u0645\u0646 \u0627\u0644\u0641\u0631\u064a\u0642 \u0627\u0644\u0630\u064a \u062a\u062e\u0635\u0651\u0647.',
 
-  billing: 'الاشتراك',
+  plan: 'الاشتراك',
   planActive: (until) => `فعّال حتى ${until}`,
   planNone: 'لا يوجد اشتراك',
   planPending: 'في انتظار مراجعة دفعتك',
@@ -596,6 +599,10 @@ const ar: TeamsStrings = {
       case 'network':
       case 'unavailable':
         return 'تعذّر الوصول إلى خادم الفرق. تحقّق من اتصالك وحاول مرة أخرى.';
+      case 'cancelled':
+        return 'أُلغي تسجيل الدخول.';
+      case 'account_disabled':
+        return 'هذا الحساب معطّل.';
       case 'signed_out':
       case 'unauthenticated':
         return 'انتهت جلستك. سجّل دخولك مرة أخرى من الإعدادات.';
@@ -634,8 +641,39 @@ const ar: TeamsStrings = {
         return 'حدث خطأ ما. حاول مرة أخرى.';
     }
   },
+
+  mentions: 'الإشارات',
+  intro: 'شارك الملاحظات مع من تعمل معهم. ملاحظاتك الشخصية تبقى على جهازك في كل الأحوال.',
+  turnOn: 'تفعيل الفرق',
+  turnOnHint:
+    'سيطلب هامش إذنًا بالاتصال بخادم الفرق وفتح تسجيل الدخول بحساب Google. لا يُرسل أي شيء قبل أن تسجّل دخولك.',
+  turnOff: 'إيقاف الفرق',
+  permissionDenied: 'لم يُمنح الإذن، لذا تبقى الفرق متوقفة.',
+  signIn: 'تسجيل الدخول بحساب Google',
+  signInHint: 'اسمك وبريدك في Google يعرّفان بك لزملائك في الفريق.',
+  signOut: 'تسجيل الخروج',
+  checking: 'جارٍ التحقق…',
+  account: 'الحساب',
+  memberOf: (n) =>
+    n === 0
+      ? 'لست في أي فريق بعد'
+      : n === 1
+        ? 'عضو في فريق واحد'
+        : n === 2
+          ? 'عضو في فريقين'
+          : n <= 10
+            ? `عضو في ${n} فرق`
+            : `عضو في ${n} فريقًا`,
 };
 
+const composed: Partial<Record<Lang, TeamsStrings>> = {};
+
+/** The Teams table in `lang` — the same object on every call, so it is safe in a
+ *  dependency list. */
 export function getTeamsStrings(lang: Lang): TeamsStrings {
-  return lang === 'ar' ? ar : en;
+  const cached = composed[lang];
+  if (cached) return cached;
+  const core = getStrings(lang);
+  const shared = Object.fromEntries(SHARED.map((key) => [key, core[key]])) as SharedStrings;
+  return (composed[lang] = { ...shared, ...(lang === 'ar' ? ar : en) });
 }

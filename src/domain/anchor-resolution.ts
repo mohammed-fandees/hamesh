@@ -1,4 +1,5 @@
 import type { ElementAnchor, Note } from './note';
+import { elementAtPoint } from '@/utils/dom';
 
 export enum ResolutionQuality {
   Exact = 'exact',
@@ -35,19 +36,6 @@ function querySelectorAllSafe(selector: string): NodeListOf<Element> {
     return document.querySelectorAll(selector);
   } catch {
     return document.querySelectorAll(':invalid');
-  }
-}
-
-/** Every other query path in this file is wrapped defensively — this one
- *  wasn't, even though `resolveAnchor`'s contract ("never throws on a
- *  changed page") implies it should be. Real Chrome always implements
- *  `elementFromPoint`, so this is a belt-and-suspenders guard rather than a
- *  fix for an observed production failure. */
-function elementFromPointSafe(x: number, y: number): Element | null {
-  try {
-    return document.elementFromPoint(x, y);
-  } catch {
-    return null;
   }
 }
 
@@ -195,7 +183,7 @@ export function resolveAnchor(note: Note): ResolutionResult {
   }
 
   const pos = anchor.fallbackDocumentPosition;
-  const el = elementFromPointSafe(pos.x - window.scrollX, pos.y - window.scrollY);
+  const el = elementAtPoint(pos.x - window.scrollX, pos.y - window.scrollY);
   if (el) {
     return { quality: ResolutionQuality.Fallback, element: el, note };
   }

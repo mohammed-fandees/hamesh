@@ -97,9 +97,33 @@ async function switchToFolderMode(page: Page): Promise<void> {
 }
 
 async function createFolder(page: Page, name: string): Promise<void> {
-  await page.getByRole('button', { name: '+ New folder' }).click();
-  await page.locator('.hm-folder-form__input').fill(name);
-  await page.locator('.hm-folder-form').getByRole('button', { name: 'Save' }).click();
+  await page.getByRole('button', { name: 'New folder', exact: true }).click();
+  const toolbar = page.locator('.hm-folder-tree__toolbar');
+  await toolbar.locator('.hm-name-field__input').fill(name);
+  await toolbar.getByRole('button', { name: 'Create' }).click();
+}
+
+/** A folder's own "⋮" — every folder action is in it. */
+function folderMenu(page: Page, name: string) {
+  return page.getByRole('button', { name: `Actions for ${name}` });
+}
+
+/** Names something in whatever form the open menu is showing. */
+async function nameInMenu(page: Page, name: string, submit: string): Promise<void> {
+  const panel = page.locator('.hm-menu__panel');
+  await panel.locator('.hm-name-field__input').fill(name);
+  await panel.getByRole('button', { name: submit }).click();
+}
+
+async function addSubfolder(page: Page, parent: string, name: string): Promise<void> {
+  await folderMenu(page, parent).click();
+  await page.getByRole('menuitem', { name: 'Add sub-folder' }).click();
+  await nameInMenu(page, name, 'Create');
+}
+
+/** The first note's own "⋮". */
+function noteMenu(page: Page) {
+  return page.locator('.hm-note-row .hm-menu__trigger').first();
 }
 
 function folderNode(page: Page, name: string) {
@@ -170,9 +194,7 @@ test.describe('Notes Library — Folders', () => {
     await createFolder(library, 'Work');
     await expect(library.locator('.hm-folder-node__name', { hasText: 'Work' })).toBeVisible();
 
-    await folderNode(library, 'Work').getByLabel('Add sub-folder').click();
-    await library.locator('.hm-folder-form__input').fill('Research');
-    await library.locator('.hm-folder-form').getByRole('button', { name: 'Save' }).click();
+    await addSubfolder(library, 'Work', 'Research');
 
     await expect(library.locator('.hm-folder-node__name', { hasText: 'Research' })).toBeVisible();
     // Nested under Work, not a sibling top-level folder.
@@ -180,39 +202,28 @@ test.describe('Notes Library — Folders', () => {
     await expect(topLevel).toHaveCount(2); // Work + the synthetic Unfiled node
   });
 
-  test('clicking anywhere in a folder row toggles it, not just the tiny chevron/name', async () => {
-    // The row's hover highlight spans its full width (matching the
-    // single-button header used in "By site" mode), which visually promises
-    // the whole row is clickable — but only the chevron and the name text
-    // originally had click handlers, leaving the folder glyph icon and the
-    // row's own padding as dead zones. Reproduces a click on each of those
-    // specifically (not the chevron/name), plus confirms the per-row action
-    // buttons still don't also toggle the row as a side effect.
+  test('a click anywhere on a folder row opens or shuts it — and its menu does neither', async () => {
+    // The row is one button (chevron, glyph, name, count), as a site group's
+    // header is, so there is no dead zone on it; the folder's "⋮" sits beside
+    // it as a control of its own.
     await switchToFolderMode(library);
     await createFolder(library, 'Work');
 
-    const toggle = folderNode(library, 'Work').locator('.hm-folder-node__toggle');
+    const toggle = folderNode(library, 'Work').locator('.hm-folder-node__name');
     await expect(toggle).toHaveAttribute('aria-expanded', 'false');
 
-    // Click the folder glyph icon — not the chevron, not the name. It's
-    // `pointer-events: none` by design (see notes-library.css) so the click
-    // passes through to the row itself; Playwright's actionability check
-    // treats that redirect as "intercepted" and needs `force` to proceed.
-    await folderNode(library, 'Work').locator('.hm-folder-node__glyph').click({ force: true });
+    await folderNode(library, 'Work').locator('.hm-folder-node__glyph').click();
     await expect(toggle).toHaveAttribute('aria-expanded', 'true');
 
-    // Click the row's own left padding, just left of the chevron.
-    const row = folderNode(library, 'Work');
-    const box = await row.boundingBox();
+    // The row's own padding, just inside its start edge.
+    const box = await toggle.boundingBox();
     if (!box) throw new Error('no box for Work row');
-    await library.mouse.click(box.x + 2, box.y + box.height / 2);
+    await library.mouse.click(box.x + 4, box.y + box.height / 2);
     await expect(toggle).toHaveAttribute('aria-expanded', 'false');
 
-    // An action button click must not also toggle the row.
-    await row.hover();
-    await row.getByLabel('Add sub-folder').click();
+    await folderMenu(library, 'Work').click();
+    await expect(library.locator('.hm-menu__panel')).toBeVisible();
     await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    await expect(library.locator('.hm-folder-form__input')).toBeVisible();
   });
 
   test('collapsing a folder hides its nested sub-folders, not just its own notes', async () => {
@@ -229,12 +240,10 @@ test.describe('Notes Library — Folders', () => {
     // this check while the real, reported bug — a folder with both — did
     // not. Reproducing that exact combination here is the point.
     await folderNode(library, 'Unfiled').locator('.hm-folder-node__name').click();
-    await library.locator('.hm-folder-note').first().locator('.hm-folder-menu__trigger').click();
+    await noteMenu(library).click();
     await library.getByRole('menuitemradio', { name: 'Work', exact: true }).click();
 
-    await folderNode(library, 'Work').getByLabel('Add sub-folder').click();
-    await library.locator('.hm-folder-form__input').fill('Research');
-    await library.locator('.hm-folder-form').getByRole('button', { name: 'Save' }).click();
+    await addSubfolder(library, 'Work', 'Research');
 
     // Adding a sub-folder auto-expands its new parent, so Research starts visible.
     await expect(library.locator('.hm-folder-node__name', { hasText: 'Research' })).toBeVisible();
@@ -258,11 +267,11 @@ test.describe('Notes Library — Folders', () => {
     // Collapsing Work must hide Research too — not just any notes filed
     // directly in Work (a separate <ul> inside the same collapsible body;
     // both need the same CSS treatment to actually clip when collapsed).
-    await folderNode(library, 'Work').locator('.hm-folder-node__toggle').click();
+    await folderNode(library, 'Work').locator('.hm-folder-node__name').click();
     await expect.poll(async () => (await workBody.boundingBox())?.height ?? 0).toBeLessThan(1);
 
     // Re-expanding brings it back.
-    await folderNode(library, 'Work').locator('.hm-folder-node__toggle').click();
+    await folderNode(library, 'Work').locator('.hm-folder-node__name').click();
     await expect.poll(async () => (await workBody.boundingBox())?.height ?? 0).toBeGreaterThan(10);
   });
 
@@ -271,7 +280,7 @@ test.describe('Notes Library — Folders', () => {
     await createFolder(library, 'Work');
 
     await folderNode(library, 'Unfiled').locator('.hm-folder-node__name').click();
-    await library.locator('.hm-folder-menu__trigger').first().click();
+    await noteMenu(library).click();
     await library.getByRole('menuitemradio', { name: 'Work', exact: true }).click();
 
     await expect(folderCount(library, 'Work')).toHaveText('1 note');
@@ -289,9 +298,9 @@ test.describe('Notes Library — Folders', () => {
     // "some element with this class exists somewhere".
     await switchToFolderMode(library);
     await folderNode(library, 'Unfiled').locator('.hm-folder-node__name').click();
-    await library.locator('.hm-folder-menu__trigger').first().click();
+    await noteMenu(library).click();
 
-    const panel = library.locator('.hm-folder-menu__panel');
+    const panel = library.locator('.hm-menu__panel');
     await expect(panel).toBeVisible();
     const parentHasScopeClass = await panel.evaluate((el) =>
       el.parentElement?.classList.contains('hm-scope'),
@@ -317,13 +326,12 @@ test.describe('Notes Library — Folders', () => {
     await expect(folderCount(library, 'Unfiled')).toHaveText('1 note');
   });
 
-  test('the "+ New folder" flow inside the move menu creates a folder and files the note into it', async () => {
+  test('the "New folder" flow inside the move menu creates a folder and files the note into it', async () => {
     await switchToFolderMode(library);
     await folderNode(library, 'Unfiled').locator('.hm-folder-node__name').click();
-    await library.locator('.hm-folder-menu__trigger').first().click();
-    await library.getByRole('menuitem', { name: '+ New folder' }).click();
-    await library.locator('.hm-folder-menu__input').fill('From menu');
-    await library.locator('.hm-folder-menu__create').getByRole('button', { name: 'Save' }).click();
+    await noteMenu(library).click();
+    await library.getByRole('menuitem', { name: 'New folder' }).click();
+    await nameInMenu(library, 'From menu', 'Create');
 
     await expect(folderCount(library, 'From menu')).toHaveText('1 note');
     await expect(folderCount(library, 'Unfiled')).toHaveText('1 note');
@@ -333,9 +341,9 @@ test.describe('Notes Library — Folders', () => {
     await switchToFolderMode(library);
     await createFolder(library, 'Old name');
 
-    await folderNode(library, 'Old name').getByLabel('Rename folder').click();
-    await library.locator('.hm-folder-form__input').fill('New name');
-    await library.locator('.hm-folder-form').getByRole('button', { name: 'Save' }).click();
+    await folderMenu(library, 'Old name').click();
+    await library.getByRole('menuitem', { name: 'Rename folder' }).click();
+    await nameInMenu(library, '  New name  ', 'Save');
 
     await expect(library.locator('.hm-folder-node__name', { hasText: 'New name' })).toBeVisible();
     await expect(library.locator('.hm-folder-node__name', { hasText: 'Old name' })).toHaveCount(0);
@@ -345,17 +353,17 @@ test.describe('Notes Library — Folders', () => {
     await switchToFolderMode(library);
     await createFolder(library, 'Parent');
     await folderNode(library, 'Unfiled').locator('.hm-folder-node__name').click();
-    await library.locator('.hm-folder-menu__trigger').first().click();
+    await noteMenu(library).click();
     await library.getByRole('menuitemradio', { name: 'Parent', exact: true }).click();
 
-    await folderNode(library, 'Parent').getByLabel('Add sub-folder').click();
-    await library.locator('.hm-folder-form__input').fill('Child');
-    await library.locator('.hm-folder-form').getByRole('button', { name: 'Save' }).click();
+    await addSubfolder(library, 'Parent', 'Child');
 
     await expect(folderCount(library, 'Parent')).toHaveText('1 note');
 
-    await folderNode(library, 'Parent').getByLabel('Delete folder').click();
-    await library.getByRole('button', { name: 'Delete', exact: true }).click();
+    await folderMenu(library, 'Parent').click();
+    await library.getByRole('menuitem', { name: 'Delete folder' }).click();
+    // Asked in the menu, and only then done.
+    await library.locator('.hm-menu__panel').getByRole('button', { name: 'Delete folder' }).click();
 
     await expect(library.locator('.hm-folder-node__name', { hasText: 'Parent' })).toHaveCount(0);
     await expect(library.locator('.hm-folder-node__name', { hasText: 'Child' })).toHaveCount(0);
@@ -367,7 +375,7 @@ test.describe('Notes Library — Folders', () => {
     await switchToFolderMode(library);
     await createFolder(library, 'Persisted');
     await folderNode(library, 'Unfiled').locator('.hm-folder-node__name').click();
-    await library.locator('.hm-folder-menu__trigger').first().click();
+    await noteMenu(library).click();
     await library.getByRole('menuitemradio', { name: 'Persisted', exact: true }).click();
     await expect(folderCount(library, 'Persisted')).toHaveText('1 note');
 
@@ -380,7 +388,7 @@ test.describe('Notes Library — Folders', () => {
     await switchToFolderMode(library);
     await createFolder(library, 'Work');
     await folderNode(library, 'Unfiled').locator('.hm-folder-node__name').click();
-    await library.locator('.hm-folder-menu__trigger').first().click();
+    await noteMenu(library).click();
     await library.getByRole('menuitemradio', { name: 'Work', exact: true }).click();
 
     await library.getByPlaceholder('Search notes…').fill('paragraph');

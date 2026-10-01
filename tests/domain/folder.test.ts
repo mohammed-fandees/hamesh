@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { createFolder, renameFolder, validateFolderName, parseFolderState } from '@/domain/folder';
+import {
+  createFolder,
+  renameFolder,
+  validateFolderName,
+  parseFolderState,
+  parseFolderRecord,
+} from '@/domain/folder';
 
 describe('createFolder', () => {
   it('returns correct shape for a top-level folder', () => {
@@ -129,5 +135,38 @@ describe('parseFolderState', () => {
     const result = parseFolderState(stored);
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe('f1');
+  });
+});
+
+describe('parseFolderRecord', () => {
+  const base = { id: 'f', name: 'Work', parentId: null };
+
+  it('reads a personal folder with ISO timestamps', () => {
+    const record = { ...base, createdAt: 'a', updatedAt: 'b' };
+    expect(parseFolderRecord(record, 'string')).toEqual(record);
+  });
+
+  it('reads a team folder with epoch timestamps', () => {
+    const record = { ...base, parentId: 'p', createdAt: 1, updatedAt: 2 };
+    expect(parseFolderRecord(record, 'number')).toEqual(record);
+  });
+
+  it('refuses the wrong timestamp form, an empty id, or a bad parent', () => {
+    expect(parseFolderRecord({ ...base, createdAt: 1, updatedAt: 2 }, 'string')).toBeNull();
+    expect(
+      parseFolderRecord({ ...base, id: '', createdAt: 'a', updatedAt: 'b' }, 'string'),
+    ).toBeNull();
+    expect(
+      parseFolderRecord({ ...base, parentId: 3, createdAt: 'a', updatedAt: 'b' }, 'string'),
+    ).toBeNull();
+    expect(parseFolderRecord(null, 'string')).toBeNull();
+  });
+
+  it('drops extra fields', () => {
+    expect(parseFolderRecord({ ...base, createdAt: 'a', updatedAt: 'b', x: 1 }, 'string')).toEqual({
+      ...base,
+      createdAt: 'a',
+      updatedAt: 'b',
+    });
   });
 });

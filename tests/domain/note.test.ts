@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
+  isSharedNote,
+  mayMutateNote,
   createNote,
   updateNoteContent,
   setNotePinned,
@@ -271,5 +273,19 @@ describe('validateNote', () => {
     };
     const errors = validateNote(note);
     expect(errors.length).toBeGreaterThanOrEqual(4);
+  });
+});
+
+describe('isSharedNote / mayMutateNote', () => {
+  const team = { id: 't', name: 'Alpha', version: 1, authorId: null, folderId: null };
+
+  it('says a note with a team is shared, and not this device’s to change', () => {
+    expect(isSharedNote({ team })).toBe(true);
+    expect(mayMutateNote({ team })).toBe(false);
+  });
+
+  it('says a note without one is this device’s own', () => {
+    expect(isSharedNote({})).toBe(false);
+    expect(mayMutateNote({})).toBe(true);
   });
 });

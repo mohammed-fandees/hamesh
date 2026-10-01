@@ -1,9 +1,13 @@
-import { useCallback, useRef, useState } from 'react';
-import type { Note } from '@/domain/note';
+import { useState } from 'react';
+import { mayMutateNote, type Note } from '@/domain/note';
 import { AttachedText } from './AttachedText';
-import { PinIcon } from './PinIcon';
+import { relativeTime } from './format';
+import { InlineError, StatusLine } from './kit/Feedback';
+import { InlineConfirm } from './kit/InlineConfirm';
+import { CloseIcon, PinIcon } from './kit/icons';
+import { escapeLayer } from './kit/keys';
+import { NoteEditor } from './NoteEditor';
 import type { Lang, Strings } from './i18n';
-import { relativeTime } from './i18n';
 
 interface NoteViewerProps {
   note: Note;
@@ -28,20 +32,21 @@ interface NoteViewerProps {
   initialEditing?: boolean;
   saving?: boolean;
   error?: string | null;
-  onUpdate: (content: string) => void;
+  /** Resolves to whether the words were saved; the editor stays open, with
+   *  the failure beside it, when they were not. */
+  onUpdate: (content: string) => Promise<boolean>;
   onDelete: () => void;
   onClose: () => void;
   onTogglePin: () => void;
 }
 
 /**
- * Note viewer / editor — opens a saved note back up, on the page the note
- * belongs to. Supports viewing, editing, a delete confirmation step, an
- * "anchor unavailable" fallback state, and pinning. The Notes Library also
- * offers all of these (pin/edit/delete/move) without leaving the library,
- * via each row's sibling `NoteActionsMenu` — this viewer isn't the only
- * place anymore, but it's still the only in-page one, and the only one that
- * shows the "anchor unavailable" state.
+ * A saved note, opened on the page it belongs to: read it, pin it, edit it
+ * (with the one note editor), delete it (asked in place), or see that its
+ * anchor could not be found — the one state only this viewer has.
+ *
+ * Escape backs out one level at a time — the editor, then the question, then
+ * the card — because each of those takes the key first and stops it there.
  */
 export function NoteViewer({
   note,
@@ -59,49 +64,25 @@ export function NoteViewer({
   onClose,
   onTogglePin,
 }: NoteViewerProps) {
-  // A note that lives in a team is read to here and changed elsewhere.
-  const shared = !!note.team;
-  const [isEditing, setIsEditing] = useState(initialEditing && !shared);
-  const [editContent, setEditContent] = useState(note.content);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const closeRef = useRef<HTMLButtonElement>(null);
-
-  const startEdit = useCallback(() => {
-    setEditContent(note.content);
-    setIsEditing(true);
-  }, [note.content]);
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      e.preventDefault();
-      if (isEditing) setIsEditing(false);
-      else if (confirmDelete) setConfirmDelete(false);
-      else onClose();
-    },
-    [isEditing, confirmDelete, onClose],
-  );
-
-  const handleSaveEdit = useCallback(() => {
-    const trimmed = editContent.trim();
-    if (!trimmed) return;
-    onUpdate(trimmed);
-    setIsEditing(false);
-  }, [editContent, onUpdate]);
+  // A note that lives in a team is read here and changed elsewhere.
+  const own = mayMutateNote(note);
+  const [editing, setEditing] = useState(initialEditing && own);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const edited = strings.editedAgo(relativeTime(note.updatedAt, lang));
 
   return (
     <div
       className="hm-card hm-viewer-card"
       role="dialog"
-      aria-label={isEditing ? strings.edit : strings.note}
-      onKeyDown={handleKeyDown}
+      aria-label={editing ? strings.edit : strings.note}
+      onKeyDown={escapeLayer(onClose)}
     >
       <span className="hm-connector" data-unavailable={!anchorAvailable} aria-hidden="true" />
 
-      {!shared && (
+      {own && (
         <button
           type="button"
-          className="hm-pin-toggle"
+          className="hm-icon-btn hm-icon-btn--small hm-corner-start"
           aria-pressed={!!note.pinned}
           aria-label={note.pinned ? strings.unpinNote : strings.pinNote}
           onClick={onTogglePin}
@@ -111,114 +92,74 @@ export function NoteViewer({
       )}
 
       {!anchorAvailable && (
-        <div className="hm-status hm-status--warning" role="status">
-          <span className="hm-dot" />
-          {unavailableLabel ?? strings.anchorUnavailable}
-        </div>
+        <StatusLine tone="warning">{unavailableLabel ?? strings.anchorUnavailable}</StatusLine>
       )}
 
       {attachedText && <AttachedText label={strings.attachedText} text={attachedText} />}
 
-      {isEditing ? (
-        <textarea
-          className="hm-textarea"
-          dir="auto"
-          autoFocus
-          value={editContent}
-          aria-label={strings.edit}
-          onChange={(e) => setEditContent(e.target.value)}
+      {editing ? (
+        <NoteEditor
+          strings={strings}
+          initial={note.content}
+          label={strings.edit}
+          saveLabel={strings.saveChanges}
+          saving={saving}
+          error={error}
+          onCancel={() => setEditing(false)}
+          onSave={async (content) => {
+            if (await onUpdate(content)) setEditing(false);
+          }}
         />
       ) : (
-        <p className="hm-note-body" dir="auto">
-          {note.content}
-        </p>
-      )}
-
-      {error && (
-        <p className="hm-error" role="alert">
-          {error}
-        </p>
-      )}
-
-      {isEditing ? (
-        <div className="hm-row">
-          <button type="button" className="hm-btn hm-btn-ghost" onClick={() => setIsEditing(false)}>
-            {strings.cancel}
-          </button>
-          <button
-            type="button"
-            className="hm-btn hm-btn-primary"
-            onClick={handleSaveEdit}
-            disabled={!editContent.trim() || saving}
-          >
-            {saving ? strings.saving : strings.saveChanges}
-          </button>
-        </div>
-      ) : confirmDelete ? (
         <>
-          <p className="hm-note-body" style={{ fontFamily: 'var(--hm-sans)', fontSize: '13.5px' }}>
-            {strings.deleteConfirm}
+          <p className="hm-note-body hm-prose" dir="auto">
+            {note.content}
           </p>
-          <div className="hm-row">
-            <button
-              type="button"
-              className="hm-btn hm-btn-ghost"
-              onClick={() => setConfirmDelete(false)}
-            >
-              {strings.keepIt}
-            </button>
-            <button
-              type="button"
-              className="hm-btn hm-btn-danger"
-              onClick={onDelete}
-              disabled={saving}
-            >
-              {strings.delete}
-            </button>
-          </div>
-        </>
-      ) : shared ? (
-        <div className="hm-row hm-row--between">
-          <span className="hm-meta">{strings.editedAgo(relativeTime(note.updatedAt, lang))}</span>
-          {sharedLabel && (
-            <span className="hm-shared-with">
-              <bdi>{sharedLabel}</bdi>
-            </span>
+          {error && <InlineError>{error}</InlineError>}
+          {confirmingDelete ? (
+            <InlineConfirm
+              question={strings.deleteConfirm}
+              confirmLabel={strings.delete}
+              cancelLabel={strings.keepIt}
+              working={saving}
+              onConfirm={onDelete}
+              onCancel={() => setConfirmingDelete(false)}
+            />
+          ) : (
+            <div className="hm-row hm-row--between">
+              <span className="hm-meta">{edited}</span>
+              {own ? (
+                <span className="hm-row__group">
+                  <button type="button" className="hm-link" onClick={() => setEditing(true)}>
+                    {strings.edit}
+                  </button>
+                  <button
+                    type="button"
+                    className="hm-link hm-link--danger"
+                    onClick={() => setConfirmingDelete(true)}
+                  >
+                    {strings.delete}
+                  </button>
+                </span>
+              ) : (
+                sharedLabel && (
+                  <span className="hm-shared-with">
+                    <bdi>{sharedLabel}</bdi>
+                  </span>
+                )
+              )}
+            </div>
           )}
-        </div>
-      ) : (
-        <div className="hm-row hm-row--between">
-          <span className="hm-meta">{strings.editedAgo(relativeTime(note.updatedAt, lang))}</span>
-          <span style={{ display: 'flex', gap: 'var(--hm-space-4)' }}>
-            <button type="button" className="hm-link" onClick={startEdit}>
-              {strings.edit}
-            </button>
-            <button
-              type="button"
-              className="hm-link hm-link--danger"
-              onClick={() => setConfirmDelete(true)}
-            >
-              {strings.delete}
-            </button>
-          </span>
-        </div>
+        </>
       )}
 
       <button
-        ref={closeRef}
         type="button"
-        className="hm-close"
+        className="hm-icon-btn hm-icon-btn--small hm-corner-end"
         onClick={onClose}
         aria-label={strings.cancel}
       >
-        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
-          <path
-            d="M3 3 L9 9 M9 3 L3 9"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-          />
-        </svg>
+        <CloseIcon />
       </button>
     </div>
   );

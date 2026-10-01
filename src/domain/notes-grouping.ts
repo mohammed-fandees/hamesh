@@ -106,30 +106,15 @@ export function getContinueWebsites(notes: Note[], limit = 3): ContinueWebsite[]
     .slice(0, limit);
 }
 
-export interface PinnedNoteItem {
-  noteId: string;
-  domain: string;
-  url: string;
-  preview: string;
-  updatedAt: string;
-}
-
 /** Every pinned note across every website, most-recently-edited first — the
  *  Notes Library's "Pinned" section, a flat list of the individual notes a
  *  user explicitly marked as important (unlike "Continue", which is one
  *  entry per website). Unbounded: unlike "Continue" (a system-inferred
  *  shortcut, capped to stay quick to scan), pins are user-curated by
  *  definition, so there's no "too many" to defensively cap. */
-export function getPinnedNotes(notes: Note[]): PinnedNoteItem[] {
+export function getPinnedNotes(notes: readonly Note[]): Note[] {
   return notes
     .filter((n) => n.pinned)
-    .map((n) => ({
-      noteId: n.id,
-      domain: extractDomain(n.originalUrl),
-      url: n.originalUrl,
-      preview: n.content,
-      updatedAt: n.updatedAt,
-    }))
     .sort((a, b) => (a.updatedAt > b.updatedAt ? -1 : a.updatedAt < b.updatedAt ? 1 : 0));
 }
 
@@ -157,15 +142,22 @@ export function sortWebsiteGroups(groups: WebsiteGroup[], mode: GroupSortMode): 
  *  "Untitled page" placeholder, so the row still communicates *something*
  *  real about the page instead of reading as broken/missing metadata. */
 export function derivePageLabel(note: Note): string {
-  const title = note.pageContext?.title?.trim();
-  if (title) return title;
+  return pageLabelFrom(note.pageContext?.title, note.originalUrl);
+}
+
+/** The same label from a title and a URL alone — for a note shape that keeps
+ *  its title elsewhere (a cached team note's `pageTitle`), so every surface
+ *  names a page the same way. */
+export function pageLabelFrom(title: string | null | undefined, originalUrl: string): string {
+  const trimmed = title?.trim();
+  if (trimmed) return trimmed;
 
   try {
-    const url = new URL(note.originalUrl);
+    const url = new URL(originalUrl);
     const path = url.pathname.replace(/\/+$/, '');
     return path || url.hostname;
   } catch {
-    return note.originalUrl;
+    return originalUrl;
   }
 }
 

@@ -45,12 +45,12 @@ page, an **Add a note** button (sends `ENABLE_SELECTION` to the tab), an
 active/unavailable status, and a **Settings** entry point. Uses the same
 design tokens.
 
-`App.tsx` holds two panes — Home and Settings (`src/ui/SettingsView.tsx`) —
+`App.tsx` holds two panes — Home and Settings (`src/ui/settings/SettingsView.tsx`) —
 inside a `.hm-popup__track` that always renders both (so the CSS transform
 slide has something to animate between) and clips through an
 `overflow:hidden` `.hm-popup__viewport`. Navigation direction mirrors for
 RTL: the track's `translateX` sign flips with `dir`, and the back chevron
-(`SettingsView`) flips the same way `MarginMark`/`Marker` already do. The
+turns with the line of reading through the one `.hm-mirror` rule. The
 inactive pane is marked `inert` + `aria-hidden` so it's unreachable by
 keyboard/AT while off-screen; focus moves to the Settings heading on entry
 and back to the trigger button on return (both via `focus({ preventScroll:
@@ -70,8 +70,8 @@ options (two languages fit easily); Appearance shows small icon options
 language) wouldn't stay compact in a 252px-wide row, whereas 14px icons do,
 each still carrying its accessible name via the wrapping `<label>`'s
 `aria-label`. The popup has no host webpage of its own, so "Match website"
-resolves to the OS `prefers-color-scheme` there (`prefersDark`, unchanged
-from before Appearance existed) rather than anything tab-specific —
+resolves to the OS `prefers-color-scheme` there (`systemTheme()` in
+`ui/hooks/usePreferences.ts`, passed to `resolveTheme`) rather than anything tab-specific —
 deliberately not querying the active tab's detected theme from the popup,
 to avoid adding cross-context messaging for a surface that's only open for a
 few seconds at a time.
@@ -491,8 +491,8 @@ Both are declared in `wxt.config.ts`'s `manifest.commands` with
 
 `VideoQuickNote` (`src/ui/video/`) is the ≤3-second capture popup: autofocus
 textarea, Enter saves, Shift+Enter newline, Escape closes, no visible
-buttons or error state, positioned _above_ the video (`useFloatingAbove` in
-`content/useFloating.ts` — below-first placement, which the element composer
+buttons or error state, positioned _above_ the video (`useFloating` with
+`placement: 'above'`, `content/useFloating.ts` — below-first placement, which the element composer
 uses, would sit on top of a video that's most of the viewport).
 
 While it's open the video waits: `holdPlayback` (`content/video-playback.ts`)
@@ -532,8 +532,7 @@ edge instead, to keep markers within the video's real-DOM hover region, but
 that region is exactly where a native `<video controls>` scrubber lives:
 clicks landing there are consumed by the browser's own native seek before
 any page-level listener, capture phase included, ever sees the
-`pointerdown`. Since the rail no longer overlaps the video, `videoMatches`
-`:hover`-based controls-visibility (`html5-generic.ts`) wouldn't naturally
+`pointerdown`. Since the rail no longer overlaps the video, `video.matches(':hover')`-based controls-visibility (`html5-generic.ts`) wouldn't naturally
 extend to a marker the user is pointing at; `effectiveVideoControlsVisible`
 in `HameshApp` compensates by also treating "pointer is near a marker" (the
 same coordinate tracking used for hover-preview) as "controls visible",
@@ -561,10 +560,10 @@ adds a small timestamp badge (`▶ 13:27`) when `note.anchor.type === 'video'`.
 
 Clicking a video marker (or a note in a cluster list) both seeks
 `video.currentTime` to the stored timestamp _and_ opens the note's viewer —
-`FloatingVideoViewer`, a thin wrapper around the same anchor-agnostic
+`FloatingViewer`, the same wrapper that floats an element note's viewer, around the anchor-agnostic
 `NoteViewer` used for element notes (its `handleUpdate`/`handleDelete`/
 `handleTogglePin` needed no changes), anchored above the marker's own rail
-position via `useFloatingAbove` rather than a resolved DOM element (a video
+position (`placement: 'above'`) rather than a resolved DOM element (a video
 note has no page element to anchor to). This was a deliberate scope reversal
 from an earlier "seek-only" design, made because clicking a marker with no
 way to edit/delete/pin the note it represents was reported as a real gap in
@@ -580,20 +579,24 @@ appears.
 
 ## Notes Library, Settings & Shortcuts
 
-`src/entrypoints/notes/App.tsx` (the Notes Library page, `notes.html`) has a
-permanent sidebar (`src/ui/Sidebar.tsx`) with three views — Library,
-Settings, and What's New (see its own section below) — instead of Settings
-being popup-only. A `?view=` query param lets another context deep-link
-straight to one without a `view` state round-trip: the popup's own Settings
-pane uses `?view=settings`, and the background's post-update tab uses
-`?view=whats-new`. The sidebar is sticky and one viewport tall, so its
-bottom-docked entry stays reachable however long the page's content runs.
+`src/entrypoints/notes/App.tsx` (the Notes Library page, `notes.html`) is a
+shell: it owns routing, preferences, the note list and its writes, folders,
+and the Teams slots, and renders one view at a time beside a permanent
+sidebar (`src/ui/library/Sidebar.tsx`) — **Library**, **Teams** and
+**Mentions** (Teams builds only), **Settings**, and **What's New** docked at
+the foot (see its own section below). A `?view=` query param lets another
+context deep-link straight to one without a `view` state round-trip: the
+popup's own Settings pane uses `?view=settings`, and the background's
+post-update tab uses `?view=whats-new`. The sidebar is sticky and one
+viewport tall, so its bottom-docked entry stays reachable however long the
+page's content runs; below 720px it becomes a bar across the top.
 
-`LibrarySettingsView.tsx` reuses the same Language/Appearance controls as
-the popup's `SettingsView`, plus Text notes and Shortcuts sections. Every row
-carries a small glyph before its label (`ui/SettingsIcons.tsx`, also the home
-of the three Appearance marks that used to live inside `SettingsView.tsx`) so
-a setting can be found by shape rather than by reading each label; each
+`src/ui/settings/LibrarySettingsView.tsx` shows the same Language/Appearance
+rows as the popup's `SettingsView` — one `LanguageRow`/`AppearanceRow`
+(`src/ui/settings/ChoiceRows.tsx`) used by both — plus Text notes (two
+`Switch`es) and Shortcuts. Every row carries a small glyph before its label
+(`src/ui/kit/icons.tsx`, the one icon set) so a setting can be found by shape
+rather than by reading each label; each
 shortcut row shows the mark of the thing it creates — the margin mark, the
 play triangle, the text-note lines — rather than a generic key cap. The
 Shortcuts rows show each command's current binding (read via
@@ -604,10 +607,50 @@ WebExtensions addition that happens to still appear in the cross-browser
 polyfill's aspirational types, which is misleading enough to be worth
 calling out explicitly here (confirmed by direct probing against a real
 Chromium build, not assumed from the types). The popup's own shortcut badge
-is fetched live from the same `commands.getAll()` call rather than
-hardcoded, so it can't go stale if a user rebinds Alt+H there.
+reads the same source — `useShortcuts()` over one `COMMANDS` map
+(`src/ui/hooks/useShortcuts.ts`) — rather than a hardcoded key, so it can't
+go stale if a user rebinds Alt+H there.
 
-## Local backup (`src/domain/backup.ts`, `src/ui/BackupSection.tsx`)
+## UI modules: one source of truth per behaviour
+
+The Library, the popup, Settings, Teams and the in-page overlay are built
+from the same pieces, so a rule changes in one place. What lives where:
+
+| Concern                                                                          | Source of truth                                                                                                                                                | Used by                                                                                          |
+| -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Note rights (may this note be changed here?)                                     | `isSharedNote` / `mayMutateNote` (`domain/note.ts`)                                                                                                            | `useNoteMutations`, `NoteRow`, `NoteActionsMenu`, `NoteViewer`, `matchesOwner`                   |
+| Note writes (create, edit, pin, move, delete, unfile) with per-note busy/failure | `useNoteMutations` (`ui/hooks/`)                                                                                                                               | Library shell, `HameshApp`                                                                       |
+| Keyed async state (busy + failure per control)                                   | `useWork` + `Failure` (`ui/hooks/useWork.ts`)                                                                                                                  | `useNoteMutations`, `useTeams`, Backup, Teams settings, Share                                    |
+| Preferences (optimistic, rolled back on failure)                                 | `usePreferences`                                                                                                                                               | popup, Library, `HameshApp`                                                                      |
+| Folders list + create                                                            | `useFolders`                                                                                                                                                   | Library shell, `HameshApp`                                                                       |
+| Keyboard shortcuts                                                               | `useShortcuts` + `COMMANDS`                                                                                                                                    | popup, Settings                                                                                  |
+| Storage read-modify-write                                                        | `createStoredList` (`storage/stored-list.ts`)                                                                                                                  | notes and folders repositories                                                                   |
+| Folder tree, depth, unfiled rule, descendants, counts                            | `flattenFolderTree`, `buildFolderTree`, `resolveFolderId`, `getDescendantFolderIds`, `countInFolder` (`domain/folder-grouping.ts`) — generic over `FolderLike` | Library tree, composer picker, row menu, team tiles, team note, team Library notes, repositories |
+| Folder record parsing and name rules                                             | `parseFolderRecord`, `nameProblem`, `FOLDER_NAME_MAX` (`domain/folder.ts`)                                                                                     | storage, backup, Teams sync store, `NameField`                                                   |
+| Page label                                                                       | `pageLabelFrom` (`domain/notes-grouping.ts`)                                                                                                                   | `NoteRow`, team note page                                                                        |
+| Owner filter                                                                     | `matchesOwner` (`domain/note-owner.ts`)                                                                                                                        | Library                                                                                          |
+| Theme                                                                            | `resolveTheme` (`domain/preferences.ts`)                                                                                                                       | popup, Library, `HameshApp`                                                                      |
+| Dates, relative time, money                                                      | `ui/format.ts`                                                                                                                                                 | every surface                                                                                    |
+| Editing a note                                                                   | `NoteEditor`                                                                                                                                                   | composer, viewer, row menu, team note                                                            |
+| Choosing a folder                                                                | `FolderSelect` (one indent rule)                                                                                                                               | composer picker, team note                                                                       |
+| A folder's actions                                                               | `FolderMenu`                                                                                                                                                   | Library tree, team tiles                                                                         |
+| Naming (folder, team)                                                            | `NameField`                                                                                                                                                    | composer, tree, row menu, folder menu, team pages                                                |
+| Confirming                                                                       | `InlineConfirm` (no native dialogs)                                                                                                                            | every destructive action                                                                         |
+| Menus                                                                            | `Menu` / `MenuItem` (`ui/kit/Menu.tsx`)                                                                                                                        | row menu, folder menu, Share                                                                     |
+| Page, cards, empty, loading, errors                                              | `Page`/`PageHeader`, `Section`/`Panel`, `EmptyState`, `Skeleton`, `InlineError`/`StatusLine`/`Busy` (`ui/kit/`)                                                | every page                                                                                       |
+| Keys                                                                             | `isSubmitChord`, `escapeLayer` (`ui/kit/keys.ts`)                                                                                                              | editors, confirm, name field, video cluster list                                                 |
+| Scrolling to a note                                                              | `revealElement`, `RESTORE_FLASH_MS` (`utils/dom.ts`)                                                                                                           | `HameshApp` restore                                                                              |
+| Floating placement                                                               | `useFloating` + `placeBelow`/`placeAbove` (`content/useFloating.ts`)                                                                                           | every in-page card                                                                               |
+| Which `<video>`, and its identity                                                | `pickActiveVideo`, `sourceOrOrdinalId` (`content/video-adapters/shared.ts`)                                                                                    | the generic and custom-timeline adapters                                                         |
+| Teams rights                                                                     | `teamCan`, `noteRights`, `commentRights`, `memberRights`, `inviteRights` (`ui/teams/permissions.ts`)                                                           | Teams pages                                                                                      |
+| Strings                                                                          | `ui/i18n.ts`; Teams strings extend the shared vocabulary (`ui/teams/strings.ts`)                                                                               | —                                                                                                |
+
+Boundaries: `src/domain/` is pure and knows nothing of storage or React;
+`src/storage/` knows nothing of React; `src/ui/kit/` knows nothing of notes,
+folders or Teams; Teams modules are only reached from bodies gated on
+`import.meta.env.WXT_TEAMS_API_ORIGIN`, so store builds carry none of them.
+
+## Local backup (`src/domain/backup.ts`, `src/ui/settings/BackupSection.tsx`)
 
 Export every note and folder to a JSON file, and merge one back in — from
 Settings, in one click each. Two rules define the whole feature:
@@ -715,27 +758,27 @@ everything else:
   `buildFolderTree` (`domain/folder-grouping.ts`) — the same relationship
   `groupNotesByDomain` has to the flat `Note[]` it derives view-data from.
 
-`FolderTree.tsx` renders the result: recursive expand/collapse (reusing
-`WebsiteGroup`'s CSS grid-rows pattern), inline create/rename/delete (the
-same inline two-step confirm `NoteViewer` uses for deleting a note — no
-modals anywhere in this codebase), and a synthetic "Unfiled" node for notes
-with no `folderId` (or one pointing at a folder that no longer exists —
-`buildFolderTree` degrades that to unfiled rather than throwing, same
-philosophy as `extractDomain`'s malformed-URL fallback). **Deleting a folder
-never deletes notes** — `getDescendantFolderIds` collects the folder and
-every descendant, `folders-repository`'s `remove()` cascades the folder-tree
-deletion, and the caller (`App.tsx`'s `handleDeleteFolder`) separately calls
-`notes-repository`'s `setFolder(id, pageKey, undefined)` on every note that
-belonged to any of them — `folders-repository` and `notes-repository` stay
-decoupled from each other, so this two-step orchestration lives in the UI
-layer, not either repository.
+`src/ui/library/FolderTree.tsx` renders the result: recursive
+expand/collapse (the same CSS grid-rows pattern as a website group), each
+folder's actions in its `FolderMenu` (rename, add a sub-folder, delete —
+asked with `InlineConfirm`; no modals anywhere in this codebase), and a
+synthetic "Unfiled" node for notes with no `folderId` (or one pointing at a
+folder that no longer exists — `resolveFolderId` degrades that to unfiled
+rather than throwing, the one "unfiled" rule every surface uses). A folder
+whose parent is missing is shown at the top level instead of disappearing.
+**Deleting a folder never deletes notes** — `folders-repository`'s
+`remove()` cascades through `getDescendantFolderIds` and reports every id it
+removed, and the shell (`App.tsx`'s `deleteFolder`) hands that set to
+`useNoteMutations().unfile(ids)` — `folders-repository` and
+`notes-repository` stay decoupled from each other, so this two-step
+orchestration lives in the UI layer, not either repository.
 
 A `SegmentedControl<'domain' | 'folder'>` (the same generic component
 already used for Language/Appearance/Sort) toggles the Notes Library's main
 list between `groupNotesByDomain`'s output and the folder tree; both read
 from the same search-filtered `Note[]`, so search keeps working in either
 mode. Filing a note into a folder works two ways, both calling the same
-`handleMoveNote` — no duplicated move logic: `NoteActionsMenu.tsx` (a small
+`useNoteMutations().move` — no duplicated move logic: `NoteActionsMenu.tsx` (a small
 "⋮" dropdown, the only keyboard/screen-reader-accessible path — see "Note
 actions menu" below) and native HTML5 drag-and-drop of a note onto a folder
 node (a mouse-only progressive enhancement, folder-tree view only).
@@ -745,18 +788,18 @@ measured with a `ResizeObserver` (`scrollHeight > clientHeight`), because the
 same note is two lines in a wide window and six in a narrow one — the row
 offers "Show more", which expands the note in place with its line breaks kept
 and its height capped (`min(22rem, 55vh)`, scrolling inside the card), so the
-list around it barely moves. The toggle is a real `<button>`, so the row is no
-longer itself the `<a>`: its link is stretched over the card with `::after`,
-and the toggle (and an expanded preview, so the wheel scrolls it) are raised
-above that layer.
+list around it barely moves. The toggle is a real `<button>`, so the row is
+not itself the `<a>`: its link is stretched over the row with `::after`, and
+the toggle, the menu, Discuss (and an expanded preview, so the wheel scrolls
+it) are raised above that layer. Pinned renders the same `NoteRow`, so a
+long pinned note can be opened out too.
 
 Because a folder can mix notes from several different sites (unlike a
 website group, which by definition doesn't), `NoteRow` also grew an opt-in
 `showDomain` prop — off by default, since the domain-grouped view already
 shows one favicon per group header — that shows a small favicon + domain
-line above the title, reusing `Favicon` the same way `PinnedSection`
-already does for its own flat, cross-site list. `FolderTree` is the only
-caller that passes it.
+line above the title. `FolderTree` and `PinnedSection` — the two
+cross-site lists — pass it.
 
 ### Filing a note as it's written
 
@@ -797,37 +840,31 @@ null)`. Pure updaters (`withPageDefaultFolder` / `withGlobalDefaultFolder`)
 
 ## Note actions menu
 
-`NoteActionsMenu.tsx` is the "⋮" trigger + dropdown attached to every note
-row in both the domain-grouped and folder-tree views (originally just a
-folder-tree "Move to folder" menu, generalized once pin/edit/delete needed
-a home outside the content-script `NoteViewer` too — being unable to
-pin/edit/delete a note without leaving the Notes Library was reported as a
-real gap in practice, the same category of gap that drove the video-note
-viewer scope reversal above). `NoteRow` itself needed no structural change
-for any of this — it's a full-row `<a>` that can't host a second
-interactive control nested inside it, so the menu always renders as a
-sibling (`.hm-folder-note` in folder mode, `.hm-group__note` in domain
-mode), never a child.
+`src/ui/library/NoteActionsMenu.tsx` is the "⋮" menu in every note row's
+aside — in site groups, Pinned, and the folder tree. It reads what it acts
+with from the `NoteActions` context (`src/ui/library/NoteActions.ts`: the
+folders, `useNoteMutations`' writes, and per-note busy/failure), so rows don't
+thread callbacks through every list.
 
-The single portaled panel swaps between four views (`menu` /
-`creatingFolder` / `editing` / `confirmingDelete`) rather than stacking
-separate popovers — the same "inline swap, no modals" pattern `NoteViewer`
-and `FolderNodeItem`'s own delete-confirm already use. Escape steps back
-one view at a time (`editing`/`confirmingDelete` → `menu` → closed) instead
-of always closing outright. Portaled to the trigger's own `.hm-scope`
-ancestor (not `document.body`, which would escape the `--hm-*` design-token
-scope those styles depend on) and positioned from `getBoundingClientRect()`
-rather than CSS `position: absolute`, since the folder tree's collapse
-animation relies on `overflow: hidden` on its row-list containers, which
-would otherwise clip an in-flow popover the moment it needed to extend past
-those ancestors' bounds.
+It is built on the kit's `Menu` (`src/ui/kit/Menu.tsx`), which owns what every
+menu needs: the trigger's `aria-expanded`, a panel portalled to the
+trigger's own `.hm-scope` ancestor (not `document.body`, which would escape
+the `--hm-*` token scope) and positioned from `getBoundingClientRect()` —
+flipped when there is no room, following scroll — because the folder tree's
+collapse animation relies on `overflow: hidden`, which would clip an in-flow
+popover. Outside click and Escape close it and return focus to the trigger;
+arrow keys, Home and End walk the items.
 
-`App.tsx` computes two different folder views for this: `folderTree` (the
-nested tree actually rendered in folder mode, scoped to the
-search-filtered notes) and a separate `flatFoldersForMenu` (every folder,
-unfiltered) — the menu's own "Move to folder" section must always be able
-to move a note into any folder, not just ones with currently-visible notes,
-so it can't reuse `folderTree`'s filtered view.
+The panel swaps between views (`menu` / `creatingFolder` / `editing` /
+`confirmingDelete`) rather than stacking popovers — the same "inline swap, no
+modals" rule `NoteViewer` follows. Escape steps back one layer at a time
+(`escapeLayer`): the editor or the question takes it first, then the menu.
+
+Move to folder lists **every** folder (`flattenFolderTree` over the whole
+folder list, not the search-filtered tree), checked on the current one and
+indented by depth, so a note can always be moved into any folder, not just
+ones with currently-visible notes. Only a success closes the menu; a failure
+stays beside the row as an `InlineError`.
 
 ## Page identity
 
@@ -913,16 +950,11 @@ re-attach markers as content mounts.
   create/switch workspaces. Deliberately built ahead of the feature so a
   future multi-workspace pass is additive (filter by an already-present
   field) rather than another schema migration.
-- The video timestamp badge (`▶ 13:27`) only appears on `NoteRow` (inside an
-  expanded website group, or a folder in folder mode). The Continue and
-  Pinned sections' projections (`ContinueWebsite`, `PinnedNoteItem` in
-  `notes-grouping.ts`) carry no anchor info, so a recently-active video note
-  doesn't show its timestamp there. `PinnedSection` is the exception that
-  shows the way: it already looks the full `Note` up by id (it needs one for
-  `NoteActionsMenu`), so it reads `anchor` from that to show a contextual
-  note's attached text — no projection reshaping required. The same trick
-  would give it the video badge; Continue, being per-website rather than
-  per-note, would need a real projection change.
+- The video timestamp badge (`▶ 13:27`) appears on every `NoteRow` — site
+  groups, folders and Pinned (which renders full notes through the same
+  row). Continue, being per-website rather than per-note, carries no anchor
+  info, so a recently-active video site doesn't show a timestamp there; that
+  would need a real projection change.
 - The `Anchor` union (`ElementAnchor | VideoAnchor`) is designed so a future
   anchor kind (PDF page/region, image, audio timestamp, document range) is
   another union member plus another `resolve*Anchor` function — nothing

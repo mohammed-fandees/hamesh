@@ -40,7 +40,7 @@ export function VideoQuickNote({ placeholder, label, onSave, onCancel }: VideoQu
   return (
     <div className="hm-card hm-video-quick-note" role="dialog" aria-label={label}>
       <textarea
-        className="hm-textarea"
+        className="hm-textarea hm-prose"
         dir="auto"
         autoFocus
         placeholder={placeholder}

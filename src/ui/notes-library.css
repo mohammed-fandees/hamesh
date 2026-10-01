@@ -1,11 +1,10 @@
 /*
- * Notes Library — styles exclusive to the `notes.html` extension page.
+ * The Notes Library page (`notes.html`) — its frame, its sidebar, and the
+ * Library, Settings and What's New views inside it.
  *
- * Kept out of tokens.css deliberately: tokens.css is injected into the
- * Shadow DOM on every single page the content script runs on, so anything
- * only the Notes Library needs stays here instead of growing that per-page
- * payload. Design tokens (color, spacing, radius, motion) are still reused
- * from tokens.css, which this page also imports.
+ * What the popup shares with it (cards, empty and loading states, the
+ * segmented control, the menu…) is in `pages.css`; what a web page shares with
+ * it is in `tokens.css`. Nothing here reaches a web page.
  */
 
 .hm-notes-page {
@@ -14,44 +13,25 @@
   display: flex;
   align-items: stretch;
 }
-.hm-notes-main {
-  flex: 1;
-  min-width: 0;
-  padding: var(--hm-space-6) var(--hm-space-5);
-}
-.hm-notes-page__inner {
-  max-width: 640px;
-  margin: 0 auto;
-}
-.hm-notes-page__header {
-  display: flex;
-  align-items: center;
-  gap: var(--hm-space-2);
-  margin-bottom: var(--hm-space-6);
-}
-.hm-notes-page__title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-}
 
-/* ---- Sidebar nav ---- */
-/* Sticky, one viewport tall, rather than stretching with the page. The
-   column has a foot (What's New, pushed down by `margin-top: auto`), and on
-   a long page — the Notes Library with many notes, or What's New itself —
-   a stretched sidebar would park that foot far below the fold where nobody
-   would ever see it. `align-self: flex-start` opts this column out of the
-   parent flex row's `align-items: stretch`, which would otherwise override
-   the height. */
+/* ---- Sidebar ---- */
+/* Sticky, one viewport tall, rather than stretching with the page. The column
+   has a foot (What's New, pushed down by `margin-top: auto`), and on a long
+   page a stretched sidebar would park that foot far below the fold where
+   nobody would ever see it. `align-self: flex-start` opts this column out of
+   the parent's `align-items: stretch`, which would otherwise override the
+   height. A shade darker than the page, so it reads as the frame, not as
+   content. */
 .hm-sidebar {
-  flex: 0 0 208px;
+  flex: 0 0 216px;
   align-self: flex-start;
   position: sticky;
   top: 0;
   height: 100vh;
   overflow-y: auto;
   border-inline-end: 1px solid var(--hm-border);
-  padding: var(--hm-space-5) var(--hm-space-4);
+  background: var(--hm-paper-dim);
+  padding: var(--hm-space-5) var(--hm-space-3);
   display: flex;
   flex-direction: column;
   gap: var(--hm-space-5);
@@ -59,12 +39,14 @@
 .hm-sidebar__brand {
   display: flex;
   align-items: center;
-  gap: var(--hm-space-2);
-  padding-inline-start: var(--hm-space-2);
+  gap: 10px;
+  padding-inline: 10px;
+  color: var(--hm-accent);
 }
 .hm-sidebar__brand-text {
   font-weight: 600;
-  font-size: 14px;
+  font-size: var(--hm-text-body);
+  color: var(--hm-ink);
 }
 .hm-sidebar__nav {
   list-style: none;
@@ -72,45 +54,52 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--hm-space-1);
+  gap: 2px;
 }
 .hm-sidebar__nav-item {
   display: flex;
   align-items: center;
-  gap: var(--hm-space-2);
+  gap: 10px;
   width: 100%;
-  padding: var(--hm-space-2) var(--hm-space-2);
+  padding: 9px 10px;
   border: none;
   background: transparent;
-  border-radius: var(--hm-radius-sm);
-  font: inherit;
-  font-size: 13.5px;
-  font-weight: 500;
+  border-radius: var(--hm-radius-md);
+  font-family: inherit;
+  font-size: var(--hm-text-body);
   color: var(--hm-ink-60);
   cursor: pointer;
   text-align: start;
-  transition: background var(--hm-dur-fast) var(--hm-ease-out);
+  transition:
+    background var(--hm-motion-state),
+    color var(--hm-motion-state);
 }
 .hm-sidebar__nav-item:hover {
-  background: var(--hm-paper-dim);
-}
-.hm-sidebar__nav-item[aria-current='page'] {
-  background: var(--hm-paper-dim);
+  background: var(--hm-layer-hover);
   color: var(--hm-ink);
+}
+.hm-sidebar__nav-item:active {
+  background: var(--hm-layer-pressed);
+}
+/* Selected is the tint, a step above pressed, so the current page is never
+   mistaken for the one being pointed at. */
+.hm-sidebar__nav-item[aria-current='page'] {
+  background: var(--hm-accent-tint);
+  color: var(--hm-accent-strong);
+  font-weight: 500;
 }
 .hm-sidebar__nav-item:focus-visible {
   outline: 2px solid var(--hm-accent);
   outline-offset: -2px;
 }
-
-/* What's New sits apart at the foot of the column — `margin-top: auto`
-   pushes it down inside the sidebar's flex column, so it stays anchored to
-   the bottom however tall the window is, without a second layout mode. */
 .hm-sidebar__nav--foot {
   margin-top: auto;
 }
-/* The "you haven't read this yet" dot. `margin-inline-start: auto` puts it
-   on the row's trailing edge in both directions. */
+.hm-sidebar__nav--foot .hm-sidebar__nav-item {
+  font-size: var(--hm-text-body-sm);
+}
+/* The "you haven't read this yet" dot, on the row's trailing edge in both
+   directions. */
 .hm-sidebar__dot {
   margin-inline-start: auto;
   width: 6px;
@@ -120,11 +109,489 @@
   flex: none;
 }
 
+/* ---- The Library ---- */
+/* Search — live, no button, pill-shaped, with the same focus halo as every
+   field. The "/" that finds it from anywhere sits at its end until there is a
+   query, when the native clear button takes the spot. */
+.hm-search-wrap {
+  position: relative;
+  margin-bottom: var(--hm-space-4);
+}
+.hm-search {
+  display: block;
+  width: 100%;
+  padding: 9px 40px 9px var(--hm-space-4);
+  padding-inline: var(--hm-space-4) 40px;
+  font-family: var(--hm-sans);
+  font-size: var(--hm-text-body);
+  color: var(--hm-ink);
+  background: var(--hm-surface);
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-pill);
+  transition:
+    border-color var(--hm-motion-state),
+    box-shadow var(--hm-motion-state);
+}
+.hm-search::placeholder {
+  color: var(--hm-ink-40);
+}
+.hm-search:focus {
+  outline: none;
+  border-color: var(--hm-accent);
+  box-shadow: var(--hm-halo);
+}
+.hm-search__hint {
+  position: absolute;
+  top: 50%;
+  inset-inline-end: 14px;
+  transform: translateY(-50%);
+  padding: 1px 6px;
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-sm);
+  font-family: var(--hm-mono);
+  font-size: var(--hm-text-label);
+  line-height: var(--hm-lh-label);
+  font-style: normal;
+  color: var(--hm-ink-40);
+  pointer-events: none;
+}
+
+/* Whose notes on one side, how they are laid out on the other. */
+.hm-library-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--hm-space-2) var(--hm-space-3);
+  margin-bottom: var(--hm-space-5);
+}
+.hm-library-toolbar__view {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--hm-space-2);
+  margin-inline-start: auto;
+}
+
+/* Continue and Pinned: a small-caps name over what they hold. */
+.hm-library-section {
+  margin-bottom: var(--hm-space-5);
+}
+.hm-library-section__title {
+  margin-bottom: var(--hm-space-2);
+}
+
+/* Continue — a shortcut row, deliberately light: not a dashboard widget. */
+.hm-continue__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--hm-space-2);
+}
+.hm-continue__item {
+  display: flex;
+  align-items: center;
+  gap: var(--hm-space-3);
+  padding: var(--hm-space-2) var(--hm-space-4) var(--hm-space-2) var(--hm-space-3);
+  padding-inline: var(--hm-space-3) var(--hm-space-4);
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-lg);
+  background: var(--hm-surface);
+  text-decoration: none;
+  color: inherit;
+  transition:
+    background var(--hm-motion-state),
+    border-color var(--hm-motion-state);
+}
+.hm-continue__item:hover {
+  background: var(--hm-surface-hover);
+  border-color: var(--hm-ink-20);
+}
+.hm-continue__item:focus-visible {
+  outline: none;
+  box-shadow: var(--hm-ring);
+}
+.hm-continue__text {
+  display: flex;
+  flex-direction: column;
+}
+.hm-continue__domain {
+  font-weight: 600;
+  font-size: var(--hm-text-body);
+}
+.hm-continue__meta {
+  font-size: var(--hm-text-label);
+  line-height: var(--hm-lh-label);
+  color: var(--hm-ink-40);
+}
+
+/* ---- Rows: a list inside a card ----
+   Every list of notes (a site's, a folder's, Pinned) and the folder tree are
+   rows with a hairline between them. `--card` makes the list its own card. */
+.hm-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.hm-rows > li + li,
+.hm-rows .hm-rows > li {
+  border-top: 1px solid var(--hm-ink-10);
+}
+.hm-rows--card {
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-lg);
+  background: var(--hm-surface);
+  overflow: hidden;
+}
+
+/* ---- A site's notes, as a card ---- */
+.hm-groups {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--hm-space-3);
+}
+.hm-group {
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-lg);
+  background: var(--hm-surface);
+  overflow: hidden;
+}
+.hm-group__header {
+  display: flex;
+  align-items: center;
+  gap: var(--hm-space-3);
+  width: 100%;
+  padding: var(--hm-card-pad-dense);
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: start;
+  font-family: var(--hm-sans);
+  color: var(--hm-ink);
+  transition: background var(--hm-motion-state);
+}
+.hm-group__header:hover {
+  background: var(--hm-layer-hover);
+}
+.hm-group__header:focus-visible {
+  outline: none;
+  box-shadow: var(--hm-ring-inset);
+}
+.hm-group[data-expanded='true'] > .hm-group__header {
+  border-bottom: 1px solid var(--hm-ink-10);
+}
+.hm-group__domain {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+  font-size: var(--hm-text-body);
+}
+.hm-group__count {
+  flex: none;
+  font-size: var(--hm-text-body-sm);
+  color: var(--hm-ink-40);
+}
+.hm-group__chevron {
+  flex: none;
+  color: var(--hm-ink-40);
+  transition: transform var(--hm-motion-exit);
+}
+.hm-group[data-expanded='true'] .hm-group__chevron {
+  transform: rotate(180deg);
+  transition: transform var(--hm-motion-enter);
+}
+
+/* Height animation through grid rows — no measuring, and the only way to
+   animate to "auto" height smoothly. The one item is a padding-less wrapper,
+   because a `0fr` row is sized from its item's own minimum, padding included. */
+.hm-group__body,
+.hm-folder-node__body {
+  display: grid;
+  grid-template-rows: 0fr;
+  overflow: hidden;
+  transition: grid-template-rows var(--hm-motion-exit);
+}
+.hm-group__body[data-expanded='true'],
+.hm-folder-node__body[data-expanded='true'] {
+  grid-template-rows: 1fr;
+  transition: grid-template-rows var(--hm-motion-enter);
+}
+.hm-group__body-inner,
+.hm-folder-node__body-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ---- One note ----
+   The link, stretched over the row, holds what the note is; beside it sit when
+   it was edited and its menu; under it, "Show more", "Discuss", and anything
+   that failed. */
+.hm-note-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'main aside'
+    'tail tail'
+    'alert alert';
+  column-gap: var(--hm-space-3);
+  padding: var(--hm-card-pad-dense);
+  padding-inline-start: calc(var(--hm-space-4) + var(--hm-depth, 0) * var(--hm-indent));
+  transition:
+    background var(--hm-motion-state),
+    opacity var(--hm-motion-state);
+}
+.hm-note-row:hover {
+  background: var(--hm-layer-hover);
+}
+.hm-note-row:has(> .hm-note-row__link:focus-visible) {
+  box-shadow: var(--hm-ring-inset);
+}
+.hm-note-row[data-busy] {
+  opacity: var(--hm-state-disabled);
+}
+.hm-note-row__link {
+  grid-area: main;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+.hm-note-row__link:focus-visible {
+  outline: none;
+}
+.hm-note-row__link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+.hm-note-row__domain {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--hm-text-label);
+  line-height: var(--hm-lh-label);
+  font-weight: 600;
+  color: var(--hm-accent-strong);
+}
+.hm-note-row__title {
+  display: flex;
+  align-items: center;
+  gap: 4px var(--hm-space-2);
+  font-size: var(--hm-text-body);
+  font-weight: 500;
+  color: var(--hm-ink);
+}
+.hm-note-row__label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.hm-note-row__title > svg,
+.hm-note-row__title > .hm-team-chip {
+  flex: none;
+}
+.hm-note-row__pin {
+  color: var(--hm-accent-strong);
+}
+.hm-note-row .hm-attached {
+  margin: 2px 0;
+}
+.hm-note-row__preview {
+  margin: 2px 0 0;
+  font-size: var(--hm-text-body);
+  line-height: 1.55;
+  color: var(--hm-ink);
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+/* Opened out: the whole note, with the line breaks it was written with, but
+   never taller than a comfortable read — a 10,000-character note scrolls inside
+   its own row rather than shoving the Library a screen away. Raised above the
+   stretched link so the wheel scrolls it. */
+.hm-note-row__preview[data-expanded='true'] {
+  position: relative;
+  z-index: 1;
+  display: block;
+  -webkit-line-clamp: unset;
+  max-height: min(22rem, 55vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  white-space: pre-wrap;
+}
+.hm-note-row__aside {
+  grid-area: aside;
+  display: flex;
+  align-items: center;
+  gap: var(--hm-space-2);
+  align-self: start;
+  margin-block: -3px;
+  color: var(--hm-ink-40);
+  font-size: var(--hm-text-label);
+  line-height: var(--hm-lh-label);
+}
+.hm-note-row__time {
+  white-space: nowrap;
+}
+.hm-note-row__video-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--hm-accent-strong);
+  font-family: var(--hm-mono);
+}
+/* Controls of their own, above the stretched link. */
+.hm-note-row__menu,
+.hm-note-row__toggle,
+.hm-note-row__discuss {
+  position: relative;
+  z-index: 1;
+}
+.hm-note-row__tail {
+  grid-area: tail;
+  display: flex;
+  align-items: center;
+  gap: var(--hm-space-3);
+  margin-top: var(--hm-space-1);
+}
+.hm-note-row__toggle,
+.hm-note-row__discuss {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 2px;
+  border: none;
+  border-radius: var(--hm-radius-sm);
+  background: none;
+  color: var(--hm-accent-strong);
+  font-family: var(--hm-sans);
+  font-size: var(--hm-text-label);
+  line-height: var(--hm-lh-label);
+  font-weight: 600;
+  cursor: pointer;
+}
+.hm-note-row__discuss {
+  margin-inline-start: auto;
+}
+.hm-note-row__toggle:hover,
+.hm-note-row__discuss:hover {
+  text-decoration: underline;
+}
+.hm-note-row__toggle:focus-visible,
+.hm-note-row__discuss:focus-visible {
+  outline: none;
+  box-shadow: var(--hm-ring);
+}
+.hm-note-row__toggle-chevron {
+  transition: transform var(--hm-motion-state);
+}
+.hm-note-row__toggle[aria-expanded='true'] .hm-note-row__toggle-chevron {
+  transform: rotate(180deg);
+}
+.hm-note-row__alert {
+  grid-area: alert;
+  position: relative;
+  z-index: 1;
+  margin-top: var(--hm-space-2);
+}
+
+/* ---- By folder: one card of folders ---- */
+.hm-folder-tree__toolbar {
+  display: flex;
+  margin-bottom: var(--hm-space-3);
+}
+.hm-folder-tree__toolbar .hm-name-field {
+  flex: 1;
+}
+.hm-folder-node {
+  display: flex;
+  align-items: center;
+  gap: var(--hm-space-1);
+  padding-inline-end: var(--hm-space-2);
+  transition: background var(--hm-motion-state);
+}
+.hm-folder-node:hover {
+  background: var(--hm-layer-hover);
+}
+/* A note being dragged over a folder it can land in. */
+.hm-folder-node[data-drag-over='true'] {
+  background: var(--hm-accent-tint);
+  outline: 1px dashed var(--hm-accent);
+  outline-offset: -1px;
+}
+.hm-folder-node__name {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--hm-space-2);
+  min-width: 0;
+  padding: var(--hm-card-pad-dense);
+  padding-inline-start: calc(var(--hm-space-3) + var(--hm-depth, 0) * var(--hm-indent));
+  border: none;
+  background: none;
+  color: var(--hm-ink);
+  font-family: var(--hm-sans);
+  font-size: var(--hm-text-body);
+  text-align: start;
+  cursor: pointer;
+}
+.hm-folder-node__name:focus-visible {
+  outline: none;
+  box-shadow: var(--hm-ring-inset);
+}
+/* Shut, the chevron points along the line of reading, at the folder; open, it
+   turns down — the file-explorer convention, in either direction. */
+.hm-folder-node__chevron {
+  color: var(--hm-ink-40);
+  transition: transform var(--hm-motion-exit);
+}
+.hm-folder-node__name[aria-expanded='true'] .hm-folder-node__chevron {
+  transform: rotate(90deg);
+  transition: transform var(--hm-motion-enter);
+}
+.hm-scope[dir='rtl'] .hm-folder-node__name[aria-expanded='true'] .hm-folder-node__chevron {
+  transform: scaleX(-1) rotate(90deg);
+}
+.hm-folder-node__glyph {
+  flex: none;
+  color: var(--hm-accent);
+}
+.hm-folder-node__label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.hm-folder-node--unfiled .hm-folder-node__label {
+  color: var(--hm-ink-60);
+  font-style: italic;
+}
+.hm-folder-node__count {
+  flex: none;
+  font-size: var(--hm-text-body-sm);
+  color: var(--hm-ink-40);
+}
+.hm-folder-note[draggable='true'] {
+  cursor: grab;
+}
+
 /* ---- What's New ---- */
 .hm-whats-new__intro {
-  margin: calc(-1 * var(--hm-space-2)) 0 var(--hm-space-5);
+  margin: calc(-1 * var(--hm-space-3)) 0 var(--hm-space-5);
   color: var(--hm-ink-60);
-  font-size: 13.5px;
+  font-size: var(--hm-text-body);
 }
 .hm-whats-new__list {
   list-style: none;
@@ -136,9 +603,8 @@
    vertical into a timeline. */
 .hm-whats-new__release {
   position: relative;
-  padding: 0 0 var(--hm-space-5) var(--hm-space-5);
-  padding-inline-start: var(--hm-space-5);
-  padding-inline-end: 0;
+  padding-block: 0 var(--hm-space-5);
+  padding-inline: var(--hm-space-5) 0;
   border-inline-start: 1px solid var(--hm-border);
 }
 .hm-whats-new__release:last-child {
@@ -156,6 +622,9 @@
   background: var(--hm-paper);
   box-shadow: 0 0 0 1.5px var(--hm-accent);
 }
+.hm-panel .hm-whats-new__release::before {
+  background: var(--hm-surface);
+}
 .hm-whats-new__head {
   display: flex;
   align-items: center;
@@ -163,7 +632,7 @@
 }
 .hm-whats-new__version {
   font-family: var(--hm-mono);
-  font-size: 12.5px;
+  font-size: var(--hm-text-body-sm);
   font-weight: 600;
   color: var(--hm-ink);
 }
@@ -172,7 +641,8 @@
   border-radius: var(--hm-radius-pill);
   background: var(--hm-accent-tint);
   color: var(--hm-accent-strong);
-  font-size: 10.5px;
+  font-size: var(--hm-text-label);
+  line-height: var(--hm-lh-label);
   font-weight: 600;
   letter-spacing: 0.02em;
 }
@@ -184,11 +654,13 @@
   margin-inline-start: auto;
   color: var(--hm-ink-40);
   font-family: var(--hm-mono);
-  font-size: 11px;
+  font-size: var(--hm-text-label);
+  line-height: var(--hm-lh-label);
 }
 .hm-whats-new__title {
   margin: var(--hm-space-1) 0 var(--hm-space-2);
-  font-size: 15px;
+  font-size: var(--hm-text-title);
+  line-height: var(--hm-lh-title);
   font-weight: 600;
   color: var(--hm-ink);
 }
@@ -203,13 +675,9 @@
 .hm-whats-new__item {
   position: relative;
   padding-inline-start: var(--hm-space-3);
-  font-family: var(--hm-serif);
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: var(--hm-text-prose);
+  line-height: var(--hm-lh-prose);
   color: var(--hm-ink);
-}
-.hm-scope[dir='rtl'] .hm-whats-new__item {
-  font-family: var(--hm-arabic);
 }
 .hm-whats-new__item::before {
   content: '';
@@ -222,893 +690,42 @@
   background: var(--hm-ink-20);
 }
 
-/* ---- Search — live, no button. Same focus treatment as the composer's
-   textarea (tokens.css .hm-textarea) for a consistent input feel. ---- */
-.hm-search-wrap {
-  position: relative;
-  margin-bottom: var(--hm-space-5);
-}
-.hm-search {
-  display: block;
-  width: 100%;
-  padding: 9px 30px 9px var(--hm-space-3);
-  font-family: var(--hm-sans);
-  font-size: 13.5px;
-  color: var(--hm-ink);
-  background: var(--hm-surface);
-  border: 1px solid var(--hm-border);
-  border-radius: var(--hm-radius-md);
-  transition: border-color var(--hm-dur-fast) var(--hm-ease-out);
-}
-.hm-search::placeholder {
-  color: var(--hm-ink-40);
-}
-.hm-search:focus-visible,
-.hm-search:focus {
-  outline: none;
-  border-color: var(--hm-accent);
-  box-shadow: 0 0 0 3px var(--hm-accent-tint);
-}
-/* "/" keyboard-shortcut hint — same idea as the popup's Alt+H badge.
-   Hidden once there's a query (the native search-input clear button takes
-   that spot instead). */
-.hm-search__hint {
-  position: absolute;
-  top: 50%;
-  inset-inline-end: 9px;
-  transform: translateY(-50%);
-  padding: 1px 5px;
-  border: 1px solid var(--hm-border);
-  border-radius: var(--hm-radius-sm);
-  font-family: var(--hm-mono);
-  font-size: 10.5px;
-  font-style: normal;
-  color: var(--hm-ink-40);
-  pointer-events: none;
-}
-
-/* Standard clip-based visually-hidden utility — present for screen readers
-   (e.g. the loading status announcement) without affecting sighted layout. */
-.hm-visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-/* ---- Loading skeleton — shown only for the initial fetch, replaces a
-   blank flash. Pulses via opacity, respects reduced motion through the
-   blanket `.hm-scope *` override in tokens.css. ---- */
-.hm-skeleton {
-  display: flex;
-  flex-direction: column;
-  gap: var(--hm-space-3);
-  padding: var(--hm-space-2) 0;
-}
-.hm-skeleton__row {
-  height: 44px;
-  border-radius: var(--hm-radius-md);
-  background: var(--hm-paper-dim);
-  animation: hm-skeleton-pulse 1.4s var(--hm-ease-out) infinite;
-}
-.hm-skeleton__row:nth-child(2) {
-  animation-delay: 120ms;
-}
-.hm-skeleton__row:nth-child(3) {
-  animation-delay: 240ms;
-}
-@keyframes hm-skeleton-pulse {
-  0%,
-  100% {
-    opacity: 0.5;
+/* ---- A narrow window ----
+   Below a tablet's width the sidebar would leave the page a sliver, so it
+   becomes a bar across the top instead: the brand, then every destination in
+   one scrolling row — the way a phone app keeps its places within reach. */
+@media (max-width: 720px) {
+  .hm-notes-page {
+    flex-direction: column;
   }
-  50% {
-    opacity: 1;
+  .hm-sidebar {
+    flex: none;
+    flex-direction: row;
+    align-items: center;
+    align-self: stretch;
+    gap: var(--hm-space-2);
+    height: auto;
+    z-index: 1;
+    padding: var(--hm-space-2) var(--hm-space-3);
+    overflow-x: auto;
+    border-inline-end: none;
+    border-bottom: 1px solid var(--hm-border);
+    scrollbar-width: none;
   }
-}
-
-/* ---- Sort row — sits above the grouped list, hidden while searching ---- */
-.hm-sort-row {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--hm-space-2);
-  margin-bottom: var(--hm-space-2);
-}
-.hm-sort-row__label {
-  font-size: 11.5px;
-  color: var(--hm-ink-40);
-}
-
-/* ---- Entrance animation — subtle, one-shot, respects reduced motion via
-   the blanket `.hm-scope *` override in tokens.css ---- */
-@keyframes hm-fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
+  .hm-sidebar__brand-text {
+    display: none;
   }
-  to {
-    opacity: 1;
-    transform: none;
+  .hm-sidebar__nav {
+    flex-direction: row;
   }
-}
-.hm-fade-in {
-  animation: hm-fade-in var(--hm-dur-slow) var(--hm-ease-out) both;
-}
-
-/* ---- Favicon / no-favicon fallback ---- */
-.hm-favicon {
-  flex: none;
-  display: block;
-  border-radius: var(--hm-radius-sm);
-}
-.hm-favicon--pending {
-  display: inline-block;
-}
-.hm-favicon--globe {
-  color: var(--hm-accent);
-}
-
-/* ---- Continue section — a lightweight shortcut row, deliberately not a
-   boxed "card" treatment (calm/minimal, not a dashboard widget) ---- */
-.hm-continue {
-  margin-bottom: var(--hm-space-6);
-}
-.hm-continue__title {
-  margin: 0 0 var(--hm-space-2);
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--hm-ink-40);
-}
-.hm-continue__list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--hm-space-2);
-}
-.hm-continue__item {
-  display: flex;
-  align-items: center;
-  gap: var(--hm-space-2);
-  padding: var(--hm-space-2) var(--hm-space-3);
-  border-radius: var(--hm-radius-md);
-  background: var(--hm-surface);
-  text-decoration: none;
-  color: inherit;
-  transition: background var(--hm-dur-fast) var(--hm-ease-out);
-}
-.hm-continue__item:hover {
-  background: var(--hm-paper-dim);
-}
-.hm-continue__item:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--hm-accent);
-}
-.hm-continue__domain {
-  font-weight: 600;
-  font-size: 13px;
-}
-.hm-continue__meta {
-  font-size: 11px;
-  color: var(--hm-ink-40);
-}
-
-/* ---- Pinned section — every note the user explicitly marked important,
-   across all websites. Same restrained, non-card treatment as note rows;
-   the accent-colored kicker (domain, not a whole chip) is what
-   distinguishes a pin from an ordinary note preview. ---- */
-.hm-pinned {
-  margin-bottom: var(--hm-space-6);
-}
-.hm-pinned__title {
-  margin: 0 0 var(--hm-space-2);
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--hm-ink-40);
-}
-.hm-pinned__list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-}
-/* Each pinned item + its `NoteActionsMenu` trigger, side by side — same
-   layout as `.hm-group__note`/`.hm-folder-note` in the other two views. */
-.hm-pinned__row {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--hm-space-1);
-}
-.hm-pinned__row .hm-pinned__item {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-.hm-pinned__item {
-  display: block;
-  padding: var(--hm-space-2);
-  border-radius: var(--hm-radius-sm);
-  text-decoration: none;
-  color: inherit;
-  transition: background var(--hm-dur-fast) var(--hm-ease-out);
-}
-.hm-pinned__item:hover {
-  background: var(--hm-paper-dim);
-}
-.hm-pinned__item:focus-visible {
-  outline: none;
-  box-shadow: inset 0 0 0 2px var(--hm-accent);
-}
-.hm-pinned__kicker {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  margin-bottom: 2px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--hm-accent-strong);
-}
-.hm-pinned__preview {
-  margin: 0 0 2px;
-  font-family: var(--hm-serif);
-  font-size: 13.5px;
-  line-height: 1.5;
-  color: var(--hm-ink);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.hm-scope[dir='rtl'] .hm-pinned__preview {
-  font-family: var(--hm-arabic);
-}
-.hm-pinned__meta {
-  font-size: 11px;
-  color: var(--hm-ink-40);
-}
-
-/* ---- Website groups — hairline separators between groups (`.hm-groups > li
-   + li` below); individual notes inside a group get their own border (see
-   `.hm-note-row`) so they're easy to tell apart at a glance. ---- */
-.hm-groups {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.hm-groups > li + li {
-  /* Margin above and padding below the hairline give it breathing room on
-     both sides — flush against the previous (possibly-collapsed, 0-height)
-     group above and the next header's content below otherwise looked
-     cramped. */
-  margin-top: var(--hm-space-2);
-  border-top: 1px solid var(--hm-border);
-  padding-top: var(--hm-space-2);
-}
-.hm-group__header {
-  display: flex;
-  align-items: center;
-  gap: var(--hm-space-3);
-  width: 100%;
-  padding: var(--hm-space-3) var(--hm-space-2);
-  border: none;
-  background: none;
-  border-radius: var(--hm-radius-md);
-  cursor: pointer;
-  text-align: start;
-  font-family: var(--hm-sans);
-  color: var(--hm-ink);
-  transition: background var(--hm-dur-fast) var(--hm-ease-out);
-}
-.hm-group__header:hover {
-  background: var(--hm-paper-dim);
-}
-.hm-group__header:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--hm-accent);
-}
-.hm-group__domain {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: 600;
-  font-size: 14px;
-}
-.hm-group__count {
-  flex: none;
-  font-size: 12px;
-  color: var(--hm-ink-40);
-}
-.hm-group__chevron {
-  flex: none;
-  color: var(--hm-ink-40);
-  transition: transform var(--hm-dur-base) var(--hm-ease-out);
-}
-.hm-group__chevron[data-expanded='true'] {
-  transform: rotate(180deg);
-}
-
-/* Height animation via CSS grid-rows — no JS measurement, cheap, and the
-   only way to animate to "auto" height smoothly. */
-.hm-group__body {
-  display: grid;
-  grid-template-rows: 0fr;
-  /* Belt-and-suspenders clipping — the actual fix for the direct grid
-     item's own padding is `.hm-group__body-inner` below (a padding-less
-     wrapper, since the 0fr row's own *track size* is computed from its
-     direct item's required minimum, padding included, and doesn't shrink
-     to 0 just because that item has `overflow: hidden`/`min-height: 0`
-     on itself — those only cancel its *content's* minimum, not its own
-     padding). This still helps for anything else nested here that isn't
-     wrapped that carefully. */
-  overflow: hidden;
-  transition: grid-template-rows var(--hm-dur-base) var(--hm-ease-out);
-}
-.hm-group__body[data-expanded='true'] {
-  grid-template-rows: 1fr;
-}
-.hm-group__body-inner {
-  /* The sole direct child of `.hm-group__body` — see the comment in
-     `WebsiteGroup.tsx` for why `.hm-group__list`'s own padding can't sit on
-     the grid item directly. */
-  overflow: hidden;
-  min-height: 0;
-}
-.hm-group__list {
-  overflow: hidden;
-  min-height: 0;
-  list-style: none;
-  margin: 0;
-  /* Top padding keeps the first note's own border (see `.hm-note-row`) from
-     sitting flush against the header row above it. */
-  padding: var(--hm-space-2) 0;
-}
-/* Gap between notes via the sibling combinator (same technique
-   `.hm-groups > li + li` already uses for the domain-grouped list's own
-   separators), not a `:last-child` margin on `.hm-note-row` itself — each
-   note's `<a>` is the *only* child of its own `<li>` wrapper here, so it's
-   trivially always "last child" of *that* `<li>`, making a `:last-child`
-   rule on the row match every note instead of just the actual last one
-   (the bug this replaced: notes rendered with zero gap between them). */
-.hm-group__list > li + li,
-.hm-folder-node__notes > li + li {
-  margin-top: var(--hm-space-2);
-}
-/* Each note row + its `NoteActionsMenu` trigger, side by side — same
-   layout as `.hm-folder-note` in the folder-tree view, minus the
-   folder-tree-only drag-and-drop affordance. */
-.hm-group__note {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--hm-space-1);
-}
-.hm-group__note .hm-note-row {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-/* The card. Its link (`.hm-note-row__link`) is stretched over all of it by
-   the `::after` below, so the whole card — meta line included — opens the
-   note, while the "Show more" toggle, raised above that layer, stays a
-   separate control. See NoteRow.tsx for why the link isn't the card. */
-.hm-note-row {
-  position: relative;
-  display: block;
-  padding: var(--hm-space-3);
-  border: 1px solid var(--hm-border);
-  border-radius: var(--hm-radius-md);
-  color: inherit;
-  transition:
-    background var(--hm-dur-fast) var(--hm-ease-out),
-    border-color var(--hm-dur-fast) var(--hm-ease-out);
-}
-.hm-note-row:hover {
-  background: var(--hm-paper-dim);
-  border-color: var(--hm-ink-20);
-}
-.hm-note-row:has(> .hm-note-row__link:focus-visible) {
-  border-color: var(--hm-accent);
-  box-shadow: inset 0 0 0 2px var(--hm-accent);
-}
-.hm-note-row__link {
-  display: block;
-  color: inherit;
-  text-decoration: none;
-}
-.hm-note-row__link:focus-visible {
-  outline: none;
-}
-.hm-note-row__link::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-}
-.hm-note-row__domain {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  margin: 0 0 2px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--hm-accent-strong);
-}
-.hm-note-row__title {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin: 0 0 2px;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--hm-ink-60);
-}
-.hm-note-row__title svg {
-  flex: none;
-  color: var(--hm-accent-strong);
-}
-.hm-note-row__preview {
-  margin: 0 0 4px;
-  font-family: var(--hm-serif);
-  font-size: 13.5px;
-  line-height: 1.5;
-  color: var(--hm-ink);
-  overflow-wrap: anywhere;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.hm-scope[dir='rtl'] .hm-note-row__preview {
-  font-family: var(--hm-arabic);
-}
-/* Expanded: the whole note, with the line breaks it was written with, but
-   never taller than a comfortable read — a 10,000-character note scrolls
-   inside its own card instead of shoving the rest of the library a screen
-   away. Raised above the stretched link so the wheel scrolls it. */
-.hm-note-row__preview[data-expanded='true'] {
-  position: relative;
-  z-index: 1;
-  display: block;
-  -webkit-line-clamp: unset;
-  max-height: min(22rem, 55vh);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  white-space: pre-wrap;
-}
-.hm-note-row__toggle {
-  position: relative;
-  z-index: 1;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin: 0 0 4px;
-  padding: 1px 2px;
-  font-family: var(--hm-sans);
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--hm-accent-strong);
-  background: none;
-  border: none;
-  border-radius: var(--hm-radius-sm);
-  cursor: pointer;
-}
-.hm-note-row__toggle:hover {
-  text-decoration: underline;
-}
-.hm-note-row__toggle:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--hm-accent);
-}
-.hm-note-row__toggle-chevron {
-  transition: transform var(--hm-dur-fast) var(--hm-ease-out);
-}
-.hm-note-row__toggle-chevron[data-expanded='true'] {
-  transform: rotate(180deg);
-}
-.hm-note-row__meta {
-  display: flex;
-  align-items: center;
-  gap: var(--hm-space-2);
-  margin: 0;
-  font-size: 11px;
-  color: var(--hm-ink-40);
-}
-/* A contextual note's attached page text, above its own text in the row.
-   Sits between the page title and the note preview — the same reading order
-   the in-page viewer uses, and the same in the Pinned list. */
-.hm-note-row .hm-attached,
-.hm-pinned__item .hm-attached {
-  margin: 2px 0 4px;
-}
-
-.hm-note-row__video-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  color: var(--hm-accent-strong);
-  font-family: var(--hm-mono);
-  font-size: 10.5px;
-}
-
-/* ---- Empty state ---- */
-.hm-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: var(--hm-space-6) var(--hm-space-4);
-  color: var(--hm-ink-60);
-}
-.hm-empty .hm-mark {
-  color: var(--hm-accent);
-  opacity: 0.7;
-  margin-bottom: var(--hm-space-3);
-}
-.hm-empty__title {
-  margin: 0 0 var(--hm-space-2);
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--hm-ink);
-}
-.hm-empty__body {
-  margin: 0;
-  max-width: 320px;
-  font-size: 13px;
-}
-
-/* ---- Library Settings view ---- */
-.hm-settings__subheading {
-  margin: var(--hm-space-6) 0 0;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--hm-ink-40);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-/* A section's one-line explanation, between its heading and its rows. */
-.hm-settings__intro {
-  margin: var(--hm-space-2) 0 var(--hm-space-2);
-  color: var(--hm-ink-60);
-  font-size: 12.5px;
-  line-height: 1.5;
-}
-
-/* The settings body is a column, which would otherwise stretch a lone button
-   across the whole page. */
-.hm-settings__body > .hm-btn {
-  align-self: flex-start;
-}
-
-/* ---- Shortcut badge (read-only — Chrome has no API for an extension to
-   change its own shortcut; see LibrarySettingsView) ---- */
-.hm-shortcut-badge {
-  font-family: var(--hm-mono);
-  font-size: 12px;
-  padding: var(--hm-space-1) var(--hm-space-2);
-  background: var(--hm-paper-dim);
-  border-radius: var(--hm-radius-sm);
-}
-
-/* ---- Folder tree (Notes Library "By folder" mode) — same hairline-
-   separator, no-cards aesthetic as the domain-grouped list. ---- */
-.hm-folder-tree__toolbar {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: var(--hm-space-2);
-}
-.hm-folder-tree__list,
-.hm-folder-node__children {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.hm-folder-tree__list > li + li {
-  /* Same breathing room as `.hm-groups > li + li` — flush against the
-     previous (possibly-collapsed) folder above and the next row's content
-     below otherwise looked cramped. */
-  margin-top: var(--hm-space-2);
-  border-top: 1px solid var(--hm-border);
-  padding-top: var(--hm-space-2);
-}
-.hm-folder-node__children {
-  /* `.hm-folder-node__body`'s collapse trick (grid-template-rows: 0fr) only
-     actually clips its content when every direct child can shrink to
-     nothing — same reason `.hm-folder-node__notes` below needs this too.
-     Without it, a collapsed folder's own sub-folders stayed visible even
-     though its directly-filed notes correctly hid. */
-  overflow: hidden;
-  min-height: 0;
-  padding-inline-start: var(--hm-space-2);
-}
-
-.hm-folder-node {
-  display: flex;
-  align-items: center;
-  gap: var(--hm-space-2);
-  padding: var(--hm-space-2);
-  border-radius: var(--hm-radius-md);
-  cursor: pointer;
-  transition: background var(--hm-dur-fast) var(--hm-ease-out);
-}
-.hm-folder-node:hover {
-  background: var(--hm-paper-dim);
-}
-.hm-folder-node[data-drag-over='true'] {
-  background: var(--hm-accent-tint);
-  outline: 1px dashed var(--hm-accent);
-  outline-offset: -1px;
-}
-.hm-folder-node--unfiled .hm-folder-node__name {
-  color: var(--hm-ink-60);
-  font-style: italic;
-}
-.hm-folder-node__toggle {
-  flex: none;
-  display: inline-flex;
-  border: none;
-  background: none;
-  padding: 2px;
-  cursor: pointer;
-  color: var(--hm-ink-40);
-}
-.hm-folder-node__chevron {
-  /* Collapsed: points at the folder glyph beside it (►). Expanded: rotates
-     to point down (▼) — the familiar file-explorer convention. */
-  transition: transform var(--hm-dur-base) var(--hm-ease-out);
-}
-.hm-folder-node__chevron[data-expanded='true'] {
-  transform: rotate(90deg);
-}
-/* Mirrored in RTL so a collapsed folder's chevron still points toward its
-   glyph (now on the chevron's visual left, since the row itself mirrors). */
-.hm-scope[dir='rtl'] .hm-folder-node__chevron {
-  transform: scaleX(-1);
-}
-.hm-scope[dir='rtl'] .hm-folder-node__chevron[data-expanded='true'] {
-  transform: scaleX(-1) rotate(90deg);
-}
-.hm-folder-node__glyph {
-  flex: none;
-  color: var(--hm-accent);
-  /* Purely decorative — lets a click on the icon fall through to
-     `.hm-folder-node`'s own row-click-to-toggle handler instead of being a
-     dead zone. */
-  pointer-events: none;
-}
-.hm-folder-node__name {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  text-align: start;
-  border: none;
-  background: none;
-  cursor: pointer;
-  font-family: var(--hm-sans);
-  font-weight: 600;
-  font-size: 13.5px;
-  color: var(--hm-ink);
-  padding: 0;
-}
-.hm-folder-node__count {
-  flex: none;
-  font-size: 12px;
-  color: var(--hm-ink-40);
-  /* Same reasoning as `.hm-folder-node__glyph` — a click here should still
-     toggle the row, not land on a dead zone. */
-  pointer-events: none;
-}
-.hm-folder-node__actions {
-  flex: none;
-  display: flex;
-  gap: 2px;
-  opacity: 0;
-  transition: opacity var(--hm-dur-fast) var(--hm-ease-out);
-}
-.hm-folder-node:hover .hm-folder-node__actions,
-.hm-folder-node:focus-within .hm-folder-node__actions {
-  opacity: 1;
-}
-
-.hm-folder-node__confirm {
-  padding: var(--hm-space-2) var(--hm-space-2) var(--hm-space-3);
-  font-size: 12.5px;
-  color: var(--hm-ink-60);
-}
-.hm-folder-node__confirm p {
-  margin: 0 0 var(--hm-space-2);
-}
-
-.hm-folder-node__body {
-  display: grid;
-  grid-template-rows: 0fr;
-  /* Belt-and-suspenders clipping — see the matching comment on
-     `.hm-group__body` for why this alone doesn't zero out a direct grid
-     item's own padding; `.hm-folder-node__body-inner` below is the actual
-     fix for that. */
-  overflow: hidden;
-  transition: grid-template-rows var(--hm-dur-base) var(--hm-ease-out);
-}
-.hm-folder-node__body[data-expanded='true'] {
-  grid-template-rows: 1fr;
-}
-.hm-folder-node__body-inner {
-  /* The sole direct child of `.hm-folder-node__body`, and deliberately with
-     no padding of its own — see the comment in `FolderTree.tsx` for why the
-     notes list and the sub-folder list can't be two separate direct
-     children of the 0fr/1fr grid row, and the comment on
-     `.hm-group__body-inner` for why `.hm-folder-node__notes`' own padding
-     can't sit on the grid item directly either. */
-  overflow: hidden;
-  min-height: 0;
-}
-.hm-folder-node__notes {
-  overflow: hidden;
-  min-height: 0;
-  list-style: none;
-  margin: 0;
-  /* Top padding keeps the first note's own border from sitting flush
-     against the folder header row above it (matches `.hm-group__list`). */
-  padding: var(--hm-space-2) 0;
-}
-.hm-folder-note {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--hm-space-1);
-}
-.hm-folder-note .hm-note-row {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-.hm-folder-note[draggable='true'] {
-  cursor: grab;
-}
-
-/* Inline create/rename form — matches the composer's textarea focus
-   treatment, kept to a single-line input since folder names are short. */
-.hm-folder-form {
-  display: flex;
-  align-items: center;
-  gap: var(--hm-space-2);
-  padding: var(--hm-space-2);
-}
-.hm-folder-form__input,
-.hm-folder-menu__input {
-  flex: 1 1 auto;
-  min-width: 0;
-  padding: 6px var(--hm-space-2);
-  font-family: var(--hm-sans);
-  font-size: 13px;
-  color: var(--hm-ink);
-  background: var(--hm-surface);
-  border: 1px solid var(--hm-border);
-  border-radius: var(--hm-radius-sm);
-}
-.hm-folder-form__input:focus-visible,
-.hm-folder-menu__input:focus-visible {
-  outline: none;
-  border-color: var(--hm-accent);
-  box-shadow: 0 0 0 3px var(--hm-accent-tint);
-}
-
-/* ---- Note actions menu — pin/unpin, edit, delete, and move to folder,
-   attached to a note row in both the domain-grouped and folder-tree views
-   (see NoteActionsMenu.tsx). ---- */
-.hm-folder-menu {
-  flex: none;
-}
-/* `position`/`top`/`left`/`right` are set inline (computed from the
-   trigger's real `getBoundingClientRect()` — see NoteActionsMenu.tsx) —
-   this is portaled to the page's `.hm-scope` wrapper, not a child of
-   `.hm-folder-menu`, specifically so an `overflow: hidden` ancestor several
-   levels up (the folder tree's collapse-animation containers) can't clip
-   it, while staying inside the `--hm-*` design-token scope (`.hm-scope`,
-   not `document.body` — see `findScopeRoot`). A plain `position: absolute`
-   popover nested in place would get clipped exactly like any other
-   descendant the moment it needed to extend past those ancestors' bounds. */
-.hm-folder-menu__panel {
-  z-index: 1000;
-  min-width: 180px;
-  padding: var(--hm-space-1);
-  background: var(--hm-surface);
-  border: 1px solid var(--hm-border);
-  border-radius: var(--hm-radius-md);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-}
-.hm-folder-menu__item {
-  display: block;
-  width: 100%;
-  padding: 6px var(--hm-space-2);
-  border: none;
-  background: none;
-  border-radius: var(--hm-radius-sm);
-  cursor: pointer;
-  text-align: start;
-  font-family: var(--hm-sans);
-  font-size: 12.5px;
-  color: var(--hm-ink);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-/* The pin item's leading `<PinIcon>` — inline rather than flex, so the
-   truncating-text items (folder names) keep their existing
-   overflow/ellipsis behavior unchanged. */
-.hm-folder-menu__item svg {
-  flex: none;
-  vertical-align: -1px;
-  margin-inline-end: 6px;
-}
-.hm-folder-menu__item:hover {
-  background: var(--hm-paper-dim);
-}
-.hm-folder-menu__item--new {
-  color: var(--hm-accent);
-  font-weight: 500;
-}
-.hm-folder-menu__item--danger {
-  color: var(--hm-danger);
-}
-/* "No folder" + each folder name in the "Move to folder" list — a trailing
-   checkmark on the note's current folder (see `CurrentFolderCheck` in
-   NoteActionsMenu.tsx), not a leading one: the name still needs to start at
-   a consistent position regardless of depth-based indentation (`style=
-   paddingInlineStart`) for the nesting levels to stay visually aligned,
-   which a leading icon would throw off by shifting the text over on
-   whichever rows happen to be checked. */
-.hm-folder-menu__item--folder-option {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-}
-.hm-folder-menu__item--folder-option span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
-}
-.hm-folder-menu__item--folder-option svg {
-  margin-inline-end: 0;
-}
-.hm-folder-menu__item[aria-checked='true'] {
-  color: var(--hm-accent);
-  font-weight: 600;
-}
-.hm-folder-menu__divider {
-  height: 1px;
-  margin: var(--hm-space-1) 2px;
-  background: var(--hm-border);
-}
-.hm-folder-menu__section-label {
-  padding: 4px var(--hm-space-2) 2px;
-  font-size: 10.5px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: var(--hm-ink-40);
-}
-.hm-folder-menu__create {
-  display: flex;
-  align-items: center;
-  gap: var(--hm-space-1);
-  padding: 4px;
-}
-.hm-folder-menu__edit {
-  width: 240px;
-  padding: var(--hm-space-2);
+  .hm-sidebar__nav--foot {
+    margin-top: 0;
+    margin-inline-start: auto;
+  }
+  .hm-sidebar__nav-item {
+    white-space: nowrap;
+  }
+  .hm-sidebar__dot {
+    margin-inline-start: 0;
+  }
 }

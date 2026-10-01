@@ -2,17 +2,17 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
-import { InlineConfirm } from '@/ui/teams/InlineConfirm';
-import { getTeamsStrings } from '@/ui/teams/strings';
+import { InlineConfirm } from '@/ui/kit/InlineConfirm';
+import { getStrings } from '@/ui/i18n';
 
-const strings = getTeamsStrings('en');
+const strings = getStrings('en');
 
 function view(overrides: { working?: boolean } = {}) {
   const onConfirm = vi.fn();
   const onCancel = vi.fn();
   render(
     <InlineConfirm
-      strings={strings}
+      cancelLabel={strings.keepIt}
       question="Delete this for everyone in Alpha?"
       confirmLabel="Delete"
       working={overrides.working}
@@ -51,9 +51,11 @@ describe('asking before something irreversible', () => {
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 
-  it('says it is working, and takes no second answer while it is', () => {
+  it('keeps its own label while it is working, says so, and takes no second answer', () => {
     const { onConfirm, onCancel } = view({ working: true });
-    const confirm = screen.getByRole('button', { name: strings.working });
+    // Not swapped for a generic "Working…": the button is still what it was.
+    const confirm = screen.getByRole('button', { name: 'Delete' });
+    expect(confirm).toHaveAttribute('aria-busy', 'true');
     expect(confirm).toBeDisabled();
     fireEvent.click(confirm);
     fireEvent.click(screen.getByRole('button', { name: strings.keepIt }));

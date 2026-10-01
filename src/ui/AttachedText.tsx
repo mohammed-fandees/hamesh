@@ -17,8 +17,8 @@ interface AttachedTextProps {
 export function AttachedText({ label, text, compact = false }: AttachedTextProps) {
   return (
     <div className={compact ? 'hm-attached hm-attached--compact' : 'hm-attached'}>
-      {!compact && <span className="hm-attached__label">{label}</span>}
-      <p className="hm-attached__quote" dir="auto" title={compact ? text : undefined}>
+      {!compact && <span className="hm-overline">{label}</span>}
+      <p className="hm-attached__quote hm-serif" dir="auto" title={compact ? text : undefined}>
         {text}
       </p>
     </div>

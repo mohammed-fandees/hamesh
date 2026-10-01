@@ -1,199 +1,499 @@
 /**
- * Everything Teams draws: the account row in Settings, the Teams page, shared
- * notes and their folders, comments and mentions.
+ * Everything only Teams draws: the team bar, a team's folders and people,
+ * members and invitations, a shared note and its discussion, Mentions, the
+ * account and the plan in Settings, and a shared note's chip in the Library.
  *
- * A stylesheet of its own, imported by the Teams views themselves rather than
- * by the Notes Library's, so a build without Teams drops these rules along with
- * the components that would have used them — the same rule the code follows.
+ * Applied only in a build that has Teams (see `./styles.ts`), so a build without
+ * it carries none of these rules. Everything else here — cards, rows, the
+ * menu, feedback, fields — is the kit every page shares (`pages.css`,
+ * `tokens.css`).
  */
 
-/* ---- Teams account row: the signed-in email beside its Sign out button ---- */
-.hm-teams-account {
+/* ---- The Library: whose notes, and which are a team's ---- */
+.hm-owner-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--hm-space-2);
+}
+/* Filter chips. The chosen one inverts — ink on paper — as the chosen
+   segment of a segmented control beside it does: the accent is the mark's,
+   and a row of tinted chips would compete with the chips inside the list. */
+.hm-owner-filter__pill,
+.hm-owner-filter__scope {
   display: inline-flex;
   align-items: center;
-  gap: var(--hm-space-3);
-  min-width: 0;
-}
-.hm-teams-account bdi {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* ---- Teams page ------------------------------------------------------
-   The same hairline-separated rows as the rest of the library: a team is a
-   list of people, not a dashboard, so nothing here gets a card or a panel. */
-.hm-input {
-  min-width: 0;
-  padding: var(--hm-space-2) var(--hm-space-3);
-  border: 1px solid var(--hm-border);
-  border-radius: var(--hm-radius-sm);
-  background: var(--hm-surface);
-  color: var(--hm-ink);
-  font: inherit;
-  font-size: 13px;
-}
-.hm-input:focus-visible {
-  outline: 2px solid var(--hm-accent);
-  outline-offset: 1px;
-}
-.hm-input--select {
-  flex: 0 0 auto;
-}
-.hm-input--number {
-  flex: 0 0 5rem;
-}
-
-.hm-team-switcher {
-  display: flex;
-  flex-wrap: wrap;
   gap: var(--hm-space-2);
-  margin: var(--hm-space-3) 0 0;
-  padding: 0;
-  list-style: none;
-}
-.hm-team-switcher__item {
-  display: flex;
-  align-items: baseline;
-  gap: var(--hm-space-2);
-  padding: var(--hm-space-2) var(--hm-space-3);
+  padding: 5px 14px;
   border: 1px solid var(--hm-border);
-  border-radius: var(--hm-radius-sm);
+  border-radius: var(--hm-radius-pill);
   background: var(--hm-surface);
-  color: inherit;
-  font: inherit;
-  font-size: 13px;
+  color: var(--hm-ink-60);
+  font-family: inherit;
+  font-size: var(--hm-text-body-sm);
   cursor: pointer;
+  transition:
+    background var(--hm-motion-state),
+    color var(--hm-motion-state),
+    border-color var(--hm-motion-state);
 }
-.hm-team-switcher__item[aria-current='true'] {
-  border-color: var(--hm-accent);
+.hm-owner-filter__pill:hover {
+  background: var(--hm-surface-hover);
+  color: var(--hm-ink);
+}
+.hm-owner-filter__pill[aria-pressed='true'] {
+  border-color: var(--hm-ink);
+  background: var(--hm-ink);
+  color: var(--hm-paper);
+}
+.hm-owner-filter__pill:focus-visible,
+.hm-owner-filter__scope:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--hm-surface),
+    0 0 0 4px var(--hm-accent);
+}
+.hm-owner-filter__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--hm-radius-pill);
+  background: var(--hm-accent);
+}
+/* The Library narrowed to one of a team's folders — a chip with its one way out. */
+.hm-owner-filter__scope {
+  border-color: var(--hm-accent-tint);
   background: var(--hm-accent-tint);
+  color: var(--hm-accent-strong);
+  font-weight: 500;
+}
+.hm-owner-filter__scope:hover {
+  border-color: var(--hm-accent);
 }
 
-.hm-team-members,
-.hm-team-invitations {
-  margin: var(--hm-space-2) 0 0;
-  padding: 0;
-  list-style: none;
+/* The one thing that says a note in the Library is not this device's alone. */
+.hm-team-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px var(--hm-space-2);
+  border-radius: var(--hm-radius-pill);
+  background: var(--hm-accent-tint);
+  color: var(--hm-accent-strong);
+  font-size: var(--hm-text-label);
+  line-height: var(--hm-lh-label);
+  font-weight: 500;
 }
-.hm-team-member,
-.hm-team-invitation {
+.hm-team-chip__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: var(--hm-radius-pill);
+  background: var(--hm-accent);
+}
+
+/* ---- The Teams page ---- */
+/* Which team, a new one, and what the reader is in it. */
+.hm-team-bar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
+  gap: var(--hm-space-2) var(--hm-space-3);
+  margin-bottom: var(--hm-space-4);
+}
+.hm-team-bar__new {
+  display: inline-flex;
+}
+.hm-team-bar__meta {
+  margin-inline-start: auto;
+  color: var(--hm-ink-40);
+  font-size: var(--hm-text-body-sm);
+}
+
+/* A team's folders, as tiles: a folder is a place to go, not a row to read. */
+.hm-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
   gap: var(--hm-space-3);
-  padding: var(--hm-space-3) 0;
-  border-bottom: 1px solid var(--hm-border);
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
-.hm-team-member:last-child,
-.hm-team-invitation:last-child {
-  border-bottom: none;
-}
-.hm-team-member__who,
-.hm-team-invitation__who {
+.hm-tile {
+  position: relative;
   display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-md);
+  background: var(--hm-paper);
+  transition: opacity var(--hm-motion-state);
+}
+.hm-tile[data-busy] {
+  opacity: var(--hm-state-disabled);
+}
+.hm-tile__open {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--hm-space-1);
+  min-width: 0;
+  padding: var(--hm-card-pad-dense);
+  border: none;
+  border-radius: inherit;
+  background: none;
+  color: inherit;
+  font-family: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: background var(--hm-motion-state);
+}
+.hm-tile__open:hover {
+  background: var(--hm-layer-hover);
+}
+.hm-tile__open:active {
+  background: var(--hm-layer-pressed);
+}
+.hm-tile__open:focus-visible {
+  outline: none;
+  background: var(--hm-layer-focus);
+  box-shadow: var(--hm-ring-inset);
+}
+.hm-tile > .hm-menu {
+  margin: 8px 8px 0 0;
+  margin-inline: 0 8px;
+}
+.hm-tile__name {
+  display: flex;
+  align-items: center;
+  gap: var(--hm-space-2);
+  font-size: var(--hm-text-body);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.hm-tile__name--quiet {
+  color: var(--hm-ink-60);
+}
+.hm-tile__glyph {
+  flex: none;
+  color: var(--hm-accent);
+}
+.hm-tile__count {
+  color: var(--hm-ink-40);
+  font-size: var(--hm-text-body-sm);
+}
+.hm-tile > .hm-alert {
+  flex-basis: 100%;
+  margin: 0 var(--hm-space-3) var(--hm-space-3);
+}
+.hm-tile--add {
+  border-style: dashed;
+  border-color: var(--hm-ink-20);
+  background: none;
+}
+.hm-tile__add {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+  align-self: stretch;
+  padding: var(--hm-card-pad-dense);
+  border: none;
+  border-radius: inherit;
+  background: none;
+  color: var(--hm-ink-60);
+  font-family: inherit;
+  font-size: var(--hm-text-body-sm);
+  text-align: start;
+  cursor: pointer;
+  transition:
+    background var(--hm-motion-state),
+    color var(--hm-motion-state);
+}
+.hm-tile__add:hover {
+  background: var(--hm-layer-hover);
+  color: var(--hm-accent-strong);
+}
+.hm-tile__add:focus-visible {
+  outline: none;
+  background: var(--hm-layer-focus);
+  box-shadow: var(--hm-ring-inset);
+}
+.hm-tile__form {
+  flex: 1;
+  padding: var(--hm-space-2);
+}
+
+/* Who is in it, as chips. */
+.hm-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--hm-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.hm-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hm-space-2);
+  padding-block: var(--hm-space-1);
+  padding-inline: var(--hm-space-1) var(--hm-space-3);
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-pill);
+  background: var(--hm-paper);
+  font-size: var(--hm-text-body-sm);
+}
+.hm-chip__meta {
+  color: var(--hm-ink-40);
+}
+
+/* A team's name, and what ends it. */
+.hm-team-settings__name {
+  color: var(--hm-ink);
+  font-size: var(--hm-text-body);
+}
+.hm-team-settings__end {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--hm-space-2);
+  margin-top: var(--hm-space-3);
+}
+.hm-team-settings__end > .hm-confirm {
+  flex: 1;
+}
+
+/* ---- People ---- */
+/* One row per person: who, their role, and what can be done. In its own card
+   the rows run edge to edge, hairline between, with the dense card padding. */
+.hm-team-members,
+.hm-team-invitations {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.hm-team-member {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--hm-space-2) var(--hm-space-3);
+  padding: var(--hm-card-pad-dense);
+}
+.hm-team-member + .hm-team-member {
+  border-top: 1px solid var(--hm-ink-10);
+}
+/* A row being asked about carries the question's weight. */
+.hm-team-member[data-asking='remove'] {
+  background: var(--hm-danger-tint);
+}
+.hm-team-member__who {
+  display: flex;
+  flex: 1 1 12rem;
   min-width: 0;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 .hm-team-member__name {
-  display: flex;
-  gap: var(--hm-space-2);
-  align-items: baseline;
-  font-size: 13.5px;
+  font-size: var(--hm-text-body);
+  font-weight: 500;
 }
-.hm-team-member__you {
+.hm-team-member__you,
+.hm-team-member__meta {
   color: var(--hm-ink-40);
-  font-size: 12px;
+  font-size: var(--hm-text-body-sm);
+  font-weight: 400;
 }
 .hm-team-member__email {
   color: var(--hm-ink-60);
-  font-size: 12px;
+  font-size: var(--hm-text-body-sm);
 }
-.hm-team-member__meta {
-  color: var(--hm-ink-40);
-  font-size: 12px;
+.hm-team-member__role {
+  color: var(--hm-ink-60);
+  font-size: var(--hm-text-body-sm);
 }
 .hm-team-member__actions {
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-end;
   gap: var(--hm-space-2);
 }
+.hm-team-member__actions:has(.hm-confirm) {
+  flex: 1 1 100%;
+}
+.hm-team-member__actions > .hm-confirm {
+  flex: 1;
+}
+.hm-team-member__alert,
+.hm-team-invitation__alert {
+  flex-basis: 100%;
+}
 
+/* Inviting: an email, a role, and the button that makes the link. */
 .hm-team-invite {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--hm-space-2);
   align-items: center;
-  margin: var(--hm-space-3) 0 0;
+  gap: var(--hm-space-2);
+  margin-top: var(--hm-space-3);
 }
-.hm-team-invite .hm-input[type='text'],
-.hm-team-invite .hm-input[type='email'] {
+.hm-team-invite > .hm-input {
   flex: 1 1 14rem;
 }
-
+.hm-team-invite + .hm-alert,
+.hm-team-invite + .hm-supporting {
+  margin-top: var(--hm-space-2);
+}
 /* A new invite link is shown once and never stored, so it is given room to
    be read and copied rather than truncated into a row. */
 .hm-invite-link {
-  margin: var(--hm-space-3) 0 0;
+  margin-top: var(--hm-space-3);
   padding: var(--hm-space-3);
   border: 1px solid var(--hm-border);
-  border-radius: var(--hm-radius-sm);
+  border-radius: var(--hm-radius-md);
   background: var(--hm-paper-dim);
 }
 .hm-invite-link__title {
   margin: 0 0 var(--hm-space-2);
-  font-size: 13px;
+  font-size: var(--hm-text-body);
+  font-weight: 500;
 }
 .hm-invite-link__value {
   display: block;
   overflow-wrap: anywhere;
   margin-bottom: var(--hm-space-2);
   font-family: var(--hm-mono);
-  font-size: 12px;
+  font-size: var(--hm-text-body-sm);
   user-select: all;
 }
-
-.hm-team-detail {
-  margin-top: var(--hm-space-4);
+.hm-team-invitations {
+  margin-top: var(--hm-space-3);
 }
-.hm-billing__price {
-  margin: var(--hm-space-3) 0 0;
-  font-size: 15px;
+.hm-team-invitation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--hm-space-2) var(--hm-space-3);
+  padding: var(--hm-space-3) 0;
+}
+.hm-team-invitation + .hm-team-invitation {
+  border-top: 1px solid var(--hm-ink-10);
+}
+.hm-team-invitation__who {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--hm-text-body);
 }
 
-/* ---- Comments on a shared note ---- */
-/* A discussion sits under the note it is about, indented behind a hairline so
-   the eye reads it as belonging to that row rather than as the next one. */
-.hm-team-note__discussion {
-  margin: var(--hm-space-3) 0 var(--hm-space-2);
-  padding-inline-start: var(--hm-space-3);
-  border-inline-start: 2px solid var(--hm-border);
+/* ---- One shared note ---- */
+.hm-team-note {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hm-space-2);
+}
+.hm-team-note[data-working] {
+  opacity: 0.85;
+}
+.hm-team-note__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--hm-space-2);
+}
+.hm-team-note__page {
+  font-size: var(--hm-text-body);
+  padding: 0;
+}
+.hm-team-note__domain {
+  color: var(--hm-ink-40);
+  font-size: var(--hm-text-body-sm);
+}
+.hm-team-note__meta {
+  margin-inline-start: auto;
+  color: var(--hm-ink-40);
+  font-size: var(--hm-text-body-sm);
+}
+.hm-team-note__body {
+  margin: 0;
+  font-size: var(--hm-text-prose);
+  line-height: var(--hm-lh-prose);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+/* A note's controls on one line where they fit, under a hairline: tighter than
+   the page's usual rhythm, because there can be four of them beside a folder. */
+.hm-team-note__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--hm-space-2) var(--hm-space-4);
+  padding-top: var(--hm-space-2);
+  border-top: 1px solid var(--hm-ink-10);
+}
+.hm-team-note__move {
+  max-width: 12rem;
+  padding-block: 3px;
+  font-size: var(--hm-text-body-sm);
+}
+.hm-team-note__spacer {
+  flex-grow: 1;
+}
+.hm-team-note .hm-confirm {
+  padding-top: var(--hm-space-2);
+  border-top: 1px solid var(--hm-ink-10);
+}
+.hm-team-note__comments-title {
+  margin: var(--hm-space-5) 0 var(--hm-space-2);
+}
+
+/* ---- A discussion ---- */
+.hm-discussion {
+  margin-top: 0;
 }
 .hm-comments {
   margin: 0;
   padding: 0;
   list-style: none;
 }
+.hm-comments > li + li {
+  border-top: 1px solid var(--hm-ink-10);
+}
+.hm-comments .hm-comments > li {
+  border-top: none;
+}
+/* A comment: who said it, beside what they said. A reply is the same row,
+   stepped in once — replies are one level deep, so this never compounds. */
 .hm-comment {
   display: flex;
+  align-items: flex-start;
+  gap: var(--hm-space-3);
+  padding: var(--hm-space-3) 0;
+}
+.hm-comment[data-reply='true'] {
+  padding-inline-start: calc(var(--hm-space-6) + var(--hm-space-1));
+}
+.hm-comment--more,
+.hm-comment--compose {
+  display: block;
+}
+.hm-comment__content {
+  display: flex;
+  flex: 1;
+  min-width: 0;
   flex-direction: column;
   gap: 2px;
-  padding: var(--hm-space-2) 0;
-}
-/* A reply is the same card, stepped in once. Replies are one level deep, so
-   this never compounds. */
-.hm-comment[data-reply='true'] {
-  padding-inline-start: var(--hm-space-4);
 }
 .hm-comment__meta {
   color: var(--hm-ink-40);
-  font-size: 12px;
+  font-size: var(--hm-text-body-sm);
+}
+.hm-comment__author {
+  color: var(--hm-ink);
+  font-weight: 500;
 }
 .hm-comment__body {
   margin: 0;
-  font-size: 13.5px;
+  font-size: var(--hm-text-body);
   line-height: 1.55;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -202,7 +502,7 @@
 .hm-comment__gone {
   margin: 0;
   color: var(--hm-ink-40);
-  font-size: 13px;
+  font-size: var(--hm-text-body);
   font-style: italic;
 }
 .hm-comment__actions {
@@ -210,6 +510,10 @@
   flex-wrap: wrap;
   gap: var(--hm-space-3);
   margin-top: 2px;
+}
+.hm-comment__content > .hm-confirm,
+.hm-comment__content > .hm-alert {
+  margin-top: var(--hm-space-2);
 }
 /* Someone named in a comment. Tinted rather than boxed, so a sentence full of
    them still reads as a sentence; the reader's own name is the one that
@@ -224,15 +528,33 @@
   background: var(--hm-accent-tint);
 }
 
+.hm-discussion__compose {
+  margin-top: var(--hm-space-3);
+  padding-top: var(--hm-space-3);
+  border-top: 1px solid var(--hm-ink-10);
+}
 .hm-comment-composer {
   position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--hm-space-2);
-  margin-top: var(--hm-space-2);
+}
+/* A comment is conversation, not a note: the page's own sans, never the
+   browser's monospace default for a textarea. */
+.hm-comment-composer .hm-textarea {
+  font-family: inherit;
+  min-height: 64px;
+  font-size: var(--hm-text-body);
+  line-height: 1.55;
 }
 .hm-comment-composer .hm-row {
-  justify-content: flex-end;
+  margin-top: 0;
+}
+.hm-comment-composer__hint {
+  margin-inline-end: auto;
+  color: var(--hm-ink-40);
+  font-size: var(--hm-text-label);
+  line-height: var(--hm-lh-label);
 }
 /* The picker floats over what follows rather than pushing it down, so the
    textarea does not jump while someone is typing a name into it. */
@@ -241,403 +563,108 @@
   z-index: 2;
   inset-inline-start: 0;
   top: 100%;
-  min-width: 12rem;
-  max-height: 12rem;
+  min-width: 14rem;
+  max-height: 14rem;
   overflow-y: auto;
   margin: 2px 0 0;
   padding: var(--hm-space-1);
   list-style: none;
   border: 1px solid var(--hm-border);
-  border-radius: var(--hm-radius-sm);
+  border-radius: var(--hm-radius-md);
   background: var(--hm-surface);
-  box-shadow: var(--hm-shadow-md);
+  box-shadow: var(--hm-elev-2);
 }
 .hm-mention-picker__item {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: var(--hm-space-2);
   width: 100%;
-  padding: var(--hm-space-2);
+  padding: 6px var(--hm-space-2);
   border: none;
   border-radius: var(--hm-radius-sm);
   background: none;
   color: inherit;
-  font: inherit;
+  font-family: inherit;
+  font-size: var(--hm-text-body);
   text-align: start;
   cursor: pointer;
 }
-.hm-mention-picker__item:hover,
-.hm-mention-picker__item[data-highlighted='true'] {
+.hm-mention-picker__item:hover {
+  background: var(--hm-layer-hover);
+}
+/* The keyboard's choice is the one that Enter will take, so it is a selection,
+   not a hover. */
+.hm-mention-picker__item[aria-selected='true'] {
   background: var(--hm-accent-tint);
 }
 .hm-mention-picker__empty {
   padding: var(--hm-space-2);
   color: var(--hm-ink-40);
-  font-size: 12.5px;
-}
-
-/* ---- The redesign: one row's state, one row's question ---- */
-
-/* The team switcher and what sits beside it. */
-.hm-team-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--hm-space-3);
-  margin: var(--hm-space-4) 0 var(--hm-space-2);
-}
-.hm-team-bar__meta {
-  margin-inline-start: auto;
-  color: var(--hm-ink-40);
-  font-size: 12px;
-}
-
-/* "+ New team", "+ New folder" — an outline that says "there could be more
-   here", set apart from the solid chips beside it. */
-.hm-chip-add {
-  padding: var(--hm-space-2) var(--hm-space-4);
-  border: 1px dashed var(--hm-ink-20);
-  border-radius: var(--hm-radius-pill);
-  background: none;
-  color: var(--hm-ink-60);
-  font: inherit;
-  font-size: 12.5px;
-  cursor: pointer;
-  transition:
-    border-color var(--hm-dur-fast) var(--hm-ease-out),
-    color var(--hm-dur-fast) var(--hm-ease-out);
-}
-.hm-chip-add:hover {
-  border-color: var(--hm-accent);
-  color: var(--hm-accent-strong);
-}
-
-/* A question asked where the thing is, instead of in the browser's own box.
-   The two answers stay together: when the question needs the whole line, both
-   drop to the next one rather than one of them being orphaned. */
-.hm-confirm {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--hm-space-2);
-  padding: var(--hm-space-2) 0;
-}
-.hm-confirm__question {
-  flex: 1 1 14rem;
-  font-size: 12.5px;
-}
-
-/* A refusal, said beside whatever was refused. */
-.hm-field-error {
-  margin: var(--hm-space-1) 0 0;
-  color: var(--hm-danger);
-  font-size: 12px;
-}
-
-/* A round monogram, so a list of people scans as people. Initials only — no
-   avatar image exists, and none is worth a request. */
-.hm-avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: var(--hm-radius-pill);
-  background: var(--hm-accent-tint);
-  color: var(--hm-accent-strong);
-  font-size: 11px;
-  font-weight: 600;
-}
-
-/* A panel that stays shut until it is wanted. */
-.hm-panel {
-  margin-top: var(--hm-space-4);
-  border: 1px solid var(--hm-border);
-  border-radius: var(--hm-radius-lg);
-  background: var(--hm-surface);
-}
-.hm-panel__summary {
-  display: flex;
-  align-items: baseline;
-  gap: var(--hm-space-3);
-  padding: var(--hm-space-4);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  list-style: none;
-}
-.hm-panel__summary::-webkit-details-marker {
-  display: none;
-}
-.hm-panel__summary::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-inline-end: 1.5px solid var(--hm-ink-40);
-  border-block-end: 1.5px solid var(--hm-ink-40);
-  transform: rotate(-45deg);
-  transition: transform var(--hm-dur-fast) var(--hm-ease-out);
-}
-.hm-panel[open] > .hm-panel__summary::before {
-  transform: rotate(45deg);
-}
-.hm-panel__hint {
-  color: var(--hm-ink-40);
-  font-weight: 400;
-  font-size: 12px;
-}
-.hm-panel__body {
-  padding: 0 var(--hm-space-4) var(--hm-space-4);
-}
-
-/* ---- The team's notes ---- */
-.hm-workspace {
-  margin-top: var(--hm-space-4);
-}
-.hm-workspace__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--hm-space-3);
-  margin-bottom: var(--hm-space-3);
-}
-.hm-workspace__title {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 600;
-}
-.hm-workspace__split {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--hm-space-5);
-}
-.hm-workspace__notes {
-  flex-grow: 1;
-  min-width: 0;
-}
-@media (max-width: 720px) {
-  .hm-workspace__split {
-    flex-direction: column;
-  }
-}
-
-/* The folder column: where a team's notes are divided up. */
-.hm-folder-rail {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  width: 15rem;
-  flex-shrink: 0;
-}
-.hm-folder-rail__row {
-  display: flex;
-  flex-direction: column;
-}
-.hm-folder-rail__item {
-  display: flex;
-  align-items: center;
-  gap: var(--hm-space-2);
-  width: 100%;
-  padding: var(--hm-space-2) var(--hm-space-3);
-  border: 1px solid transparent;
-  border-radius: var(--hm-radius-md);
-  background: none;
-  color: var(--hm-ink-60);
-  font: inherit;
-  font-size: 13px;
-  text-align: start;
-  cursor: pointer;
-}
-.hm-folder-rail__item:hover {
-  background: var(--hm-paper-dim);
-}
-.hm-folder-rail__item[aria-current='true'] {
-  border-color: var(--hm-accent-tint);
-  background: var(--hm-accent-tint);
-  color: var(--hm-accent-strong);
-  font-weight: 500;
-}
-.hm-folder-rail__count {
-  margin-inline-start: auto;
-  font-size: 12px;
-  opacity: 0.75;
-}
-/* The folder and its controls share one line. */
-.hm-folder-rail__line {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-.hm-folder-rail__line .hm-folder-rail__item {
-  flex-grow: 1;
-  min-width: 0;
-}
-/* The controls sit over the count rather than beside it, and are not there at
-   all until the row is reached for — so the rail keeps one steady rhythm
-   instead of reserving a gap under every folder for something invisible. */
-.hm-folder-rail__actions {
-  position: absolute;
-  inset-inline-end: var(--hm-space-2);
-  display: none;
-  align-items: center;
-  gap: var(--hm-space-3);
-  padding: 2px var(--hm-space-2);
-  border-radius: var(--hm-radius-sm);
-  background: var(--hm-paper-dim);
-  font-size: 12px;
-}
-.hm-folder-rail__line:hover .hm-folder-rail__actions,
-.hm-folder-rail__line:focus-within .hm-folder-rail__actions {
-  display: flex;
-}
-
-.hm-team-notes {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: var(--hm-space-3);
-}
-.hm-team-note {
-  display: flex;
-  flex-direction: column;
-  gap: var(--hm-space-2);
-  padding: var(--hm-space-4);
-  border: 1px solid var(--hm-border);
-  border-radius: var(--hm-radius-lg);
-  background: var(--hm-surface);
-}
-.hm-team-note__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--hm-space-2);
-}
-.hm-team-note__domain {
-  color: var(--hm-ink-40);
-  font-size: 12px;
-}
-.hm-team-note__spacer {
-  flex-grow: 1;
-}
-/* A note's own words, in the same serif italic they are written in everywhere
-   else in Hamesh. */
-.hm-team-note__body {
-  margin: 0;
-  font-family: var(--hm-serif);
-  font-style: italic;
-  font-size: 13.5px;
-  line-height: 1.55;
-  overflow-wrap: anywhere;
-}
-/* A note's controls on one line where they fit: tighter than the page's usual
-   rhythm, because there can be five of them beside a folder picker. */
-.hm-team-note__actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--hm-space-2) var(--hm-space-3);
-  font-size: 12.5px;
-}
-.hm-team-note__move {
-  display: inline-flex;
-  min-width: 0;
-}
-.hm-team-note__move .hm-input--select {
-  max-width: 9rem;
-  padding: 2px var(--hm-space-2);
-  font-size: 12px;
-}
-/* The rail is as narrow as its longest folder name wants, so the notes beside
-   it keep room for their own line of controls. */
-.hm-folder-rail {
-  width: 13rem;
+  font-size: var(--hm-text-body-sm);
 }
 
 /* ---- Where you were named ---- */
 .hm-mentions {
-  margin: var(--hm-space-3) 0 0;
-  padding: 0;
-  list-style: none;
   display: flex;
   flex-direction: column;
   gap: var(--hm-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 .hm-mention-entry {
   display: flex;
-  flex-direction: column;
-  gap: var(--hm-space-1);
-  padding: var(--hm-space-3) var(--hm-space-4);
+  align-items: flex-start;
+  gap: var(--hm-space-3);
+  padding: var(--hm-card-pad-dense);
   border: 1px solid var(--hm-border);
   border-radius: var(--hm-radius-lg);
   background: var(--hm-surface);
 }
-
-/* ---- In the Library: whose notes, and which are a team's ---- */
-.hm-owner-filter {
+.hm-mention-entry__content {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--hm-space-2);
-  margin-top: var(--hm-space-3);
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--hm-space-1);
 }
-.hm-owner-filter__pill {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--hm-space-2);
-  padding: var(--hm-space-2) var(--hm-space-4);
-  border: 1px solid var(--hm-border);
-  border-radius: var(--hm-radius-pill);
-  background: var(--hm-surface);
-  color: var(--hm-ink-60);
-  font: inherit;
-  font-size: 12.5px;
-  cursor: pointer;
-  transition:
-    background var(--hm-dur-fast) var(--hm-ease-out),
-    color var(--hm-dur-fast) var(--hm-ease-out);
+.hm-mention-entry__meta {
+  color: var(--hm-ink-40);
+  font-size: var(--hm-text-body-sm);
 }
-.hm-owner-filter__pill:hover {
-  background: var(--hm-paper-dim);
-}
-/* The chosen one inverts rather than tinting: the accent is the mark's, and a
-   row of tinted pills would compete with the chips inside the list. */
-.hm-owner-filter__pill[aria-pressed='true'] {
-  border-color: var(--hm-ink);
-  background: var(--hm-ink);
-  color: var(--hm-paper);
-}
-.hm-owner-filter__dot {
-  width: 7px;
-  height: 7px;
-  border-radius: var(--hm-radius-pill);
-  background: var(--hm-accent);
-}
-
-/* The one thing that says a note in the Library is not this device's alone. */
-.hm-team-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  margin-inline-start: var(--hm-space-2);
-  padding: 1px var(--hm-space-2);
-  border-radius: var(--hm-radius-pill);
-  background: var(--hm-accent-tint);
-  color: var(--hm-accent-strong);
-  font-size: 11px;
+.hm-mention-entry__author {
+  color: var(--hm-ink);
   font-weight: 500;
-  vertical-align: baseline;
 }
-.hm-team-chip__dot {
-  width: 5px;
-  height: 5px;
-  border-radius: var(--hm-radius-pill);
-  background: var(--hm-accent);
+.hm-mention-entry__open {
+  align-self: flex-start;
+  margin-top: var(--hm-space-1);
+  padding-inline: 0;
+}
+.hm-mentions__more {
+  margin-top: var(--hm-space-3);
 }
 
-/* An empty state inside a panel, rather than filling a page. */
-.hm-empty--inline {
-  padding: var(--hm-space-4);
+/* ---- Settings: the account and the plan ---- */
+.hm-teams-account {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hm-space-3);
+  min-width: 0;
 }
-.hm-empty__action {
-  margin-top: var(--hm-space-3);
+.hm-teams-account bdi {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hm-billing__price {
+  margin: var(--hm-space-3) 0 0;
+  font-size: var(--hm-text-title);
+  line-height: var(--hm-lh-title);
+}
+.hm-billing__history {
+  margin-top: var(--hm-space-5);
+}
+.hm-input--number {
+  flex: 0 0 5rem;
 }

@@ -1,6 +1,7 @@
 import type { Folder, CreateFolderInput } from '@/domain/folder';
 import { createFolder, renameFolder, parseFolderState } from '@/domain/folder';
 import { getDescendantFolderIds } from '@/domain/folder-grouping';
+import { createStoredList } from './stored-list';
 
 const STORAGE_KEY = 'local:hamesh:folders';
 
@@ -25,44 +26,32 @@ export interface FoldersRepository {
 }
 
 export function createFoldersRepository(): FoldersRepository {
-  return {
-    async getAll(): Promise<Folder[]> {
-      const data = await storage.getItem<unknown>(STORAGE_KEY);
-      return parseFolderState(data);
-    },
+  const list = createStoredList<Folder>(parseFolderState);
 
-    async create(input: CreateFolderInput): Promise<Folder> {
+  return {
+    getAll: () => list.read(STORAGE_KEY),
+
+    async create(input) {
       const folder = createFolder(input);
-      const existing = await this.getAll();
-      existing.push(folder);
-      await storage.setItem(STORAGE_KEY, existing);
+      await list.append(STORAGE_KEY, folder);
       return folder;
     },
 
-    async rename(folderId: string, name: string): Promise<Folder | null> {
-      const existing = await this.getAll();
-      const index = existing.findIndex((f) => f.id === folderId);
-      if (index === -1) return null;
+    rename: (folderId, name) => list.update(STORAGE_KEY, folderId, (f) => renameFolder(f, name)),
 
-      const updated = renameFolder(existing[index], name);
-      existing[index] = updated;
-      await storage.setItem(STORAGE_KEY, existing);
-      return updated;
-    },
-
-    async remove(folderId: string): Promise<{ removedFolderIds: string[] }> {
-      const existing = await this.getAll();
+    async remove(folderId) {
+      const existing = await list.read(STORAGE_KEY);
       const toRemove = getDescendantFolderIds(existing, folderId);
-      const remaining = existing.filter((f) => !toRemove.has(f.id));
-      await storage.setItem(STORAGE_KEY, remaining);
+      await list.write(
+        STORAGE_KEY,
+        existing.filter((f) => !toRemove.has(f.id)),
+      );
       return { removedFolderIds: [...toRemove] };
     },
 
-    async saveAll(folders: Folder[]): Promise<void> {
-      await storage.setItem(STORAGE_KEY, folders);
-    },
+    saveAll: (folders) => list.write(STORAGE_KEY, folders),
 
-    watch(cb: (folders: Folder[]) => void): () => void {
+    watch(cb) {
       return storage.watch<unknown>(STORAGE_KEY, (newValue) => {
         cb(parseFolderState(newValue));
       });

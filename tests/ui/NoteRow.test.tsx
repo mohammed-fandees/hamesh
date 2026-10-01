@@ -14,7 +14,7 @@ vi.mock('wxt/browser', () => ({
 }));
 
 async function importNoteRow() {
-  const mod = await import('@/ui/NoteRow');
+  const mod = await import('@/ui/library/NoteRow');
   return mod.NoteRow;
 }
 
@@ -275,5 +275,42 @@ describe('NoteRow — long notes', () => {
       <NoteRow note={makeElementNote({ content: LONG })} strings={getStrings('ar')} lang="ar" />,
     );
     expect(await screen.findByRole('button', { name: /عرض المزيد/ })).toBeInTheDocument();
+  });
+});
+
+describe('the way to a team note’s discussion', () => {
+  const teamNote = () =>
+    makeElementNote({
+      team: { id: 'T1', name: 'Alpha', version: 1, authorId: null, folderId: null },
+    });
+
+  it('is on a team note’s row, and opens that note', async () => {
+    const NoteRow = await importNoteRow();
+    const { NoteDiscussSlot } = await import('@/ui/library/NoteShareSlot');
+    const open = vi.fn();
+    render(
+      <NoteDiscussSlot.Provider value={{ label: 'Discuss', open }}>
+        <NoteRow note={teamNote()} strings={strings} lang="en" />
+      </NoteDiscussSlot.Provider>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Discuss' }));
+    expect(open).toHaveBeenCalledWith(expect.objectContaining({ id: 'n1' }));
+  });
+
+  it('is not on a note this device stored, however the page is set up', async () => {
+    const NoteRow = await importNoteRow();
+    const { NoteDiscussSlot } = await import('@/ui/library/NoteShareSlot');
+    render(
+      <NoteDiscussSlot.Provider value={{ label: 'Discuss', open: vi.fn() }}>
+        <NoteRow note={makeElementNote()} strings={strings} lang="en" />
+      </NoteDiscussSlot.Provider>,
+    );
+    expect(screen.queryByRole('button', { name: 'Discuss' })).not.toBeInTheDocument();
+  });
+
+  it('is not there in a build that has no Teams to discuss in', async () => {
+    const NoteRow = await importNoteRow();
+    render(<NoteRow note={teamNote()} strings={strings} lang="en" />);
+    expect(screen.queryByRole('button', { name: 'Discuss' })).not.toBeInTheDocument();
   });
 });

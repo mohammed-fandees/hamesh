@@ -6,6 +6,23 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **One visual standard across the extension.** Hover, focus and pressed states are now one
+  consistent wash of the clay accent on every control, and the current page in the sidebar is
+  finally told apart from one you are pointing at. Text sizes, shadows and motion follow a single
+  named scale, so the popup, the Notes Library, Settings and the on-page note cards read as one
+  thing. Small controls are easier to hit: the folder chevrons and the close, pin and icon buttons
+  grow an invisible target, and nothing that sits over a web page changes size under a mouse.
+- **Settings is a stack of cards.** Backup stays shut until you want it, instead of everything
+  being open in one long column.
+- **What’s New opens on what you have not read.** The two newest releases, or every one you have
+  not read, are open; the rest wait under Earlier releases.
+- **The popup says what to do** on a page Hamesh cannot work on, instead of a greyed-out button
+  and a bare line, and shows a placeholder while it finds out.
+- **Buttons that are working keep their label.** A spinner appears beside it rather than the label
+  being swapped for “Working…”.
+
 ## [1.4.0] — 2026-09-26
 
 ### Added

@@ -1,4 +1,6 @@
-import { MarginMark } from './MarginMark';
+import { Page, PageHeader } from './kit/Page';
+import { Panel } from './kit/Section';
+import { stagger } from './kit/motion';
 import {
   RELEASE_NOTES,
   compareVersions,
@@ -19,11 +21,15 @@ interface WhatsNewViewProps {
   lastSeenVersion: string | null;
 }
 
+/** How many of the newest releases are open whatever the reader has seen. */
+const OPEN_ALWAYS = 2;
+
 /**
  * What's New — Hamesh's own history, told to the person using it.
  *
- * A plain reverse-chronological list rather than anything interactive: this
- * is a page someone reads once after an update and then leaves. Content
+ * A plain reverse-chronological list: this is a page someone reads once after
+ * an update and then leaves, so what they have not read is open and the rest of
+ * the history waits in a panel that is shut until it is wanted. Content
  * comes from `domain/release-notes.ts` in whichever language the interface
  * is set to, so an Arabic reader gets Arabic release notes, not translated
  * chrome around English text.
@@ -34,36 +40,49 @@ export function WhatsNewView({
   currentVersion,
   lastSeenVersion,
 }: WhatsNewViewProps) {
-  return (
-    <div className="hm-notes-main">
-      <div className="hm-notes-page__inner">
-        <header className="hm-notes-page__header">
-          <MarginMark size={20} strokeWidth={3.5} style={{ color: 'var(--hm-accent)' }} />
-          <h1 className="hm-notes-page__title">{strings.whatsNew}</h1>
-        </header>
-        <p className="hm-whats-new__intro">{strings.whatsNewIntro}</p>
+  const isUnseen = (release: ReleaseNote) =>
+    lastSeenVersion === null || compareVersions(release.version, lastSeenVersion) > 0;
+  // Two are always open; more if more than two have gone unread — someone who
+  // skipped three updates should not have to open a panel to see the third.
+  const openCount =
+    lastSeenVersion === null
+      ? OPEN_ALWAYS
+      : Math.max(OPEN_ALWAYS, RELEASE_NOTES.filter(isUnseen).length);
+  const recent = RELEASE_NOTES.slice(0, openCount);
+  const earlier = RELEASE_NOTES.slice(openCount);
 
-        <ol className="hm-whats-new__list">
-          {RELEASE_NOTES.map((release, i) => (
-            <li
-              key={release.version}
-              className="hm-whats-new__release hm-fade-in"
-              style={{ animationDelay: `${Math.min(i * 40, 240)}ms` }}
-            >
-              <ReleaseEntry
-                release={release}
-                strings={strings}
-                lang={lang}
-                installed={compareVersions(release.version, currentVersion) === 0}
-                unseen={
-                  lastSeenVersion === null || compareVersions(release.version, lastSeenVersion) > 0
-                }
-              />
-            </li>
-          ))}
-        </ol>
-      </div>
-    </div>
+  const renderList = (releases: readonly ReleaseNote[], offset: number) => (
+    <ol className="hm-whats-new__list">
+      {releases.map((release, i) => (
+        <li
+          key={release.version}
+          className="hm-whats-new__release hm-fade-in"
+          style={stagger(offset + i)}
+        >
+          <ReleaseEntry
+            release={release}
+            strings={strings}
+            lang={lang}
+            installed={compareVersions(release.version, currentVersion) === 0}
+            unseen={isUnseen(release)}
+          />
+        </li>
+      ))}
+    </ol>
+  );
+
+  return (
+    <Page>
+      <PageHeader title={strings.whatsNew} />
+      <p className="hm-whats-new__intro">{strings.whatsNewIntro}</p>
+
+      {renderList(recent, 0)}
+      {earlier.length > 0 && (
+        <Panel title={strings.whatsNewEarlier} hint={strings.whatsNewEarlierHint(earlier.length)}>
+          {renderList(earlier, recent.length)}
+        </Panel>
+      )}
+    </Page>
   );
 }
 
@@ -99,7 +118,7 @@ function ReleaseEntry({
       <h2 className="hm-whats-new__title">{localizeReleaseNote(release.title, lang)}</h2>
       <ul className="hm-whats-new__items">
         {release.items.map((item, i) => (
-          <li key={i} className="hm-whats-new__item">
+          <li key={i} className="hm-whats-new__item hm-serif">
             {localizeReleaseNote(item, lang)}
           </li>
         ))}

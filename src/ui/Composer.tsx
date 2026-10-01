@@ -1,7 +1,8 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { AttachedText } from './AttachedText';
 import { FolderPicker, type FolderPickerSource } from './FolderPicker';
-import { MarginMark } from './MarginMark';
+import { MarginMark } from './kit/MarginMark';
+import { NoteEditor } from './NoteEditor';
 import type { Strings } from './i18n';
 
 interface ComposerProps {
@@ -27,8 +28,8 @@ interface ComposerProps {
 
 /**
  * The note composer — a small card attached to the selected element (or the
- * selected text) by a short connector stub. Handles empty/typing/validation/
- * saving/error states.
+ * selected text) by a short connector stub: the note editor every writing
+ * surface uses, with the folder it will be filed into under the words.
  */
 export function Composer({
   strings,
@@ -39,107 +40,50 @@ export function Composer({
   onSave,
   onCancel,
 }: ComposerProps) {
-  const [content, setContent] = useState('');
-  const [validationError, setValidationError] = useState<string | null>(null);
   // `undefined` until the user picks a folder themselves. Until then the
   // selector follows the resolved default — which can still arrive after
   // the composer opens (folders and preferences load asynchronously) — and
   // after that it never moves under them.
   const [chosenFolderId, setChosenFolderId] = useState<string | null | undefined>(undefined);
-  const requestedFolderId =
+  const requested =
     chosenFolderId === undefined ? (folderPicker?.initialFolderId ?? null) : chosenFolderId;
   // A folder deleted elsewhere while this note is being written is no
   // longer somewhere it can go.
   const folderId =
-    requestedFolderId && folderPicker?.folders.some((f) => f.id === requestedFolderId)
-      ? requestedFolderId
-      : null;
-
-  const handleSave = useCallback(() => {
-    const trimmed = content.trim();
-    if (!trimmed) {
-      setValidationError(strings.emptyError);
-      return;
-    }
-    setValidationError(null);
-    onSave(trimmed, folderId ?? undefined);
-  }, [content, folderId, onSave, strings.emptyError]);
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        onCancel();
-      } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-        e.preventDefault();
-        handleSave();
-      }
-    },
-    [handleSave, onCancel],
-  );
-
-  const displayError = validationError ?? error ?? null;
-  const canSave = content.trim().length > 0 && !saving;
+    requested && folderPicker?.folders.some((f) => f.id === requested) ? requested : null;
 
   return (
-    <div
-      className="hm-card"
-      role="dialog"
-      aria-label={strings.note}
-      aria-modal="false"
-      onKeyDown={handleKeyDown}
-    >
+    <div className="hm-card" role="dialog" aria-label={strings.note} aria-modal="false">
       <span className="hm-connector" aria-hidden="true" />
-      <div className="hm-card-label">
+      <div className="hm-card-label hm-overline">
         <MarginMark size={11} strokeWidth={4} />
         {strings.note}
       </div>
       {attachedText && <AttachedText label={strings.attachedText} text={attachedText} />}
-      <textarea
-        className="hm-textarea"
-        dir="auto"
-        autoFocus
+      <NoteEditor
+        strings={strings}
+        label={strings.note}
         placeholder={strings.writePlaceholder}
-        value={content}
-        aria-label={strings.note}
-        aria-invalid={displayError ? true : undefined}
-        aria-describedby={displayError ? 'hm-composer-error' : undefined}
-        onChange={(e) => {
-          setContent(e.target.value);
-          if (validationError) setValidationError(null);
-        }}
-      />
-      {folderPicker && (
-        <FolderPicker
-          strings={strings}
-          folders={folderPicker.folders}
-          value={folderId}
-          onChange={setChosenFolderId}
-          pageDefaultId={folderPicker.pageDefaultId}
-          globalDefaultId={folderPicker.globalDefaultId}
-          onSetPageDefault={folderPicker.onSetPageDefault}
-          onSetGlobalDefault={folderPicker.onSetGlobalDefault}
-          onCreateFolder={folderPicker.onCreateFolder}
-        />
-      )}
-      {displayError && (
-        <p id="hm-composer-error" className="hm-error" role="alert">
-          {displayError}
-        </p>
-      )}
-      <div className="hm-row">
-        <button type="button" className="hm-btn hm-btn-ghost" onClick={onCancel}>
-          {strings.cancel}
-        </button>
-        <button
-          type="button"
-          className="hm-btn hm-btn-primary"
-          onClick={handleSave}
-          disabled={!canSave}
-        >
-          {saving ? strings.saving : strings.save}
-        </button>
-      </div>
+        saveLabel={strings.save}
+        saving={saving}
+        error={error}
+        onSave={(content) => onSave(content, folderId ?? undefined)}
+        onCancel={onCancel}
+      >
+        {folderPicker && (
+          <FolderPicker
+            strings={strings}
+            folders={folderPicker.folders}
+            value={folderId}
+            onChange={setChosenFolderId}
+            pageDefaultId={folderPicker.pageDefaultId}
+            globalDefaultId={folderPicker.globalDefaultId}
+            onSetPageDefault={folderPicker.onSetPageDefault}
+            onSetGlobalDefault={folderPicker.onSetGlobalDefault}
+            onCreateFolder={folderPicker.onCreateFolder}
+          />
+        )}
+      </NoteEditor>
     </div>
   );
 }

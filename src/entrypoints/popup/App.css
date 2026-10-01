@@ -1,39 +1,140 @@
+/* The toolbar popup, and nothing else — kept out of the shared sheets, one of
+   which is injected into every web page. */
+
 html,
 body {
   margin: 0;
   padding: 0;
   /* Explicit, not just inherited from .hm-popup's own width — Chrome's popup
      auto-sizing measures the document itself, and leaving this ambiguous let
-     the nested overflow:hidden slide track (see .hm-popup__track) throw the
-     measurement off in the real toolbar popup (not reproducible in a normal
-     tab, where body just fills the tab's viewport regardless). */
+     the nested overflow:hidden slide track throw the measurement off in the
+     real toolbar popup (not reproducible in a normal tab, where body just
+     fills the tab's viewport regardless). The background comes from the
+     popup's own token, painted by `usePageBackground`. */
   width: 300px;
-  background: var(--hm-surface, #ffffff);
 }
 
-/* Popup-only, so kept out of the shared tokens.css (that stylesheet is
-   injected into every page the content script runs on). */
-.hm-popup__library-link {
+.hm-popup {
+  width: 300px;
+  background: var(--hm-surface);
+  color: var(--hm-ink);
+}
+.hm-popup__viewport {
+  position: relative;
+  width: 300px;
+  overflow: hidden;
+}
+/* Two panes on one track; the track slides, so both are always there to
+   slide between. */
+.hm-popup__track {
+  display: flex;
+  width: 200%;
+  transition: transform var(--hm-motion-emphasized);
+}
+.hm-popup__pane {
+  flex: 0 0 50%;
+  min-width: 0;
+  padding: var(--hm-space-5);
+}
+
+.hm-popup__head {
+  display: flex;
+  align-items: center;
+  gap: var(--hm-space-2);
+}
+.hm-popup__mark {
+  color: var(--hm-accent);
+}
+.hm-popup__brand {
+  font-weight: 600;
+  font-size: var(--hm-text-body);
+}
+/* Arabic needs the larger step and the tighter leading to read at the same
+   weight as the Latin wordmark. */
+.hm-popup__brand--ar {
+  font-size: var(--hm-text-title);
+  line-height: var(--hm-lh-title);
+}
+.hm-popup__shortcut {
+  margin-inline-start: auto;
+  font-size: var(--hm-text-label);
+  line-height: var(--hm-lh-label);
+  padding: 2px 6px;
+}
+
+.hm-popup__body {
+  margin-top: var(--hm-space-4);
+}
+.hm-popup__count {
+  margin: 0;
+  font-size: var(--hm-text-display);
+  line-height: var(--hm-lh-display);
+  font-weight: 600;
+}
+.hm-popup__count span {
+  font-size: var(--hm-text-body);
+  font-weight: 500;
+  color: var(--hm-ink-40);
+}
+.hm-popup__add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--hm-space-2);
+  width: 100%;
+  margin: var(--hm-space-4) 0 var(--hm-space-3);
+  padding: 11px;
+}
+
+/* The way out to the Library (and, on the settings pane, to full Settings). */
+.hm-popup__link {
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
   margin-top: var(--hm-space-3);
-  padding: 8px 2px;
+  padding: 8px 4px;
   border: none;
   background: none;
   cursor: pointer;
   font-family: var(--hm-sans);
-  font-size: 12.5px;
+  font-size: var(--hm-text-body-sm);
   font-weight: 500;
   color: var(--hm-ink-60);
   border-radius: var(--hm-radius-sm);
-  transition: color var(--hm-dur-fast) var(--hm-ease-out);
+  transition:
+    background var(--hm-motion-state),
+    color var(--hm-motion-state);
 }
-.hm-popup__library-link:hover {
+.hm-popup__link:hover {
+  background: var(--hm-layer-hover);
   color: var(--hm-ink);
 }
-.hm-popup__library-link:focus-visible {
+.hm-popup__link:active {
+  background: var(--hm-layer-pressed);
+}
+.hm-popup__link:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--hm-accent);
+  box-shadow: var(--hm-ring);
+}
+
+/* The settings pane. */
+.hm-popup-settings__header {
+  display: flex;
+  align-items: center;
+  gap: var(--hm-space-2);
+}
+.hm-popup-settings__title {
+  margin: 0;
+  font-size: var(--hm-text-title);
+  line-height: var(--hm-lh-title);
+  font-weight: 600;
+}
+/* A programmatic focus target (the heading is focused when the pane slides
+   in), not a control: it takes no ring. */
+.hm-popup-settings__title:focus-visible {
+  outline: none;
+}
+.hm-popup-settings__body {
+  margin-top: var(--hm-space-3);
 }

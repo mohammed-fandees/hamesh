@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resolveLang, getStrings, dirForLang, relativeTime, type Lang } from '@/ui/i18n';
+import { resolveLang, getStrings, dirForLang } from '@/ui/i18n';
 
 describe('resolveLang', () => {
   it('maps Arabic locale variants to "ar"', () => {
@@ -37,29 +37,5 @@ describe('getStrings', () => {
     const en = getStrings('en');
     expect(en.notesOnPage(1)).toBe('note on this page');
     expect(en.notesOnPage(3)).toBe('notes on this page');
-  });
-});
-
-describe('relativeTime', () => {
-  const now = new Date();
-  function isoMinutesAgo(min: number): string {
-    return new Date(now.getTime() - min * 60_000).toISOString();
-  }
-
-  it('formats recent, hourly and daily buckets in English', () => {
-    expect(relativeTime(isoMinutesAgo(0), 'en')).toBe('just now');
-    expect(relativeTime(isoMinutesAgo(5), 'en')).toBe('5m ago');
-    expect(relativeTime(isoMinutesAgo(120), 'en')).toBe('2h ago');
-    expect(relativeTime(isoMinutesAgo(60 * 24 * 3), 'en')).toBe('3d ago');
-  });
-
-  it('formats in Arabic', () => {
-    expect(relativeTime(isoMinutesAgo(0), 'ar')).toBe('الآن');
-    expect(relativeTime(isoMinutesAgo(5), 'ar')).toContain('دقيقة');
-  });
-
-  it('returns the raw value for an unparseable date', () => {
-    const bad = 'not-a-date';
-    expect(relativeTime(bad, 'en' as Lang)).toBe(bad);
   });
 });

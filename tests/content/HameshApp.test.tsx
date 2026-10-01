@@ -8,7 +8,6 @@ import type { PreferencesRepository } from '@/storage/preferences-repository';
 import type { FoldersRepository } from '@/storage/folders-repository';
 import type { Note } from '@/domain/note';
 import { DEFAULT_PREFERENCES } from '@/domain/preferences';
-import { generatePageKey } from '@/domain/page-key';
 
 function makeRepo(notes: Note[]): NotesRepository {
   return {
@@ -294,13 +293,11 @@ describe('HameshApp — pin toggle', () => {
 
     fireEvent.click(pinButton);
 
-    // handleTogglePin uses the component's *current-page* pageKey (matching
-    // handleUpdate/handleDelete), not the note's own stored pageKey — they
-    // happen to be the same in production (HameshApp only ever manages
-    // notes for the page it's mounted on) but jsdom's default test URL
-    // differs from the note fixture's pageKey, so compute it the same way.
-    const currentPageKey = generatePageKey(location.href);
-    await waitFor(() => expect(repo.setPinned).toHaveBeenCalledWith(note.id, currentPageKey, true));
+    // Every change to a note is written to the note's own page bucket — the
+    // one rule the page and the Library share (`useNoteMutations`). On a real
+    // page that is the page being shown, since that is where its notes were
+    // read from.
+    await waitFor(() => expect(repo.setPinned).toHaveBeenCalledWith(note.id, note.pageKey, true));
     expect(await screen.findByRole('button', { name: 'Unpin this note' })).toHaveAttribute(
       'aria-pressed',
       'true',
@@ -319,9 +316,6 @@ describe('HameshApp — pin toggle', () => {
 
     fireEvent.click(pinButton);
 
-    const currentPageKey = generatePageKey(location.href);
-    await waitFor(() =>
-      expect(repo.setPinned).toHaveBeenCalledWith(note.id, currentPageKey, false),
-    );
+    await waitFor(() => expect(repo.setPinned).toHaveBeenCalledWith(note.id, note.pageKey, false));
   });
 });

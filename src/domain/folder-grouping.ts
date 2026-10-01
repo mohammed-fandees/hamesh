@@ -1,6 +1,71 @@
-import type { Folder } from './folder';
+import type { Folder, FolderLike } from './folder';
 import type { Note } from './note';
 import { sortNotesWithPinnedFirst } from './notes-grouping';
+
+/** Folders by the folder they sit in (`null` = top level), each list in name order. */
+export function indexFoldersByParent<T extends FolderLike>(
+  folders: readonly T[],
+): Map<string | null, T[]> {
+  const byParent = new Map<string | null, T[]>();
+  for (const folder of folders) {
+    const bucket = byParent.get(folder.parentId);
+    if (bucket) bucket.push(folder);
+    else byParent.set(folder.parentId, [folder]);
+  }
+  for (const bucket of byParent.values()) bucket.sort((a, b) => a.name.localeCompare(b.name));
+  return byParent;
+}
+
+/**
+ * The folder a note is really in: its `folderId` if that folder still exists,
+ * otherwise none. The one definition of "unfiled" — a note pointing at a folder
+ * that has since gone (deleted elsewhere, not restored from a backup, removed on
+ * the server) is unfiled, never hidden.
+ */
+export function resolveFolderId(
+  folderId: string | null | undefined,
+  knownIds: ReadonlySet<string>,
+): string | null {
+  return folderId && knownIds.has(folderId) ? folderId : null;
+}
+
+/** One folder in a flat walk of the tree. */
+export interface FlatFolder<T extends FolderLike = Folder> {
+  folder: T;
+  depth: number;
+  /** The folder it sits in, if any — what a nested folder is named by. */
+  parent: T | null;
+}
+
+/**
+ * Every folder, parents before their children, each with its depth — the list a
+ * menu or a `<select>` shows, where indentation carries the nesting.
+ *
+ * Never trusts a parent chain: a cycle is walked once, and a folder whose parent
+ * is missing (or is part of a cycle) is shown at the top rather than lost.
+ */
+export function flattenFolderTree<T extends FolderLike>(folders: readonly T[]): FlatFolder<T>[] {
+  const byId = new Map(folders.map((f) => [f.id, f]));
+  const byParent = indexFoldersByParent(folders);
+  const out: FlatFolder<T>[] = [];
+  const seen = new Set<string>();
+  const walk = (parentId: string | null, depth: number) => {
+    for (const folder of byParent.get(parentId) ?? []) {
+      if (seen.has(folder.id)) continue;
+      seen.add(folder.id);
+      out.push({ folder, depth, parent: parentId ? (byId.get(parentId) ?? null) : null });
+      walk(folder.id, depth + 1);
+    }
+  };
+  walk(null, 0);
+  for (const folder of [...folders].sort((a, b) => a.name.localeCompare(b.name))) {
+    if (seen.has(folder.id)) continue;
+    seen.add(folder.id);
+    out.push({ folder, depth: 0, parent: null });
+    walk(folder.id, 1);
+  }
+  return out;
+}
 
 export interface FolderNode {
   folder: Folder;
@@ -11,66 +76,49 @@ export interface FolderNode {
   totalCount: number;
 }
 
-function buildNode(
-  folder: Folder,
-  childrenByParent: Map<string | null, Folder[]>,
-  notesByFolderId: Map<string, Note[]>,
-  visiting: Set<string>,
-): FolderNode {
-  const notes = sortNotesWithPinnedFirst(notesByFolderId.get(folder.id) ?? []);
-  // Defensive: a cycle in stored data (shouldn't be creatable by the app
-  // itself — there's no reparenting UI in v1 — but never trust storage).
-  // Stop descending into an ancestor already on the current path instead of
-  // recursing forever.
-  if (visiting.has(folder.id)) {
-    return { folder, children: [], notes, totalCount: notes.length };
-  }
-  visiting.add(folder.id);
-  const children = (childrenByParent.get(folder.id) ?? [])
-    .slice()
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .map((child) => buildNode(child, childrenByParent, notesByFolderId, visiting));
-  visiting.delete(folder.id);
-  const totalCount = notes.length + children.reduce((sum, c) => sum + c.totalCount, 0);
-  return { folder, children, notes, totalCount };
-}
-
 /** Builds the nested folder tree (top-level folders, each recursively
  *  containing its children and notes) plus the list of notes that don't
- *  belong to any existing folder — either because they have no `folderId`,
- *  or because it points at a folder that no longer exists. Never throws on
- *  bad data, same philosophy as `notes-grouping.ts`'s `extractDomain`. */
+ *  belong to any existing folder — see `resolveFolderId`. The tree is the
+ *  same walk `flattenFolderTree` takes, so a folder with a dangling parent
+ *  shows at the top level here too. Never throws on bad data. */
 export function buildFolderTree(
   folders: Folder[],
   notes: Note[],
 ): { tree: FolderNode[]; unfiledNotes: Note[] } {
-  const folderIds = new Set(folders.map((f) => f.id));
-  const childrenByParent = new Map<string | null, Folder[]>();
-  for (const folder of folders) {
-    const bucket = childrenByParent.get(folder.parentId);
-    if (bucket) bucket.push(folder);
-    else childrenByParent.set(folder.parentId, [folder]);
-  }
-
+  const knownIds = new Set(folders.map((f) => f.id));
   const notesByFolderId = new Map<string, Note[]>();
   const unfiledNotes: Note[] = [];
   for (const note of notes) {
-    if (note.folderId && folderIds.has(note.folderId)) {
-      const bucket = notesByFolderId.get(note.folderId);
-      if (bucket) bucket.push(note);
-      else notesByFolderId.set(note.folderId, [note]);
-    } else {
+    const folderId = resolveFolderId(note.folderId, knownIds);
+    if (folderId === null) {
       unfiledNotes.push(note);
+      continue;
     }
+    const bucket = notesByFolderId.get(folderId);
+    if (bucket) bucket.push(note);
+    else notesByFolderId.set(folderId, [note]);
   }
 
-  const topLevel = (childrenByParent.get(null) ?? [])
-    .slice()
-    .sort((a, b) => a.name.localeCompare(b.name));
-  const visiting = new Set<string>();
-  const tree = topLevel.map((folder) =>
-    buildNode(folder, childrenByParent, notesByFolderId, visiting),
-  );
+  // Nest the flat walk back into a tree: each entry's parent is the nearest
+  // shallower entry above it, which is exactly how the walk emitted it.
+  const tree: FolderNode[] = [];
+  const path: FolderNode[] = [];
+  for (const { folder, depth } of flattenFolderTree(folders)) {
+    const node: FolderNode = {
+      folder,
+      children: [],
+      notes: sortNotesWithPinnedFirst(notesByFolderId.get(folder.id) ?? []),
+      totalCount: 0,
+    };
+    path.length = depth;
+    if (depth === 0) tree.push(node);
+    else path[depth - 1].children.push(node);
+    path.push(node);
+  }
+
+  const count = (node: FolderNode): number =>
+    (node.totalCount = node.notes.length + node.children.reduce((sum, c) => sum + count(c), 0));
+  tree.forEach(count);
 
   return { tree, unfiledNotes: sortNotesWithPinnedFirst(unfiledNotes) };
 }
@@ -79,38 +127,27 @@ export function buildFolderTree(
  *  itself plus all of its descendants. Used to cascade a folder delete
  *  across its whole subtree, and to find every note that needs unfiling as
  *  a result. */
-export function getDescendantFolderIds(folders: Folder[], folderId: string): Set<string> {
-  const childrenByParent = new Map<string | null, Folder[]>();
-  for (const folder of folders) {
-    const bucket = childrenByParent.get(folder.parentId);
-    if (bucket) bucket.push(folder);
-    else childrenByParent.set(folder.parentId, [folder]);
-  }
-
+export function getDescendantFolderIds(
+  folders: readonly FolderLike[],
+  folderId: string,
+): Set<string> {
+  const byParent = indexFoldersByParent(folders);
   const result = new Set<string>();
   const stack = [folderId];
   while (stack.length > 0) {
     const id = stack.pop()!;
     if (result.has(id)) continue; // cycle guard
     result.add(id);
-    for (const child of childrenByParent.get(id) ?? []) {
-      stack.push(child.id);
-    }
+    for (const child of byParent.get(id) ?? []) stack.push(child.id);
   }
   return result;
 }
 
-/** Flat, depth-indented walk of the tree for `MoveToFolderMenu` — every
- *  folder reachable in a simple list (indentation communicates nesting),
- *  no nested-submenu UI needed. */
-export function flattenFolderTreeForMenu(tree: FolderNode[]): { folder: Folder; depth: number }[] {
-  const result: { folder: Folder; depth: number }[] = [];
-  function walk(nodes: FolderNode[], depth: number) {
-    for (const node of nodes) {
-      result.push({ folder: node.folder, depth });
-      walk(node.children, depth + 1);
-    }
-  }
-  walk(tree, 0);
-  return result;
+/** How many notes sit in a folder — or, for `null`, in none that still exists. */
+export function countInFolder(
+  folderIds: readonly (string | null | undefined)[],
+  knownIds: ReadonlySet<string>,
+  id: string | null,
+): number {
+  return folderIds.filter((folderId) => resolveFolderId(folderId, knownIds) === id).length;
 }

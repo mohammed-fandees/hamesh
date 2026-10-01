@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { TeamsClient } from '@/teams/client';
 import type { TeamsErrorCode } from '@/teams/errors';
 import type { Lang } from '../i18n';
+import { InlineError } from '../kit/Feedback';
 import { getTeamsStrings } from './strings';
 
 /**
@@ -15,7 +16,6 @@ const WORDS = {
     placeholder: 'Session token…',
     action: 'Use it',
     badToken: 'That is not a session token — they are 43 characters.',
-    working: 'Working…',
   },
   ar: {
     title: 'تسجيل دخول بتوكن محلي',
@@ -23,7 +23,6 @@ const WORDS = {
     placeholder: 'توكن الجلسة…',
     action: 'استخدمه',
     badToken: 'هذا ليس توكن جلسة — طوله 43 حرفًا.',
-    working: 'جارٍ التنفيذ…',
   },
 } as const;
 
@@ -36,7 +35,7 @@ const BOX: React.CSSProperties = {
   border: '1px dashed var(--hm-ink-20)',
   borderRadius: 'var(--hm-radius-md)',
 };
-const TITLE: React.CSSProperties = { margin: 0, fontSize: 13, fontWeight: 500 };
+const TITLE: React.CSSProperties = { margin: 0, fontSize: 'var(--hm-text-body)', fontWeight: 500 };
 
 interface DevSignInProps {
   lang: Lang;
@@ -105,14 +104,19 @@ export function DevSignIn({ lang, client, onSignedIn }: DevSignInProps) {
           value={token}
           onChange={(e) => setToken(e.target.value)}
         />
-        <button type="submit" className="hm-btn hm-btn-ghost" disabled={busy || !token.trim()}>
-          {busy ? words.working : words.action}
+        <button
+          type="submit"
+          className="hm-btn hm-btn-ghost"
+          disabled={busy || !token.trim()}
+          aria-busy={busy}
+        >
+          {words.action}
         </button>
       </form>
       {error && (
-        <p className="hm-field-error" role="alert">
+        <InlineError>
           {error === 'invalid_request' ? words.badToken : strings.error(error)}
-        </p>
+        </InlineError>
       )}
     </div>
   );

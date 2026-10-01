@@ -404,10 +404,9 @@ test.describe('Hamesh contextual text notes', () => {
     const library = await context.newPage();
     await library.goto(`chrome-extension://${extensionId}/notes.html`);
     await library.getByRole('button', { name: 'Settings' }).click();
-    await library
-      .getByRole('radiogroup', { name: 'Notes on selected text' })
-      .getByRole('radio', { name: 'Off' })
-      .check();
+    const feature = library.getByRole('switch', { name: 'Notes on selected text' });
+    await feature.click();
+    await expect(feature).toHaveAttribute('aria-checked', 'false');
 
     // The page-side presence goes away — no highlight, and no chip on a new
     // selection — because the preference change is broadcast to open tabs.
@@ -428,10 +427,7 @@ test.describe('Hamesh contextual text notes', () => {
 
     // Switching it back on restores the highlight from the same stored anchor.
     await library.getByRole('button', { name: 'Settings' }).click();
-    await library
-      .getByRole('radiogroup', { name: 'Notes on selected text' })
-      .getByRole('radio', { name: 'On' })
-      .check();
+    await library.getByRole('switch', { name: 'Notes on selected text' }).click();
     await expect.poll(() => highlightCount(page)).toBe(1);
 
     await library.close();
