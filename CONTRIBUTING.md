@@ -13,6 +13,12 @@ authorized contributors.
    commit subject — use a Conventional Commit style.
 5. Ensure CI is green and address review comments. Branches are deleted on merge.
 
+## Rules
+
+Every change follows [docs/ENGINEERING-RULES.md](docs/ENGINEERING-RULES.md): the two builds,
+the private-repo boundary, the content script's narrow channel, Shadow DOM, design tokens,
+both languages, tests, and the checks before every PR.
+
 ## Conventions
 
 - **Commits / PR titles:** `type: summary` — `feat`, `fix`, `chore`, `docs`,
