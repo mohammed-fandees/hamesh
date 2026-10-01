@@ -114,6 +114,16 @@ export interface TeamsStrings extends SharedStrings {
   consentPrivacy: string;
   consentDontAsk: string;
   consentShare: string;
+  /** Where a new note goes, in the composer on the page. */
+  destination: string;
+  destDevice: string;
+  destDeviceHint: string;
+  destTeam: string;
+  destTeamHint: string;
+  destTeamLabel: string;
+  destUploadHint: string;
+  saveAndShare: string;
+  shareFailedKept: (reason: string) => string;
   refreshNotes: string;
   syncedAgo: (when: string) => string;
   neverSynced: string;
@@ -326,6 +336,15 @@ const en: TeamsOwnStrings = {
   consentPrivacy: 'Read the Privacy Policy',
   consentDontAsk: 'Don’t show this again when I share',
   consentShare: 'Share',
+  destination: 'Where it goes',
+  destDevice: 'On my device',
+  destDeviceHint: 'Never leaves this device',
+  destTeam: 'In a team',
+  destTeamHint: 'Its members see it',
+  destTeamLabel: 'Team',
+  destUploadHint: 'It is uploaded to Hamesh’s servers when you save it.',
+  saveAndShare: 'Save and share',
+  shareFailedKept: (reason) => `Saved on this device, but not shared: ${reason}`,
   refreshNotes: 'Check for changes',
   syncedAgo: (when) => `Up to date as of ${when}`,
   neverSynced: 'Not loaded on this device yet',
@@ -586,6 +605,15 @@ const ar: TeamsOwnStrings = {
   consentPrivacy: 'اقرأ سياسة الخصوصية',
   consentDontAsk: 'لا تُظهر هذه الرسالة مرة أخرى عند المشاركة',
   consentShare: 'مشاركة',
+  destination: 'أين تحفظها؟',
+  destDevice: 'على جهازي',
+  destDeviceHint: 'لا تغادر هذا الجهاز',
+  destTeam: 'في فريق',
+  destTeamHint: 'يراها أعضاؤه',
+  destTeamLabel: 'الفريق',
+  destUploadHint: 'تُرفع إلى خوادم هامش عند الحفظ.',
+  saveAndShare: 'حفظ ومشاركة',
+  shareFailedKept: (reason) => `حُفظت على جهازك، لكن لم تُشارك: ${reason}`,
   refreshNotes: 'تحقق من التغييرات',
   syncedAgo: (when) => `محدَّثة حتى ${when}`,
   neverSynced: 'لم تُحمَّل على هذا الجهاز بعد',

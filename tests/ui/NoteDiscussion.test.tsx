@@ -44,6 +44,8 @@ function source(overrides: Partial<TeamNotesSource> = {}): TeamNotesSource {
     })),
     reply: vi.fn(async () => ({ ok: true as const, data: null })),
     openDiscussion: vi.fn(async () => {}),
+    destinations: vi.fn(async () => ({ ok: true as const, data: [] })),
+    share: vi.fn(async () => ({ ok: true as const, data: null })),
     ...overrides,
   };
 }

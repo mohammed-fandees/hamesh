@@ -48,7 +48,7 @@ import { holdPlayback } from '@/content/video-playback';
 import { getVideoAdapters, getActiveAdapterMatch } from '@/content/video-adapters/registry';
 import type { VideoPlayerAdapter } from '@/content/video-adapters/types';
 import type { AdapterVideoMatch } from '@/content/video-adapters/registry';
-import { Composer } from '@/ui/Composer';
+import { Composer, type ComposerProps } from '@/ui/Composer';
 import type { FolderPickerSource } from '@/ui/FolderPicker';
 import { NoteViewer } from '@/ui/NoteViewer';
 import { Marker } from '@/ui/Marker';
@@ -66,6 +66,10 @@ import {
 import { getStrings, dirForLang, type Lang, type Strings } from '@/ui/i18n';
 import type { TeamNotesSource } from '@/teams/page-notes';
 import { NoteDiscussion } from '@/ui/teams/NoteDiscussion';
+import { ComposerDestination, type NoteDestination } from '@/ui/teams/ComposerDestination';
+import { ShareConsent } from '@/ui/teams/ShareConsent';
+import { getTeamsStrings } from '@/ui/teams/strings';
+import type { Destination } from '@/teams/page-channel';
 import { usePreferences } from '@/ui/hooks/usePreferences';
 import { useFolders } from '@/ui/hooks/useFolders';
 import { useNoteMutations } from '@/ui/hooks/useNoteMutations';
@@ -185,13 +189,15 @@ function toAnchorRect(el: Element): AnchorRect {
  *  page. Reads `composedPath()`, since a window listener only ever sees the
  *  target retargeted to the shadow host. */
 function isOnHameshUi(e: Event): boolean {
-  return e
-    .composedPath()
-    .some(
-      (n) =>
-        n instanceof HTMLElement &&
-        (n.classList?.contains('hm-card') || n.classList?.contains('hm-marker')),
-    );
+  return e.composedPath().some(
+    (n) =>
+      n instanceof HTMLElement &&
+      (n.classList?.contains('hm-card') ||
+        n.classList?.contains('hm-marker') ||
+        // The consent asked before a note goes to a team: answering it is
+        // not a click on the page.
+        n.classList?.contains('hm-consent')),
+  );
 }
 
 /** A live rect for a text range — recomputed on every scroll/resize by
@@ -350,6 +356,22 @@ export function HameshApp({
   // text note — never at save time, so a page that changes while the user is
   // typing can't silently re-point the note at different text.
   const [composer, setComposer] = useState<ComposerTarget | null>(null);
+  /** Teams only: the teams a new note can go to (null until asked, or none). */
+  const [destinations, setDestinations] = useState<Destination[] | null>(null);
+  /** Teams only: where the open composer's note goes — null for this device. */
+  const [destination, setDestination] = useState<NoteDestination>(null);
+  /** A share from the composer waiting on the reader's consent. */
+  const [consent, setConsent] = useState<{
+    teamName: string;
+    answer: (share: boolean) => void;
+  } | null>(null);
+  // A new composer starts on this device, whatever the last one was set to.
+  // Adjusted during render: a reset is not a side effect.
+  const [destinationFor, setDestinationFor] = useState<ComposerTarget | null>(null);
+  if (destinationFor !== composer) {
+    setDestinationFor(composer);
+    setDestination(null);
+  }
   const [viewerId, setViewerId] = useState<string | null>(null);
   /** Set when the viewer is opened straight into edit mode (the hover
    *  popup's Edit button) — see the `key` on `FloatingViewer` below. */
@@ -1171,19 +1193,54 @@ export function HameshApp({
   // One create path for element and contextual text notes alike — same
   // repository, same `CreateNoteInput`, same page key. The only difference
   // between them by this point is which anchor the composer is carrying.
+  // The teams a note can go to, asked for when a composer opens — what the
+  // worker last pulled, so it is quick and needs no server round trip.
+  const composing = composer !== null;
+  useEffect(() => {
+    if (!import.meta.env.WXT_TEAMS_API_ORIGIN || !teamNotes || !composing) return;
+    let cancelled = false;
+    void (async () => {
+      const result = await teamNotes.destinations();
+      if (!cancelled) setDestinations(result.ok && result.data.length > 0 ? result.data : null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [teamNotes, composing]);
+
   const handleSave = useCallback(
     async (content: string, folderId: string | undefined) => {
       if (!composer) return;
       setError(null);
+      // To a team: asked first (unless the reader said not to), then saved here
+      // and handed to the worker, which shares it and lets the local copy go.
+      const toTeam = import.meta.env.WXT_TEAMS_API_ORIGIN && teamNotes ? destination : null;
+      if (toTeam && !prefs?.teams.skipShareConsent) {
+        const teamName = destinations?.find((d) => d.id === toTeam.teamId)?.name ?? '';
+        const agreed = await new Promise<boolean>((answer) => setConsent({ teamName, answer }));
+        if (!agreed) return;
+      }
       const note = await mutations.create({
         content,
         pageKey,
         originalUrl: location.href,
         anchor: composer.anchor,
         pageContext: document.title ? { title: document.title } : undefined,
-        folderId,
+        folderId: toTeam ? undefined : folderId,
       });
       if (!note) return;
+      if (toTeam && teamNotes) {
+        const shared = await teamNotes.share(note.id, toTeam.teamId, toTeam.folderId);
+        if (!shared.ok) {
+          // Kept on this device — nothing is lost — and said so on the note.
+          const teamStrings = getTeamsStrings(lang);
+          setComposer(null);
+          setPendingSelection(null);
+          setViewerId(note.id);
+          setError(teamStrings.shareFailedKept(teamStrings.error(shared.error)));
+          return;
+        }
+      }
       // Seeds the new note's range so its highlight appears immediately and
       // exactly over the captured text, instead of waiting for the resolution
       // pass below to re-derive it.
@@ -1193,7 +1250,7 @@ export function HameshApp({
       setComposer(null);
       setPendingSelection(null);
     },
-    [composer, mutations, pageKey],
+    [composer, mutations, pageKey, destination, destinations, teamNotes, prefs, lang],
   );
 
   // No busy or error on screen, unlike `handleSave` — the quick-note popup has
@@ -1894,11 +1951,41 @@ export function HameshApp({
           target={composer}
           folderPicker={folderPicker}
           initialFolderId={defaultFolderId}
+          destination={
+            import.meta.env.WXT_TEAMS_API_ORIGIN && destinations
+              ? {
+                  node: (
+                    <ComposerDestination
+                      lang={lang}
+                      destinations={destinations}
+                      value={destination}
+                      onChange={setDestination}
+                    />
+                  ),
+                  toTeam: destination !== null,
+                  saveLabel: getTeamsStrings(lang).saveAndShare,
+                }
+              : undefined
+          }
           strings={strings}
           busy={mutations.creating}
           error={error}
           onSave={handleSave}
           onCancel={() => setComposer(null)}
+        />
+      )}
+
+      {/* Consent before a note written here goes to a team — the same dialog
+          as the Library's, in this page's shadow root. Teams only. */}
+      {import.meta.env.WXT_TEAMS_API_ORIGIN && consent && (
+        <ShareConsent
+          lang={lang}
+          teamName={consent.teamName}
+          onAnswer={(share, dontAskAgain) => {
+            if (share && dontAskAgain) void prefsRepo.setSkipShareConsent(true);
+            consent.answer(share);
+            setConsent(null);
+          }}
         />
       )}
 
@@ -1953,6 +2040,7 @@ function FloatingComposer({
   target,
   folderPicker,
   initialFolderId,
+  destination,
   strings,
   busy,
   error,
@@ -1962,6 +2050,7 @@ function FloatingComposer({
   target: ComposerTarget;
   folderPicker: FolderPickerSource;
   initialFolderId: string | null;
+  destination?: ComposerProps['destination'];
   strings: Strings;
   busy: boolean;
   error: string | null;
@@ -1980,6 +2069,7 @@ function FloatingComposer({
         strings={strings}
         attachedText={target.kind === 'text' ? target.anchor.exact : undefined}
         folderPicker={{ ...folderPicker, initialFolderId }}
+        destination={destination}
         saving={busy}
         error={error}
         onSave={onSave}

@@ -1,5 +1,6 @@
 /*
- * Teams inside a web page: a shared note's discussion in its popup.
+ * Teams inside a web page: a shared note's discussion in its popup, and where
+ * a new note goes, in the composer.
  *
  * Applied inside the content script's shadow root by the component that needs
  * it (read as a string, so a build without Teams carries none of it), on top
@@ -102,4 +103,79 @@
 .hm-reply__send:focus-visible {
   outline: none;
   box-shadow: var(--hm-ring);
+}
+
+/* ---- Where a new note goes, in the composer ---- */
+.hm-dest {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hm-space-2);
+  margin: var(--hm-space-3) 0 0;
+  padding: 0;
+  border: none;
+  min-width: 0;
+}
+.hm-dest__legend {
+  margin-bottom: var(--hm-space-2);
+  padding: 0;
+}
+.hm-dest__choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--hm-space-2);
+}
+.hm-dest__choice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--hm-space-2);
+  padding: var(--hm-space-2);
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-md);
+  cursor: pointer;
+}
+.hm-dest__choice:has(input:checked) {
+  border-color: var(--hm-accent);
+  background: var(--hm-surface-hover);
+}
+.hm-dest__choice:has(input:focus-visible) {
+  box-shadow: var(--hm-ring);
+}
+.hm-dest__choice input {
+  margin: 2px 0 0;
+  accent-color: var(--hm-accent);
+}
+.hm-dest__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.hm-dest__name {
+  font-size: var(--hm-text-body-sm);
+  font-weight: 500;
+}
+.hm-dest__hint {
+  color: var(--hm-ink-40);
+  font-size: var(--hm-text-label);
+  line-height: var(--hm-lh-label);
+}
+.hm-dest__row {
+  display: flex;
+  align-items: center;
+  gap: var(--hm-space-2);
+}
+.hm-dest__label {
+  flex: none;
+  min-width: 4.5rem;
+  color: var(--hm-ink-60);
+  font-size: var(--hm-text-body-sm);
+}
+.hm-dest__row .hm-input {
+  flex: 1;
+  min-width: 0;
+}
+.hm-dest__notice {
+  margin: 0;
+  color: var(--hm-ink-40);
+  font-size: var(--hm-text-label);
+  line-height: var(--hm-lh-label);
 }

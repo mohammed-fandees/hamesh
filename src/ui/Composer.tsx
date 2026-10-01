@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { AttachedText } from './AttachedText';
 import { FolderPicker, type FolderPickerSource } from './FolderPicker';
 import { MarginMark } from './kit/MarginMark';
 import { NoteEditor } from './NoteEditor';
 import type { Strings } from './i18n';
 
-interface ComposerProps {
+export interface ComposerProps {
   strings: Strings;
   /** For a contextual text note: the exact page text this note will be
    *  attached to, shown above the textarea so what's about to be anchored
@@ -19,6 +19,12 @@ interface ComposerProps {
      *  `resolveDefaultFolderId`), or `null` for "No folder". */
     initialFolderId: string | null;
   };
+  /**
+   * "Where it goes" — this device or a team — supplied by the content script
+   * only in builds that have Teams, for a reader in a team. While it says a
+   * team, this device's folders are not the question and the button says so.
+   */
+  destination?: { node: ReactNode; toTeam: boolean; saveLabel: string };
   saving?: boolean;
   error?: string | null;
   /** `folderId` is `undefined` for an unfiled note. */
@@ -35,11 +41,13 @@ export function Composer({
   strings,
   attachedText,
   folderPicker,
+  destination,
   saving = false,
   error,
   onSave,
   onCancel,
 }: ComposerProps) {
+  const toTeam = destination?.toTeam ?? false;
   // `undefined` until the user picks a folder themselves. Until then the
   // selector follows the resolved default — which can still arrive after
   // the composer opens (folders and preferences load asynchronously) — and
@@ -64,13 +72,14 @@ export function Composer({
         strings={strings}
         label={strings.note}
         placeholder={strings.writePlaceholder}
-        saveLabel={strings.save}
+        saveLabel={toTeam && destination ? destination.saveLabel : strings.save}
         saving={saving}
         error={error}
         onSave={(content) => onSave(content, folderId ?? undefined)}
         onCancel={onCancel}
       >
-        {folderPicker && (
+        {destination?.node}
+        {folderPicker && !toTeam && (
           <FolderPicker
             strings={strings}
             folders={folderPicker.folders}
