@@ -57,10 +57,14 @@ const initialLang = resolveLang(browser.i18n?.getUILanguage?.());
 // reachable this way, so a link can point at one — anything else opens the
 // Library, as an unrecognised view always has.
 const DEEP_LINKS: readonly View[] = ['library', 'settings', 'teams', 'mentions', 'whats-new'];
+/** A part of Settings a link can open straight onto — `?view=settings&focus=plan`. */
+type SettingsFocus = 'plan';
 /** Where an address says the reader is: a view, and inside Teams, a place in it. */
 interface Place {
   view: View;
   teams: TeamsRoute;
+  /** In Settings, the panel to open and bring into view. */
+  focus: SettingsFocus | null;
 }
 function placeFrom(search: string): Place {
   const params = new URLSearchParams(search);
@@ -68,6 +72,7 @@ function placeFrom(search: string): Place {
   return {
     view: DEEP_LINKS.includes(requested as View) ? (requested as View) : 'library',
     teams: routeFromParams(params),
+    focus: params.get('focus') === 'plan' ? 'plan' : null,
   };
 }
 const initialPlace = placeFrom(location.search);
@@ -104,21 +109,24 @@ export function App() {
    * it stands for, because the address alone cannot say where a sidebar switch
    * left the reader.
    */
-  const navigate = useCallback((next: View, teams: TeamsRoute = OVERVIEW) => {
-    const target: Place = { view: next, teams };
-    const deep = next === 'teams' && teams.page !== 'overview';
-    if (deep) {
-      // Remember where this entry is before stepping past it.
-      history.replaceState({ place: placeRef.current }, '');
-      const params = new URLSearchParams({ view: 'teams', ...routeToParams(teams) });
-      history.pushState({ place: target }, '', `?${params}`);
-    } else if (new URLSearchParams(location.search).has('page')) {
-      // Leaving a linkable page for a top-level one: the address should not go on
-      // saying the reader is somewhere they no longer are.
-      history.replaceState({ place: target }, '', location.pathname);
-    }
-    setPlace(target);
-  }, []);
+  const navigate = useCallback(
+    (next: View, teams: TeamsRoute = OVERVIEW, focus: SettingsFocus | null = null) => {
+      const target: Place = { view: next, teams, focus };
+      const deep = next === 'teams' && teams.page !== 'overview';
+      if (deep) {
+        // Remember where this entry is before stepping past it.
+        history.replaceState({ place: placeRef.current }, '');
+        const params = new URLSearchParams({ view: 'teams', ...routeToParams(teams) });
+        history.pushState({ place: target }, '', `?${params}`);
+      } else if (new URLSearchParams(location.search).has('page')) {
+        // Leaving a linkable page for a top-level one: the address should not go on
+        // saying the reader is somewhere they no longer are.
+        history.replaceState({ place: target }, '', location.pathname);
+      }
+      setPlace(target);
+    },
+    [],
+  );
   useEffect(() => {
     const onPop = (event: PopStateEvent) => {
       const remembered = (event.state as { place?: Place } | null)?.place;
@@ -390,6 +398,7 @@ export function App() {
           lang={lang}
           client={teamsClient}
           onOpenSettings={() => navigate('settings')}
+          onOpenPlan={() => navigate('settings', OVERVIEW, 'plan')}
           onOpenLibrary={(next) => {
             setOwner(next);
             navigate('library');
@@ -431,6 +440,7 @@ export function App() {
           preferences={preferences}
           backup={{ onExport: handleExportBackup, onImport: handleImportBackup }}
           teams={teamsClient}
+          focus={place.focus}
           onOpenTeam={() => navigate('teams')}
         />
       );

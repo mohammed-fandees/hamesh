@@ -33,11 +33,45 @@ export const PlanOffer = z.strictObject({
 });
 export type PlanOffer = z.infer<typeof PlanOffer>;
 
+/**
+ * Where the money goes, for one way of paying.
+ *
+ * Server configuration only. The extension's source is public, so it holds no
+ * number of its own: a changed or forked client cannot redirect anyone's
+ * payment, because what it shows is what the private server sent.
+ */
+export const PayeeAccount = z.strictObject({
+  method: PaymentMethod,
+  /** The number or address to pay to, shown verbatim. */
+  account: z.string().min(1).max(100),
+});
+export type PayeeAccount = z.infer<typeof PayeeAccount>;
+
+/** How to pay, and how to have a payment confirmed. */
+export const PaymentInstructions = z.strictObject({
+  /** One per method on offer; a method with no account is not offered. */
+  accounts: z.array(PayeeAccount),
+  /** Where to send the payment's screenshot, when the operator takes one. */
+  confirm: z.strictObject({ whatsapp: z.string().min(1).max(40) }).nullable(),
+});
+export type PaymentInstructions = z.infer<typeof PaymentInstructions>;
+
+/**
+ * The terms a payment is made under. Paying means agreeing to them, so the
+ * client echoes `version` with the payment and the server records it.
+ */
+export const LegalTerms = z.strictObject({
+  version: z.string().min(1).max(40),
+  termsUrl: z.string().url(),
+  privacyUrl: z.string().url(),
+});
+export type LegalTerms = z.infer<typeof LegalTerms>;
+
 /** GET /v1/plans — public, so the extension can show a price before sign-in. */
 export const PlansResponse = z.strictObject({
   plans: z.array(PlanOffer),
-  /** How to pay, as configured server-side; shown verbatim by the client. */
-  methods: z.array(PaymentMethod),
+  payment: PaymentInstructions,
+  terms: LegalTerms,
 });
 export type PlansResponse = z.infer<typeof PlansResponse>;
 
@@ -55,6 +89,8 @@ export const SubmitPaymentRequest = z.strictObject({
     .transform((s) => s.trim().toUpperCase().replace(/\s+/g, ''))
     .pipe(z.string().min(3).max(100)),
   periods: z.number().int().min(1).max(12),
+  /** The `terms.version` the payer was shown; refused unless it is current. */
+  termsVersion: z.string().min(1).max(40),
 });
 export type SubmitPaymentRequest = z.infer<typeof SubmitPaymentRequest>;
 

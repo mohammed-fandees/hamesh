@@ -67,6 +67,7 @@ describe('the operation table', () => {
       method: 'instapay',
       reference: 'REF-1',
       periods: 1,
+      termsVersion: '2026-10-01',
     },
   };
 

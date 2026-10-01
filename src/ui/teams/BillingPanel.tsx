@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { MeResponse, PaymentView, PlansResponse } from '@hamesh/teams-contract';
+import type { MeResponse, PaymentMethod, PaymentView, PlansResponse } from '@hamesh/teams-contract';
 import type { Lang } from '../i18n';
 import { InlineError, StatusLine } from '../kit/Feedback';
+import { SegmentedControl } from '../kit/SegmentedControl';
 import type { TeamsStrings } from './strings';
 import type { TeamsPage } from './useTeams';
 import { formatDate, formatMoney } from '../format';
@@ -13,47 +14,69 @@ interface BillingPanelProps {
   me: MeResponse;
 }
 
+/** The most periods one payment may cover — the contract's own bound. */
+const MAX_PERIODS = 12;
+
+/** A WhatsApp link for a number the server sent, digits only. */
+const whatsappLink = (number: string) => `https://wa.me/${number.replace(/\D/g, '')}`;
+
 /**
  * The plan, and how to pay for it.
  *
- * Every number here — price, currency, period, limits, dates, status — comes
- * from the server. The extension knows no prices: it shows what `/v1/plans`
- * offers, and submits a reference for money the user moved elsewhere. Whether
- * that payment counts is decided by a person on the server's side, never here.
+ * Every number here — price, currency, period, limits, dates, status, and where
+ * the money goes — comes from the server. The extension's source is public and
+ * holds no price and no account number of its own, so a changed copy of it
+ * cannot send anyone's money elsewhere: it shows what `/v1/plans` says and
+ * submits a reference for money the user moved themselves. Whether that payment
+ * counts is decided by a person on the server's side, never here.
+ *
+ * Paying is agreeing to the terms. A first payment asks for that agreement
+ * outright; later ones say what they are made under. Either way the version the
+ * payer saw travels with the payment, and the server refuses a stale one.
  */
 export function BillingPanel({ strings, lang, page, me }: BillingPanelProps) {
   const [plans, setPlans] = useState<PlansResponse | null>(null);
   const [payments, setPayments] = useState<PaymentView[] | null>(null);
-  const [method, setMethod] = useState<string>('');
+  const [method, setMethod] = useState<PaymentMethod | null>(null);
   const [reference, setReference] = useState('');
   const [periods, setPeriods] = useState(1);
+  const [agreed, setAgreed] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  const adopt = useCallback(
+    (offered: PlansResponse | null, history: { payments: PaymentView[] } | null) => {
+      if (offered) {
+        setPlans(offered);
+        setMethod((current) =>
+          current && offered.payment.accounts.some((a) => a.method === current)
+            ? current
+            : (offered.payment.accounts[0]?.method ?? null),
+        );
+      }
+      if (history) setPayments(history.payments);
+    },
+    [],
+  );
 
   const load = useCallback(async () => {
     const [offered, history] = await Promise.all([
       page.run('billing.plans', {}),
       page.run('billing.payments', {}),
     ]);
-    if (offered) {
-      setPlans(offered);
-      setMethod((current) => current || (offered.methods[0] ?? ''));
-    }
-    if (history) setPayments(history.payments);
-  }, [page]);
+    adopt(offered, history);
+    // `page` is rebuilt on every render; what it does is not.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adopt]);
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    void (async () => {
       const [offered, history] = await Promise.all([
         page.run('billing.plans', {}),
         page.run('billing.payments', {}),
       ]);
-      if (cancelled) return;
-      if (offered) {
-        setPlans(offered);
-        setMethod(offered.methods[0] ?? '');
-      }
-      if (history) setPayments(history.payments);
+      if (!cancelled) adopt(offered, history);
     })();
     return () => {
       cancelled = true;
@@ -62,28 +85,40 @@ export function BillingPanel({ strings, lang, page, me }: BillingPanelProps) {
   }, []);
 
   const plan = plans?.plans[0] ?? null;
+  const account = plans?.payment.accounts.find((a) => a.method === method) ?? null;
+  /** No payment yet: this one is where the terms are agreed to. */
+  const first = payments !== null && payments.length === 0;
+
+  const methodLabel = (m: PaymentMethod) =>
+    m === 'vodafone_cash' ? strings.methodVodafoneCash : strings.methodInstapay;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!plan || !method) return;
+    if (!plan || !method || !plans || (first && !agreed)) return;
     const result = await page.run(
       'billing.submit',
-      {
-        planCode: plan.code,
-        method: method as 'instapay' | 'vodafone_cash',
-        reference,
-        periods,
-      },
+      { planCode: plan.code, method, reference, periods, termsVersion: plans.terms.version },
       'billing.submit',
     );
-    if (!result) return;
+    if (!result) {
+      // The terms may have changed since the page loaded; show the current ones.
+      await load();
+      return;
+    }
     setSubmitted(true);
     setReference('');
     await load();
   }
 
-  const methodLabel = (m: string) =>
-    m === 'vodafone_cash' ? strings.methodVodafoneCash : strings.methodInstapay;
+  async function copyAccount() {
+    if (!account) return;
+    try {
+      await navigator.clipboard.writeText(account.account);
+      setCopied(true);
+    } catch {
+      // The number is on screen to copy by hand.
+    }
+  }
 
   /** What the server says about this account's access, in one line. */
   function planLine(): string {
@@ -98,63 +133,170 @@ export function BillingPanel({ strings, lang, page, me }: BillingPanelProps) {
     return strings.planNone;
   }
 
+  const days = plan?.price.periodDays ?? 30;
+  const totalAmount = plan
+    ? formatMoney(plan.price.amountMinor * periods, plan.price.currency, lang)
+    : '';
+  const termsLinks = plans && (
+    <>
+      {' '}
+      <a
+        href={plans.terms.termsUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="hm-link hm-link--accent"
+      >
+        {strings.termsOfUse}
+      </a>{' '}
+      {strings.termsAnd}{' '}
+      <a
+        href={plans.terms.privacyUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="hm-link hm-link--accent"
+      >
+        {strings.privacyPolicy}
+      </a>
+      .
+    </>
+  );
+
   return (
     <>
       <p className="hm-section__intro">{planLine()}</p>
 
-      {plan && (
+      {plan && plans && (
         <form className="hm-billing" onSubmit={submit}>
           <p className="hm-billing__price">
-            {strings.price(
-              formatMoney(plan.price.amountMinor, plan.price.currency, lang),
-              plan.price.periodDays,
-            )}
+            {strings.price(formatMoney(plan.price.amountMinor, plan.price.currency, lang), days)}
           </p>
 
-          <div className="hm-team-invite">
-            <select
-              className="hm-input"
-              aria-label={strings.payWith}
-              value={method}
-              onChange={(e) => setMethod(e.target.value)}
-            >
-              {plans?.methods.map((m) => (
-                <option key={m} value={m}>
-                  {methodLabel(m)}
-                </option>
-              ))}
-            </select>
-            <input
-              type="number"
-              min={1}
-              max={12}
-              className="hm-input hm-input--number"
-              aria-label={strings.periods}
-              value={periods}
-              onChange={(e) => setPeriods(Math.max(1, Math.min(12, Number(e.target.value) || 1)))}
-            />
-            <input
-              type="text"
-              required
-              className="hm-input"
-              placeholder={strings.referencePlaceholder}
-              aria-label={strings.referencePlaceholder}
-              value={reference}
-              onChange={(e) => {
-                setReference(e.target.value);
-                setSubmitted(false);
-              }}
-            />
-            <button
-              type="submit"
-              className="hm-btn hm-btn-primary"
-              disabled={page.working('billing.submit')}
-              aria-busy={page.working('billing.submit')}
-            >
-              {strings.submitPayment}
-            </button>
-          </div>
-          <p className="hm-supporting">{strings.referenceHint}</p>
+          {plans.payment.accounts.length === 0 || !method || !account ? (
+            <p className="hm-supporting">{strings.paymentsClosed}</p>
+          ) : (
+            <>
+              <div className="hm-billing__choices">
+                {plans.payment.accounts.length > 1 && (
+                  <SegmentedControl<PaymentMethod>
+                    value={method}
+                    name="hm-pay-with"
+                    groupLabel={strings.payWith}
+                    options={plans.payment.accounts.map((a) => ({
+                      value: a.method,
+                      label: methodLabel(a.method),
+                    }))}
+                    onChange={(next) => {
+                      setMethod(next);
+                      setCopied(false);
+                    }}
+                  />
+                )}
+                <div className="hm-stepper" role="group" aria-label={strings.periodsLabel(days)}>
+                  <span className="hm-stepper__label">{strings.periodsLabel(days)}</span>
+                  <button
+                    type="button"
+                    className="hm-icon-btn"
+                    aria-label={strings.fewerPeriods}
+                    disabled={periods <= 1}
+                    onClick={() => setPeriods((n) => Math.max(1, n - 1))}
+                  >
+                    −
+                  </button>
+                  <output className="hm-stepper__value" aria-live="polite">
+                    {periods}
+                  </output>
+                  <button
+                    type="button"
+                    className="hm-icon-btn"
+                    aria-label={strings.morePeriods}
+                    disabled={periods >= MAX_PERIODS}
+                    onClick={() => setPeriods((n) => Math.min(MAX_PERIODS, n + 1))}
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              <p className="hm-billing__total">
+                {strings.total(totalAmount, strings.periodsCount(periods, days))}
+              </p>
+
+              <h3 className="hm-overline">{strings.howToPay}</h3>
+              <ol className="hm-pay-steps">
+                <li>
+                  {strings.payStepSend(totalAmount, methodLabel(method))}{' '}
+                  <bdi className="hm-pay-steps__number" dir="ltr">
+                    {account.account}
+                  </bdi>{' '}
+                  <button
+                    type="button"
+                    className="hm-btn hm-btn-ghost hm-btn--compact"
+                    onClick={() => void copyAccount()}
+                  >
+                    {copied ? strings.copied : strings.copyNumber}
+                  </button>
+                </li>
+                {plans.payment.confirm && (
+                  <li>
+                    {strings.payStepConfirm}{' '}
+                    <a
+                      className="hm-link hm-link--accent hm-pay-steps__number"
+                      href={whatsappLink(plans.payment.confirm.whatsapp)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      dir="ltr"
+                    >
+                      {plans.payment.confirm.whatsapp}
+                    </a>
+                  </li>
+                )}
+                <li>{strings.payStepReference}</li>
+              </ol>
+
+              <label className="hm-billing__field">
+                <span className="hm-billing__field-label">{strings.referenceLabel}</span>
+                <input
+                  type="text"
+                  required
+                  className="hm-input"
+                  placeholder={strings.referencePlaceholder}
+                  value={reference}
+                  onChange={(e) => {
+                    setReference(e.target.value);
+                    setSubmitted(false);
+                  }}
+                />
+              </label>
+
+              {first ? (
+                <label className="hm-billing__terms">
+                  <input
+                    type="checkbox"
+                    checked={agreed}
+                    onChange={(e) => setAgreed(e.target.checked)}
+                  />
+                  <span>
+                    {strings.termsAgreeLead}
+                    {termsLinks}
+                  </span>
+                </label>
+              ) : (
+                <p className="hm-supporting">
+                  {strings.termsNoticeLead}
+                  {termsLinks}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                className="hm-btn hm-btn-primary"
+                disabled={page.working('billing.submit') || (first && !agreed) || !reference.trim()}
+                aria-busy={page.working('billing.submit')}
+              >
+                {strings.submitPayment}
+              </button>
+            </>
+          )}
         </form>
       )}
       {page.failed('billing.submit') && (

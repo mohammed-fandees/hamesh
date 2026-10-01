@@ -657,14 +657,85 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.hm-billing {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--hm-space-3);
+}
 .hm-billing__price {
-  margin: var(--hm-space-3) 0 0;
+  margin: var(--hm-space-2) 0 0;
   font-size: var(--hm-text-title);
   line-height: var(--hm-lh-title);
+  font-weight: 600;
+}
+/* How to pay, and how much of it: the method beside the month count. */
+.hm-billing__choices {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--hm-space-3);
+}
+.hm-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hm-space-1);
+}
+.hm-stepper__label {
+  margin-inline-end: var(--hm-space-2);
+  color: var(--hm-ink-60);
+  font-size: var(--hm-text-body-sm);
+}
+.hm-stepper__value {
+  min-width: 2ch;
+  text-align: center;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+/* The figure the reader actually sends — the thing they must get right. */
+.hm-billing__total {
+  margin: 0;
+  padding: var(--hm-space-2) var(--hm-space-3);
+  border-radius: var(--hm-radius-md);
+  background: var(--hm-accent-tint);
+  color: var(--hm-accent-strong);
+  font-weight: 600;
+}
+.hm-pay-steps {
+  margin: 0;
+  padding-inline-start: var(--hm-space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--hm-space-2);
+  color: var(--hm-ink);
+  font-size: var(--hm-text-body);
+}
+.hm-pay-steps__number {
+  font-family: var(--hm-mono);
+  font-weight: 600;
+  unicode-bidi: isolate;
+}
+.hm-billing__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hm-space-1);
+  width: min(100%, 24rem);
+}
+.hm-billing__field-label {
+  color: var(--hm-ink-60);
+  font-size: var(--hm-text-body-sm);
+}
+.hm-billing__terms {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--hm-space-2);
+  font-size: var(--hm-text-body-sm);
+  cursor: pointer;
+}
+.hm-billing__terms input {
+  margin-top: 3px;
+  accent-color: var(--hm-accent);
 }
 .hm-billing__history {
   margin-top: var(--hm-space-5);
-}
-.hm-input--number {
-  flex: 0 0 5rem;
 }

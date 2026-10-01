@@ -1,4 +1,4 @@
-import type { TeamAction, TeamMember, TeamResponse } from '@hamesh/teams-contract';
+import type { MeResponse, TeamAction, TeamMember, TeamResponse } from '@hamesh/teams-contract';
 
 /**
  * What the reader may do in a team, read from the capabilities the server sent
@@ -58,4 +58,21 @@ export function inviteRights(team: Team) {
   const member = teamCan(team, 'invites.create_member');
   const admin = teamCan(team, 'invites.create_admin');
   return { any: member || admin, member, admin, manage: teamCan(team, 'invites.manage') };
+}
+
+/**
+ * Whether this account may found another team: `allowed`, `needs_plan` (no
+ * subscription or complimentary access to found one with) or `at_limit` (every
+ * team the plan allows is already theirs).
+ *
+ * Asked before offering the control, so nobody names a team only to be told
+ * afterwards they could not have it. The server still decides on the request.
+ */
+export type TeamCreation = 'allowed' | 'needs_plan' | 'at_limit';
+
+export function teamCreation(me: Pick<MeResponse, 'entitlement' | 'teams'>): TeamCreation {
+  const { entitlement } = me;
+  if (entitlement.state !== 'active' || !entitlement.limits) return 'needs_plan';
+  const owned = me.teams.filter((t) => t.role === 'owner').length;
+  return owned >= entitlement.limits.ownedTeams ? 'at_limit' : 'allowed';
 }

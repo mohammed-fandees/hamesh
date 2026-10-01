@@ -12,6 +12,8 @@ interface TeamsAccountProps {
   client: TeamsClient;
   /** Called with the team just joined, so the page can open it. */
   onJoined: (teamId: string) => void;
+  /** Open the plan and bring it into view — the reader came here to subscribe. */
+  revealPlan?: boolean;
 }
 
 /**
@@ -26,7 +28,7 @@ interface TeamsAccountProps {
  * Nothing here until someone is signed in: there is no plan to show and no
  * invitation anyone could accept.
  */
-export function TeamsAccount({ lang, client, onJoined }: TeamsAccountProps) {
+export function TeamsAccount({ lang, client, onJoined, revealPlan = false }: TeamsAccountProps) {
   const strings = getTeamsStrings(lang);
   const page = useTeams(client);
   const me = page.me;
@@ -45,7 +47,7 @@ export function TeamsAccount({ lang, client, onJoined }: TeamsAccountProps) {
         />
       </Panel>
 
-      <Panel title={strings.plan}>
+      <Panel title={strings.plan} reveal={revealPlan}>
         <BillingPanel strings={strings} lang={lang} page={page} me={me} />
       </Panel>
     </>

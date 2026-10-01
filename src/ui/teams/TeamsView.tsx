@@ -22,12 +22,15 @@ import { TeamOverview } from './TeamOverview';
 import { TeamPeople } from './TeamPeople';
 import { TeamSettings } from './TeamSettings';
 import { PAGE, useTeams } from './useTeams';
+import { teamCreation } from './permissions';
 
 interface TeamsViewProps {
   lang: Lang;
   client: TeamsClient;
   /** Sends the reader to Settings, where Teams is turned on and signed into. */
   onOpenSettings: () => void;
+  /** Sends the reader to the plan in Settings, opened, to subscribe. */
+  onOpenPlan: () => void;
   /** Sends the reader to the Notes Library, narrowed to what they opened. */
   onOpenLibrary: (owner: NoteOwner) => void;
   /** How a note moves between this device and a team — see `PersonalNotes`. */
@@ -74,6 +77,7 @@ export function TeamsView({
   lang,
   client,
   onOpenSettings,
+  onOpenPlan,
   onOpenLibrary,
   personal,
   route,
@@ -161,23 +165,36 @@ export function TeamsView({
     await page.refresh();
   }
 
-  const newTeam = creating ? (
-    <NameField
-      label={strings.createTeam}
-      placeholder={strings.teamNamePlaceholder}
-      maxLength={TEAM_NAME_MAX}
-      submitLabel={strings.create}
-      cancelLabel={strings.cancel}
-      busy={page.working('team.create')}
-      onCancel={() => setCreating(false)}
-      onSubmit={(name) => void createTeam(name)}
-    />
-  ) : (
-    <button type="button" className="hm-add" onClick={() => setCreating(true)}>
-      <PlusIcon size={11} />
-      {strings.createTeam}
-    </button>
-  );
+  /** Asked before the control is offered, so nobody names a team they cannot have. */
+  const canCreate = me ? teamCreation(me) : 'needs_plan';
+
+  const newTeam =
+    canCreate === 'needs_plan' ? (
+      <button type="button" className="hm-add" onClick={onOpenPlan}>
+        <PlusIcon size={11} />
+        {strings.subscribeToCreate}
+      </button>
+    ) : canCreate === 'at_limit' ? (
+      <span className="hm-supporting">
+        {strings.atTeamLimit(me?.entitlement.limits?.ownedTeams ?? 0)}
+      </span>
+    ) : creating ? (
+      <NameField
+        label={strings.createTeam}
+        placeholder={strings.teamNamePlaceholder}
+        maxLength={TEAM_NAME_MAX}
+        submitLabel={strings.create}
+        cancelLabel={strings.cancel}
+        busy={page.working('team.create')}
+        onCancel={() => setCreating(false)}
+        onSubmit={(name) => void createTeam(name)}
+      />
+    ) : (
+      <button type="button" className="hm-add" onClick={() => setCreating(true)}>
+        <PlusIcon size={11} />
+        {strings.createTeam}
+      </button>
+    );
 
   const body = () => {
     if (!page.status) return <Skeleton />;
@@ -204,7 +221,15 @@ export function TeamsView({
     }
 
     if (teams.length === 0 && !creating) {
-      return (
+      // Founding a team is an owner's, and owners subscribe: say so up front,
+      // with the way to the plan, rather than after a team has been named.
+      return canCreate === 'needs_plan' ? (
+        <EmptyState
+          title={strings.needsPlanTitle}
+          body={strings.needsPlanBody}
+          action={{ label: strings.seePlan, onClick: onOpenPlan }}
+        />
+      ) : (
         <EmptyState
           title={strings.emptyTeamsTitle}
           body={strings.emptyTeamsBody}
