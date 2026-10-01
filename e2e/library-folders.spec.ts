@@ -1,9 +1,9 @@
-import { test, expect, chromium, type BrowserContext, type Page } from '@playwright/test';
+import { test, expect, type BrowserContext, type Page } from '@playwright/test';
 import path from 'node:path';
 import fs from 'node:fs';
-import os from 'node:os';
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
+import { launchExtension, type ExtensionProfile } from './support/profile';
 
 /**
  * Notes Library — Folders (categories, nested).
@@ -19,7 +19,6 @@ import type { AddressInfo } from 'node:net';
  * Requires the extension to be built first: `pnpm build`.
  */
 
-const EXTENSION_PATH = path.resolve(import.meta.dirname, '..', '.output', 'chrome-mv3');
 const FIXTURE_HTML = fs.readFileSync(
   path.resolve(import.meta.dirname, 'fixtures', 'test-page.html'),
   'utf8',
@@ -38,18 +37,6 @@ function startServer(): Promise<{ url: string; close: () => Promise<void> }> {
         close: () => new Promise((r) => server.close(() => r())),
       });
     });
-  });
-}
-
-async function launch(): Promise<BrowserContext> {
-  const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hamesh-e2e-folders-'));
-  return chromium.launchPersistentContext(userDataDir, {
-    headless: false,
-    args: [
-      '--headless=new',
-      `--disable-extensions-except=${EXTENSION_PATH}`,
-      `--load-extension=${EXTENSION_PATH}`,
-    ],
   });
 }
 
@@ -135,6 +122,7 @@ function folderCount(page: Page, name: string) {
 }
 
 test.describe('Notes Library — Folders', () => {
+  let profile: ExtensionProfile | undefined;
   let context: BrowserContext;
   let server: { url: string; close: () => Promise<void> };
   let page: Page;
@@ -143,7 +131,8 @@ test.describe('Notes Library — Folders', () => {
 
   test.beforeEach(async () => {
     server = await startServer();
-    context = await launch();
+    profile = await launchExtension('folders');
+    context = profile.context;
     extensionId = await getExtensionId(context);
 
     page = await context.newPage();
@@ -160,7 +149,7 @@ test.describe('Notes Library — Folders', () => {
   });
 
   test.afterEach(async () => {
-    await context.close();
+    await profile?.close();
     await server.close();
   });
 

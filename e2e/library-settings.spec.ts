@@ -1,7 +1,5 @@
-import { test, expect, chromium, type BrowserContext } from '@playwright/test';
-import path from 'node:path';
-import fs from 'node:fs';
-import os from 'node:os';
+import { test, expect, type BrowserContext } from '@playwright/test';
+import { launchExtension, type ExtensionProfile } from './support/profile';
 
 /**
  * Notes Library — sidebar navigation + Settings view.
@@ -19,20 +17,6 @@ import os from 'node:os';
  * Requires the extension to be built first: `pnpm build`.
  */
 
-const EXTENSION_PATH = path.resolve(import.meta.dirname, '..', '.output', 'chrome-mv3');
-
-async function launch(): Promise<BrowserContext> {
-  const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hamesh-e2e-settings-'));
-  return chromium.launchPersistentContext(userDataDir, {
-    headless: false,
-    args: [
-      '--headless=new',
-      `--disable-extensions-except=${EXTENSION_PATH}`,
-      `--load-extension=${EXTENSION_PATH}`,
-    ],
-  });
-}
-
 async function getExtensionId(context: BrowserContext): Promise<string> {
   let sw = context.serviceWorkers()[0];
   if (!sw) sw = await context.waitForEvent('serviceworker');
@@ -40,13 +24,15 @@ async function getExtensionId(context: BrowserContext): Promise<string> {
 }
 
 test.describe('Notes Library — sidebar + Settings', () => {
+  let profile: ExtensionProfile | undefined;
   let context: BrowserContext;
 
   test.beforeEach(async () => {
-    context = await launch();
+    profile = await launchExtension('settings');
+    context = profile.context;
   });
   test.afterEach(async () => {
-    await context.close();
+    await profile?.close();
   });
 
   test('the sidebar switches between Library and Settings without navigating away', async () => {
