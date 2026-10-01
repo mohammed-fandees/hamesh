@@ -801,6 +801,23 @@ shows one favicon per group header — that shows a small favicon + domain
 line above the title. `FolderTree` and `PinnedSection` — the two
 cross-site lists — pass it.
 
+### Spaces: the reader's folders and each team's
+
+In a build with Teams, the folder view is one card per **space** — "My notes"
+(on this device only) and one per team (shared on the server) — each with its
+own folder tree (`FolderTree`, now general over spaces), because a team's notes
+are filed in the team's folders, never the reader's. Dragging a note carries
+its space in the drag payload's MIME type (`application/x-hamesh-space-…`),
+which a drop target can read while the note is still over it: a team's folders
+take a note from this device (that is **sharing** it, into that folder) or from
+the same team (moving it); nothing else lands. Sharing — from the row menu or
+by dropping — goes through one function (`shareNote`) behind the page's
+`shareToTeam`, which first asks for consent (`ShareConsent`, the one modal
+dialog in Hamesh: what goes up, who sees it, storage outside Egypt, how to take
+it back) unless the reader ticked "don't show again"
+(`Preferences.teams.skipShareConsent`). A store build without Teams keeps the
+single card of folders.
+
 ### Filing a note as it's written
 
 The composer carries a folder selector (`FolderPicker.tsx`) under its

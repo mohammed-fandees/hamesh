@@ -118,9 +118,15 @@ export const DEFAULT_FOLDER_DEFAULT_PREFERENCES: FolderDefaultPreferences = {
 export interface TeamsPreferences {
   /** The newest mention this reader has looked at, or null if they never have. */
   lastSeenMentionId: string | null;
+  /** The reader asked not to be told again, before each share, what sharing a
+   *  note with a team means. Their consent stands until they change this. */
+  skipShareConsent: boolean;
 }
 
-export const DEFAULT_TEAMS_PREFERENCES: TeamsPreferences = { lastSeenMentionId: null };
+export const DEFAULT_TEAMS_PREFERENCES: TeamsPreferences = {
+  lastSeenMentionId: null,
+  skipShareConsent: false,
+};
 
 export interface Preferences {
   schemaVersion: SchemaVersion;
@@ -172,6 +178,7 @@ function parseTeams(value: unknown): TeamsPreferences {
   return {
     lastSeenMentionId:
       typeof record.lastSeenMentionId === 'string' ? record.lastSeenMentionId : null,
+    skipShareConsent: record.skipShareConsent === true,
   };
 }
 

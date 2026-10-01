@@ -1,15 +1,11 @@
-import type { Note } from '@/domain/note';
-import type { TeamsClient } from '@/teams/client';
 import type { TeamsErrorCode } from '@/teams/errors';
 import type { Lang } from '../i18n';
 import { MenuDivider, MenuItem, MenuLabel } from '../kit/Menu';
 import { getTeamsStrings } from './strings';
-import { Failure, failureOf, useWork } from '../hooks/useWork';
+import { failureOf, useWork } from '../hooks/useWork';
 
 interface ShareNoteActionProps {
-  note: Note;
   lang: Lang;
-  client: TeamsClient;
   /** The teams this account is in, as the server last listed them. */
   teams: readonly { id: string; name: string }[];
   /**
@@ -17,8 +13,13 @@ interface ShareNoteActionProps {
    * item opens the team's own page instead, where it can be changed.
    */
   open?: (() => void) | undefined;
+  /**
+   * Shares the note with a team — the page's one way of sharing, which asks the
+   * reader's consent first. `false` if they declined; fails with a refusal.
+   */
+  share: (teamId: string) => Promise<boolean>;
   /** Closes the menu this sits in, once there is nothing left to say. */
-  onDone: () => void | Promise<void>;
+  onDone: () => void;
 }
 
 /**
@@ -29,12 +30,10 @@ interface ShareNoteActionProps {
  * whatever web page it is on. So the page draws shared notes, and this is where
  * one is handed over.
  *
- * The note itself is unchanged by sharing — it stays on this device exactly as
- * it was. What goes up is a copy the team now has, and the note's own id travels
- * as the idempotency key, so sharing the same note twice is the same share, not
- * a second copy of it.
+ * What sharing means — consent, the upload, the note moving to the team — is
+ * the page's (`share`), the same as dropping the note on a team's folder.
  */
-export function ShareNoteAction({ note, lang, client, teams, open, onDone }: ShareNoteActionProps) {
+export function ShareNoteAction({ lang, teams, open, share, onDone }: ShareNoteActionProps) {
   const strings = getTeamsStrings(lang);
   const work = useWork((error) => failureOf<TeamsErrorCode>(error, 'internal'));
   const busy = work.working('share');
@@ -55,23 +54,11 @@ export function ShareNoteAction({ note, lang, client, teams, open, onDone }: Sha
 
   if (teams.length === 0) return null;
 
-  async function share(teamId: string) {
-    const shared = await work.run('share', async () => {
-      const result = await client.request('notes.share', {
-        teamId,
-        // The note's own id: a retry of the same share returns the one team note.
-        requestId: note.id,
-        originalUrl: note.originalUrl,
-        ...(note.pageContext?.title ? { pageTitle: note.pageContext.title } : {}),
-        content: note.content,
-        anchor: note.anchor,
-      });
-      if (!result.ok) throw new Failure(result.error);
-      return true;
-    });
+  async function shareWith(teamId: string) {
+    const shared = await work.run('share', () => share(teamId));
     // Only a success closes the menu: a refusal has to stay on screen long
-    // enough to be read.
-    if (shared) await onDone();
+    // enough to be read, and a declined consent leaves the reader where they were.
+    if (shared) onDone();
   }
 
   return (
@@ -79,7 +66,7 @@ export function ShareNoteAction({ note, lang, client, teams, open, onDone }: Sha
       <MenuDivider />
       <MenuLabel>{strings.shareWithTeam}</MenuLabel>
       {teams.map((team) => (
-        <MenuItem key={team.id} disabled={busy} onSelect={() => void share(team.id)}>
+        <MenuItem key={team.id} disabled={busy} onSelect={() => void shareWith(team.id)}>
           <bdi>{team.name}</bdi>
         </MenuItem>
       ))}

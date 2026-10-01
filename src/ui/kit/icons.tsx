@@ -324,6 +324,16 @@ export function TeamIcon({ size, className }: IconProps) {
   );
 }
 
+/** This device: a screen on its stand — where personal notes live. */
+export function DeviceIcon({ size, className }: IconProps) {
+  return (
+    <Glyph size={size} className={className}>
+      <rect x="1.8" y="2.4" width="10.4" height="7" rx="1" />
+      <path d="M5 12 H9 M7 9.4 V12" />
+    </Glyph>
+  );
+}
+
 /** Teams → Account: one head. */
 export function AccountIcon({ size, className }: IconProps) {
   return (

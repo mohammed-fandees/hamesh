@@ -42,6 +42,7 @@ function makePrefsRepo(prefs: Preferences = DEFAULT_PREFERENCES): PreferencesRep
     setTextNotes: vi.fn(),
     setLastSeenReleaseVersion: vi.fn(),
     setLastSeenMention: vi.fn(),
+    setSkipShareConsent: vi.fn(),
     setPageDefaultFolder: vi.fn(),
     setGlobalDefaultFolder: vi.fn(),
   };

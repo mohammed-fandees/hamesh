@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { Folder } from '@/domain/folder';
+import type { Folder, FolderLike } from '@/domain/folder';
 import { buildFolderTree } from '@/domain/folder-grouping';
-import type { Note } from '@/domain/note';
+import { isSharedNote, type Note } from '@/domain/note';
 import {
   filterNotesByQuery,
   getContinueWebsites,
@@ -21,7 +21,10 @@ import { NoteFilter } from '../teams/NoteFilter';
 import { getTeamsStrings } from '../teams/strings';
 import type { CachedTeam } from '@/teams/page-cache';
 import { ContinueSection } from './ContinueSection';
-import { FolderTree } from './FolderTree';
+import { FolderTree, PERSONAL_SPACE } from './FolderTree';
+import { SpaceCard } from './SpaceCard';
+import { DeviceIcon } from '../kit/icons';
+import { TeamSpace, type TeamLibraryActions } from '../teams/TeamSpace';
 import { PinnedSection } from './PinnedSection';
 import { WebsiteGroup } from './WebsiteGroup';
 
@@ -35,6 +38,10 @@ interface LibraryViewProps {
   /** The notes this device holds from the reader's teams, and those teams. */
   teamNotes: Note[];
   teams: readonly CachedTeam[];
+  /** Each team's folders, by team id. */
+  teamFolders: ReadonlyMap<string, readonly FolderLike[]>;
+  /** What the folder view may do to teams' notes and folders; absent without Teams. */
+  teamActions?: TeamLibraryActions | null;
   folders: Folder[] | null;
   /** Whose notes are shown — everyone's, only the reader's, or one team's. */
   owner: NoteOwner;
@@ -61,6 +68,8 @@ export function LibraryView({
   notes,
   teamNotes,
   teams,
+  teamFolders,
+  teamActions = null,
   folders,
   owner,
   onOwnerChange,
@@ -101,7 +110,13 @@ export function LibraryView({
     () => sortWebsiteGroups(groupNotesByDomain(found), sortMode),
     [found, sortMode],
   );
-  const folderTree = useMemo(() => buildFolderTree(folders ?? [], found), [folders, found]);
+  // The reader's own notes are filed in their own folders; each team's, in that
+  // team's. So the folder view is one tree per space, never one tree of both.
+  const personalFound = useMemo(() => found.filter((note) => !isSharedNote(note)), [found]);
+  const folderTree = useMemo(
+    () => buildFolderTree(folders ?? [], personalFound),
+    [folders, personalFound],
+  );
   const continueSites = useMemo(() => getContinueWebsites(visible), [visible]);
   // Only this device's notes can be pinned, so a team's never appear here.
   const pinned = useMemo(() => getPinnedNotes(notes ?? []), [notes]);
@@ -145,17 +160,51 @@ export function LibraryView({
       );
     }
     if (mode === 'folder') {
-      return (
+      const personal = (bare: boolean) => (
         <FolderTree
+          space={PERSONAL_SPACE}
           tree={folderTree.tree}
           unfiledNotes={folderTree.unfiledNotes}
           strings={strings}
           lang={lang}
+          bare={bare}
           onCreateFolder={onCreateFolder}
           onRenameFolder={onRenameFolder}
           onDeleteFolder={onDeleteFolder}
-          onMoveNote={onMoveNote}
+          onDropNote={(noteId, folderId) => onMoveNote(noteId, folderId)}
         />
+      );
+      // Without teams there is one space, and nothing to tell it apart from.
+      if (!import.meta.env.WXT_TEAMS_API_ORIGIN || !teamActions || teams.length === 0) {
+        return personal(false);
+      }
+      const showsMine = owner === 'all' || owner === 'mine';
+      const shownTeams = teams.filter(
+        (team) => owner === 'all' || (typeof owner === 'object' && owner.teamId === team.id),
+      );
+      return (
+        <div className="hm-spaces">
+          {showsMine && (
+            <SpaceCard
+              icon={<DeviceIcon size={16} />}
+              title={strings.mySpace}
+              meta={strings.mySpaceMeta(personalFound.length)}
+            >
+              {personal(true)}
+            </SpaceCard>
+          )}
+          {shownTeams.map((team) => (
+            <TeamSpace
+              key={team.id}
+              team={team}
+              notes={found.filter((note) => note.team?.id === team.id)}
+              folders={teamFolders.get(team.id) ?? []}
+              strings={strings}
+              lang={lang}
+              actions={teamActions}
+            />
+          ))}
+        </div>
       );
     }
     return (

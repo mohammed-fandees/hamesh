@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, type CSSProperties } from 'react';
-import { FOLDER_NAME_MAX } from '@/domain/folder';
+import { FOLDER_NAME_MAX, type FolderLike } from '@/domain/folder';
 import type { FolderNode } from '@/domain/folder-grouping';
 import type { Note } from '@/domain/note';
 import { FolderMenu } from '../FolderMenu';
@@ -12,19 +12,51 @@ import { NoteRow } from './NoteRow';
  *  collides with a browser/OS default drag payload. */
 const NOTE_DRAG_MIME = 'application/x-hamesh-note-id';
 
+/** Says which space a dragged note comes from, in the payload's TYPE rather
+ *  than its data: a drop target may read the types while the note is over it
+ *  (the data only once it lands), and must decide then whether to take it.
+ *  Types are lower-cased by the browser, so spaces are compared lower-cased. */
+const SPACE_MIME_PREFIX = 'application/x-hamesh-space-';
+
+/** The space a drag comes from, or null for anything that is not a note. */
+function spaceOfDrag(types: readonly string[]): string | null {
+  const type = types.find((t) => t.startsWith(SPACE_MIME_PREFIX));
+  return type ? type.slice(SPACE_MIME_PREFIX.length) : null;
+}
+
+/** The personal space: this device's notes and folders. */
+export const PERSONAL_SPACE = 'personal';
+/** A team's space, as a drag names it. */
+export const teamSpace = (teamId: string) => `team-${teamId.toLowerCase()}`;
+
 /** The synthetic "Unfiled" folder's key in the expanded set. Unfiled is not a
  *  folder — it cannot be renamed or deleted — but notes can be dropped on it. */
 const UNFILED = 'unfiled';
 
 interface FolderTreeProps {
-  tree: FolderNode[];
+  /** Whose folders these are — `PERSONAL_SPACE`, or `teamSpace(id)`. */
+  space: string;
+  tree: FolderNode<FolderLike>[];
   unfiledNotes: Note[];
   strings: Strings;
   lang: Lang;
+  /** Whether a note dragged from `from` may land here. */
+  accepts?: (from: string) => boolean;
+  /** Said on a folder while a note from another space is over it. */
+  crossSpaceHint?: string;
+  /** Inside a space's own card: the list is not a card of its own. */
+  bare?: boolean;
   onCreateFolder: (name: string, parentId: string | null) => Promise<unknown>;
   onRenameFolder: (folderId: string, name: string) => Promise<unknown>;
   onDeleteFolder: (folderId: string) => Promise<unknown>;
-  onMoveNote: (noteId: string, folderId: string | undefined) => void;
+  /** A note dropped on a folder (or, with `undefined`, on Unfiled), from `from`. */
+  onDropNote: (noteId: string, folderId: string | undefined, from: string) => void;
+}
+
+/** Which folder a note is over, and whether it came from another space. */
+interface DragOver {
+  id: string;
+  crossing: boolean;
 }
 
 interface TreeState {
@@ -33,8 +65,8 @@ interface TreeState {
   expanded: ReadonlySet<string>;
   toggle: (id: string) => void;
   open: (id: string) => void;
-  dragOver: string | null;
-  setDragOver: (id: string | null) => void;
+  dragOver: DragOver | null;
+  setDragOver: (over: DragOver | null) => void;
   props: FolderTreeProps;
 }
 
@@ -51,11 +83,15 @@ const depthStyle = (depth: number) => ({ '--hm-depth': depth }) as CSSProperties
  * folders have — and every note is the same row every list uses, with "Move
  * to folder" in its own menu. Notes can also be dragged onto a folder (or onto
  * Unfiled): a mouse-only shortcut to the same move.
+ *
+ * The same tree serves every space — the reader's own folders and each team's.
+ * A note dragged from one space to another is not moved but shared: which
+ * crossings a space takes, and what dropping means, are its owner's to say.
  */
 export function FolderTree(props: FolderTreeProps) {
-  const { tree, unfiledNotes, strings, lang, onCreateFolder } = props;
+  const { tree, unfiledNotes, strings, lang, onCreateFolder, bare } = props;
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
-  const [dragOver, setDragOver] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState<DragOver | null>(null);
   const [creating, setCreating] = useState(false);
 
   const state: TreeState = {
@@ -100,7 +136,11 @@ export function FolderTree(props: FolderTreeProps) {
             </button>
           )}
         </div>
-        <ul className="hm-rows hm-rows--card hm-folder-tree__list">
+        <ul
+          className={
+            bare ? 'hm-rows hm-folder-tree__list' : 'hm-rows hm-rows--card hm-folder-tree__list'
+          }
+        >
           {tree.map((node) => (
             <FolderItem key={node.folder.id} node={node} depth={0} />
           ))}
@@ -113,26 +153,39 @@ export function FolderTree(props: FolderTreeProps) {
 
 /** Drop-target handlers for a folder or Unfiled, and the highlight while a
  *  note is over it. */
-function useDropTarget(id: string, onDropNote: (noteId: string) => void) {
-  const { dragOver, setDragOver } = useTree();
+function useDropTarget(id: string, folderId: string | undefined) {
+  const { dragOver, setDragOver, props } = useTree();
+  /** The drag's space, if this tree takes it; otherwise the note may not land. */
+  const taken = (e: React.DragEvent) => {
+    const from = spaceOfDrag(e.dataTransfer.types);
+    if (from === null) return null;
+    const accepts = props.accepts ?? ((source: string) => source === props.space);
+    return accepts(from) ? from : null;
+  };
   return {
-    'data-drag-over': dragOver === id,
+    'data-drag-over': dragOver?.id === id,
     onDragEnter: (e: React.DragEvent) => {
+      const from = taken(e);
+      if (from === null) return;
       e.preventDefault();
-      setDragOver(id);
+      setDragOver({ id, crossing: from !== props.space });
     },
     onDragOver: (e: React.DragEvent) => {
+      const from = taken(e);
+      if (from === null) return;
       e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
+      e.dataTransfer.dropEffect = from === props.space ? 'move' : 'copy';
     },
     onDragLeave: (e: React.DragEvent<HTMLElement>) => {
       if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragOver(null);
     },
     onDrop: (e: React.DragEvent) => {
+      const from = taken(e);
+      if (from === null) return;
       e.preventDefault();
       setDragOver(null);
       const noteId = e.dataTransfer.getData(NOTE_DRAG_MIME);
-      if (noteId) onDropNote(noteId);
+      if (noteId) props.onDropNote(noteId, folderId, from);
     },
   };
 }
@@ -146,7 +199,7 @@ function FolderRow({
   count,
   depth,
   unfiled,
-  onDropNote,
+  folderId,
   menu,
 }: {
   id: string;
@@ -154,12 +207,14 @@ function FolderRow({
   count: number;
   depth: number;
   unfiled?: boolean;
-  onDropNote: (noteId: string) => void;
+  /** Where a note dropped here goes — `undefined` for Unfiled. */
+  folderId: string | undefined;
   menu?: React.ReactNode;
 }) {
-  const { strings, expanded, toggle } = useTree();
+  const { strings, expanded, toggle, dragOver, props } = useTree();
   const open = expanded.has(id);
-  const drop = useDropTarget(id, onDropNote);
+  const drop = useDropTarget(id, folderId);
+  const crossing = dragOver?.id === id && dragOver.crossing;
   return (
     <div
       className={unfiled ? 'hm-folder-node hm-folder-node--unfiled' : 'hm-folder-node'}
@@ -175,7 +230,9 @@ function FolderRow({
         <ChevronIcon direction="forward" className="hm-folder-node__chevron" />
         {!unfiled && <FolderIcon className="hm-folder-node__glyph" />}
         <span className="hm-folder-node__label">{name}</span>
-        <span className="hm-folder-node__count">{strings.notesCount(count)}</span>
+        <span className="hm-folder-node__count">
+          {crossing && props.crossSpaceHint ? props.crossSpaceHint : strings.notesCount(count)}
+        </span>
       </button>
       {menu}
     </div>
@@ -205,7 +262,7 @@ function FolderBody({
 }
 
 function FolderNotes({ notes, depth }: { notes: Note[]; depth: number }) {
-  const { strings, lang } = useTree();
+  const { strings, lang, props } = useTree();
   if (notes.length === 0) return null;
   return (
     <ul className="hm-rows">
@@ -215,7 +272,11 @@ function FolderNotes({ notes, depth }: { notes: Note[]; depth: number }) {
           className="hm-folder-note"
           style={depthStyle(depth)}
           draggable
-          onDragStart={(e) => e.dataTransfer.setData(NOTE_DRAG_MIME, note.id)}
+          onDragStart={(e) => {
+            e.dataTransfer.setData(NOTE_DRAG_MIME, note.id);
+            e.dataTransfer.setData(SPACE_MIME_PREFIX + props.space, '');
+            e.dataTransfer.effectAllowed = 'copyMove';
+          }}
         >
           <NoteRow note={note} strings={strings} lang={lang} showDomain movable />
         </li>
@@ -224,7 +285,7 @@ function FolderNotes({ notes, depth }: { notes: Note[]; depth: number }) {
   );
 }
 
-function FolderItem({ node, depth }: { node: FolderNode; depth: number }) {
+function FolderItem({ node, depth }: { node: FolderNode<FolderLike>; depth: number }) {
   const { strings, open, props } = useTree();
   const { folder } = node;
   return (
@@ -234,7 +295,7 @@ function FolderItem({ node, depth }: { node: FolderNode; depth: number }) {
         name={folder.name}
         count={node.totalCount}
         depth={depth}
-        onDropNote={(noteId) => props.onMoveNote(noteId, folder.id)}
+        folderId={folder.id}
         menu={
           <FolderMenu
             name={folder.name}
@@ -264,7 +325,7 @@ function FolderItem({ node, depth }: { node: FolderNode; depth: number }) {
 }
 
 function UnfiledItem({ notes }: { notes: Note[] }) {
-  const { strings, props } = useTree();
+  const { strings } = useTree();
   return (
     <li>
       <FolderRow
@@ -273,7 +334,7 @@ function UnfiledItem({ notes }: { notes: Note[] }) {
         count={notes.length}
         depth={0}
         unfiled
-        onDropNote={(noteId) => props.onMoveNote(noteId, undefined)}
+        folderId={undefined}
       />
       <FolderBody id={UNFILED} depth={0}>
         <FolderNotes notes={notes} depth={1} />

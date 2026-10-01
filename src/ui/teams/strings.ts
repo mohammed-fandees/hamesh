@@ -101,6 +101,19 @@ export interface TeamsStrings extends SharedStrings {
   sharedNotes: string;
   shareWithTeam: string;
   sharingNote: string;
+  /** A team's space in the Library. */
+  teamSpaceMeta: (count: number) => string;
+  dropToShare: string;
+  /** Asked before a note leaves this device for a team. */
+  consentTitle: (team: string) => string;
+  consentIntro: string;
+  consentWhat: string;
+  consentWho: (team: string) => string;
+  consentWhere: string;
+  consentUndo: string;
+  consentPrivacy: string;
+  consentDontAsk: string;
+  consentShare: string;
   refreshNotes: string;
   syncedAgo: (when: string) => string;
   neverSynced: string;
@@ -295,6 +308,21 @@ const en: TeamsOwnStrings = {
   sharedNotes: 'Shared notes',
   shareWithTeam: 'Share with team',
   sharingNote: 'Sharing…',
+  teamSpaceMeta: (count) => `Shared on the server · ${count === 1 ? '1 note' : `${count} notes`}`,
+  dropToShare: 'Drop to share with the team',
+  consentTitle: (team) => `Share this note with ${team}?`,
+  consentIntro:
+    'Your own notes never leave this device. Sharing this one uploads it to Hamesh’s servers so the team can see it.',
+  consentWhat:
+    'What goes up: the note’s text, the page’s address and title, and where on the page it sits.',
+  consentWho: (team) =>
+    `Every member of ${team} can see it, and may keep a copy on their own devices.`,
+  consentWhere:
+    'It is stored on Cloudflare’s servers, which may be outside Egypt. Sharing means you agree to it being moved there for this.',
+  consentUndo: 'You can stop sharing it later, and it comes back to this device.',
+  consentPrivacy: 'Read the Privacy Policy',
+  consentDontAsk: 'Don’t show this again when I share',
+  consentShare: 'Share',
   refreshNotes: 'Check for changes',
   syncedAgo: (when) => `Up to date as of ${when}`,
   neverSynced: 'Not loaded on this device yet',
@@ -539,6 +567,19 @@ const ar: TeamsOwnStrings = {
   sharedNotes: 'الملاحظات المشتركة',
   shareWithTeam: 'مشاركة مع فريق',
   sharingNote: 'جارٍ المشاركة…',
+  teamSpaceMeta: (count) => `مشتركة على الخادم · ${count} ${count === 1 ? 'ملاحظة' : 'ملاحظات'}`,
+  dropToShare: 'أفلت للمشاركة مع الفريق',
+  consentTitle: (team) => `مشاركة الملاحظة مع ${team}؟`,
+  consentIntro:
+    'ملاحظاتك الشخصية لا تغادر جهازك. مشاركة هذه الملاحظة ترفعها إلى خوادم هامش ليراها أعضاء الفريق.',
+  consentWhat: 'يُرفع نص الملاحظة، ورابط الصفحة وعنوانها، وموضعها فيها.',
+  consentWho: (team) => `يراها كل أعضاء ${team}، وقد يحتفظون بنسخة منها على أجهزتهم.`,
+  consentWhere:
+    'تُخزَّن على خوادم Cloudflare، وقد تكون خارج مصر. بمشاركتك توافق على نقلها لهذا الغرض.',
+  consentUndo: 'يمكنك إيقاف مشاركتها لاحقًا فتعود إلى جهازك.',
+  consentPrivacy: 'اقرأ سياسة الخصوصية',
+  consentDontAsk: 'لا تُظهر هذه الرسالة مرة أخرى عند المشاركة',
+  consentShare: 'مشاركة',
   refreshNotes: 'تحقق من التغييرات',
   syncedAgo: (when) => `محدَّثة حتى ${when}`,
   neverSynced: 'لم تُحمَّل على هذا الجهاز بعد',

@@ -505,6 +505,101 @@
   margin-top: var(--hm-space-2);
 }
 
+/* ---- By folder, with teams: one card per space ----
+   The reader's own notes, then each team's, as cards that open and shut. Each
+   header says whose notes these are and where they live — the one thing that
+   sets spaces apart, since inside they are the same folders and rows. */
+.hm-spaces {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hm-space-3);
+}
+.hm-space {
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-lg);
+  background: var(--hm-surface);
+  overflow: hidden;
+}
+.hm-space__head {
+  display: flex;
+  align-items: center;
+  gap: var(--hm-space-3);
+  width: 100%;
+  padding: var(--hm-card-pad-dense);
+  border: none;
+  background: none;
+  color: var(--hm-ink);
+  font-family: var(--hm-sans);
+  text-align: start;
+  cursor: pointer;
+  transition: background var(--hm-motion-state);
+}
+.hm-space__head:hover {
+  background: var(--hm-layer-hover);
+}
+.hm-space__head:focus-visible {
+  outline: none;
+  box-shadow: var(--hm-ring-inset);
+}
+.hm-space__icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--hm-radius-md);
+  background: var(--hm-paper-dim);
+  color: var(--hm-ink-60);
+}
+.hm-space[data-shared] .hm-space__icon {
+  background: var(--hm-accent-tint);
+  color: var(--hm-accent-strong);
+}
+.hm-space__titles {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+.hm-space__title {
+  font-size: var(--hm-text-body);
+  font-weight: 600;
+}
+.hm-space__meta {
+  color: var(--hm-ink-40);
+  font-size: var(--hm-text-label);
+  line-height: var(--hm-lh-label);
+}
+.hm-space__chevron {
+  flex: none;
+  color: var(--hm-ink-40);
+  transition: transform var(--hm-motion-exit);
+}
+.hm-space__head[aria-expanded='false'] .hm-space__chevron {
+  transform: rotate(90deg);
+}
+.hm-scope[dir='rtl'] .hm-space__head[aria-expanded='false'] .hm-space__chevron {
+  transform: rotate(-90deg);
+}
+.hm-space__body {
+  border-top: 1px solid var(--hm-ink-10);
+}
+.hm-space > .hm-alert {
+  margin: 0 var(--hm-space-4) var(--hm-space-3);
+}
+/* Inside a space the tree's toolbar sits in the card, not above it. */
+.hm-space .hm-folder-tree__toolbar {
+  margin: 0;
+  padding: var(--hm-space-2) var(--hm-space-4);
+  border-bottom: 1px solid var(--hm-ink-10);
+}
+/* A note from another space over a folder: the folder says what dropping means. */
+.hm-folder-node[data-drag-over='true'] .hm-folder-node__count {
+  color: var(--hm-accent-strong);
+  font-weight: 500;
+}
+
 /* ---- By folder: one card of folders ---- */
 .hm-folder-tree__toolbar {
   display: flex;
