@@ -539,7 +539,10 @@
   flex-direction: column;
   gap: var(--hm-space-2);
 }
+/* A comment is conversation, not a note: the page's own sans, never the
+   browser's monospace default for a textarea. */
 .hm-comment-composer .hm-textarea {
+  font-family: inherit;
   min-height: 64px;
   font-size: var(--hm-text-body);
   line-height: 1.55;
