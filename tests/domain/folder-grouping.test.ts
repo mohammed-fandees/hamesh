@@ -52,6 +52,24 @@ describe('buildFolderTree', () => {
     expect(buildFolderTree([], [])).toEqual({ tree: [], unfiledNotes: [] });
   });
 
+  it('files notes by whatever folder it is told they are in — a team note by its team folder', () => {
+    const papers = { id: 'team-folder', name: 'Papers', parentId: null };
+    const filed = makeNote({
+      team: { id: 'T', name: 'Team', version: 1, authorId: null, folderId: 'team-folder' },
+    });
+    const loose = makeNote({
+      team: { id: 'T', name: 'Team', version: 1, authorId: null, folderId: null },
+    });
+    const { tree, unfiledNotes } = buildFolderTree(
+      [papers],
+      [filed, loose],
+      (note) => note.team?.folderId,
+    );
+    expect(tree[0]!.folder).toBe(papers);
+    expect(tree[0]!.notes).toEqual([filed]);
+    expect(unfiledNotes).toEqual([loose]);
+  });
+
   it('puts every note with no folderId into unfiledNotes', () => {
     const notes = [makeNote(), makeNote()];
     const { tree, unfiledNotes } = buildFolderTree([], notes);

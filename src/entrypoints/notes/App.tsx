@@ -32,6 +32,10 @@ import { teamsConfig } from '@/teams/config';
 import { createTeamsClient } from '@/teams/client';
 import { TeamsView } from '@/ui/teams/TeamsView';
 import { ShareNoteAction } from '@/ui/teams/ShareNoteAction';
+import { ShareConsent } from '@/ui/teams/ShareConsent';
+import { shareNote } from '@/ui/teams/share-note';
+import type { TeamLibraryActions } from '@/ui/teams/TeamSpace';
+import { Failure } from '@/ui/hooks/useWork';
 import { OVERVIEW, routeFromParams, routeToParams, type TeamsRoute } from '@/ui/teams/route';
 import { generatePageKey } from '@/domain/page-key';
 import { watchTeamIndex } from '@/teams/page-cache';
@@ -184,6 +188,11 @@ export function App() {
   /** The newest mention the server has — against the newest the reader has
    *  looked at, what puts a dot on Mentions in the sidebar. */
   const [newestMention, setNewestMention] = useState<string | null>(null);
+  /** A share waiting on the reader's consent, and how to answer it. */
+  const [consent, setConsent] = useState<{
+    teamName: string;
+    answer: (share: boolean) => void;
+  } | null>(null);
 
   // Null in builds without Teams, which leaves Settings exactly as it was.
   const teamsClient = useMemo(() => {
@@ -350,6 +359,30 @@ export function App() {
     };
   }, [mutations]);
 
+  const skipConsent = prefs?.teams.skipShareConsent ?? false;
+
+  /**
+   * Shares one of this device's notes with a team — from its menu or by
+   * dropping it on a team's folder, the same way either way. Asks first (unless
+   * the reader said not to), then moves the note: the team's copy is read back
+   * before the local one goes, so the row never blinks out of the list.
+   * Resolves `false` if the reader declined; fails with the server's refusal.
+   */
+  const shareToTeam = useCallback(
+    async (note: Note, teamId: string, folderId: string | null): Promise<boolean> => {
+      if (!import.meta.env.WXT_TEAMS_API_ORIGIN || !teamsClient) return false;
+      const teamName = shared.teams.find((t) => t.id === teamId)?.name ?? '';
+      const agreed =
+        skipConsent || (await new Promise<boolean>((answer) => setConsent({ teamName, answer })));
+      if (!agreed) return false;
+      await shareNote(teamsClient, note, teamId, folderId);
+      await loadShared();
+      await personalNotes.forget(note.id);
+      return true;
+    },
+    [teamsClient, shared.teams, skipConsent, loadShared, personalNotes],
+  );
+
   /** The "Share with team" item in a note's actions menu. */
   const shareAction = useMemo(() => {
     // A build-time constant first: with it folded away, nothing below is
@@ -358,22 +391,60 @@ export function App() {
     if (!teamsClient || shared.teams.length === 0) return null;
     return (note: Note, close: () => void) => (
       <ShareNoteAction
-        note={note}
         lang={lang}
-        client={teamsClient}
         teams={shared.teams}
         // A team note is not shared again; from here it is only opened.
         open={isSharedNote(note) ? () => navigate('teams') : undefined}
-        onDone={async () => {
-          close();
-          // The team's copy is read back before the local one goes, so the row
-          // never blinks out of the list between the two.
-          await loadShared();
-          await personalNotes.forget(note.id);
-        }}
+        share={(teamId) => shareToTeam(note, teamId, null)}
+        onDone={close}
       />
     );
-  }, [teamsClient, shared.teams, lang, personalNotes, loadShared, navigate]);
+  }, [teamsClient, shared.teams, lang, navigate, shareToTeam]);
+
+  /** What the Library's folder view may do to teams' notes and folders. */
+  const teamActions = useMemo<TeamLibraryActions | null>(() => {
+    if (!import.meta.env.WXT_TEAMS_API_ORIGIN || !teamsClient) return null;
+    const client = teamsClient;
+    /** After a change: pull the team's changes, then read what is held. */
+    const settle = async (teamId: string) => {
+      await client.cache('sync', teamId);
+      await loadShared();
+    };
+    const refused = (result: { ok: true } | { ok: false; error: string }) => {
+      if (!result.ok) throw new Failure(result.error);
+    };
+    return {
+      share: async (noteId, teamId, folderId) => {
+        const note = notes?.find((n) => n.id === noteId);
+        if (note) await shareToTeam(note, teamId, folderId);
+      },
+      file: async (noteId, teamId, folderId) => {
+        const note = shared.notes.find((n) => n.id === noteId && n.team?.id === teamId);
+        if (!note?.team || note.team.folderId === folderId) return;
+        refused(
+          await client.request('notes.update', {
+            teamId,
+            noteId,
+            version: note.team.version,
+            folderId,
+          }),
+        );
+        await settle(teamId);
+      },
+      createFolder: async (teamId, name, parentId) => {
+        refused(await client.request('folders.create', { teamId, name, parentId }));
+        await settle(teamId);
+      },
+      renameFolder: async (teamId, folderId, name) => {
+        refused(await client.request('folders.rename', { teamId, folderId, name }));
+        await settle(teamId);
+      },
+      deleteFolder: async (teamId, folderId) => {
+        refused(await client.request('folders.delete', { teamId, folderId }));
+        await settle(teamId);
+      },
+    };
+  }, [teamsClient, notes, shared.notes, shareToTeam, loadShared]);
 
   /** The "Discuss" link on a team note's row: to that note's own page in Teams. */
   const discussAction = useMemo<DiscussAction | null>(() => {
@@ -452,6 +523,8 @@ export function App() {
         notes={notes}
         teamNotes={shared.notes}
         teams={shared.teams}
+        teamFolders={shared.folders}
+        teamActions={teamActions}
         folders={folders}
         owner={owner}
         onOwnerChange={setOwner}
@@ -483,6 +556,19 @@ export function App() {
               mentionsUnseen={mentionsUnseen}
             />
             {content()}
+            {/* Inside the scope, so the dialog wears Hamesh's tokens even though
+                the browser lifts it to the top layer. */}
+            {import.meta.env.WXT_TEAMS_API_ORIGIN && consent && (
+              <ShareConsent
+                lang={lang}
+                teamName={consent.teamName}
+                onAnswer={(share, dontAskAgain) => {
+                  if (share && dontAskAgain) void prefsRepo.setSkipShareConsent(true);
+                  consent.answer(share);
+                  setConsent(null);
+                }}
+              />
+            )}
           </div>
         </NoteDiscussSlot.Provider>
       </NoteShareSlot.Provider>

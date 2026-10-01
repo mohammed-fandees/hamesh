@@ -77,7 +77,7 @@ describe('parsePreferences', () => {
       textNotes: { enabled: true, selectionAction: true },
       releaseNotes: { lastSeenVersion: null },
       folderDefaults: { global: null, pages: {} },
-      teams: { lastSeenMentionId: null },
+      teams: { lastSeenMentionId: null, skipShareConsent: false },
     });
   });
 
@@ -89,7 +89,7 @@ describe('parsePreferences', () => {
       textNotes: { enabled: true, selectionAction: true },
       releaseNotes: { lastSeenVersion: null },
       folderDefaults: { global: null, pages: {} },
-      teams: { lastSeenMentionId: null },
+      teams: { lastSeenMentionId: null, skipShareConsent: false },
     });
     expect(parsePreferences({ language: 'en', appearance: 'light' })).toEqual({
       schemaVersion: 1,
@@ -98,7 +98,7 @@ describe('parsePreferences', () => {
       textNotes: { enabled: true, selectionAction: true },
       releaseNotes: { lastSeenVersion: null },
       folderDefaults: { global: null, pages: {} },
-      teams: { lastSeenMentionId: null },
+      teams: { lastSeenMentionId: null, skipShareConsent: false },
     });
   });
 

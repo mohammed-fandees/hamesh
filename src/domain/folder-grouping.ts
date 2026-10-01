@@ -67,9 +67,9 @@ export function flattenFolderTree<T extends FolderLike>(folders: readonly T[]): 
   return out;
 }
 
-export interface FolderNode {
-  folder: Folder;
-  children: FolderNode[];
+export interface FolderNode<T extends FolderLike = Folder> {
+  folder: T;
+  children: FolderNode<T>[];
   /** Notes filed directly into this folder (not descendants). */
   notes: Note[];
   /** This folder's own notes plus every descendant folder's notes. */
@@ -81,15 +81,18 @@ export interface FolderNode {
  *  belong to any existing folder — see `resolveFolderId`. The tree is the
  *  same walk `flattenFolderTree` takes, so a folder with a dangling parent
  *  shows at the top level here too. Never throws on bad data. */
-export function buildFolderTree(
-  folders: Folder[],
+export function buildFolderTree<T extends FolderLike>(
+  folders: readonly T[],
   notes: Note[],
-): { tree: FolderNode[]; unfiledNotes: Note[] } {
+  /** Which folder a note is filed in — its own `folderId` unless told otherwise
+   *  (a team's note is filed in the team's folders, `note.team.folderId`). */
+  folderOf: (note: Note) => string | null | undefined = (note) => note.folderId,
+): { tree: FolderNode<T>[]; unfiledNotes: Note[] } {
   const knownIds = new Set(folders.map((f) => f.id));
   const notesByFolderId = new Map<string, Note[]>();
   const unfiledNotes: Note[] = [];
   for (const note of notes) {
-    const folderId = resolveFolderId(note.folderId, knownIds);
+    const folderId = resolveFolderId(folderOf(note), knownIds);
     if (folderId === null) {
       unfiledNotes.push(note);
       continue;
@@ -101,10 +104,10 @@ export function buildFolderTree(
 
   // Nest the flat walk back into a tree: each entry's parent is the nearest
   // shallower entry above it, which is exactly how the walk emitted it.
-  const tree: FolderNode[] = [];
-  const path: FolderNode[] = [];
+  const tree: FolderNode<T>[] = [];
+  const path: FolderNode<T>[] = [];
   for (const { folder, depth } of flattenFolderTree(folders)) {
-    const node: FolderNode = {
+    const node: FolderNode<T> = {
       folder,
       children: [],
       notes: sortNotesWithPinnedFirst(notesByFolderId.get(folder.id) ?? []),
@@ -116,7 +119,7 @@ export function buildFolderTree(
     path.push(node);
   }
 
-  const count = (node: FolderNode): number =>
+  const count = (node: FolderNode<T>): number =>
     (node.totalCount = node.notes.length + node.children.reduce((sum, c) => sum + count(c), 0));
   tree.forEach(count);
 

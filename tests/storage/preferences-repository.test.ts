@@ -37,7 +37,7 @@ describe('PreferencesRepository', () => {
       textNotes: { enabled: true, selectionAction: true },
       releaseNotes: { lastSeenVersion: null },
       folderDefaults: { global: null, pages: {} },
-      teams: { lastSeenMentionId: null },
+      teams: { lastSeenMentionId: null, skipShareConsent: false },
     });
   });
 
@@ -72,7 +72,7 @@ describe('PreferencesRepository', () => {
       textNotes: { enabled: true, selectionAction: true },
       releaseNotes: { lastSeenVersion: null },
       folderDefaults: { global: null, pages: {} },
-      teams: { lastSeenMentionId: null },
+      teams: { lastSeenMentionId: null, skipShareConsent: false },
     });
 
     await repo.setLanguage('en');
@@ -83,7 +83,7 @@ describe('PreferencesRepository', () => {
       textNotes: { enabled: true, selectionAction: true },
       releaseNotes: { lastSeenVersion: null },
       folderDefaults: { global: null, pages: {} },
-      teams: { lastSeenMentionId: null },
+      teams: { lastSeenMentionId: null, skipShareConsent: false },
     });
   });
 
@@ -96,7 +96,7 @@ describe('PreferencesRepository', () => {
       textNotes: { enabled: true, selectionAction: true },
       releaseNotes: { lastSeenVersion: null },
       folderDefaults: { global: null, pages: {} },
-      teams: { lastSeenMentionId: null },
+      teams: { lastSeenMentionId: null, skipShareConsent: false },
     });
   });
 

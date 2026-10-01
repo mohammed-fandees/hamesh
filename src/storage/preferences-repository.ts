@@ -26,6 +26,8 @@ export interface PreferencesRepository {
   /** Records the newest mention the reader has looked at, which is what the
    *  sidebar's dot is derived from. Local only: the server is never told. */
   setLastSeenMention(commentId: string): Promise<Preferences>;
+  /** Whether to skip the explanation shown before a note is shared with a team. */
+  setSkipShareConsent(skip: boolean): Promise<Preferences>;
   /** Sets (or, with `null`, clears) the default folder for one page. */
   setPageDefaultFolder(pageKey: string, folderId: string | null): Promise<Preferences>;
   /** Sets (or, with `null`, clears) the default folder for every page that
@@ -76,7 +78,17 @@ export function createPreferencesRepository(): PreferencesRepository {
 
     async setLastSeenMention(commentId: string): Promise<Preferences> {
       const current = await this.get();
-      const next: Preferences = { ...current, teams: { lastSeenMentionId: commentId } };
+      const next: Preferences = {
+        ...current,
+        teams: { ...current.teams, lastSeenMentionId: commentId },
+      };
+      await storage.setItem(STORAGE_KEY, next);
+      return next;
+    },
+
+    async setSkipShareConsent(skip: boolean): Promise<Preferences> {
+      const current = await this.get();
+      const next: Preferences = { ...current, teams: { ...current.teams, skipShareConsent: skip } };
       await storage.setItem(STORAGE_KEY, next);
       return next;
     },

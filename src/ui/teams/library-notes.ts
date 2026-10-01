@@ -1,5 +1,6 @@
 import type { Note } from '@/domain/note';
 import { generatePageKey } from '@/domain/page-key';
+import type { FolderLike } from '@/domain/folder';
 import { resolveFolderId } from '@/domain/folder-grouping';
 import type { TeamsClient } from '@/teams/client';
 import { readTeamIndex, toNote, type CachedTeam } from '@/teams/page-cache';
@@ -19,9 +20,11 @@ import { readTeamIndex, toNote, type CachedTeam } from '@/teams/page-cache';
 export interface LibraryTeamNotes {
   notes: Note[];
   teams: CachedTeam[];
+  /** Each team's folders, by team id — a team's notes are filed in its own. */
+  folders: ReadonlyMap<string, readonly FolderLike[]>;
 }
 
-export const NO_TEAM_NOTES: LibraryTeamNotes = { notes: [], teams: [] };
+export const NO_TEAM_NOTES: LibraryTeamNotes = { notes: [], teams: [], folders: new Map() };
 
 /**
  * The newest mention this account has, or null — what the sidebar's dot is
@@ -45,8 +48,13 @@ export async function readTeamNotesForLibrary(client: TeamsClient): Promise<Libr
   );
 
   const notes: Note[] = [];
+  const folders = new Map<string, readonly FolderLike[]>();
   for (const snapshot of snapshots) {
     if (!snapshot) continue;
+    folders.set(
+      snapshot.team.id,
+      snapshot.folders.map((f) => ({ id: f.id, name: f.name, parentId: f.parentId })),
+    );
     const knownFolders = new Set(snapshot.folders.map((f) => f.id));
     for (const cached of snapshot.notes) {
       // The same page key the content script asks for its own page with, so a
@@ -58,5 +66,5 @@ export async function readTeamNotesForLibrary(client: TeamsClient): Promise<Libr
       notes.push(toNote(filed, generatePageKey(cached.originalUrl), snapshot.team.name));
     }
   }
-  return { notes, teams: index.teams };
+  return { notes, teams: index.teams, folders };
 }

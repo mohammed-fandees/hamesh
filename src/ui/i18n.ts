@@ -76,6 +76,9 @@ export interface Strings {
   deleteFolder: string;
   deleteFolderConfirm: (name: string) => string;
   unfiledSection: string;
+  /** The reader's own notes, as one space beside their teams' in the Library. */
+  mySpace: string;
+  mySpaceMeta: (count: number) => string;
   moveToFolder: string;
   noFolderOption: string;
   addSubfolder: string;
@@ -197,6 +200,8 @@ const en: Strings = {
   deleteFolderConfirm: (name) =>
     `Delete "${name}"? Its notes (and any sub-folders) will become unfiled, not deleted.`,
   unfiledSection: 'Unfiled',
+  mySpace: 'My notes',
+  mySpaceMeta: (count) => `On this device only · ${count === 1 ? '1 note' : `${count} notes`}`,
   moveToFolder: 'Move to folder',
   noFolderOption: 'No folder',
   addSubfolder: 'Add sub-folder',
@@ -326,6 +331,8 @@ const ar: Strings = {
   deleteFolderConfirm: (name) =>
     `حذف "${name}"؟ ملاحظاته (وأي فولدرات فرعية) هتبقى بدون فولدر، مش هتتحذف.`,
   unfiledSection: 'بدون فولدر',
+  mySpace: 'ملاحظاتي',
+  mySpaceMeta: (count) => `على هذا الجهاز فقط · ${count} ${count === 1 ? 'ملاحظة' : 'ملاحظات'}`,
   moveToFolder: 'نقل إلى فولدر',
   noFolderOption: 'بدون فولدر',
   addSubfolder: 'إضافة فولدر فرعي',

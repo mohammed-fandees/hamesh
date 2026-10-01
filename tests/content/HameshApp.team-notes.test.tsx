@@ -67,6 +67,7 @@ const prefsRepo = (): PreferencesRepository => ({
   setTextNotes: vi.fn(),
   setLastSeenReleaseVersion: vi.fn(),
   setLastSeenMention: vi.fn(),
+  setSkipShareConsent: vi.fn(),
   setPageDefaultFolder: vi.fn(),
   setGlobalDefaultFolder: vi.fn(),
 });
