@@ -137,3 +137,52 @@
     display: none;
   }
 }
+
+/* A phone-width Library is the extension's narrow one: the sidebar folds to a
+   rail of icons, so the notes keep the room. */
+@media (max-width: 600px) {
+  .ui-app {
+    grid-template-columns: 40px minmax(0, 1fr);
+  }
+
+  .ui-app__side {
+    align-items: center;
+    padding-inline: 4px;
+  }
+
+  .ui-app__brand span,
+  .ui-nav span {
+    display: none;
+  }
+
+  .ui-app__brand,
+  .ui-nav {
+    justify-content: center;
+    padding-inline: 0;
+    width: 30px;
+  }
+
+  .ui-seg {
+    font-size: 0.54rem;
+  }
+
+  .ui-seg > span {
+    padding-inline: 6px;
+  }
+
+  .ui-spaces {
+    padding: 10px;
+  }
+
+  .ui-page {
+    padding: 22px 22px 26px;
+  }
+
+  .ui-page--margin {
+    padding-inline-start: 40px;
+  }
+
+  .teams-intro__quote {
+    padding: 14px 18px;
+  }
+}

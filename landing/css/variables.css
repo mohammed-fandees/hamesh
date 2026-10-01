@@ -29,11 +29,19 @@
   --border: rgba(30, 27, 24, 0.14);
   --border-soft: rgba(30, 27, 24, 0.08);
   --success: #4b6b4e;
+  --danger: #8c2f27;
+  /* The browser's own selection, as it looks mid-drag. */
+  --selection: rgba(56, 118, 226, 0.26);
+  /* A person's tone: lightness and chroma here, the hue is theirs. */
+  --avatar-l: 0.52;
+  --avatar-c: 0.1;
 
   /* Type */
   --sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --arabic: 'IBM Plex Sans Arabic', 'IBM Plex Sans', 'Segoe UI', Tahoma, sans-serif;
   --serif: 'IBM Plex Serif', Georgia, 'Times New Roman', serif;
+  /* The pages inside the demos are articles, set the way Arabic books are. */
+  --page-ar: 'Noto Naskh Arabic', var(--arabic);
 
   /* Shape */
   --radius-sm: 3px;
@@ -97,6 +105,10 @@
     --border: rgba(243, 237, 227, 0.16);
     --border-soft: rgba(243, 237, 227, 0.08);
     --success: #8fb894;
+    --danger: #e07a6e;
+    --selection: rgba(98, 150, 240, 0.34);
+    --avatar-l: 0.8;
+    --avatar-c: 0.085;
 
     --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.4);
     --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.5);

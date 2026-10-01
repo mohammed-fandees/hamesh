@@ -2,9 +2,10 @@
  * Demo — filing a note into a folder.
  *
  * The Library demo before this one is about finding a note. This one is about
- * putting it somewhere: the note's own menu opens in place, a folder is
- * chosen, and the note is filed without ever leaving the Library or opening
- * the page it came from.
+ * putting it somewhere: the note's own menu opens in place, "Move to folder"
+ * turns it into the list of folders — the way the extension's menu steps in
+ * one level — a folder is chosen, and the note is filed without ever leaving
+ * the Library or opening the page it came from.
  *
  * The folder tree stays expanded throughout. Collapsing it would mean
  * animating height, and the whole page is built on the rule that only
@@ -19,21 +20,34 @@ import { prefersReducedMotion } from '../lib/motion.js';
 export function createFoldersDemo(root) {
   const more = qs('[data-el="more"]', root);
   const menu = qs('[data-el="menu"]', root);
+  const moveItem = qs('[data-el="move-item"]', root);
+  const folderMenu = qs('[data-el="menu-folders"]', root);
   const items = qsa('[data-el="menu-item"]', root);
   const chip = qs('[data-el="chip"]', root);
   const count = qs('[data-el="count"]', root);
   const glow = qs('[data-el="folder-glow"]', root);
 
-  if (!more || !menu || items.length < 3) return null;
+  if (!more || !menu || !folderMenu || !moveItem || items.length < 3) return null;
 
-  const target = items[1]; // "Work"
+  const target = items[1]; // the first real folder
 
+  /* A rebuild (a resize, a change of language) starts from the stylesheet's
+     places, not from where the last build parked things. */
+  gsap.set([menu, folderMenu], { clearProps: 'transform' });
+
+  /* Everything the hand will reach for, measured before the menus are parked
+     and shrunk. */
   const moreBox = rectIn(root, more);
   const menuBox = rectIn(root, menu);
+  const moveBox = rectIn(root, moveItem);
+  const targetBox = rectIn(root, target);
+  const folderMenuBox = rectIn(root, folderMenu);
   const rootWidth = root.getBoundingClientRect().width;
   const rtl = document.documentElement.dir === 'rtl';
 
-  /* The menu hangs from the button that opened it, on the side with room. */
+  /* The menu hangs from the button that opened it, on the side with room —
+     and the folder list takes the very same place, so the step in reads as
+     the menu changing its mind, not as a second menu arriving. */
   const menuPlace = {
     x: gsap.utils.clamp(
       8,
@@ -42,56 +56,74 @@ export function createFoldersDemo(root) {
     ),
     y: moreBox.y + moreBox.height + 6,
   };
+  const origin = rtl ? 'left top' : 'right top';
 
-  gsap.set(menu, {
+  gsap.set([menu, folderMenu], {
     top: 0,
     left: 0,
     x: menuPlace.x,
     y: menuPlace.y,
     opacity: 0,
     scale: 0.94,
-    transformOrigin: rtl ? 'left top' : 'right top',
+    transformOrigin: origin,
   });
   gsap.set(chip, { opacity: 0, scale: 0.8 });
   gsap.set(glow, { opacity: 0 });
-  gsap.set(more, { opacity: 0.45 });
 
   if (prefersReducedMotion()) {
     gsap.set(chip, { opacity: 1, scale: 1 });
-    gsap.set(more, { opacity: 1 });
     if (count) count.textContent = '4';
     return gsap.timeline({ paused: true });
   }
 
   const cursor = createDemoCursor(root);
-  const targetBox = rectIn(root, target);
+  const targetInMenu = {
+    x: menuPlace.x + (targetBox.x - folderMenuBox.x) + 30,
+    y: menuPlace.y + (targetBox.y - folderMenuBox.y) + targetBox.height / 2,
+  };
+  const moveInMenu = {
+    x: menuPlace.x + (moveBox.x - menuBox.x) + 40,
+    y: menuPlace.y + (moveBox.y - menuBox.y) + moveBox.height / 2,
+  };
+  const rest = { x: moreBox.centerX - 60, y: moreBox.centerY + 130 };
 
-  cursor?.placeAt({ x: moreBox.centerX - 60, y: moreBox.centerY + 130 });
+  cursor?.placeAt(rest);
 
   const tl = gsap.timeline({ repeat: -1, repeatDelay: 0.7, paused: true });
 
   /* 1 — the note's own menu, reached from the row itself. */
   cursor?.enter(tl, 0.1);
-  tl.to(more, { opacity: 1, duration: 0.3 }, 0.2);
-  cursor?.moveTo(tl, { x: moreBox.centerX, y: moreBox.centerY }, { at: 0.3, bend: 1 });
-  cursor?.settle(tl, {});
-  cursor?.press(tl, {});
-
-  tl.to(menu, { opacity: 1, scale: 1, duration: 0.26, ease: 'power3.out' }, '>-0.08');
-
-  /* 2 — choosing where it belongs. */
   cursor?.moveTo(
     tl,
-    { x: targetBox.x + 30, y: targetBox.centerY },
-    { at: '>+0.25', bend: -0.6, label: 'overItem' },
+    { x: moreBox.centerX, y: moreBox.centerY },
+    { at: 0.3, bend: 1, label: 'onMore' },
   );
+  cursor?.hover(tl, more, true, { at: 'onMore-=0.08' });
+  cursor?.settle(tl, {});
+  cursor?.press(tl, { target: more });
+
+  tl.to(menu, { opacity: 1, scale: 1, duration: 0.24, ease: 'power3.out' }, '>-0.08');
+
+  /* 2 — one step in: where should it go? */
+  cursor?.moveTo(tl, moveInMenu, { at: '>+0.2', bend: -0.6, label: 'overMove' });
+  cursor?.hover(tl, moveItem, true, { at: 'overMove-=0.08' });
+  cursor?.settle(tl, {});
+  cursor?.press(tl, { target: moveItem });
+
+  tl.to(menu, { opacity: 0, duration: 0.14 }, '>-0.05').to(
+    folderMenu,
+    { opacity: 1, scale: 1, duration: 0.22, ease: 'power3.out' },
+    '<+0.04',
+  );
+
+  cursor?.moveTo(tl, targetInMenu, { at: '>+0.2', bend: 0.6, label: 'overItem' });
   cursor?.hover(tl, target, true, { at: 'overItem-=0.08' });
   cursor?.settle(tl, {});
   cursor?.press(tl, { target });
 
   /* 3 — filed. The menu closes, the row carries its folder, and the folder
      itself acknowledges the new arrival. */
-  tl.to(menu, { opacity: 0, scale: 0.96, duration: 0.22 }, '>-0.05')
+  tl.to(folderMenu, { opacity: 0, scale: 0.96, duration: 0.2 }, '>-0.05')
     .to(chip, { opacity: 1, scale: 1, duration: 0.34, ease: 'back.out(2.2)' }, '<+0.08')
     .to(glow, { opacity: 1, duration: 0.28 }, '<');
 
@@ -114,12 +146,12 @@ export function createFoldersDemo(root) {
   /* 4 — the seam. */
   cursor?.exit(tl, '>');
   tl.to(chip, { opacity: 0, duration: 0.4 }, '<')
-    .to(more, { opacity: 0.45, duration: 0.4 }, '<')
     .set(chip, { scale: 0.8 })
-    .set(menu, { x: menuPlace.x, y: menuPlace.y, scale: 0.94 })
+    .set([menu, folderMenu], { x: menuPlace.x, y: menuPlace.y, scale: 0.94 })
     .call(() => {
       if (count) count.textContent = '3';
-      cursor?.placeAt({ x: moreBox.centerX - 60, y: moreBox.centerY + 130 });
+      [more, moveItem, target].forEach((el) => el.classList.remove('is-hover'));
+      cursor?.placeAt(rest);
     });
 
   return tl;

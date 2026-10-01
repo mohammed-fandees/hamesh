@@ -19,6 +19,8 @@ import { createElementNoteDemo } from '../demos/element-note.js';
 import { createQuickNoteDemo } from '../demos/quick-note.js';
 import { createNoteManagementDemo } from '../demos/note-management.js';
 import { createFoldersDemo } from '../demos/folders.js';
+import { createTeamWriteDemo } from '../demos/team-write.js';
+import { createTeamTalkDemo } from '../demos/team-talk.js';
 
 const BUILDERS = {
   contextual: createContextualNoteDemo,
@@ -26,6 +28,8 @@ const BUILDERS = {
   quick: createQuickNoteDemo,
   library: createNoteManagementDemo,
   folders: createFoldersDemo,
+  'team-write': createTeamWriteDemo,
+  'team-talk': createTeamTalkDemo,
 };
 
 export function createFeatureScenes(scope = document) {
