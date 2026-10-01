@@ -6,6 +6,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **A choice of plan.** Settings → Teams → Plan lists every plan on offer, each with its name,
+  what it is for and what it allows; the plan you are on is marked and chosen first. A discount
+  running on a plan shows the old price struck through, how much is off and until when, and the
+  total you send is the discounted one. Plans, prices and discounts all come from the Teams
+  server; the extension holds none of them.
+
 ## [2.0.0] — 2026-10-01
 
 Hamesh Teams arrives in the store build. Personal notes are unchanged and still never leave the

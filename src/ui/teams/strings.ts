@@ -229,6 +229,15 @@ export interface TeamsStrings extends SharedStrings {
   planExpired: string;
   planCanceled: string;
   price: (amount: string, days: number) => string;
+  choosePlan: string;
+  /** The plan this account is on now, marked among the ones on offer. */
+  yourPlan: string;
+  planLimits: (teams: number, members: number, notes: number) => string;
+  /** Read before a struck-through price, for a screen reader. */
+  wasPrice: string;
+  discountPercent: (percent: number) => string;
+  discountSale: string;
+  discountUntil: (date: string) => string;
   payWith: string;
   methodInstapay: string;
   methodVodafoneCash: string;
@@ -465,6 +474,14 @@ const en: TeamsOwnStrings = {
   planExpired: 'Expired',
   planCanceled: 'Cancelled — the paid period is still yours',
   price: (amount, days) => (days === 30 ? `${amount} a month` : `${amount} every ${days} days`),
+  choosePlan: 'Choose a plan',
+  yourPlan: 'Your plan',
+  planLimits: (teams, members, notes) =>
+    `Teams: ${teams} · Members per team: ${members} · Notes per team: ${notes}`,
+  wasPrice: 'Was',
+  discountPercent: (percent) => `${percent}% off`,
+  discountSale: 'Sale price',
+  discountUntil: (date) => `until ${date}`,
   payWith: 'Pay with',
   methodInstapay: 'InstaPay',
   methodVodafoneCash: 'Vodafone Cash',
@@ -767,6 +784,14 @@ const ar: TeamsOwnStrings = {
   planExpired: 'منتهٍ',
   planCanceled: 'مُلغى — المدة المدفوعة تبقى لك',
   price: (amount, days) => (days === 30 ? `${amount} شهريًا` : `${amount} كل ${days} يومًا`),
+  choosePlan: 'اختر الخطة',
+  yourPlan: 'خطتك الحالية',
+  planLimits: (teams, members, notes) =>
+    `الفرق: ${teams} · الأعضاء في كل فريق: ${members} · الملاحظات في كل فريق: ${notes}`,
+  wasPrice: 'بدلًا من',
+  discountPercent: (percent) => `خصم ${percent}٪`,
+  discountSale: 'سعر مخفّض',
+  discountUntil: (date) => `حتى ${date}`,
   payWith: 'ادفع عبر',
   methodInstapay: 'إنستا باي',
   methodVodafoneCash: 'فودافون كاش',

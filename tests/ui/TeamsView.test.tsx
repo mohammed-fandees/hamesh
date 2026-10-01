@@ -71,6 +71,8 @@ function fakeClient(overrides: Partial<Record<TeamsOpName, unknown>> = {}, signe
           code: 'teams',
           price: { amountMinor: 45_000, currency: 'EGP', periodDays: 30 },
           limits: { ownedTeams: 3, membersPerTeam: 10, notesPerTeam: 5000 },
+          details: { name: { ar: 'فرق هامش', en: 'Hamesh Teams' }, description: null },
+          discount: null,
         },
       ],
       payment: { accounts: [{ method: 'instapay', account: '01000000000' }], confirm: null },
