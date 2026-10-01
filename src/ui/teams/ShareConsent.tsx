@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Lang } from '../i18n';
 import { getTeamsStrings } from './strings';
-import './styles';
+import css from './consent.css?inline';
 
 /** Where the policy this explains lives. Public, and the same for every build. */
 const PRIVACY_URL = 'https://hamesh.fandees.tech/privacy.html';
@@ -47,6 +47,7 @@ export function ShareConsent({ lang, teamName, onAnswer }: ShareConsentProps) {
         onAnswer(false, false);
       }}
     >
+      <style>{css}</style>
       <h2 id="hm-consent-title" className="hm-consent__title">
         {strings.consentTitle(teamName)}
       </h2>

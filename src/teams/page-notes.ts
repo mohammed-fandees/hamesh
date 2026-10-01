@@ -3,7 +3,13 @@ import type { Note } from '@/domain/note';
 import type { Lang } from '@/ui/i18n';
 import { newRequestId } from './operation-names';
 import { readPageNotes, watchPageNotes, watchTeamIndex } from './page-cache';
-import type { PageRequest, PageResult, TeamsPageMessage, ThreadPreview } from './page-channel';
+import type {
+  Destination,
+  PageRequest,
+  PageResult,
+  TeamsPageMessage,
+  ThreadPreview,
+} from './page-channel';
 
 /**
  * The content script's whole view of Teams: the notes a team has shared on the
@@ -31,6 +37,10 @@ export interface TeamNotesSource {
   reply(teamId: string, noteId: string, body: string): Promise<PageResult<null>>;
   /** Opens the note's whole discussion in Hamesh's own page. */
   openDiscussion(teamId: string, noteId: string): Promise<void>;
+  /** The teams a new note can go to, with their folders. */
+  destinations(): Promise<PageResult<Destination[]>>;
+  /** Shares a note this device holds for this page; the local copy then goes. */
+  share(noteId: string, teamId: string, folderId: string | null): Promise<PageResult<null>>;
 }
 
 /** Asks the worker, through the one channel a page may use. */
@@ -73,5 +83,7 @@ export function createTeamNotesSource(): TeamNotesSource {
     openDiscussion: async (teamId, noteId) => {
       await ask({ op: 'open', teamId, noteId });
     },
+    destinations: () => ask({ op: 'destinations' }),
+    share: (noteId, teamId, folderId) => ask({ op: 'share', noteId, teamId, folderId }),
   };
 }

@@ -98,6 +98,8 @@ function source(notes: Note[]) {
     thread: vi.fn(async () => ({ ok: true as const, data: { total: 0, latest: [] } })),
     reply: vi.fn(async () => ({ ok: true as const, data: null })),
     openDiscussion: vi.fn(async () => {}),
+    destinations: vi.fn(async () => ({ ok: true as const, data: [] })),
+    share: vi.fn(async () => ({ ok: true as const, data: null })),
   };
   return {
     teamNotes,

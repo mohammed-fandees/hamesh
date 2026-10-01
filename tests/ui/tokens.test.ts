@@ -19,6 +19,7 @@ const SHEETS = {
   'src/ui/notes-library.css': read('src/ui/notes-library.css'),
   'src/ui/teams/teams.css': read('src/ui/teams/teams.css'),
   'src/ui/teams/page.css': read('src/ui/teams/page.css'),
+  'src/ui/teams/consent.css': read('src/ui/teams/consent.css'),
   'src/entrypoints/popup/App.css': read('src/entrypoints/popup/App.css'),
 };
 const tokens = SHEETS['src/ui/tokens.css'];
