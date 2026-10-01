@@ -13,6 +13,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   running on a plan shows the old price struck through, how much is off and until when, and the
   total you send is the discounted one. Plans, prices and discounts all come from the Teams
   server; the extension holds none of them.
+- **Mobile wallets beside InstaPay.** Vodafone Cash, Etisalat Cash, Orange Cash and WE Pay all
+  pay to the one wallet number the server gives, so the method is now called "Mobile wallet"
+  (it was "Vodafone Cash"), with a line saying which wallets can send to it.
 
 ## [2.0.0] — 2026-10-01
 

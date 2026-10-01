@@ -804,6 +804,12 @@
   font-weight: 600;
   unicode-bidi: isolate;
 }
+.hm-pay-steps__hint {
+  display: block;
+  margin-top: var(--hm-space-1);
+  color: var(--hm-ink-60);
+  font-size: var(--hm-text-body-sm);
+}
 .hm-billing__field {
   display: flex;
   flex-direction: column;

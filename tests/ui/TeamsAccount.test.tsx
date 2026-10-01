@@ -273,6 +273,30 @@ describe('the account’s own half of Teams, in Settings', () => {
     expect(screen.getByText(strings.planLimits(3, 10, 5000))).toBeInTheDocument();
   });
 
+  it('offers a mobile wallet beside InstaPay, saying any wallet will do', async () => {
+    const { client, calls } = fakeClient({
+      'billing.submit': { payment: { id: '1', status: 'pending' } },
+    });
+    view(client);
+
+    const wallet = await screen.findByRole('radio', { name: strings.methodWallet });
+    expect(screen.queryByText(strings.walletHint)).not.toBeInTheDocument();
+    fireEvent.click(wallet);
+    // The wallet's number, from the server, and which wallets can send to it.
+    expect(screen.getByText('01111111111')).toBeInTheDocument();
+    expect(screen.getByText(strings.walletHint)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText(strings.referencePlaceholder), {
+      target: { value: 'W-1' },
+    });
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: strings.submitPayment }));
+    await waitFor(() => expect(calls.some((c) => c.op === 'billing.submit')).toBe(true));
+    expect(calls.find((c) => c.op === 'billing.submit')!.params).toMatchObject({
+      method: 'vodafone_cash',
+    });
+  });
+
   it('says payments are closed when the server offers no account to pay', async () => {
     const { client } = fakeClient({
       'billing.plans': { ...plans, payment: { accounts: [], confirm: null } },

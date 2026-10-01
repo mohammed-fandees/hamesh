@@ -240,7 +240,9 @@ export interface TeamsStrings extends SharedStrings {
   discountUntil: (date: string) => string;
   payWith: string;
   methodInstapay: string;
-  methodVodafoneCash: string;
+  /** Any mobile wallet — they all send to one another. */
+  methodWallet: string;
+  walletHint: string;
   /** How many periods are paid for — months, when a period is a month. */
   periodsLabel: (days: number) => string;
   periodsCount: (count: number, days: number) => string;
@@ -484,7 +486,8 @@ const en: TeamsOwnStrings = {
   discountUntil: (date) => `until ${date}`,
   payWith: 'Pay with',
   methodInstapay: 'InstaPay',
-  methodVodafoneCash: 'Vodafone Cash',
+  methodWallet: 'Mobile wallet',
+  walletHint: 'From any wallet: Vodafone Cash, Etisalat Cash, Orange Cash or WE Pay.',
   periodsLabel: (days) => (days === 30 ? 'Months' : `Periods of ${days} days`),
   periodsCount: (count, days) =>
     days === 30
@@ -794,7 +797,8 @@ const ar: TeamsOwnStrings = {
   discountUntil: (date) => `حتى ${date}`,
   payWith: 'ادفع عبر',
   methodInstapay: 'إنستا باي',
-  methodVodafoneCash: 'فودافون كاش',
+  methodWallet: 'محفظة إلكترونية',
+  walletHint: 'من أي محفظة: فودافون كاش أو اتصالات كاش أو أورنج كاش أو وي باي.',
   periodsLabel: (days) => (days === 30 ? 'عدد الشهور' : `عدد المدد (${days} يومًا)`),
   periodsCount: (count, days) => (days === 30 ? arabicMonths(count) : `${count} × ${days} يومًا`),
   fewerPeriods: 'أقل بواحد',
