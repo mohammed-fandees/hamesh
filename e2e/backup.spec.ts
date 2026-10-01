@@ -1,7 +1,8 @@
-import { test, expect, chromium, type BrowserContext, type Page } from '@playwright/test';
+import { test, expect, type BrowserContext, type Page } from '@playwright/test';
 import path from 'node:path';
 import fs from 'node:fs';
 import os from 'node:os';
+import { launchExtension, type ExtensionProfile } from './support/profile';
 
 /**
  * Settings — local backup.
@@ -15,21 +16,6 @@ import os from 'node:os';
  *
  * Requires the extension to be built first: `pnpm build`.
  */
-
-const EXTENSION_PATH = path.resolve(import.meta.dirname, '..', '.output', 'chrome-mv3');
-
-async function launch(): Promise<BrowserContext> {
-  const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hamesh-e2e-backup-'));
-  return chromium.launchPersistentContext(userDataDir, {
-    headless: false,
-    acceptDownloads: true,
-    args: [
-      '--headless=new',
-      `--disable-extensions-except=${EXTENSION_PATH}`,
-      `--load-extension=${EXTENSION_PATH}`,
-    ],
-  });
-}
 
 async function getExtensionId(context: BrowserContext): Promise<string> {
   let sw = context.serviceWorkers()[0];
@@ -105,13 +91,15 @@ async function reload(page: Page): Promise<void> {
 }
 
 test.describe('Settings — local backup', () => {
+  let profile: ExtensionProfile | undefined;
   let context: BrowserContext;
 
   test.beforeEach(async () => {
-    context = await launch();
+    profile = await launchExtension('backup', { acceptDownloads: true });
+    context = profile.context;
   });
   test.afterEach(async () => {
-    await context.close();
+    await profile?.close();
   });
 
   test('exports every note to a dated file, then restores them after they are gone', async () => {

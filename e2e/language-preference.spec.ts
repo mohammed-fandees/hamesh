@@ -1,16 +1,9 @@
-import {
-  test,
-  expect,
-  chromium,
-  type BrowserContext,
-  type Page,
-  type Worker,
-} from '@playwright/test';
+import { test, expect, type BrowserContext, type Page, type Worker } from '@playwright/test';
 import path from 'node:path';
 import fs from 'node:fs';
-import os from 'node:os';
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
+import { launchExtension, type ExtensionProfile } from './support/profile';
 
 /**
  * Verifies the Phase 2 language preference actually reaches the live
@@ -22,7 +15,6 @@ import type { AddressInfo } from 'node:net';
  * ultimately performs.
  */
 
-const EXTENSION_PATH = path.resolve(import.meta.dirname, '..', '.output', 'chrome-mv3');
 const FIXTURE_HTML = fs.readFileSync(
   path.resolve(import.meta.dirname, 'fixtures', 'test-page.html'),
   'utf8',
@@ -41,18 +33,6 @@ function startServer(): Promise<{ url: string; close: () => Promise<void> }> {
         close: () => new Promise((r) => server.close(() => r())),
       });
     });
-  });
-}
-
-async function launch(): Promise<BrowserContext> {
-  const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hamesh-e2e-lang-'));
-  return chromium.launchPersistentContext(userDataDir, {
-    headless: false,
-    args: [
-      '--headless=new',
-      `--disable-extensions-except=${EXTENSION_PATH}`,
-      `--load-extension=${EXTENSION_PATH}`,
-    ],
   });
 }
 
@@ -99,15 +79,17 @@ async function setStoredPreference(
 }
 
 test.describe('Hamesh language preference', () => {
+  let profile: ExtensionProfile | undefined;
   let context: BrowserContext;
   let server: { url: string; close: () => Promise<void> };
 
   test.beforeEach(async () => {
     server = await startServer();
-    context = await launch();
+    profile = await launchExtension('lang');
+    context = profile.context;
   });
   test.afterEach(async () => {
-    await context.close();
+    await profile?.close();
     await server.close();
   });
 

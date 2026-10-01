@@ -1,9 +1,9 @@
-import { test, expect, chromium, type BrowserContext, type Page } from '@playwright/test';
+import { test, expect, type BrowserContext, type Page } from '@playwright/test';
 import path from 'node:path';
 import fs from 'node:fs';
-import os from 'node:os';
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
+import { launchExtension, type ExtensionProfile } from './support/profile';
 
 /**
  * Video Notes — capture + timeline markers (generic HTML5 adapter path).
@@ -15,7 +15,6 @@ import type { AddressInfo } from 'node:net';
  * `pnpm build` first.
  */
 
-const EXTENSION_PATH = path.resolve(import.meta.dirname, '..', '.output', 'chrome-mv3');
 const FIXTURES_DIR = path.resolve(import.meta.dirname, 'fixtures');
 
 const CONTENT_TYPES: Record<string, string> = {
@@ -67,22 +66,6 @@ function startServer(): Promise<{ url: string; close: () => Promise<void> }> {
         close: () => new Promise((r) => server.close(() => r())),
       });
     });
-  });
-}
-
-async function launch(): Promise<BrowserContext> {
-  const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hamesh-e2e-video-'));
-  return chromium.launchPersistentContext(userDataDir, {
-    headless: false,
-    args: [
-      '--headless=new',
-      `--disable-extensions-except=${EXTENSION_PATH}`,
-      `--load-extension=${EXTENSION_PATH}`,
-      // Headless Chromium sometimes needs an explicit nudge to actually
-      // decode a real (if tiny) video stream rather than staying at
-      // readyState 0 — harmless on a real, non-headless run.
-      '--autoplay-policy=no-user-gesture-required',
-    ],
   });
 }
 
@@ -179,13 +162,22 @@ async function getExtensionId(context: BrowserContext): Promise<string> {
 }
 
 test.describe('Video Notes — capture + timeline markers', () => {
+  let profile: ExtensionProfile | undefined;
   let context: BrowserContext;
   let server: { url: string; close: () => Promise<void> };
   let page: Page;
 
   test.beforeEach(async () => {
     server = await startServer();
-    context = await launch();
+    profile = await launchExtension('video', {
+      args: [
+        // Headless Chromium sometimes needs an explicit nudge to actually
+        // decode a real (if tiny) video stream rather than staying at
+        // readyState 0 — harmless on a real, non-headless run.
+        '--autoplay-policy=no-user-gesture-required',
+      ],
+    });
+    context = profile.context;
     page = await context.newPage();
     await installReadinessHook(page);
     await page.goto(server.url);
@@ -194,7 +186,7 @@ test.describe('Video Notes — capture + timeline markers', () => {
   });
 
   test.afterEach(async () => {
-    await context.close();
+    await profile?.close();
     await server.close();
   });
 

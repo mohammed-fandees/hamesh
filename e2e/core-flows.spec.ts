@@ -1,9 +1,9 @@
-import { test, expect, chromium, type BrowserContext, type Page } from '@playwright/test';
+import { test, expect, type BrowserContext, type Page } from '@playwright/test';
 import path from 'node:path';
 import fs from 'node:fs';
-import os from 'node:os';
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
+import { launchExtension, type ExtensionProfile } from './support/profile';
 
 /**
  * Hamesh E2E — drives the REAL extension UI (selection mode → composer →
@@ -17,7 +17,6 @@ import type { AddressInfo } from 'node:net';
  * capability-equivalent to the toolbar button.
  */
 
-const EXTENSION_PATH = path.resolve(import.meta.dirname, '..', '.output', 'chrome-mv3');
 const FIXTURE_HTML = fs.readFileSync(
   path.resolve(import.meta.dirname, 'fixtures', 'test-page.html'),
   'utf8',
@@ -37,20 +36,6 @@ function startServer(): Promise<{ url: string; close: () => Promise<void> }> {
         close: () => new Promise((r) => server.close(() => r())),
       });
     });
-  });
-}
-
-async function launch(): Promise<BrowserContext> {
-  const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hamesh-e2e-'));
-  // `--headless=new` is required: the legacy headless mode can't load
-  // extensions. Passing headless:false keeps Playwright from adding the old flag.
-  return chromium.launchPersistentContext(userDataDir, {
-    headless: false,
-    args: [
-      '--headless=new',
-      `--disable-extensions-except=${EXTENSION_PATH}`,
-      `--load-extension=${EXTENSION_PATH}`,
-    ],
   });
 }
 
@@ -97,15 +82,17 @@ async function createNote(page: Page, testId: string, text: string): Promise<voi
 }
 
 test.describe('Hamesh core flows', () => {
+  let profile: ExtensionProfile | undefined;
   let context: BrowserContext;
   let server: { url: string; close: () => Promise<void> };
 
   test.beforeEach(async () => {
     server = await startServer();
-    context = await launch();
+    profile = await launchExtension('core');
+    context = profile.context;
   });
   test.afterEach(async () => {
-    await context.close();
+    await profile?.close();
     await server.close();
   });
 
