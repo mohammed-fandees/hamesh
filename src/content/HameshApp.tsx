@@ -68,6 +68,8 @@ import type { TeamNotesSource } from '@/teams/page-notes';
 import { NoteDiscussion } from '@/ui/teams/NoteDiscussion';
 import { ComposerDestination, type NoteDestination } from '@/ui/teams/ComposerDestination';
 import { ShareConsent } from '@/ui/teams/ShareConsent';
+import { TeamPin, TeamPinStyles } from '@/ui/teams/TeamPin';
+import type { PeopleDirectory } from '@/teams/people-cache';
 import { getTeamsStrings } from '@/ui/teams/strings';
 import type { Destination } from '@/teams/page-channel';
 import { usePreferences } from '@/ui/hooks/usePreferences';
@@ -284,6 +286,12 @@ function useViewportFrame(active: boolean): number {
   return frame;
 }
 
+/** The page marks' sizes, as tokens.css and teams/pin.css draw them. */
+const MARK = {
+  own: { width: 24, height: 28 },
+  pin: { width: 30, height: 30 },
+} as const;
+
 export function HameshApp({
   repo,
   prefsRepo,
@@ -451,6 +459,8 @@ export function HameshApp({
    *  both (that is what resolves and renders), and a note carrying `team` is
    *  never one this device stored. */
   const teamNotesRef = useRef<Note[]>([]);
+  /** Who wrote the shared notes: the faces on their pins. Teams only. */
+  const [people, setPeople] = useState<PeopleDirectory['people']>({});
   /** Last pass's resolved ranges, keyed by note id. Feeding these back into
    *  the next pass turns the common case into one string compare per note —
    *  no DOM walk, no page-text index. Rebuilt every pass, never a cache with
@@ -648,6 +658,24 @@ export function HameshApp({
       unwatch();
     };
   }, [teamNotes, pageKey, commitTeamNotes]);
+
+  // The faces for the pins, again from what the worker keeps — no request.
+  useEffect(() => {
+    const source = import.meta.env.WXT_TEAMS_API_ORIGIN ? teamNotes : undefined;
+    if (!source) return;
+    let cancelled = false;
+    void source.people().then(
+      (directory) => {
+        if (!cancelled) setPeople(directory.people);
+      },
+      () => {},
+    );
+    const unwatch = source.watchPeople((directory) => setPeople(directory.people));
+    return () => {
+      cancelled = true;
+      unwatch();
+    };
+  }, [teamNotes]);
 
   // ---- SPA navigation: reload for the new effective page ----
   useEffect(() => {
@@ -1334,6 +1362,7 @@ export function HameshApp({
     void frame; // recompute positions each viewport frame
     const vw = window.innerWidth;
     const vh = window.innerHeight;
+    // How far down each element's column of marks already reaches.
     const perElement = new Map<Element, number>();
     const items: {
       note: Note;
@@ -1345,15 +1374,19 @@ export function HameshApp({
       if (!r.element) continue;
       const rect = r.element.getBoundingClientRect();
       if (rect.bottom < 0 || rect.top > vh || rect.right < 0 || rect.left > vw) continue;
-      const idx = perElement.get(r.element) ?? 0;
-      perElement.set(r.element, idx + 1);
-      const top = Math.max(2, rect.top + idx * 30);
+      // A shared note's pin (its author's face) is a little larger than the
+      // margin mark; marks on one element stack down its edge either way.
+      const size = r.note.team ? MARK.pin : MARK.own;
+      const below = perElement.get(r.element) ?? 0;
+      perElement.set(r.element, below + size.height + 2);
+      const top = Math.max(2, rect.top + below);
+      const reach = size.width + 2;
       let left =
         dir === 'rtl'
-          ? Math.min(vw - 26, rect.right + 2)
-          : rect.left - 26 < 2
+          ? Math.min(vw - reach, rect.right + 2)
+          : rect.left - reach < 2
             ? rect.left + 2
-            : rect.left - 26;
+            : rect.left - reach;
       left = Math.max(2, left);
       items.push({ note: r.note, element: r.element, top, left });
     }
@@ -1848,15 +1881,33 @@ export function HameshApp({
         </div>
       )}
 
-      {markerItems.map((m) => (
-        <Marker
-          key={m.note.id}
-          label={strings.viewNote}
-          flip={dir === 'rtl'}
-          style={{ top: m.top, left: m.left, pointerEvents: 'auto' }}
-          onOpen={() => openViewer(m.note.id)}
-        />
-      ))}
+      {markerItems.map((m) => {
+        const style = { top: m.top, left: m.left, pointerEvents: 'auto' } as const;
+        if (import.meta.env.WXT_TEAMS_API_ORIGIN && m.note.team) {
+          const author = m.note.team.authorId ? people[m.note.team.authorId] : undefined;
+          return (
+            <TeamPin
+              key={m.note.id}
+              person={author}
+              label={getTeamsStrings(lang).notePin(author?.name ?? null)}
+              style={style}
+              onOpen={() => openViewer(m.note.id)}
+            />
+          );
+        }
+        return (
+          <Marker
+            key={m.note.id}
+            label={strings.viewNote}
+            flip={dir === 'rtl'}
+            style={style}
+            onOpen={() => openViewer(m.note.id)}
+          />
+        );
+      })}
+      {import.meta.env.WXT_TEAMS_API_ORIGIN && markerItems.some((m) => m.note.team) && (
+        <TeamPinStyles />
+      )}
 
       {effectiveVideoControlsVisible &&
         videoMarkerGroups.map((g) =>

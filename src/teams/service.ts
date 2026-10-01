@@ -17,6 +17,7 @@ import type { ParamsOf } from './operations';
 import type { CachedTeam } from './page-cache';
 import type { TeamSync } from './sync';
 import type { Realtime } from './realtime';
+import type { People } from './people';
 
 /**
  * What the background service worker does for Teams, independent of the
@@ -47,6 +48,8 @@ export interface SharedNotesDeps {
   writeIndex: (teams: CachedTeam[], now: number) => Promise<void>;
   /** Forgets every cached team note on this device. */
   clearCache: () => Promise<void>;
+  /** Who is in the teams, for the pins on a page. Absent draws no faces. */
+  people?: Pick<People, 'refresh'>;
   now: () => number;
 }
 
@@ -63,6 +66,9 @@ const CHANGES_TEAM_NOTES = new Set<TeamsOpName>([
 
 export function createTeamsService(deps: TeamsServiceDeps) {
   let signingIn: Promise<TeamsReply> | null = null;
+  /** Set when the server says a team's members changed: the next answer to
+   *  "who am I" gathers the people again rather than trusting what is kept. */
+  let peopleChanged = false;
   /** One pull per team at a time; a second ask joins the one already running. */
   const pulling = new Map<string, Promise<void>>();
 
@@ -99,6 +105,11 @@ export function createTeamsService(deps: TeamsServiceDeps) {
     void shared.sync.reconcile(ids).catch(() => {});
     void shared.realtime.follow(ids).catch(() => {});
     for (const id of ids) void pull(id);
+    if (shared.people) {
+      const force = peopleChanged;
+      peopleChanged = false;
+      void shared.people.refresh(ids, force).catch(() => {});
+    }
   }
 
   /** Signed out, or Teams turned off: nothing of the team's stays behind. */
@@ -234,6 +245,7 @@ export function createTeamsService(deps: TeamsServiceDeps) {
      * follows that answer.
      */
     async accountChanged(): Promise<void> {
+      peopleChanged = true;
       await status().catch(() => undefined);
     },
     /**

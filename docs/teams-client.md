@@ -184,6 +184,16 @@ URL the browser reports for that frame. Every other Teams message is still
 answered only to Hamesh's own pages, and the server checks every request as
 always.
 
+**A shared note's mark is its author's face.** The worker asks who is in each
+team and fetches each picture itself (`src/teams/people.ts`) — only from
+Google's image host, without cookies or a referrer, at most 64 KB — and keeps
+names and pictures as `data:` URLs in `hamesh:team-people`
+(`src/teams/people-cache.ts`). The content script draws the pin from that
+(`src/ui/teams/TeamPin.tsx`): no web page asks Google for a picture, and no
+email is kept there. It is gathered again when the teams change, when the
+server says a team's members did, or after six hours; signing out clears it
+with the rest.
+
 **Sharing moves a note.** The personal note's own id travels as the idempotency
 key, so sharing the same note twice is one share, and the local copy is then
 forgotten — the team's copy is what the page shows from then on, and keeping both
