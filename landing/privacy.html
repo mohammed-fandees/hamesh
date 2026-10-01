@@ -194,6 +194,12 @@
         font-weight: 600;
         margin: 44px 0 14px;
       }
+      h3 {
+        font-size: 16px;
+        font-weight: 600;
+        margin: 28px 0 10px;
+        color: var(--ink);
+      }
       p,
       li {
         font-size: 15.5px;
@@ -324,11 +330,10 @@
         <h1 data-ar="سياسة الخصوصية" data-en="Privacy Policy">سياسة الخصوصية</h1>
         <p
           class="updated"
-          data-ar="آخر تحديث: 1 أغسطس 2026 · تنطبق على هامش الإصدار 0.1.0 وما بعده بنفس سلوك التعامل مع البيانات."
-          data-en="Last updated: August 1, 2026 · Applies to Hamesh v0.1.0 and later versions with the same data-handling behavior."
+          data-ar="آخر تحديث: 1 أكتوبر 2026 · الإصدار 2026-10-01"
+          data-en="Last updated: October 1, 2026 · Version 2026-10-01"
         >
-          آخر تحديث: 1 أغسطس 2026 · تنطبق على هامش الإصدار 0.1.0 وما بعده بنفس سلوك التعامل مع
-          البيانات.
+          آخر تحديث: 1 أكتوبر 2026 · الإصدار 2026-10-01
         </p>
 
         <div class="summary-card">
@@ -340,11 +345,12 @@
             </g>
           </svg>
           <p
-            data-ar="باختصار: يحفظ هامش ملاحظاتك محليًا على جهازك بالكامل. لا يوجد خادم، ولا حساب، ولا أي طلب شبكة، ولا تحليلات أو إعلانات أو تتبّع من أي نوع."
-            data-en="In short: Hamesh stores your notes entirely on your own device. There is no server, no account, no network requests, and no analytics, advertising, or tracking of any kind."
+            data-ar="باختصار: يحفظ هامش ملاحظاتك الشخصية محليًا على جهازك بالكامل، دون حساب أو تحليلات أو إعلانات أو تتبّع. وحدها ميزة «فرق هامش» الاختيارية، إن فعّلتها، ترسل إلى خوادمنا ما تختار مشاركته مع فريقك، كما هو موضّح أدناه."
+            data-en="In short: Hamesh stores your personal notes entirely on your own device, with no account, analytics, advertising or tracking. Only the optional Hamesh Teams feature, if you turn it on, sends to our servers what you choose to share with your team, as described below."
           >
-            باختصار: يحفظ هامش ملاحظاتك محليًا على جهازك بالكامل. لا يوجد خادم، ولا حساب، ولا أي طلب
-            شبكة، ولا تحليلات أو إعلانات أو تتبّع من أي نوع.
+            باختصار: يحفظ هامش ملاحظاتك الشخصية محليًا على جهازك بالكامل، دون حساب أو تحليلات أو
+            إعلانات أو تتبّع. وحدها ميزة «فرق هامش» الاختيارية، إن فعّلتها، ترسل إلى خوادمنا ما
+            تختار مشاركته مع فريقك، كما هو موضّح أدناه.
           </p>
         </div>
 
@@ -442,10 +448,18 @@
           (<code>chrome.storage.local</code>). يبقى على جهازك.
         </p>
 
-        <h2 data-ar="ما لا يفعله هامش" data-en="What Hamesh does NOT do">ما لا يفعله هامش</h2>
+        <h2
+          data-ar="ما لا يفعله هامش بملاحظاتك الشخصية"
+          data-en="What Hamesh does NOT do with your personal notes"
+        >
+          ما لا يفعله هامش بملاحظاتك الشخصية
+        </h2>
         <ul>
-          <li data-ar="لا يوجد خادم خلفي من أي نوع." data-en="No backend server of any kind.">
-            لا يوجد خادم خلفي من أي نوع.
+          <li
+            data-ar="لا ترسل إلى أي خادم. (فرق هامش، إن فعّلتها، موضّحة في قسمها أدناه.)"
+            data-en="They are never sent to any server. (Hamesh Teams, if you turn it on, is described in its own section below.)"
+          >
+            لا ترسل إلى أي خادم. (فرق هامش، إن فعّلتها، موضّحة في قسمها أدناه.)
           </li>
           <li
             data-ar="لا نقل عبر الشبكة: لا تحليلات، ولا تقارير أعطال، ولا تتبّع، ولا إعلانات، ولا طلبات API خارجية."
@@ -455,10 +469,10 @@
             خارجية.
           </li>
           <li
-            data-ar="لا حساب، ولا تسجيل دخول، ولا مصادقة."
-            data-en="No account, login, or authentication."
+            data-ar="لا تحتاج إلى حساب أو تسجيل دخول لاستخدامها."
+            data-en="No account or sign-in is needed to use them."
           >
-            لا حساب، ولا تسجيل دخول، ولا مصادقة.
+            لا تحتاج إلى حساب أو تسجيل دخول لاستخدامها.
           </li>
           <li
             data-ar="لا قراءة لكلمات المرور أو قيم حقول النماذج الأخرى."
@@ -501,6 +515,175 @@
           تمسح بيانات ملف تعريف المتصفح. الطريقة الوحيدة لخروجها من المتصفح هي ملف نسخة احتياطية
           تصدّره أنت بنفسك من الإعدادات، ويُحفظ على جهازك. هامش لا ينقل شيئًا عبر الشبكة، فهو مصمَّم
           ليبقى محليًا.
+        </p>
+
+        <h2 data-ar="فرق هامش (ميزة اختيارية مدفوعة)" data-en="Hamesh Teams (optional, paid)">
+          فرق هامش (ميزة اختيارية مدفوعة)
+        </h2>
+        <p
+          data-ar="كل ما سبق يخص ملاحظاتك الشخصية، وهي لا تغادر جهازك. «فرق هامش» ميزة اختيارية لمشاركة الملاحظات مع فريق، وهي الحالة الوحيدة التي تُرسَل فيها بيانات إلى خوادمنا، ولا يحدث ذلك إلا إذا فعّلتها وسجّلت الدخول بنفسك. المسؤول عن هذه البيانات هو محمد فنديس، بصفته فردًا، من جمهورية مصر العربية."
+          data-en="Everything above is about your personal notes, which never leave your device. Hamesh Teams is an optional feature for sharing notes with a team. It is the only case in which data is sent to our servers, and only once you turn it on and sign in yourself. The controller of this data is Mohammed Fandees, an individual based in the Arab Republic of Egypt."
+        >
+          كل ما سبق يخص ملاحظاتك الشخصية، وهي لا تغادر جهازك. «فرق هامش» ميزة اختيارية لمشاركة
+          الملاحظات مع فريق، وهي الحالة الوحيدة التي تُرسَل فيها بيانات إلى خوادمنا، ولا يحدث ذلك
+          إلا إذا فعّلتها وسجّلت الدخول بنفسك. المسؤول عن هذه البيانات هو محمد فنديس، بصفته فردًا،
+          من جمهورية مصر العربية.
+        </p>
+        <h3 data-ar="ما نجمعه عند استخدام فرق هامش" data-en="What we collect when you use Teams">
+          ما نجمعه عند استخدام فرق هامش
+        </h3>
+        <ul>
+          <li
+            data-ar="من حساب Google عند تسجيل الدخول: معرّف الحساب، والبريد الإلكتروني، والاسم المعروض. لا نحصل على كلمة مرورك."
+            data-en="From your Google account when you sign in: its identifier, your email address and your display name. We never receive your password."
+          >
+            من حساب Google عند تسجيل الدخول: معرّف الحساب، والبريد الإلكتروني، والاسم المعروض. لا
+            نحصل على كلمة مرورك.
+          </li>
+          <li
+            data-ar="الفرق التي تنشئها أو تنضم إليها، ودورك في كل منها."
+            data-en="The teams you create or join, and your role in each."
+          >
+            الفرق التي تنشئها أو تنضم إليها، ودورك في كل منها.
+          </li>
+          <li
+            data-ar="الملاحظات التي تشاركها صراحةً فقط: نصها، ورابط الصفحة وعنوانها، ومعلومات العنصر الذي ترتبط به، والمجلد الذي توضع فيه. الملاحظات التي لا تشاركها لا تُرسَل أبدًا."
+            data-en="Only the notes you explicitly share: their text, the page&#x27;s URL and title, the details of the element they are attached to, and the folder they are filed in. Notes you do not share are never sent."
+          >
+            الملاحظات التي تشاركها صراحةً فقط: نصها، ورابط الصفحة وعنوانها، ومعلومات العنصر الذي
+            ترتبط به، والمجلد الذي توضع فيه. الملاحظات التي لا تشاركها لا تُرسَل أبدًا.
+          </li>
+          <li
+            data-ar="التعليقات والإشارات (@) التي تكتبها في فريق."
+            data-en="The comments and mentions (@) you write in a team."
+          >
+            التعليقات والإشارات (@) التي تكتبها في فريق.
+          </li>
+          <li
+            data-ar="البريد الإلكتروني لمن تدعوه إلى فريق، مع الدعوة."
+            data-en="The email address of anyone you invite to a team, with the invitation."
+          >
+            البريد الإلكتروني لمن تدعوه إلى فريق، مع الدعوة.
+          </li>
+          <li
+            data-ar="عند الدفع: طريقة الدفع، ورقم العملية، وعدد الشهور، والمبلغ، وحالة الدفعة، وإصدار الشروط الذي وافقت عليه. لا نحصل على بيانات بطاقتك أو حسابك البنكي."
+            data-en="When you pay: the payment method, transaction reference, number of months, amount, payment status, and the version of the terms you agreed to. We never receive your card or bank account details."
+          >
+            عند الدفع: طريقة الدفع، ورقم العملية، وعدد الشهور، والمبلغ، وحالة الدفعة، وإصدار الشروط
+            الذي وافقت عليه. لا نحصل على بيانات بطاقتك أو حسابك البنكي.
+          </li>
+          <li
+            data-ar="سجلّ أمني بالإجراءات المهمة (مثل إنشاء فريق أو حذف ملاحظة) ووقتها. يُستخدم عنوان IP لحظيًا للحد من إساءة الاستخدام، ولا نخزّنه."
+            data-en="A security log of significant actions (such as creating a team or deleting a note) and when they happened. Your IP address is used momentarily to limit abuse, and is not stored."
+          >
+            سجلّ أمني بالإجراءات المهمة (مثل إنشاء فريق أو حذف ملاحظة) ووقتها. يُستخدم عنوان IP
+            لحظيًا للحد من إساءة الاستخدام، ولا نخزّنه.
+          </li>
+        </ul>
+        <h3 data-ar="لماذا نستخدمها" data-en="Why we use it">لماذا نستخدمها</h3>
+        <p
+          data-ar="لتقديم فرق هامش فقط: عرض ما تشاركه لأعضاء فريقك، والتحقق من الدفعات، وحماية الحسابات من الإساءة. لا نبيع بياناتك، ولا نستخدمها للإعلانات، ولا نشاركها مع وسطاء البيانات. استخدام هامش للبيانات يلتزم بسياسة بيانات المستخدم في سوق Chrome الإلكتروني، بما في ذلك متطلبات الاستخدام المحدود (Limited Use)."
+          data-en="Only to provide Hamesh Teams: showing what you share to your team&#x27;s members, checking payments, and protecting accounts from abuse. We do not sell your data, use it for advertising, or share it with data brokers. Hamesh&#x27;s use of data complies with the Chrome Web Store User Data Policy, including the Limited Use requirements."
+        >
+          لتقديم فرق هامش فقط: عرض ما تشاركه لأعضاء فريقك، والتحقق من الدفعات، وحماية الحسابات من
+          الإساءة. لا نبيع بياناتك، ولا نستخدمها للإعلانات، ولا نشاركها مع وسطاء البيانات. استخدام
+          هامش للبيانات يلتزم بسياسة بيانات المستخدم في سوق Chrome الإلكتروني، بما في ذلك متطلبات
+          الاستخدام المحدود (Limited Use).
+        </p>
+        <h3 data-ar="أين تُخزَّن، ومن يعالجها" data-en="Where it is stored, and who processes it">
+          أين تُخزَّن، ومن يعالجها
+        </h3>
+        <p
+          data-ar="تُخزَّن بيانات فرق هامش على خوادم Cloudflare (Workers وD1)، وقد تقع خارج مصر. يتم تسجيل الدخول عبر Google. بتفعيلك فرق هامش ومشاركتك ملاحظة، توافق صراحةً على نقل هذه البيانات وتخزينها خارج مصر لهذا الغرض. كل الاتصالات مشفّرة (HTTPS)، وتُخزَّن رموز الجلسات مجزّأة (hashed) لا كما هي."
+          data-en="Hamesh Teams data is stored on Cloudflare servers (Workers and D1), which may be outside Egypt. Sign-in is through Google. By turning on Hamesh Teams and sharing a note, you explicitly consent to this data being transferred to and stored outside Egypt for this purpose. All connections are encrypted (HTTPS), and session tokens are stored hashed, not as issued."
+        >
+          تُخزَّن بيانات فرق هامش على خوادم Cloudflare (Workers وD1)، وقد تقع خارج مصر. يتم تسجيل
+          الدخول عبر Google. بتفعيلك فرق هامش ومشاركتك ملاحظة، توافق صراحةً على نقل هذه البيانات
+          وتخزينها خارج مصر لهذا الغرض. كل الاتصالات مشفّرة (HTTPS)، وتُخزَّن رموز الجلسات مجزّأة
+          (hashed) لا كما هي.
+        </p>
+        <h3 data-ar="إلى متى نحتفظ بها" data-en="How long we keep it">إلى متى نحتفظ بها</h3>
+        <table>
+          <thead>
+            <tr>
+              <th data-ar="البيانات" data-en="Data">البيانات</th>
+              <th data-ar="مدة الاحتفاظ" data-en="Retention">مدة الاحتفاظ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td data-ar="ملاحظة أو مجلد محذوف" data-en="A deleted note or folder">
+                ملاحظة أو مجلد محذوف
+              </td>
+              <td data-ar="يُمحى خلال 30 يومًا" data-en="Erased within 30 days">
+                يُمحى خلال 30 يومًا
+              </td>
+            </tr>
+            <tr>
+              <td data-ar="فريق محذوف" data-en="A deleted team">فريق محذوف</td>
+              <td data-ar="يُمحى بالكامل بعد 30 يومًا" data-en="Fully erased after 30 days">
+                يُمحى بالكامل بعد 30 يومًا
+              </td>
+            </tr>
+            <tr>
+              <td
+                data-ar="فريق مقفل بعد انتهاء الاشتراك"
+                data-en="A team locked after its subscription ends"
+              >
+                فريق مقفل بعد انتهاء الاشتراك
+              </td>
+              <td data-ar="90 يومًا، ثم يجوز محوه" data-en="90 days, then it may be erased">
+                90 يومًا، ثم يجوز محوه
+              </td>
+            </tr>
+            <tr>
+              <td data-ar="الجلسات والدعوات المنتهية" data-en="Expired sessions and invitations">
+                الجلسات والدعوات المنتهية
+              </td>
+              <td data-ar="30 يومًا" data-en="30 days">30 يومًا</td>
+            </tr>
+            <tr>
+              <td data-ar="الدفعات والاشتراكات" data-en="Payments and subscriptions">
+                الدفعات والاشتراكات
+              </td>
+              <td data-ar="تُحفظ كسجلات مالية" data-en="Kept as financial records">
+                تُحفظ كسجلات مالية
+              </td>
+            </tr>
+            <tr>
+              <td data-ar="السجل الأمني" data-en="Security log">السجل الأمني</td>
+              <td data-ar="سنتان" data-en="Two years">سنتان</td>
+            </tr>
+            <tr>
+              <td data-ar="حسابك عند حذفه" data-en="Your account, once deleted">حسابك عند حذفه</td>
+              <td
+                data-ar="يُحذف، ويبقى ما شاركته لدى الفريق دون اسمك"
+                data-en="Deleted; what you shared stays with the team without your name"
+              >
+                يُحذف، ويبقى ما شاركته لدى الفريق دون اسمك
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <h3 data-ar="حقوقك" data-en="Your rights">حقوقك</h3>
+        <p
+          data-ar="وفقًا لقانون حماية البيانات الشخصية المصري رقم 151 لسنة 2020، وما يماثله من قوانين حيث تقيم، لك الحق في: معرفة البيانات التي نحتفظ بها عنك والحصول على نسخة منها، وتصحيحها، وحذفها، وتقييد معالجتها أو الاعتراض عليها، وسحب موافقتك في أي وقت (يتوقف ذلك عن المستقبل ولا يمس ما سبقه)، وإبلاغك إن تعرّضت بياناتك لخرق. لممارسة أي من هذه الحقوق، أو لحذف حسابك، راسلنا على البريد أدناه، وسنرد في أقرب وقت وفي المدة التي يحددها القانون. ويحق لك تقديم شكوى إلى مركز حماية البيانات الشخصية في مصر."
+          data-en="Under Egypt&#x27;s Personal Data Protection Law No. 151 of 2020, and similar laws where you live, you have the right to: know what data we hold about you and get a copy of it, correct it, delete it, restrict or object to its processing, withdraw your consent at any time (this stops future processing and does not affect what came before), and be told if your data is involved in a breach. To exercise any of these rights, or to delete your account, email us at the address below; we will answer as soon as we can and within the time the law sets. You also have the right to complain to Egypt&#x27;s Personal Data Protection Center."
+        >
+          وفقًا لقانون حماية البيانات الشخصية المصري رقم 151 لسنة 2020، وما يماثله من قوانين حيث
+          تقيم، لك الحق في: معرفة البيانات التي نحتفظ بها عنك والحصول على نسخة منها، وتصحيحها،
+          وحذفها، وتقييد معالجتها أو الاعتراض عليها، وسحب موافقتك في أي وقت (يتوقف ذلك عن المستقبل
+          ولا يمس ما سبقه)، وإبلاغك إن تعرّضت بياناتك لخرق. لممارسة أي من هذه الحقوق، أو لحذف حسابك،
+          راسلنا على البريد أدناه، وسنرد في أقرب وقت وفي المدة التي يحددها القانون. ويحق لك تقديم
+          شكوى إلى مركز حماية البيانات الشخصية في مصر.
+        </p>
+        <p><a href="mailto:mohammed.fandees@gmail.com">mohammed.fandees@gmail.com</a></p>
+        <h3 data-ar="العمر" data-en="Age">العمر</h3>
+        <p
+          data-ar="فرق هامش مخصّصة لمن أتمّوا 18 عامًا، ولا نجمع عن قصد بيانات من هم أصغر."
+          data-en="Hamesh Teams is intended for people aged 18 or over, and we do not knowingly collect data from anyone younger."
+        >
+          فرق هامش مخصّصة لمن أتمّوا 18 عامًا، ولا نجمع عن قصد بيانات من هم أصغر.
         </p>
 
         <h2 data-ar="خصوصية الأطفال" data-en="Children's privacy">خصوصية الأطفال</h2>
@@ -567,16 +750,37 @@
                 يدويًا في كل مرة.
               </td>
             </tr>
+            <tr>
+              <td><code>identity</code></td>
+              <td
+                data-ar="اختياري، لفرق هامش فقط: لفتح نافذة تسجيل الدخول بحساب Google. لا يُطلب إلا عند ضغطك «تفعيل الفرق»."
+                data-en="Optional, for Hamesh Teams only: to open the Google sign-in window. Requested only when you press Turn on Teams."
+              >
+                اختياري، لفرق هامش فقط: لفتح نافذة تسجيل الدخول بحساب Google. لا يُطلب إلا عند ضغطك
+                «تفعيل الفرق».
+              </td>
+            </tr>
+            <tr>
+              <td><code>api.hamesh.fandees.tech</code></td>
+              <td
+                data-ar="اختياري، لفرق هامش فقط: للاتصال بخادم الفرق. لا يُطلب إلا عند تفعيل الفرق، ويُسحب عند إيقافها."
+                data-en="Optional, for Hamesh Teams only: to reach the Teams server. Requested only when you turn Teams on, and given back when you turn it off."
+              >
+                اختياري، لفرق هامش فقط: للاتصال بخادم الفرق. لا يُطلب إلا عند تفعيل الفرق، ويُسحب
+                عند إيقافها.
+              </td>
+            </tr>
           </tbody>
         </table>
 
         <h2 data-ar="الأمان" data-en="Security">الأمان</h2>
         <p
-          data-ar="بما أن هامش لا ينقل بيانات، فلا يوجد نقل بيانات يحتاج إلى تأمين. تُحمى البيانات المخزَّنة عبر آلية عزل تخزين المتصفح الخاصة بالإضافات."
-          data-en="Because Hamesh does not transmit data, there is no data-in-transit to secure. Data at rest is protected by your browser's own extension storage sandboxing."
+          data-ar="ملاحظاتك الشخصية لا تُنقل، وتحميها آلية عزل تخزين المتصفح الخاصة بالإضافات. بيانات فرق هامش تُنقل مشفّرة، ولا يصل إليها إلا أعضاء الفريق وفق صلاحياتهم. إن تعرّضت لخرق، نُبلغ مركز حماية البيانات الشخصية والمتأثرين في المدد التي يحددها القانون."
+          data-en="Your personal notes are never transmitted, and are protected by your browser's own extension storage sandboxing. Hamesh Teams data travels encrypted, and only a team's members can reach it, according to their roles. If it is ever breached, we notify Egypt's Personal Data Protection Center and the people affected within the times the law sets."
         >
-          بما أن هامش لا ينقل بيانات، فلا يوجد نقل بيانات يحتاج إلى تأمين. تُحمى البيانات المخزَّنة
-          عبر آلية عزل تخزين المتصفح الخاصة بالإضافات.
+          ملاحظاتك الشخصية لا تُنقل، وتحميها آلية عزل تخزين المتصفح الخاصة بالإضافات. بيانات فرق
+          هامش تُنقل مشفّرة، ولا يصل إليها إلا أعضاء الفريق وفق صلاحياتهم. إن تعرّضت لخرق، نُبلغ
+          مركز حماية البيانات الشخصية والمتأثرين في المدد التي يحددها القانون.
         </p>
 
         <h2 data-ar="التغييرات على هذه السياسة" data-en="Changes to this policy">
@@ -593,10 +797,17 @@
 
         <h2 data-ar="التواصل" data-en="Contact">التواصل</h2>
         <p
-          data-ar="يمكن طرح الأسئلة حول هذه السياسة عبر GitHub Issues:"
-          data-en="Questions about this policy can be raised via GitHub Issues:"
+          data-ar="لأي سؤال حول هذه السياسة، أو لممارسة حقوقك على بياناتك:"
+          data-en="For any question about this policy, or to exercise your rights over your data:"
         >
-          يمكن طرح الأسئلة حول هذه السياسة عبر GitHub Issues:
+          لأي سؤال حول هذه السياسة، أو لممارسة حقوقك على بياناتك:
+        </p>
+        <p><a href="mailto:mohammed.fandees@gmail.com">mohammed.fandees@gmail.com</a></p>
+        <p
+          data-ar="وللإبلاغ عن مشكلة تقنية في الإضافة:"
+          data-en="And to report a technical problem with the extension:"
+        >
+          وللإبلاغ عن مشكلة تقنية في الإضافة:
         </p>
         <p>
           <a href="https://github.com/mohammed-fandees/hamesh/issues"
@@ -617,6 +828,7 @@
         </svg>
         <span>هامش · Hamesh</span>
         <span class="spacer"></span>
+        <a href="./terms.html" data-ar="شروط الاستخدام" data-en="Terms of Use">شروط الاستخدام</a>
         <a href="./index.html" data-ar="الرئيسية" data-en="Home">الرئيسية</a>
       </div>
     </footer>
