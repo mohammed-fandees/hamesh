@@ -6,7 +6,24 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.5.0] — 2026-10-01
+
+### Added
+
+- **Every note has a menu.** The ⋮ on a note's card on the page opens it in the Notes Library,
+  copies its words, or deletes it (asked first). Opened from the menu, the Library goes straight to
+  the note: its site's card opens and the note is brought into view and marked for a moment.
+
+### Fixed
+
+- **A menu over a web page could not be used.** Pressing one of its items closed it before the
+  item took the click: a listener on the document saw every press inside Hamesh's shadow root as
+  a press outside the menu. Menus now read the event's path.
+
 ### Changed
+
+- **Times in Arabic read as they are said** — «منذ ساعتين», «منذ 5 ساعات», «منذ 11 يومًا» —
+  instead of «قبل 5 ساعة».
 
 - **One visual standard across the extension.** Hover, focus and pressed states are now one
   consistent wash of the clay accent on every control, and the current page in the sidebar is
@@ -22,6 +39,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   and a bare line, and shows a placeholder while it finds out.
 - **Buttons that are working keep their label.** A spinner appears beside it rather than the label
   being swapped for “Working…”.
+
+### Teams (not in the store build)
+
+Built behind the Teams build constant and absent from the store package; listed so the history is
+complete. A client for Hamesh Teams: Google sign-in, teams, members, invitations and the plan
+(with payment instructions served by the API, never stored here); sharing a note with a team and
+seeing the team's notes on the page, each marked with its author's face; a note written on the
+page straight into a team; a shared note's discussion in its popup and in Chrome's side panel,
+with replies and @ mentions; one space per owner in the Library, sharing by dropping a note on a
+team's folder; the Terms of Use and the Teams section of the Privacy Policy.
 
 ## [1.4.0] — 2026-09-26
 
