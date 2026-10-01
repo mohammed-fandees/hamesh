@@ -2,6 +2,7 @@ import { browser } from 'wxt/browser';
 import { teamsConfig } from './config';
 import { isContentScriptSender, isTeamsPageMessage } from './page-channel';
 import { createNotesRepository } from '@/storage/notes-repository';
+import { generatePageKey } from '@/domain/page-key';
 import {
   isTeamsCacheRequest,
   isTeamsDevSignIn,
@@ -61,6 +62,38 @@ export function registerTeams(): void {
     if (isTeamsPageMessage(message)) {
       if (!isContentScriptSender(sender, browser.runtime.id)) return undefined;
       const pageUrl = sender.url as string;
+      // The whole discussion, in Chrome's side panel beside the page. Opened
+      // now, before anything is awaited: the click on the page is what lets
+      // the panel open, and it only counts until this handler yields.
+      const request = message.request;
+      const tabId = sender.tab?.id;
+      if (request.op === 'open' && tabId !== undefined && browser.sidePanel) {
+        const params = new URLSearchParams({
+          view: 'panel',
+          team: request.teamId,
+          note: request.noteId,
+          pagekey: generatePageKey(pageUrl),
+        });
+        void browser.sidePanel.setOptions({ tabId, path: `notes.html?${params}`, enabled: true });
+        browser.sidePanel.open({ tabId }).then(
+          () => sendResponse({ ok: true, data: null }),
+          // Refused (no gesture after all, an older Chrome): the note's own
+          // page in Hamesh instead, as before there was a panel.
+          async () => {
+            const page = new URLSearchParams({
+              view: 'teams',
+              team: request.teamId,
+              page: 'note',
+              note: request.noteId,
+            });
+            await browser.tabs.create({
+              url: browser.runtime.getURL(`/notes.html?${page}` as '/notes.html'),
+            });
+            sendResponse({ ok: true, data: null });
+          },
+        );
+        return true;
+      }
       void (async () => {
         const [service, { handlePageRequest }] = await Promise.all([
           getService(),

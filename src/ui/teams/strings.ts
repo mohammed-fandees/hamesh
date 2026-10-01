@@ -8,6 +8,7 @@ import type { TeamsErrorCode } from '@/teams/errors';
  * two ways on two pages.
  */
 const SHARED = [
+  'brand',
   'cancel',
   'keepIt',
   'save',
@@ -123,6 +124,13 @@ export interface TeamsStrings extends SharedStrings {
   destTeamLabel: string;
   destUploadHint: string;
   saveAndShare: string;
+  /** Hamesh in Chrome's side panel. */
+  panelShow: string;
+  panelThisNote: string;
+  panelWholePage: (count: number) => string;
+  panelEmptyTitle: string;
+  panelEmptyBody: string;
+  panelNoneHere: string;
   shareFailedKept: (reason: string) => string;
   refreshNotes: string;
   syncedAgo: (when: string) => string;
@@ -344,6 +352,12 @@ const en: TeamsOwnStrings = {
   destTeamLabel: 'Team',
   destUploadHint: 'It is uploaded to Hamesh’s servers when you save it.',
   saveAndShare: 'Save and share',
+  panelShow: 'Show',
+  panelThisNote: 'This note',
+  panelWholePage: (count) => `Whole page (${count})`,
+  panelEmptyTitle: 'Nothing open here',
+  panelEmptyBody: 'Open a shared note’s discussion from its popup on the page.',
+  panelNoneHere: 'No shared notes on this page',
   shareFailedKept: (reason) => `Saved on this device, but not shared: ${reason}`,
   refreshNotes: 'Check for changes',
   syncedAgo: (when) => `Up to date as of ${when}`,
@@ -613,6 +627,12 @@ const ar: TeamsOwnStrings = {
   destTeamLabel: 'الفريق',
   destUploadHint: 'تُرفع إلى خوادم هامش عند الحفظ.',
   saveAndShare: 'حفظ ومشاركة',
+  panelShow: 'عرض',
+  panelThisNote: 'هذه الملحوظة',
+  panelWholePage: (count) => `كل الصفحة (${count})`,
+  panelEmptyTitle: 'لا شيء مفتوح هنا',
+  panelEmptyBody: 'افتح محادثة ملحوظة مشتركة من نافذتها على الصفحة.',
+  panelNoneHere: 'لا توجد ملحوظات مشتركة على هذه الصفحة',
   shareFailedKept: (reason) => `حُفظت على جهازك، لكن لم تُشارك: ${reason}`,
   refreshNotes: 'تحقق من التغييرات',
   syncedAgo: (when) => `محدَّثة حتى ${when}`,

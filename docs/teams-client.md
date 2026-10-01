@@ -173,7 +173,12 @@ Teams messages the worker answers to a content script: `thread` and `reply` for
 a team note the worker has cached for the very page asking, `share` for a note
 this device holds for that page (the worker reads the note itself — nothing the
 page sends is trusted as the note), `destinations` (the teams and folders a new
-note can go to) and `open` (opens the note's page in Hamesh). The sender must be
+note can go to) and `open` (opens the note's discussion in Chrome's side panel
+beside the page, or its page in Hamesh where there is no side panel). The side
+panel is `notes.html?view=panel` (`src/ui/teams/PanelView.tsx`) — one of
+Hamesh's own pages, so it asks the worker like any other and the web page
+beside it is handed nothing; the `sidePanel` permission is added only to a
+Chrome build that has Teams. The sender must be
 this extension's own content script in a page's top frame, and the page is the
 URL the browser reports for that frame. Every other Teams message is still
 answered only to Hamesh's own pages, and the server checks every request as
