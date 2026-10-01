@@ -1,0 +1,636 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>شروط الاستخدام · هامش · Hamesh Terms of Use</title>
+    <meta
+      name="description"
+      content="Hamesh privacy policy: notes are stored locally on your device only. No account, no server, no network requests, no tracking."
+    />
+    <link rel="canonical" href="https://hamesh.fandees.tech/privacy.html" />
+    <meta name="theme-color" content="#f7f3ec" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#16140f" media="(prefers-color-scheme: dark)" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="هامش · Hamesh · Privacy Policy" />
+    <meta
+      property="og:description"
+      content="Notes are stored locally on your device only. No account, no server, no network requests."
+    />
+    <meta property="og:image" content="./assets/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="icon" href="./assets/favicon.ico" sizes="32x32" />
+    <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --ink: #1e1b18;
+        --ink-60: rgba(30, 27, 24, 0.62);
+        --ink-40: rgba(30, 27, 24, 0.42);
+        --paper: #f7f3ec;
+        --paper-dim: #efe7d8;
+        --surface: #ffffff;
+        --accent: #b5502f;
+        --accent-strong: #8f3e22;
+        --accent-tint: #f1dccc;
+        --border: rgba(30, 27, 24, 0.14);
+        --success: #4b6b4e;
+        --sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        --arabic: 'IBM Plex Sans Arabic', 'IBM Plex Sans', 'Segoe UI', Tahoma, sans-serif;
+        --serif: 'IBM Plex Serif', Georgia, 'Times New Roman', serif;
+        --radius-lg: 10px;
+        --radius-md: 6px;
+        --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.16);
+        --maxw: 760px;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --ink: #f3ede3;
+          --ink-60: rgba(243, 237, 227, 0.64);
+          --ink-40: rgba(243, 237, 227, 0.46);
+          --paper: #16140f;
+          --paper-dim: #211e18;
+          --surface: #262219;
+          --accent: #e08b5c;
+          --accent-strong: #f0a578;
+          --accent-tint: rgba(224, 139, 92, 0.16);
+          --border: rgba(243, 237, 227, 0.16);
+          --success: #8fb894;
+          --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.4);
+          --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.5);
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: var(--sans);
+        line-height: 1.65;
+        -webkit-font-smoothing: antialiased;
+      }
+      html[dir='rtl'] body {
+        font-family: var(--arabic);
+      }
+      .wrap {
+        max-width: var(--maxw);
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+      a {
+        color: var(--accent-strong);
+      }
+      :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+        border-radius: 3px;
+      }
+      .mark {
+        flex: none;
+        color: var(--accent);
+      }
+
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: color-mix(in srgb, var(--paper) 90%, transparent);
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid var(--border);
+      }
+      .nav {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        height: 64px;
+        max-width: 1080px;
+      }
+      .lockup {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        color: inherit;
+      }
+      .lockup .ar {
+        font-family: var(--arabic);
+        font-weight: 600;
+        font-size: 20px;
+      }
+      .lockup .sep {
+        width: 1px;
+        height: 18px;
+        background: var(--border);
+      }
+      .lockup .en {
+        font-family: var(--serif);
+        font-style: italic;
+        font-size: 15px;
+        color: var(--ink-60);
+      }
+      .nav .spacer {
+        margin-inline-start: auto;
+      }
+      .toggle {
+        font-family: var(--sans);
+        font-size: 13px;
+        font-weight: 500;
+        padding: 7px 12px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: transparent;
+        color: var(--ink);
+        cursor: pointer;
+      }
+      .toggle:hover {
+        background: var(--paper-dim);
+      }
+
+      main {
+        padding: 56px 0 100px;
+      }
+      .kicker {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin: 0 0 16px;
+      }
+      h1 {
+        font-family: var(--serif);
+        font-weight: 500;
+        font-size: clamp(32px, 5vw, 46px);
+        line-height: 1.1;
+        margin: 0 0 10px;
+      }
+      html[dir='rtl'] h1 {
+        font-family: var(--arabic);
+        font-weight: 600;
+      }
+      .updated {
+        color: var(--ink-40);
+        font-size: 13px;
+        margin: 0 0 40px;
+      }
+      h2 {
+        font-size: 19px;
+        font-weight: 600;
+        margin: 44px 0 14px;
+      }
+      p,
+      li {
+        font-size: 15.5px;
+        line-height: 1.75;
+        color: var(--ink-60);
+      }
+      strong {
+        color: var(--ink);
+      }
+      ul,
+      ol {
+        padding-inline-start: 22px;
+        margin: 12px 0;
+      }
+      li {
+        margin: 8px 0;
+      }
+      code {
+        font-family: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+        font-size: 0.92em;
+        background: var(--paper-dim);
+        padding: 1px 5px;
+        border-radius: 4px;
+      }
+
+      .summary-card {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 24px;
+        margin: 8px 0 8px;
+        box-shadow: var(--shadow-md);
+      }
+      .summary-card .mark {
+        margin-top: 2px;
+      }
+      .summary-card p {
+        margin: 0;
+        color: var(--ink);
+        font-size: 15.5px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 16px 0;
+        font-size: 14px;
+      }
+      th,
+      td {
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+      }
+      html[dir='rtl'] th,
+      html[dir='rtl'] td {
+        text-align: right;
+      }
+      html[dir='ltr'] th,
+      html[dir='ltr'] td {
+        text-align: left;
+      }
+      th {
+        color: var(--ink-40);
+        font-weight: 600;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      footer {
+        border-top: 1px solid var(--border);
+        padding: 40px 0;
+        color: var(--ink-40);
+        font-size: 13px;
+      }
+      .foot {
+        max-width: 1080px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .foot .spacer {
+        margin-inline-start: auto;
+      }
+      .foot a {
+        color: var(--ink-40);
+      }
+      .foot a:hover {
+        color: var(--ink);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="wrap nav">
+        <a class="lockup" href="./index.html" aria-label="Hamesh هامش">
+          <svg class="mark" width="20" height="20" viewBox="0 0 32 32" aria-hidden="true">
+            <g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+              <path d="M10 5V27" />
+              <path d="M10 14H20" />
+              <path d="M20 10.5V17.5" />
+            </g>
+          </svg>
+          <span class="ar">هامش</span>
+          <span class="sep"></span>
+          <span class="en">Hamesh</span>
+        </a>
+        <span class="spacer"></span>
+        <button
+          class="toggle"
+          id="langToggle"
+          type="button"
+          aria-pressed="false"
+          aria-label="Switch to English"
+        >
+          EN
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <div class="wrap">
+        <p class="kicker" data-ar="القانونية" data-en="Legal">القانونية</p>
+        <h1 data-ar="شروط الاستخدام" data-en="Terms of Use">شروط الاستخدام</h1>
+        <p
+          class="updated"
+          data-ar="آخر تحديث: 1 أكتوبر 2026 · الإصدار 2026-10-01"
+          data-en="Last updated: October 1, 2026 · Version 2026-10-01"
+        >
+          آخر تحديث: 1 أكتوبر 2026 · الإصدار 2026-10-01
+        </p>
+        <div class="summary-card">
+          <svg class="mark" width="24" height="24" viewBox="0 0 32 32" aria-hidden="true">
+            <g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+              <path d="M10 5V27" />
+              <path d="M10 14H20" />
+              <path d="M20 10.5V17.5" />
+            </g>
+          </svg>
+          <p
+            data-ar="باختصار: الملاحظات الشخصية مجانية وتبقى على جهازك. «فرق هامش» اشتراك اختياري يُدفع يدويًا، لا يتجدد تلقائيًا، ويُسترد كاملًا خلال 14 يومًا إن لم تستخدمه."
+            data-en="In short: personal notes are free and stay on your device. Hamesh Teams is an optional subscription, paid manually, that never renews by itself and is fully refundable within 14 days if you have not used it."
+          >
+            باختصار: الملاحظات الشخصية مجانية وتبقى على جهازك. «فرق هامش» اشتراك اختياري يُدفع
+            يدويًا، لا يتجدد تلقائيًا، ويُسترد كاملًا خلال 14 يومًا إن لم تستخدمه.
+          </p>
+        </div>
+
+        <h2 data-ar="من نحن" data-en="Who we are">من نحن</h2>
+        <p
+          data-ar="هامش إضافة متصفح يقدّمها محمد فنديس بصفته فردًا، من جمهورية مصر العربية («نحن»). هذه الشروط تحكم استخدامك لهامش، بما في ذلك ميزة «فرق هامش» المدفوعة. باستخدامك هامش أو اشتراكك في فرق هامش، فأنت توافق على هذه الشروط وعلى سياسة الخصوصية."
+          data-en='Hamesh is a browser extension provided by Mohammed Fandees, an individual based in the Arab Republic of Egypt ("we"). These terms govern your use of Hamesh, including the paid Hamesh Teams feature. By using Hamesh or subscribing to Hamesh Teams, you agree to these terms and to the Privacy Policy.'
+        >
+          هامش إضافة متصفح يقدّمها محمد فنديس بصفته فردًا، من جمهورية مصر العربية («نحن»). هذه
+          الشروط تحكم استخدامك لهامش، بما في ذلك ميزة «فرق هامش» المدفوعة. باستخدامك هامش أو اشتراكك
+          في فرق هامش، فأنت توافق على هذه الشروط وعلى سياسة الخصوصية.
+        </p>
+
+        <h2 data-ar="الخدمة" data-en="The service">الخدمة</h2>
+        <ul>
+          <li
+            data-ar="الملاحظات الشخصية مجانية، وتبقى على جهازك فقط."
+            data-en="Personal notes are free and stay on your device only."
+          >
+            الملاحظات الشخصية مجانية، وتبقى على جهازك فقط.
+          </li>
+          <li
+            data-ar="«فرق هامش» ميزة اختيارية مدفوعة: تتيح لك إنشاء فريق، ودعوة أشخاص إليه، ومشاركة ملاحظات معهم، والتعليق عليها. تعمل عبر خوادمنا، ولا تعمل إلا إذا فعّلتها وسجّلت الدخول بنفسك."
+            data-en="Hamesh Teams is an optional paid feature: it lets you create a team, invite people to it, share notes with them and comment on them. It runs through our servers and works only if you turn it on and sign in yourself."
+          >
+            «فرق هامش» ميزة اختيارية مدفوعة: تتيح لك إنشاء فريق، ودعوة أشخاص إليه، ومشاركة ملاحظات
+            معهم، والتعليق عليها. تعمل عبر خوادمنا، ولا تعمل إلا إذا فعّلتها وسجّلت الدخول بنفسك.
+          </li>
+          <li
+            data-ar="الاشتراك مطلوب لمن ينشئ فريقًا فقط. من تتم دعوته إلى فريق لا يحتاج إلى اشتراك."
+            data-en="A subscription is needed only by the person who creates a team. People invited to a team do not need one."
+          >
+            الاشتراك مطلوب لمن ينشئ فريقًا فقط. من تتم دعوته إلى فريق لا يحتاج إلى اشتراك.
+          </li>
+        </ul>
+
+        <h2 data-ar="الحساب" data-en="Your account">الحساب</h2>
+        <ul>
+          <li
+            data-ar="تسجّل الدخول إلى فرق هامش بحساب Google. أنت مسؤول عن الحفاظ على أمان حسابك وجهازك."
+            data-en="You sign in to Hamesh Teams with a Google account. You are responsible for keeping your account and device secure."
+          >
+            تسجّل الدخول إلى فرق هامش بحساب Google. أنت مسؤول عن الحفاظ على أمان حسابك وجهازك.
+          </li>
+          <li
+            data-ar="فرق هامش مخصّصة لمن أتمّوا 18 عامًا."
+            data-en="Hamesh Teams is intended for people aged 18 or over."
+          >
+            فرق هامش مخصّصة لمن أتمّوا 18 عامًا.
+          </li>
+        </ul>
+
+        <h2 data-ar="الاشتراك والدفع" data-en="Subscription and payment">الاشتراك والدفع</h2>
+        <ul>
+          <li
+            data-ar="السعر ومدة الاشتراك وحدود الخطة تظهر في إعدادات هامش قبل الدفع، وهي ما يُعتمد وقت دفعك."
+            data-en="The price, the subscription period and the plan limits are shown in Hamesh Settings before you pay, and are what applies at the time you pay."
+          >
+            السعر ومدة الاشتراك وحدود الخطة تظهر في إعدادات هامش قبل الدفع، وهي ما يُعتمد وقت دفعك.
+          </li>
+          <li
+            data-ar="الدفع يدوي: تحوّل المبلغ بالطريقة المعروضة في الإعدادات، ثم تُدخل رقم العملية. تُراجع الدفعة يدويًا، ويبدأ اشتراكك عند قبولها."
+            data-en="Payment is manual: you transfer the amount by the method shown in Settings, then enter the transaction reference. The payment is checked by hand, and your subscription starts once it is accepted."
+          >
+            الدفع يدوي: تحوّل المبلغ بالطريقة المعروضة في الإعدادات، ثم تُدخل رقم العملية. تُراجع
+            الدفعة يدويًا، ويبدأ اشتراكك عند قبولها.
+          </li>
+          <li
+            data-ar="لا ندفع ولا نطلب الدفع إلا إلى الأرقام الظاهرة داخل إعدادات هامش. لن نطلب منك أبدًا الدفع إلى رقم آخر عبر اتصال أو رسالة. إن طلب منك أحد ذلك، فلا تدفع وتواصل معنا."
+            data-en="We only ever ask for payment to the numbers shown inside Hamesh Settings. We will never ask you, by call or message, to pay to any other number. If anyone does, do not pay, and contact us."
+          >
+            لا ندفع ولا نطلب الدفع إلا إلى الأرقام الظاهرة داخل إعدادات هامش. لن نطلب منك أبدًا
+            الدفع إلى رقم آخر عبر اتصال أو رسالة. إن طلب منك أحد ذلك، فلا تدفع وتواصل معنا.
+          </li>
+          <li
+            data-ar="الاشتراك لا يتجدّد تلقائيًا. عند انتهائه تصبح فرقك للقراءة فقط لمدة 14 يومًا، ثم تُقفل. يمكن حذف بيانات الفريق المقفل نهائيًا بعد 90 يومًا من قفله."
+            data-en="The subscription does not renew automatically. When it ends your teams become read-only for 14 days, then locked. A locked team&#x27;s data may be permanently deleted 90 days after it was locked."
+          >
+            الاشتراك لا يتجدّد تلقائيًا. عند انتهائه تصبح فرقك للقراءة فقط لمدة 14 يومًا، ثم تُقفل.
+            يمكن حذف بيانات الفريق المقفل نهائيًا بعد 90 يومًا من قفله.
+          </li>
+        </ul>
+
+        <h2 data-ar="الاسترداد" data-en="Refunds">الاسترداد</h2>
+        <ul>
+          <li
+            data-ar="يمكنك طلب استرداد كامل المبلغ خلال 14 يومًا من بدء اشتراكك، بشرط ألا تكون قد أنشأت فريقًا أو شاركت ملاحظة خلال هذه المدة."
+            data-en="You may ask for a full refund within 14 days of your subscription starting, provided you have not created a team or shared a note during that time."
+          >
+            يمكنك طلب استرداد كامل المبلغ خلال 14 يومًا من بدء اشتراكك، بشرط ألا تكون قد أنشأت
+            فريقًا أو شاركت ملاحظة خلال هذه المدة.
+          </li>
+          <li
+            data-ar="إن استخدمت الخدمة على هذا النحو، أو مرّت 14 يومًا، فلا يُسترد المبلغ، ويستمر الاشتراك حتى نهاية المدة المدفوعة."
+            data-en="If you have used the service in this way, or 14 days have passed, the payment is not refunded, and the subscription continues until the end of the paid period."
+          >
+            إن استخدمت الخدمة على هذا النحو، أو مرّت 14 يومًا، فلا يُسترد المبلغ، ويستمر الاشتراك
+            حتى نهاية المدة المدفوعة.
+          </li>
+          <li
+            data-ar="يُطلب الاسترداد بالبريد الإلكتروني أدناه، ويُرد المبلغ بالطريقة نفسها التي دُفع بها خلال 7 أيام من قبول الطلب."
+            data-en="Refunds are requested by email at the address below, and paid back by the method you paid with within 7 days of the request being accepted."
+          >
+            يُطلب الاسترداد بالبريد الإلكتروني أدناه، ويُرد المبلغ بالطريقة نفسها التي دُفع بها خلال
+            7 أيام من قبول الطلب.
+          </li>
+          <li
+            data-ar="إن أوقفنا فرق هامش نهائيًا، نرد الجزء غير المستخدم من أي مدة مدفوعة."
+            data-en="If we discontinue Hamesh Teams, we refund the unused part of any paid period."
+          >
+            إن أوقفنا فرق هامش نهائيًا، نرد الجزء غير المستخدم من أي مدة مدفوعة.
+          </li>
+        </ul>
+
+        <h2 data-ar="المحتوى الذي تشاركه" data-en="What you share">المحتوى الذي تشاركه</h2>
+        <ul>
+          <li
+            data-ar="ملاحظاتك وتعليقاتك ملكك. بمشاركتها مع فريق، تأذن لنا بتخزينها وعرضها لأعضاء ذلك الفريق فقط، بالقدر اللازم لتقديم الخدمة."
+            data-en="Your notes and comments remain yours. By sharing them with a team, you allow us to store them and show them to that team&#x27;s members only, as far as is needed to provide the service."
+          >
+            ملاحظاتك وتعليقاتك ملكك. بمشاركتها مع فريق، تأذن لنا بتخزينها وعرضها لأعضاء ذلك الفريق
+            فقط، بالقدر اللازم لتقديم الخدمة.
+          </li>
+          <li
+            data-ar="مشاركة ملاحظة ترفعها من جهازك إلى خوادمنا، ويراها كل أعضاء الفريق، وقد يحتفظون بنسخة منها على أجهزتهم."
+            data-en="Sharing a note uploads it from your device to our servers; every member of the team can see it, and may keep a copy of it on their own devices."
+          >
+            مشاركة ملاحظة ترفعها من جهازك إلى خوادمنا، ويراها كل أعضاء الفريق، وقد يحتفظون بنسخة
+            منها على أجهزتهم.
+          </li>
+          <li
+            data-ar="مالك الفريق ومشرفوه يتحكمون في من يدخل الفريق ومن يخرج منه، وفي ملاحظاته ومجلداته وفق صلاحياتهم."
+            data-en="A team&#x27;s owner and admins control who joins and leaves the team, and its notes and folders, according to their roles."
+          >
+            مالك الفريق ومشرفوه يتحكمون في من يدخل الفريق ومن يخرج منه، وفي ملاحظاته ومجلداته وفق
+            صلاحياتهم.
+          </li>
+        </ul>
+
+        <h2 data-ar="الاستخدام المقبول" data-en="Acceptable use">الاستخدام المقبول</h2>
+        <p
+          data-ar="عند استخدامك فرق هامش، لا يجوز لك:"
+          data-en="When using Hamesh Teams, you must not:"
+        >
+          عند استخدامك فرق هامش، لا يجوز لك:
+        </p>
+        <ul>
+          <li
+            data-ar="مشاركة محتوى مخالف للقانون، أو منتهك لحقوق الآخرين، أو مسيء أو مضلّل."
+            data-en="Share content that is unlawful, infringes others&#x27; rights, or is abusive or misleading."
+          >
+            مشاركة محتوى مخالف للقانون، أو منتهك لحقوق الآخرين، أو مسيء أو مضلّل.
+          </li>
+          <li
+            data-ar="مشاركة بيانات شخصية لغيرك دون أساس قانوني لذلك."
+            data-en="Share other people&#x27;s personal data without a lawful basis to do so."
+          >
+            مشاركة بيانات شخصية لغيرك دون أساس قانوني لذلك.
+          </li>
+          <li
+            data-ar="محاولة تجاوز الحماية أو الوصول إلى فرق أو بيانات لا تخصّك، أو إرهاق الخدمة بالطلبات."
+            data-en="Try to get around security, access teams or data that are not yours, or overload the service with requests."
+          >
+            محاولة تجاوز الحماية أو الوصول إلى فرق أو بيانات لا تخصّك، أو إرهاق الخدمة بالطلبات.
+          </li>
+          <li
+            data-ar="استخدام الخدمة لإرسال رسائل مزعجة أو احتيالية."
+            data-en="Use the service to send spam or for fraud."
+          >
+            استخدام الخدمة لإرسال رسائل مزعجة أو احتيالية.
+          </li>
+        </ul>
+        <p
+          data-ar="قد نعلّق أو نوقف حسابًا يخالف هذه الشروط."
+          data-en="We may suspend or close an account that breaks these terms."
+        >
+          قد نعلّق أو نوقف حسابًا يخالف هذه الشروط.
+        </p>
+
+        <h2 data-ar="توفّر الخدمة" data-en="Availability">توفّر الخدمة</h2>
+        <p
+          data-ar="نبذل جهدًا معقولًا لإبقاء فرق هامش متاحة وآمنة، لكنها تُقدَّم «كما هي» دون ضمان لعملها دون انقطاع أو أخطاء. قد نغيّر الخدمة أو نطوّرها، وسنعلن مسبقًا عن أي تغيير جوهري."
+          data-en='We make reasonable efforts to keep Hamesh Teams available and secure, but it is provided "as is", without a guarantee that it will run without interruption or error. We may change or improve the service, and will announce any significant change in advance.'
+        >
+          نبذل جهدًا معقولًا لإبقاء فرق هامش متاحة وآمنة، لكنها تُقدَّم «كما هي» دون ضمان لعملها دون
+          انقطاع أو أخطاء. قد نغيّر الخدمة أو نطوّرها، وسنعلن مسبقًا عن أي تغيير جوهري.
+        </p>
+
+        <h2 data-ar="حدود المسؤولية" data-en="Limitation of liability">حدود المسؤولية</h2>
+        <p
+          data-ar="بالقدر الذي يسمح به القانون، لا تتجاوز مسؤوليتنا تجاهك عن أي مطالبة تتعلق بفرق هامش ما دفعته لنا خلال الأشهر الثلاثة السابقة للمطالبة. لا يحدّ شيء في هذه الشروط من حقوقك التي لا يجوز التنازل عنها قانونًا."
+          data-en="To the extent the law allows, our liability to you for any claim relating to Hamesh Teams is limited to what you paid us in the three months before the claim. Nothing in these terms limits rights you have that cannot be waived by law."
+        >
+          بالقدر الذي يسمح به القانون، لا تتجاوز مسؤوليتنا تجاهك عن أي مطالبة تتعلق بفرق هامش ما
+          دفعته لنا خلال الأشهر الثلاثة السابقة للمطالبة. لا يحدّ شيء في هذه الشروط من حقوقك التي لا
+          يجوز التنازل عنها قانونًا.
+        </p>
+
+        <h2 data-ar="إنهاء الاستخدام" data-en="Ending your use">إنهاء الاستخدام</h2>
+        <p
+          data-ar="يمكنك التوقف عن استخدام فرق هامش في أي وقت من الإعدادات، وطلب حذف حسابك بالبريد الإلكتروني. ما شاركته مع فريق يبقى لأعضائه بعد مغادرتك، دون اسمك."
+          data-en="You can stop using Hamesh Teams at any time from Settings, and ask for your account to be deleted by email. What you shared with a team stays with its members after you leave, without your name."
+        >
+          يمكنك التوقف عن استخدام فرق هامش في أي وقت من الإعدادات، وطلب حذف حسابك بالبريد
+          الإلكتروني. ما شاركته مع فريق يبقى لأعضائه بعد مغادرتك، دون اسمك.
+        </p>
+
+        <h2 data-ar="القانون الحاكم" data-en="Governing law">القانون الحاكم</h2>
+        <p
+          data-ar="تخضع هذه الشروط لقوانين جمهورية مصر العربية، وتختص محاكم القاهرة بنظر أي نزاع ينشأ عنها، دون إخلال بحقوقك بموجب قانون حماية المستهلك."
+          data-en="These terms are governed by the laws of the Arab Republic of Egypt, and the courts of Cairo have jurisdiction over any dispute arising from them, without prejudice to your rights under consumer protection law."
+        >
+          تخضع هذه الشروط لقوانين جمهورية مصر العربية، وتختص محاكم القاهرة بنظر أي نزاع ينشأ عنها،
+          دون إخلال بحقوقك بموجب قانون حماية المستهلك.
+        </p>
+
+        <h2 data-ar="التغييرات على هذه الشروط" data-en="Changes to these terms">
+          التغييرات على هذه الشروط
+        </h2>
+        <p
+          data-ar="إن غيّرنا هذه الشروط، نحدّث تاريخ الإصدار أعلاه. لا يسري التغيير على مدة دفعتها بالفعل، وتظهر لك الشروط الجديدة لتوافق عليها عند دفعتك التالية."
+          data-en="If we change these terms, we update the version date above. A change does not apply to a period you have already paid for, and the new terms are shown to you to agree to at your next payment."
+        >
+          إن غيّرنا هذه الشروط، نحدّث تاريخ الإصدار أعلاه. لا يسري التغيير على مدة دفعتها بالفعل،
+          وتظهر لك الشروط الجديدة لتوافق عليها عند دفعتك التالية.
+        </p>
+
+        <h2 data-ar="التواصل" data-en="Contact">التواصل</h2>
+        <p
+          data-ar="للأسئلة، أو طلب الاسترداد، أو أي شكوى:"
+          data-en="For questions, refund requests, or any complaint:"
+        >
+          للأسئلة، أو طلب الاسترداد، أو أي شكوى:
+        </p>
+        <p><a href="mailto:mohammed.fandees@gmail.com">mohammed.fandees@gmail.com</a></p>
+      </div>
+    </main>
+
+    <footer>
+      <div class="wrap foot">
+        <svg class="mark" width="18" height="18" viewBox="0 0 32 32" aria-hidden="true">
+          <g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+            <path d="M10 5V27" />
+            <path d="M10 14H20" />
+            <path d="M20 10.5V17.5" />
+          </g>
+        </svg>
+        <span>هامش · Hamesh</span>
+        <span class="spacer"></span>
+        <a href="./privacy.html" data-ar="سياسة الخصوصية" data-en="Privacy Policy"
+          >سياسة الخصوصية</a
+        >
+        <a href="./index.html" data-ar="الرئيسية" data-en="Home">الرئيسية</a>
+      </div>
+    </footer>
+
+    <script>
+      (function () {
+        var html = document.documentElement;
+        var toggle = document.getElementById('langToggle');
+        var nodes = document.querySelectorAll('[data-ar]');
+
+        function apply(lang) {
+          var isAr = lang === 'ar';
+          html.lang = lang;
+          html.dir = isAr ? 'rtl' : 'ltr';
+          nodes.forEach(function (el) {
+            var val = el.getAttribute(isAr ? 'data-ar' : 'data-en');
+            if (val !== null) el.textContent = val;
+          });
+          toggle.textContent = isAr ? 'EN' : 'ع';
+          toggle.setAttribute('aria-pressed', String(!isAr));
+          toggle.setAttribute('aria-label', isAr ? 'Switch to English' : 'التبديل إلى العربية');
+          try {
+            localStorage.setItem('hamesh-lang', lang);
+          } catch (e) {}
+        }
+
+        var saved = null;
+        try {
+          saved = localStorage.getItem('hamesh-lang');
+        } catch (e) {}
+        if (saved === 'en') apply('en');
+
+        toggle.addEventListener('click', function () {
+          apply(html.lang === 'ar' ? 'en' : 'ar');
+        });
+      })();
+    </script>
+  </body>
+</html>
