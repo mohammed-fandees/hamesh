@@ -28,6 +28,8 @@ interface LibrarySettingsViewProps {
   teams?: TeamsClient | null;
   /** Opens the Teams page on a team just joined from here. */
   onOpenTeam?: (teamId: string) => void;
+  /** A panel to open and bring into view on arrival — the plan, from "Subscribe". */
+  focus?: 'plan' | null;
 }
 
 /**
@@ -50,6 +52,7 @@ export function LibrarySettingsView({
   backup,
   teams,
   onOpenTeam,
+  focus = null,
 }: LibrarySettingsViewProps) {
   const shortcuts = useShortcuts();
   /** Bumped by a dev sign-in, to remount the Teams card on the new account. */
@@ -142,7 +145,12 @@ export function LibrarySettingsView({
           )}
           {/* Joining a team and paying for one belong to the account, which
               is here — not to any one team's page. */}
-          <TeamsAccount lang={lang} client={teams} onJoined={(id) => onOpenTeam?.(id)} />
+          <TeamsAccount
+            lang={lang}
+            client={teams}
+            revealPlan={focus === 'plan'}
+            onJoined={(id) => onOpenTeam?.(id)}
+          />
         </>
       )}
 

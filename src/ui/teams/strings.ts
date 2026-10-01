@@ -142,6 +142,12 @@ export interface TeamsStrings extends SharedStrings {
 
   emptyTeamsTitle: string;
   emptyTeamsBody: string;
+  /** Founding a team is an owner's, and owners subscribe. */
+  needsPlanTitle: string;
+  needsPlanBody: string;
+  seePlan: string;
+  subscribeToCreate: string;
+  atTeamLimit: (allowed: number) => string;
   emptyNotesTitle: (team: string) => string;
   emptyNotesBody: (team: string) => string;
   goToLibrary: string;
@@ -179,9 +185,26 @@ export interface TeamsStrings extends SharedStrings {
   payWith: string;
   methodInstapay: string;
   methodVodafoneCash: string;
-  periods: string;
+  /** How many periods are paid for — months, when a period is a month. */
+  periodsLabel: (days: number) => string;
+  periodsCount: (count: number, days: number) => string;
+  fewerPeriods: string;
+  morePeriods: string;
+  total: (amount: string, count: string) => string;
+  howToPay: string;
+  payStepSend: (amount: string, method: string) => string;
+  payStepConfirm: string;
+  payStepReference: string;
+  paymentsClosed: string;
+  copyNumber: string;
+  referenceLabel: string;
   referencePlaceholder: string;
-  referenceHint: string;
+  /** Agreeing to the terms on a first payment; later ones are made under them. */
+  termsAgreeLead: string;
+  termsNoticeLead: string;
+  termsOfUse: string;
+  privacyPolicy: string;
+  termsAnd: string;
   submitPayment: string;
   paymentSubmitted: string;
   paymentHistory: string;
@@ -204,6 +227,14 @@ export interface TeamsStrings extends SharedStrings {
   checking: string;
   account: string;
   memberOf: (n: number) => string;
+}
+
+/** "شهر", "شهران", "3 أشهر", "11 شهرًا" — Arabic counts its months in four forms. */
+function arabicMonths(n: number): string {
+  if (n === 1) return 'شهر واحد';
+  if (n === 2) return 'شهران';
+  if (n >= 3 && n <= 10) return `${n} أشهر`;
+  return `${n} شهرًا`;
 }
 
 const en: TeamsOwnStrings = {
@@ -307,6 +338,13 @@ const en: TeamsOwnStrings = {
   emptyTeamsTitle: 'No teams yet',
   emptyTeamsBody:
     'A team is a place to put notes everyone can see. Make one, or join with a link somebody sent you.',
+  needsPlanTitle: 'Creating a team needs a subscription',
+  needsPlanBody:
+    'The person who creates a team subscribes; the people they invite do not. You can still join a team with a link someone sent you.',
+  seePlan: 'See the plan',
+  subscribeToCreate: 'Subscribe to create a team',
+  atTeamLimit: (allowed) =>
+    `Your plan allows ${allowed} ${allowed === 1 ? 'team' : 'teams'} of your own, and you have them all.`,
   emptyNotesTitle: (team) => `Nothing in ${team} yet`,
   emptyNotesBody: (team) =>
     `Open a note in your Library and choose ${team}. It will appear on the page it belongs to, for everyone here.`,
@@ -339,14 +377,32 @@ const en: TeamsOwnStrings = {
   planPending: 'Waiting for your payment to be checked',
   planExpired: 'Expired',
   planCanceled: 'Cancelled — the paid period is still yours',
-  price: (amount, days) => `${amount} every ${days} days`,
+  price: (amount, days) => (days === 30 ? `${amount} a month` : `${amount} every ${days} days`),
   payWith: 'Pay with',
   methodInstapay: 'InstaPay',
   methodVodafoneCash: 'Vodafone Cash',
-  periods: 'Periods',
+  periodsLabel: (days) => (days === 30 ? 'Months' : `Periods of ${days} days`),
+  periodsCount: (count, days) =>
+    days === 30
+      ? `${count} ${count === 1 ? 'month' : 'months'}`
+      : `${count} ${count === 1 ? 'period' : 'periods'}`,
+  fewerPeriods: 'One less',
+  morePeriods: 'One more',
+  total: (amount, count) => `Total: ${amount} for ${count}`,
+  howToPay: 'How to pay',
+  payStepSend: (amount, method) => `Send ${amount} by ${method} to`,
+  payStepConfirm: 'Send a screenshot of the transfer on WhatsApp to',
+  payStepReference:
+    'Enter the transaction reference below and submit. Your subscription starts once the payment has been checked.',
+  paymentsClosed: 'Payments are not open right now.',
+  copyNumber: 'Copy',
+  referenceLabel: 'Transaction reference',
   referencePlaceholder: 'Transaction reference…',
-  referenceHint:
-    'Pay first, then put the reference from your bank or wallet here. Someone checks it by hand.',
+  termsAgreeLead: 'I have read and agree to the',
+  termsNoticeLead: 'Payments are made under the',
+  termsOfUse: 'Terms of Use',
+  privacyPolicy: 'Privacy Policy',
+  termsAnd: 'and the',
   submitPayment: 'Submit payment',
   paymentSubmitted: 'Submitted. You will see it below once it has been checked.',
   paymentHistory: 'Payments',
@@ -533,6 +589,13 @@ const ar: TeamsOwnStrings = {
   emptyTeamsTitle: '\u0644\u0627 \u062a\u0648\u062c\u062f \u0641\u0631\u0642 \u0628\u0639\u062f',
   emptyTeamsBody:
     '\u0627\u0644\u0641\u0631\u064a\u0642 \u0645\u0643\u0627\u0646 \u0644\u0645\u0644\u0627\u062d\u0638\u0627\u062a \u064a\u0631\u0627\u0647\u0627 \u0627\u0644\u062c\u0645\u064a\u0639. \u0623\u0646\u0634\u0626 \u0648\u0627\u062d\u062f\u064b\u0627\u060c \u0623\u0648 \u0627\u0646\u0636\u0645 \u0628\u0631\u0627\u0628\u0637 \u0623\u0631\u0633\u0644\u0647 \u0644\u0643 \u0623\u062d\u062f\u0647\u0645.',
+  needsPlanTitle: 'إنشاء فريق يحتاج اشتراكًا',
+  needsPlanBody:
+    'الاشتراك على من ينشئ الفريق، ولا يحتاجه من يدعوهم. وما زال بإمكانك الانضمام إلى فريق برابط أرسله لك أحد.',
+  seePlan: 'عرض الخطة',
+  subscribeToCreate: 'اشترك لتنشئ فريقًا',
+  atTeamLimit: (allowed) =>
+    `خطتك تسمح بـ${allowed} ${allowed <= 10 && allowed >= 3 ? 'فرق' : 'فريق'} خاصة بك، وقد أنشأتها كلها.`,
   emptyNotesTitle: (team) =>
     `\u0644\u0627 \u0634\u064a\u0621 \u0641\u064a ${team} \u0628\u0639\u062f`,
   emptyNotesBody: (team) =>
@@ -574,13 +637,28 @@ const ar: TeamsOwnStrings = {
   planPending: 'في انتظار مراجعة دفعتك',
   planExpired: 'منتهٍ',
   planCanceled: 'مُلغى — المدة المدفوعة تبقى لك',
-  price: (amount, days) => `${amount} كل ${days} يومًا`,
+  price: (amount, days) => (days === 30 ? `${amount} شهريًا` : `${amount} كل ${days} يومًا`),
   payWith: 'ادفع عبر',
   methodInstapay: 'إنستا باي',
   methodVodafoneCash: 'فودافون كاش',
-  periods: 'عدد المدد',
+  periodsLabel: (days) => (days === 30 ? 'عدد الشهور' : `عدد المدد (${days} يومًا)`),
+  periodsCount: (count, days) => (days === 30 ? arabicMonths(count) : `${count} × ${days} يومًا`),
+  fewerPeriods: 'أقل بواحد',
+  morePeriods: 'أكثر بواحد',
+  total: (amount, count) => `الإجمالي: ${amount} عن ${count}`,
+  howToPay: 'طريقة الدفع',
+  payStepSend: (amount, method) => `حوّل ${amount} عبر ${method} إلى`,
+  payStepConfirm: 'أرسل صورة التحويل على واتساب إلى',
+  payStepReference: 'اكتب رقم العملية بالأسفل وأرسله. يبدأ اشتراكك بعد مراجعة الدفعة.',
+  paymentsClosed: 'الدفع غير متاح حاليًا.',
+  copyNumber: 'نسخ',
+  referenceLabel: 'رقم العملية',
   referencePlaceholder: 'رقم العملية…',
-  referenceHint: 'ادفع أولًا، ثم ضع رقم العملية من بنكك أو محفظتك هنا. تُراجع الدفعة يدويًا.',
+  termsAgreeLead: 'قرأت وأوافق على',
+  termsNoticeLead: 'الدفع يتم وفق',
+  termsOfUse: 'شروط الاستخدام',
+  privacyPolicy: 'سياسة الخصوصية',
+  termsAnd: 'و',
   submitPayment: 'إرسال الدفعة',
   paymentSubmitted: 'أُرسلت. ستظهر بالأسفل بعد مراجعتها.',
   paymentHistory: 'المدفوعات',

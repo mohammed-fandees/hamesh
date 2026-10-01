@@ -73,7 +73,12 @@ function fakeClient(overrides: Partial<Record<TeamsOpName, unknown>> = {}, signe
           limits: { ownedTeams: 3, membersPerTeam: 10, notesPerTeam: 5000 },
         },
       ],
-      methods: ['instapay', 'vodafone_cash'],
+      payment: { accounts: [{ method: 'instapay', account: '01000000000' }], confirm: null },
+      terms: {
+        version: '2026-10-01',
+        termsUrl: 'https://hamesh.example/terms.html',
+        privacyUrl: 'https://hamesh.example/privacy.html',
+      },
     },
     'billing.payments': { payments: [] },
     ...overrides,
@@ -101,6 +106,8 @@ function fakeClient(overrides: Partial<Record<TeamsOpName, unknown>> = {}, signe
 
 /** Sharing and unsharing, which the page asks the library to carry out. */
 const personal = { forget: vi.fn(async () => {}), keep: vi.fn(async () => {}) };
+/** Where "Subscribe" leads: the plan, in Settings. */
+const openPlan = vi.fn();
 
 beforeEach(() => {
   vi.spyOn(window, 'confirm').mockReturnValue(true);
@@ -128,6 +135,7 @@ function Harness({
       lang="en"
       client={client}
       onOpenSettings={onOpenSettings}
+      onOpenPlan={openPlan}
       onOpenLibrary={onOpenLibrary}
       personal={personal}
       route={route}
@@ -433,5 +441,42 @@ describe('the Teams page', () => {
     client.request = vi.fn(async () => ({ ok: false, error: 'team_locked' })) as never;
     render_(client);
     expect(await screen.findByText(strings.error('team_locked'))).toBeInTheDocument();
+  });
+});
+
+describe('founding a team is an owner’s, and owners subscribe', () => {
+  /** The same reader, with the given access and teams. */
+  function signedInAs(entitlement: typeof me.entitlement | object, teams = me.teams) {
+    const { client } = fakeClient();
+    client.send = vi.fn(async () => ({
+      status: { state: 'signed_in', me: { ...me, entitlement, teams } },
+    })) as never;
+    return client;
+  }
+  const NONE = { state: 'none', plan: null, until: null, limits: null, sources: [] };
+
+  it('says so before a team is named, and leads to the plan', async () => {
+    render_(signedInAs(NONE, []));
+    expect(await screen.findByText(strings.needsPlanTitle)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: strings.createTeam })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: strings.seePlan }));
+    expect(openPlan).toHaveBeenCalled();
+  });
+
+  it('offers a member of someone else’s team the way to the plan, not a name field', async () => {
+    render_(signedInAs(NONE, [{ id: TEAM, name: 'Alpha', role: 'member' }]));
+    const subscribe = await screen.findByRole('button', { name: strings.subscribeToCreate });
+    fireEvent.click(subscribe);
+    expect(openPlan).toHaveBeenCalled();
+  });
+
+  it('says the plan’s limit is reached instead of offering a team it cannot have', async () => {
+    const atLimit = {
+      ...me.entitlement,
+      limits: { ...me.entitlement.limits, ownedTeams: 1 },
+    };
+    render_(signedInAs(atLimit));
+    expect(await screen.findByText(strings.atTeamLimit(1))).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: strings.createTeam })).not.toBeInTheDocument();
   });
 });

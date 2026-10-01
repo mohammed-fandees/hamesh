@@ -1,4 +1,5 @@
-import { useId, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { revealElement } from '@/utils/dom';
 
 interface SectionProps {
   /** Absent for a card that needs no name to say what it holds. */
@@ -53,6 +54,8 @@ interface PanelProps {
   /** Said beside the title, so the panel can be judged without opening it. */
   hint?: string;
   intro?: ReactNode;
+  /** Open it and bring it into view on arrival — the reader was sent here for it. */
+  reveal?: boolean;
   children: ReactNode;
 }
 
@@ -62,9 +65,31 @@ interface PanelProps {
  * column with everything in it open. The same card as `Section`, as a native
  * disclosure: keyboard and screen readers get it for free.
  */
-export function Panel({ title, hint, intro, children }: PanelProps) {
+export function Panel({ title, hint, intro, reveal = false, children }: PanelProps) {
+  const ref = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const panel = ref.current;
+    if (!reveal || !panel) return;
+    panel.open = true;
+    // Its top, not its middle — and again as what it holds arrives and it grows,
+    // for a moment only, and never once the reader has scrolled themselves.
+    const align = () => revealElement(panel, 'start');
+    align();
+    const grows = new ResizeObserver(align);
+    grows.observe(panel);
+    const stop = () => grows.disconnect();
+    const timer = window.setTimeout(stop, 2000);
+    window.addEventListener('wheel', stop, { once: true, passive: true });
+    window.addEventListener('keydown', stop, { once: true });
+    return () => {
+      stop();
+      window.clearTimeout(timer);
+      window.removeEventListener('wheel', stop);
+      window.removeEventListener('keydown', stop);
+    };
+  }, [reveal]);
   return (
-    <details className="hm-panel">
+    <details ref={ref} className="hm-panel">
       <summary className="hm-panel__summary">
         {/* A heading, as every card's title is, so the page's outline is the
             same whether a card is open or shut. */}

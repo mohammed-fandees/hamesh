@@ -33,7 +33,18 @@ const plans = {
       limits: { ownedTeams: 3, membersPerTeam: 10, notesPerTeam: 5000 },
     },
   ],
-  methods: ['instapay', 'vodafone_cash'],
+  payment: {
+    accounts: [
+      { method: 'instapay', account: '01000000000' },
+      { method: 'vodafone_cash', account: '01111111111' },
+    ],
+    confirm: { whatsapp: '+201222222222' },
+  },
+  terms: {
+    version: '2026-10-01',
+    termsUrl: 'https://hamesh.example/terms.html',
+    privacyUrl: 'https://hamesh.example/privacy.html',
+  },
 };
 
 /** A client whose answers a test steers, recording what was asked. */
@@ -122,25 +133,60 @@ describe('the account’s own half of Teams, in Settings', () => {
     expect(calls.some((c) => c.op === 'invites.preview')).toBe(false);
   });
 
-  it('shows the price the server sent, and submits a payment reference', async () => {
+  it('shows the price, the total, and where to pay — all of it the server’s', async () => {
+    const { client } = fakeClient();
+    view(client);
+
+    // Nothing about the amount or the account is written into the extension.
+    expect((await screen.findAllByText(/450/)).length).toBeGreaterThan(0);
+    expect(screen.getByText('01000000000')).toBeInTheDocument();
+    expect(screen.getByText('+201222222222').closest('a')).toHaveAttribute(
+      'href',
+      'https://wa.me/201222222222',
+    );
+
+    // Months, and the total they come to, said as the reader changes them.
+    fireEvent.click(screen.getByRole('button', { name: strings.morePeriods }));
+    // The step that says what to send now says the new total, too.
+    expect(screen.getAllByText(/900/).length).toBe(2);
+    expect(screen.getByText(new RegExp(strings.periodsCount(2, 30)))).toBeInTheDocument();
+  });
+
+  it('asks for agreement to the terms on a first payment, and sends their version', async () => {
     const { client, calls } = fakeClient({
       'billing.submit': { payment: { id: '1', status: 'pending' } },
     });
     view(client);
 
-    // The amount and currency are the server's; nothing about them is written
-    // into the extension.
-    expect(await screen.findByText(/450/)).toBeInTheDocument();
-
-    fireEvent.change(screen.getByPlaceholderText(strings.referencePlaceholder), {
+    fireEvent.change(await screen.findByPlaceholderText(strings.referencePlaceholder), {
       target: { value: 'REF-9' },
     });
-    fireEvent.click(screen.getByRole('button', { name: strings.submitPayment }));
+    const pay = screen.getByRole('button', { name: strings.submitPayment });
+    expect(pay, 'not before the terms are agreed to').toBeDisabled();
+    expect(screen.getByRole('link', { name: strings.termsOfUse })).toHaveAttribute(
+      'href',
+      'https://hamesh.example/terms.html',
+    );
+
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(pay);
 
     await waitFor(() => expect(calls.some((c) => c.op === 'billing.submit')).toBe(true));
     expect(calls.find((c) => c.op === 'billing.submit')!.params).toMatchObject({
       planCode: 'teams',
+      method: 'instapay',
       reference: 'REF-9',
+      periods: 1,
+      termsVersion: '2026-10-01',
     });
+  });
+
+  it('says payments are closed when the server offers no account to pay', async () => {
+    const { client } = fakeClient({
+      'billing.plans': { ...plans, payment: { accounts: [], confirm: null } },
+    });
+    view(client);
+    expect(await screen.findByText(strings.paymentsClosed)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: strings.submitPayment })).not.toBeInTheDocument();
   });
 });

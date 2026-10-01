@@ -69,11 +69,11 @@ export function getElementPosition(element: Element): {
  */
 export const RESTORE_FLASH_MS = 1400;
 
-/** Brings an element to the middle of the view — smoothly, unless the reader
+/** Brings an element into view (its middle, unless told otherwise) — smoothly, unless the reader
  *  asked for less motion. The one way Hamesh scrolls a web page. */
-export function revealElement(element: Element): void {
+export function revealElement(element: Element, block: ScrollLogicalPosition = 'center'): void {
   const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
-  element.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
+  element.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block });
 }
 
 /** The element under a point on the page, or `null` — never a throw, which
