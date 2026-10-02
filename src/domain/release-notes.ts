@@ -37,6 +37,25 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    version: '2.1.0',
+    date: '2026-10-02',
+    title: { en: 'Choose your plan', ar: 'اختر خطتك' },
+    items: [
+      {
+        en: 'Settings → Teams → Plan now shows every plan on offer: what each is for, what it allows, and its price. Your current plan is marked.',
+        ar: 'الإعدادات ← الفرق ← الاشتراك تعرض الآن كل الخطط المتاحة: لمن كل خطة، وما تتيحه، وسعرها. وخطتك الحالية عليها علامة.',
+      },
+      {
+        en: 'When a plan is on offer for a limited time, you see the old price, how much is off, and until when.',
+        ar: 'وحين يكون على خطة خصم لفترة محدودة، ترى السعر القديم، وقيمة الخصم، وحتى متى يستمر.',
+      },
+      {
+        en: 'Pay from any mobile wallet beside InstaPay: Vodafone Cash, Etisalat Cash, Orange Cash or WE Pay.',
+        ar: 'ادفع من أي محفظة إلكترونية بجانب إنستا باي: فودافون كاش أو اتصالات كاش أو أورنج كاش أو وي باي.',
+      },
+    ],
+  },
+  {
     version: '2.0.0',
     date: '2026-10-01',
     title: { en: 'Hamesh Teams', ar: 'فرق هامش' },
