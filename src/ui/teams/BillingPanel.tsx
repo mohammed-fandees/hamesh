@@ -111,7 +111,8 @@ export function BillingPanel({ strings, lang, page, me }: BillingPanelProps) {
   const first = payments !== null && payments.length === 0;
 
   const methodLabel = (m: PaymentMethod) =>
-    m === 'vodafone_cash' ? strings.methodVodafoneCash : strings.methodInstapay;
+    // `vodafone_cash` is the wire's name for any mobile wallet.
+    m === 'vodafone_cash' ? strings.methodWallet : strings.methodInstapay;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -318,6 +319,9 @@ export function BillingPanel({ strings, lang, page, me }: BillingPanelProps) {
                   >
                     {copied ? strings.copied : strings.copyNumber}
                   </button>
+                  {method === 'vodafone_cash' && (
+                    <span className="hm-pay-steps__hint">{strings.walletHint}</span>
+                  )}
                 </li>
                 {plans.payment.confirm && (
                   <li>

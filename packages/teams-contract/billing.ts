@@ -8,6 +8,12 @@ import { z } from 'zod';
  * the price, the amount and everything else from its own records.
  */
 
+/**
+ * How a payment was sent. `vodafone_cash` means any Egyptian mobile wallet —
+ * Vodafone Cash, Etisalat Cash, Orange Cash and WE Pay all send to one another,
+ * so one wallet number takes them all. The name is kept because 2.0.0 clients
+ * and stored payments already carry it.
+ */
 export const PAYMENT_METHODS = ['instapay', 'vodafone_cash'] as const;
 export const PaymentMethod = z.enum(PAYMENT_METHODS);
 export type PaymentMethod = z.infer<typeof PaymentMethod>;
