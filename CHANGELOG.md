@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.1.0] — 2026-10-02
+
 ### Added
 
 - **A choice of plan.** Settings → Teams → Plan lists every plan on offer, each with its name,
