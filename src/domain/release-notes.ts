@@ -37,8 +37,8 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
-    version: '2.1.0',
-    date: '2026-10-02',
+    version: '2.0.1',
+    date: '2026-10-03',
     title: { en: 'Choose your plan', ar: 'اختر خطتك' },
     items: [
       {
