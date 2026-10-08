@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { CheckIcon, ChevronIcon } from './icons';
+import { anchorBelow, fitPanel, type PanelPosition } from './select-placement';
 
 export interface SelectOption {
   value: string;
@@ -29,32 +30,6 @@ interface SelectProps {
   label: string;
   className?: string;
   disabled?: boolean;
-}
-
-interface PanelPosition {
-  top: number;
-  left: number;
-  width: number;
-}
-
-/** Below the trigger, as wide as it. */
-function anchorTo(trigger: HTMLElement): PanelPosition {
-  const rect = trigger.getBoundingClientRect();
-  return { top: rect.bottom + 4, left: rect.left, width: rect.width };
-}
-
-/** Back on-screen once the list's real size is known: above the trigger when
- *  there is no room below, and clamped sideways when it is wider than the trigger. */
-function clampToViewport(position: PanelPosition, panel: HTMLElement, trigger: HTMLElement) {
-  const size = panel.getBoundingClientRect();
-  const from = trigger.getBoundingClientRect();
-  const margin = 4;
-  let { top, left } = position;
-  if (from.bottom + margin + size.height > window.innerHeight && from.top > size.height + margin) {
-    top = from.top - size.height - margin;
-  }
-  left = Math.max(margin, Math.min(left, window.innerWidth - margin - size.width));
-  return { ...position, top, left };
 }
 
 /**
@@ -114,15 +89,26 @@ export function Select({ options, value, onChange, label, className, disabled }:
   useLayoutEffect(() => {
     const trigger = triggerRef.current;
     if (!open || !trigger) return;
-    setPosition(anchorTo(trigger));
+    setPosition(anchorBelow(trigger.getBoundingClientRect()));
     setPortal(trigger.closest('.hm-scope') ?? document.body);
   }, [open]);
 
   // Then clamped with the list's real size, before any paint.
   useLayoutEffect(() => {
     if (!open || !position || !panelRef.current || !triggerRef.current) return;
-    const clamped = clampToViewport(position, panelRef.current, triggerRef.current);
-    if (clamped.top !== position.top || clamped.left !== position.left) setPosition(clamped);
+    const fitted = fitPanel(
+      position,
+      panelRef.current.getBoundingClientRect(),
+      triggerRef.current.getBoundingClientRect(),
+      { width: window.innerWidth, height: window.innerHeight },
+    );
+    if (
+      fitted.top !== position.top ||
+      fitted.left !== position.left ||
+      fitted.maxHeight !== position.maxHeight
+    ) {
+      setPosition(fitted);
+    }
   }, [open, position]);
 
   // The option being pointed at stays in view.
@@ -151,7 +137,7 @@ export function Select({ options, value, onChange, label, className, disabled }:
       if (!trigger) return;
       const rect = trigger.getBoundingClientRect();
       if (rect.bottom < 0 || rect.top > window.innerHeight) close();
-      else setPosition(anchorTo(trigger));
+      else setPosition(anchorBelow(trigger.getBoundingClientRect()));
     };
     document.addEventListener('pointerdown', onPointerDown);
     document.addEventListener('scroll', onScroll, { capture: true, passive: true });
@@ -217,7 +203,13 @@ export function Select({ options, value, onChange, label, className, disabled }:
   }
 
   const style: CSSProperties | undefined = position
-    ? { position: 'fixed', top: position.top, left: position.left, minWidth: position.width }
+    ? {
+        position: 'fixed',
+        top: position.top,
+        left: position.left,
+        minWidth: position.width,
+        ...(position.maxHeight !== undefined ? { maxHeight: position.maxHeight } : {}),
+      }
     : undefined;
 
   return (
