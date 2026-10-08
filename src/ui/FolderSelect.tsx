@@ -1,14 +1,6 @@
 import type { FolderLike } from '@/domain/folder';
 import type { FlatFolder } from '@/domain/folder-grouping';
-
-/** One step of nesting inside a native `<select>`, which draws no indentation
- *  of its own: three no-break spaces, which — unlike ordinary spaces — are not
- *  collapsed, so a folder inside a folder really does sit further in. */
-const INDENT = '\u00A0\u00A0\u00A0';
-
-export function folderOptionLabel(name: string, depth: number): string {
-  return INDENT.repeat(depth) + name;
-}
+import { Select, type SelectOption } from './kit/Select';
 
 interface FolderSelectProps<T extends FolderLike> {
   /** Every folder, parents before children (`flattenFolderTree`). */
@@ -26,11 +18,9 @@ interface FolderSelectProps<T extends FolderLike> {
 }
 
 /**
- * Choosing a folder from a native `<select>` — for a note being written, and
- * for a team's note being filed. The browser's own list is the one that can
- * never be clipped by a card or covered by a web page, and it is fully
- * keyboard- and screen-reader-operable for free. Folders are personal ones or a
- * team's alike: both are shaped the same here.
+ * Choosing a folder — for a note being written, and for a team's note being
+ * filed. A folder inside a folder sits one step further in. Folders are
+ * personal ones or a team's alike: both are shaped the same here.
  */
 export function FolderSelect<T extends FolderLike>({
   folders,
@@ -42,27 +32,27 @@ export function FolderSelect<T extends FolderLike>({
   className,
   disabled,
 }: FolderSelectProps<T>) {
+  const options: SelectOption[] = [
+    { value: '', label: noneLabel },
+    ...folders.map(({ folder, depth }) => ({ value: folder.id, label: folder.name, depth })),
+    ...(extra
+      ? [{ value: extra.value, label: extra.label, separated: true, tone: 'accent' as const }]
+      : []),
+  ];
   return (
-    <select
-      className={className ? `hm-input ${className}` : 'hm-input'}
-      aria-label={label}
+    <Select
+      options={options}
       value={value ?? ''}
-      disabled={disabled}
-      onChange={(e) => {
-        if (extra && e.target.value === extra.value) {
+      label={label}
+      {...(className ? { className } : {})}
+      {...(disabled ? { disabled } : {})}
+      onChange={(next) => {
+        if (extra && next === extra.value) {
           extra.onSelect();
           return;
         }
-        onChange(e.target.value || null);
+        onChange(next || null);
       }}
-    >
-      <option value="">{noneLabel}</option>
-      {folders.map(({ folder, depth }) => (
-        <option key={folder.id} value={folder.id}>
-          {folderOptionLabel(folder.name, depth)}
-        </option>
-      ))}
-      {extra && <option value={extra.value}>{extra.label}</option>}
-    </select>
+    />
   );
 }

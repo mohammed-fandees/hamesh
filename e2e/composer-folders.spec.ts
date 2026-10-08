@@ -100,16 +100,22 @@ async function emptyMargin(page: Page): Promise<{ x: number; y: number }> {
 }
 
 const folderSelect = (page: Page) => page.getByRole('combobox', { name: 'Folder' });
+
+/** Opens the folder list and presses one of its options, as a person does. */
+async function chooseFolder(page: Page, name: string) {
+  await folderSelect(page).click();
+  await page.getByRole('option', { name, exact: true }).click();
+}
 const star = (page: Page) => page.getByRole('button', { name: 'Default folder' });
 
 async function createFolderFromComposer(page: Page, name: string): Promise<void> {
   const emptyState = page.getByRole('button', { name: 'Create folder' });
   if (await emptyState.isVisible()) await emptyState.click();
-  else await folderSelect(page).selectOption({ label: '+ New folder…' });
+  else await chooseFolder(page, '+ New folder…');
   const input = page.getByRole('textbox', { name: 'New folder' });
   await input.fill(name);
   await input.press('Enter');
-  await expect(folderSelect(page).locator('option:checked')).toHaveText(name);
+  await expect(folderSelect(page)).toHaveText(name);
 }
 
 test.describe('Composer — closing it', () => {
@@ -216,24 +222,24 @@ test.describe('Composer — choosing a folder', () => {
     await createFolderFromComposer(first, 'Reading');
 
     // Work → default for this page only.
-    await folderSelect(first).selectOption({ label: 'Work' });
+    await chooseFolder(first, 'Work');
     await star(first).click();
     await first.getByRole('checkbox', { name: 'Default for this page' }).check();
     await save(first, 'First note on page one');
 
     // Reopened on the same page: Work, and the composer says why.
     await openComposer(first);
-    await expect(folderSelect(first).locator('option:checked')).toHaveText('Work');
+    await expect(folderSelect(first)).toHaveText('Work');
     await expect(first.locator('.hm-folder-picker__caption')).toHaveText('Default for this page');
     await first.getByRole('button', { name: 'Cancel' }).click();
 
     // A different page is untouched by that page default.
     const second = await openPage(context, `${server.origin}/other.html`);
     await openComposer(second);
-    await expect(folderSelect(second)).toHaveValue('');
+    await expect(folderSelect(second)).toHaveText('No folder');
 
     // Reading → default for all pages.
-    await folderSelect(second).selectOption({ label: 'Reading' });
+    await chooseFolder(second, 'Reading');
     await star(second).click();
     await second.getByRole('checkbox', { name: 'Default for all pages' }).check();
     await save(second, 'Note on page two');
@@ -242,13 +248,13 @@ test.describe('Composer — choosing a folder', () => {
     await first.reload();
     await waitForHameshReady(first);
     await openComposer(first);
-    await expect(folderSelect(first).locator('option:checked')).toHaveText('Work');
+    await expect(folderSelect(first)).toHaveText('Work');
     await first.getByRole('button', { name: 'Cancel' }).click();
 
     // …while any other page now starts in Reading.
     const third = await openPage(context, `${server.origin}/third.html`);
     await openComposer(third);
-    await expect(folderSelect(third).locator('option:checked')).toHaveText('Reading');
+    await expect(folderSelect(third)).toHaveText('Reading');
     await third.getByRole('button', { name: 'Cancel' }).click();
 
     // Clearing page one's default hands it back to the global default.
@@ -257,7 +263,7 @@ test.describe('Composer — choosing a folder', () => {
     await first.getByRole('checkbox', { name: 'Default for this page' }).uncheck();
     await first.getByRole('button', { name: 'Cancel' }).click();
     await openComposer(first);
-    await expect(folderSelect(first).locator('option:checked')).toHaveText('Reading');
+    await expect(folderSelect(first)).toHaveText('Reading');
   });
 });
 

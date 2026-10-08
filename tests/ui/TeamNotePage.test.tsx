@@ -4,6 +4,7 @@ import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/re
 import '@testing-library/jest-dom/vitest';
 import { TeamNotePage } from '@/ui/teams/TeamNotePage';
 import { getTeamsStrings } from '@/ui/teams/strings';
+import { chooseOption } from './select-helpers';
 import type { TeamsPage } from '@/ui/teams/useTeams';
 import type { CachedTeamNote } from '@/teams/page-cache';
 import type { TeamAction, TeamResponse } from '@hamesh/teams-contract';
@@ -149,7 +150,7 @@ describe('one shared note', () => {
     view(page);
     await screen.findByText('my shared thought');
 
-    fireEvent.change(await screen.findByRole('combobox'), { target: { value: FOLDER } });
+    chooseOption(await screen.findByRole('combobox'), 'Reading');
     await waitFor(() => expect(calls.some((c) => c.op === 'notes.update')).toBe(true));
     expect(calls.find((c) => c.op === 'notes.update')!.params).toEqual({
       teamId: TEAM,

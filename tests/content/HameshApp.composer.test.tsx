@@ -10,6 +10,7 @@ import type { Note } from '@/domain/note';
 import type { Folder } from '@/domain/folder';
 import { DEFAULT_PREFERENCES, type Preferences } from '@/domain/preferences';
 import { generatePageKey } from '@/domain/page-key';
+import { chooseOption } from '../ui/select-helpers';
 
 /**
  * The composer's own lifecycle inside the real content-side app: what
@@ -301,7 +302,7 @@ describe('HameshApp — the folder a new note is filed into', () => {
     });
     await openComposer(activateText);
     await waitFor(() =>
-      expect(screen.getByRole('combobox', { name: 'Folder' })).toHaveValue('f-work'),
+      expect(screen.getByRole('combobox', { name: 'Folder' })).toHaveTextContent(/^Work$/),
     );
 
     await saveNote(activateText, 'Filed by page default');
@@ -316,14 +317,16 @@ describe('HameshApp — the folder a new note is filed into', () => {
     });
     await openComposer(activateText);
     await waitFor(() =>
-      expect(screen.getByRole('combobox', { name: 'Folder' })).toHaveValue('f-reading'),
+      expect(screen.getByRole('combobox', { name: 'Folder' })).toHaveTextContent(/^Reading$/),
     );
   });
 
   it('preselects nothing, and saves unfiled, when no default is set', async () => {
     const { activateText, repo } = renderApp({ foldersRepo: makeFoldersRepo([WORK, READING]) });
     await openComposer(activateText);
-    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Folder' })).toHaveValue(''));
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', { name: 'Folder' })).toHaveTextContent(/^No folder$/),
+    );
 
     await saveNote(activateText, 'Unfiled');
     await waitFor(() => expect(repo.create).toHaveBeenCalledTimes(1));
@@ -338,8 +341,8 @@ describe('HameshApp — the folder a new note is filed into', () => {
     });
     await openComposer(activateText);
     const select = await screen.findByRole('combobox', { name: 'Folder' });
-    await waitFor(() => expect(select.querySelectorAll('option').length).toBeGreaterThan(2));
-    fireEvent.change(select, { target: { value: 'f-work' } });
+    // The folders arrive from storage after the composer opens.
+    await waitFor(() => chooseOption(select, 'Work'));
     fireEvent.click(screen.getByRole('button', { name: 'Default folder' }));
     fireEvent.click(screen.getByRole('checkbox', { name: 'Default for this page' }));
 
@@ -363,8 +366,8 @@ describe('HameshApp — the folder a new note is filed into', () => {
     });
     await openComposer(activateText);
     const select = await screen.findByRole('combobox', { name: 'Folder' });
-    await waitFor(() => expect(select.querySelectorAll('option').length).toBeGreaterThan(2));
-    fireEvent.change(select, { target: { value: 'f-work' } });
+    // The folders arrive from storage after the composer opens.
+    await waitFor(() => chooseOption(select, 'Work'));
     fireEvent.click(screen.getByRole('button', { name: 'Default folder' }));
     fireEvent.click(screen.getByRole('checkbox', { name: 'Default for this page' }));
 
@@ -386,7 +389,7 @@ describe('HameshApp — the folder a new note is filed into', () => {
     fireEvent.keyDown(name, { key: 'Enter' });
 
     await waitFor(() =>
-      expect(screen.getByRole('combobox', { name: 'Folder' })).toHaveValue('f-new'),
+      expect(screen.getByRole('combobox', { name: 'Folder' })).toHaveTextContent(/^Research$/),
     );
     expect(foldersRepo.create).toHaveBeenCalledWith({ name: 'Research' });
 
