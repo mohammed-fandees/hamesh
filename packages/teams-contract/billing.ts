@@ -22,7 +22,12 @@ export const PAYMENT_STATUSES = ['pending', 'approved', 'rejected', 'refunded'] 
 export const PaymentStatus = z.enum(PAYMENT_STATUSES);
 export type PaymentStatus = z.infer<typeof PaymentStatus>;
 
-/** What a plan costs and allows. Everything here is server data, never client input. */
+/**
+ * What a plan costs and allows. Everything here is server data, never client input.
+ *
+ * A **free** plan has `amountMinor` 0 and is claimed with `ClaimFreePlanRequest`
+ * rather than paid for. It is only ever listed by `GET /v1/plans?v=3`.
+ */
 export const PlanOffer = z.strictObject({
   code: z.string(),
   price: z.strictObject({
@@ -129,6 +134,31 @@ export const PlansResponseV2 = PlansResponse.extend({
   plans: z.array(PlanOfferV2),
 });
 export type PlansResponseV2 = z.infer<typeof PlansResponseV2>;
+
+/**
+ * GET /v1/plans?v=3 — the same shape as v2, but free plans are listed too
+ * (`price.amountMinor` is 0). Asked for explicitly: a client built for v2 would
+ * offer a free plan as something to pay for, so v2 and v1 never list one.
+ */
+export const PlansResponseV3 = PlansResponseV2;
+export type PlansResponseV3 = z.infer<typeof PlansResponseV3>;
+
+/**
+ * POST /v1/billing/free-plan — "start this free plan." Nothing is paid and
+ * nobody approves it: access begins at once, for the plan's own period. It is
+ * refused while the caller still has access of any kind.
+ */
+export const ClaimFreePlanRequest = z.strictObject({
+  planCode: z.string().min(1).max(40),
+});
+export type ClaimFreePlanRequest = z.infer<typeof ClaimFreePlanRequest>;
+
+/** What the claim gave: the plan, and when its access ends (epoch ms). */
+export const ClaimFreePlanResponse = z.strictObject({
+  plan: z.string(),
+  until: z.number().int(),
+});
+export type ClaimFreePlanResponse = z.infer<typeof ClaimFreePlanResponse>;
 
 /**
  * POST /v1/billing/payments — "I paid this much, here is the reference."
