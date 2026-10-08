@@ -6,6 +6,7 @@ import { Composer } from '@/ui/Composer';
 import type { FolderPickerSource } from '@/ui/FolderPicker';
 import type { Folder } from '@/domain/folder';
 import { getStrings } from '@/ui/i18n';
+import { chooseOption, optionNames, shown } from './select-helpers';
 
 const strings = getStrings('en');
 
@@ -64,24 +65,34 @@ describe('Composer — folder selector', () => {
 
   it('lists every folder, nested ones indented under their parent, after "No folder"', () => {
     renderComposer();
-    const labels = Array.from(folderSelect().querySelectorAll('option')).map((o) => o.textContent);
-    expect(labels).toEqual(['No folder', 'Reading', 'Work', '   Clients', '+ New folder…']);
+    // A folder inside a folder is the same row, set one step in (`--hm-depth`).
+    expect(optionNames(folderSelect())).toEqual([
+      'No folder',
+      'Reading',
+      'Work',
+      'Clients',
+      '+ New folder…',
+    ]);
+    const depth = (name: string) =>
+      screen.getByRole('option', { name }).style.getPropertyValue('--hm-depth');
+    expect(depth('Clients')).toBe('1');
+    expect(depth('Work')).toBe('');
   });
 
   it('starts on "No folder" when there is no default', () => {
     renderComposer();
-    expect(folderSelect()).toHaveValue('');
+    expect(shown(folderSelect())).toBe('No folder');
   });
 
   it('starts on the resolved default folder', () => {
     renderComposer(makePicker({ initialFolderId: 'f-work' }));
-    expect(folderSelect()).toHaveValue('f-work');
+    expect(shown(folderSelect())).toBe('Work');
   });
 
   it('saves into the folder chosen in the selector', () => {
     const { onSave } = renderComposer();
     write('Filed at birth');
-    fireEvent.change(folderSelect(), { target: { value: 'f-work-sub' } });
+    chooseOption(folderSelect(), 'Clients');
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     expect(onSave).toHaveBeenCalledWith('Filed at birth', 'f-work-sub');
   });
@@ -89,7 +100,7 @@ describe('Composer — folder selector', () => {
   it('saves an unfiled note when "No folder" is chosen, even over a default', () => {
     const { onSave } = renderComposer(makePicker({ initialFolderId: 'f-work' }));
     write('No folder for this one');
-    fireEvent.change(folderSelect(), { target: { value: '' } });
+    chooseOption(folderSelect(), 'No folder');
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     expect(onSave).toHaveBeenCalledWith('No folder for this one', undefined);
   });
@@ -107,9 +118,9 @@ describe('Composer — folder selector', () => {
         onCancel={vi.fn()}
       />,
     );
-    expect(folderSelect()).toHaveValue('f-reading');
+    expect(shown(folderSelect())).toBe('Reading');
 
-    fireEvent.change(folderSelect(), { target: { value: 'f-work' } });
+    chooseOption(folderSelect(), 'Work');
     rerender(
       <Composer
         strings={strings}
@@ -118,7 +129,7 @@ describe('Composer — folder selector', () => {
         onCancel={vi.fn()}
       />,
     );
-    expect(folderSelect()).toHaveValue('f-work');
+    expect(shown(folderSelect())).toBe('Work');
   });
 
   it('falls back to "No folder" if the chosen folder is deleted while writing', () => {
@@ -252,7 +263,7 @@ describe('Composer — creating a folder', () => {
         onCancel={vi.fn()}
       />,
     );
-    await waitFor(() => expect(folderSelect()).toHaveValue('f-new'));
+    await waitFor(() => expect(shown(folderSelect())).toBe('Research'));
     // The note being written was never touched.
     expect(screen.getByPlaceholderText('Write a note…')).toHaveValue('Into a brand-new folder');
 
@@ -262,7 +273,7 @@ describe('Composer — creating a folder', () => {
 
   it('offers "New folder…" from the selector when folders already exist', () => {
     renderComposer();
-    fireEvent.change(folderSelect(), { target: { value: '__hm-new-folder__' } });
+    chooseOption(folderSelect(), '+ New folder…');
     expect(screen.getByRole('textbox', { name: 'New folder' })).toBeInTheDocument();
   });
 

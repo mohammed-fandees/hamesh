@@ -201,6 +201,8 @@ function isOnHameshUi(e: Event): boolean {
         n.classList?.contains('hm-marker') ||
         // A shared note's popup's menu, drawn apart from the popup itself.
         n.classList?.contains('hm-menu__panel') ||
+        // A choice's list (`Select`), portaled out of the card it belongs to.
+        n.classList?.contains('hm-select__panel') ||
         // The consent asked before a note goes to a team: answering it is
         // not a click on the page.
         n.classList?.contains('hm-consent')),

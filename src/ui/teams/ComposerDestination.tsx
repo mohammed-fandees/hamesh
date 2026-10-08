@@ -2,6 +2,7 @@ import { useId } from 'react';
 import { flattenFolderTree } from '@/domain/folder-grouping';
 import type { Destination } from '@/teams/page-channel';
 import { FolderSelect } from '../FolderSelect';
+import { Select } from '../kit/Select';
 import type { Lang } from '../i18n';
 import { getTeamsStrings } from './strings';
 import css from './page.css?inline';
@@ -66,20 +67,17 @@ export function ComposerDestination({
 
       {value && (
         <>
-          <label className="hm-dest__row">
-            <span className="hm-dest__label">{strings.destTeamLabel}</span>
-            <select
-              className="hm-input"
+          <div className="hm-dest__row">
+            <span className="hm-dest__label" aria-hidden="true">
+              {strings.destTeamLabel}
+            </span>
+            <Select
+              label={strings.destTeamLabel}
               value={value.teamId}
-              onChange={(e) => onChange({ teamId: e.target.value, folderId: null })}
-            >
-              {destinations.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.name}
-                </option>
-              ))}
-            </select>
-          </label>
+              options={destinations.map((d) => ({ value: d.id, label: d.name }))}
+              onChange={(teamId) => onChange({ teamId, folderId: null })}
+            />
+          </div>
           <div className="hm-dest__row">
             <span className="hm-dest__label" aria-hidden="true">
               {strings.moveToFolder}

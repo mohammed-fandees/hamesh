@@ -10,6 +10,7 @@ import type { Note } from '@/domain/note';
 import { DEFAULT_PREFERENCES, type Preferences } from '@/domain/preferences';
 import type { TeamNotesSource } from '@/teams/page-notes';
 import { getTeamsStrings } from '@/ui/teams/strings';
+import { chooseOption } from '../ui/select-helpers';
 
 /**
  * The composer on the page, in a build with Teams, for a reader in a team:
@@ -131,9 +132,7 @@ async function writeToTeam(activateText: () => void) {
   const textarea = await openComposer(activateText);
   fireEvent.change(textarea, { target: { value: 'For the team' } });
   fireEvent.click(await screen.findByRole('radio', { name: new RegExp(teamStrings.destTeam) }));
-  fireEvent.change(screen.getByRole('combobox', { name: teamStrings.moveToFolder }), {
-    target: { value: FOLDER },
-  });
+  chooseOption(screen.getByRole('combobox', { name: teamStrings.moveToFolder }), 'Papers');
   fireEvent.click(screen.getByRole('button', { name: teamStrings.saveAndShare }));
 }
 
