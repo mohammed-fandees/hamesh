@@ -37,6 +37,21 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    version: '2.0.2',
+    date: '2026-10-10',
+    title: { en: 'A nicer folder list', ar: 'قائمة مجلدات أجمل' },
+    items: [
+      {
+        en: 'Choosing a folder or a team now opens a list in Hamesh\u2019s own style: it follows the dark theme, shows folders inside folders set in, and is never cut off by the card on any page.',
+        ar: 'اختيار المجلد أو الفريق صار يفتح قائمة بتصميم هامش: تتبع الوضع الداكن، وتُظهر المجلدات داخل المجلدات متداخلة، ولا تُقصّ داخل البطاقة في أي صفحة.',
+      },
+      {
+        en: 'You can work it from the keyboard: arrows to move, Enter to choose, Escape to close.',
+        ar: 'ويمكنك استخدامها بلوحة المفاتيح: الأسهم للتنقل، وEnter للاختيار، وEscape للإغلاق.',
+      },
+    ],
+  },
+  {
     version: '2.0.1',
     date: '2026-10-03',
     title: { en: 'Choose your plan', ar: 'اختر خطتك' },
