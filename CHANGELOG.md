@@ -6,6 +6,21 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.0.2] — 2026-10-10
+
+### Changed
+
+- **Choosing a folder or a team has a list of Hamesh's own.** The browser's plain list is replaced
+  by one drawn like the rest of Hamesh: it follows the dark theme instead of opening white, shows a
+  folder inside a folder set in, and is never cut off by the card it opens from — on any web page,
+  in English or Arabic. It works from the keyboard (arrows, Home and End, typing to jump, Enter to
+  choose, Escape to close) and, in a short window, opens on the side with more room and scrolls.
+
+### Internal
+
+- The wire contract gains the schemas for starting a free plan (`GET /v1/plans?v=3`,
+  `POST /v1/billing/free-plan`). Nothing in the extension uses them yet.
+
 ## [2.0.1] — 2026-10-03
 
 ### Added
