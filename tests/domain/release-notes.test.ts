@@ -96,7 +96,16 @@ describe('releasesSince', () => {
 
   it('returns only what came after the given version', () => {
     const versions = releasesSince('1.1.0').map((r) => r.version);
-    expect(versions).toEqual(['2.0.1', '2.0.0', '1.4.0', '1.3.0', '1.2.3', '1.2.1', '1.2.0']);
+    expect(versions).toEqual([
+      '2.0.2',
+      '2.0.1',
+      '2.0.0',
+      '1.4.0',
+      '1.3.0',
+      '1.2.3',
+      '1.2.1',
+      '1.2.0',
+    ]);
     expect(hasUnseenReleases('1.1.0')).toBe(true);
   });
 
