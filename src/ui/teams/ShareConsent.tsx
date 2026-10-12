@@ -30,11 +30,14 @@ interface ShareConsentProps {
 export function ShareConsent({ lang, teamName, onAnswer }: ShareConsentProps) {
   const strings = getTeamsStrings(lang);
   const ref = useRef<HTMLDialogElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
   const [dontAsk, setDontAsk] = useState(false);
 
   useEffect(() => {
     const dialog = ref.current;
-    if (dialog && !dialog.open) dialog.showModal();
+    if (!dialog || dialog.open) return;
+    dialog.showModal();
+    cancelRef.current?.focus();
   }, []);
 
   return (
@@ -73,6 +76,7 @@ export function ShareConsent({ lang, teamName, onAnswer }: ShareConsentProps) {
       <div className="hm-row hm-consent__answers">
         {/* The cautious answer takes focus, so a stray Enter shares nothing. */}
         <button
+          ref={cancelRef}
           type="button"
           className="hm-btn hm-btn-ghost"
           autoFocus
