@@ -5,6 +5,7 @@ import '@testing-library/jest-dom/vitest';
 import { TeamsAccount } from '@/ui/teams/TeamsAccount';
 import { getTeamsStrings } from '@/ui/teams/strings';
 import type { TeamsClient } from '@/teams/client';
+import { formatDate } from '@/ui/format';
 import type { TeamsOpName } from '@/teams/operation-names';
 
 const strings = getTeamsStrings('en');
@@ -295,6 +296,82 @@ describe('the account’s own half of Teams, in Settings', () => {
     expect(calls.find((c) => c.op === 'billing.submit')!.params).toMatchObject({
       method: 'vodafone_cash',
     });
+  });
+
+  /** The free plan as the live server lists it: first, at a price of nothing. */
+  const freePlan = {
+    code: 'teams-free',
+    price: { amountMinor: 0, currency: 'EGP', periodDays: 30 },
+    limits: { ownedTeams: 1, membersPerTeam: 10, notesPerTeam: 5000 },
+    details: { name: { ar: 'المجانية', en: 'Free' }, description: null },
+    discount: null,
+  };
+  const withFree = { ...plans, plans: [freePlan, ...plans.plans] };
+  const until = Date.UTC(2026, 10, 18);
+  const onFree = {
+    ...me,
+    entitlement: { ...me.entitlement, state: 'active', plan: 'teams-free', until },
+  } as unknown as typeof me;
+
+  it('shows the free plan the server put the account on, with nothing to pay', async () => {
+    const { client, calls } = fakeClient({ 'billing.plans': withFree }, true, onFree);
+    view(client);
+
+    const free = await screen.findByRole('radio', { name: /Free/ });
+    expect(free).toBeChecked();
+    expect(free.closest('label')).toHaveTextContent(strings.yourPlan);
+    expect(free.closest('label')).toHaveTextContent(strings.freePrice(30));
+    expect(screen.getByText(strings.planFree(formatDate(until, 'en')))).toBeInTheDocument();
+    expect(screen.getByText(strings.planFreeRenews)).toBeInTheDocument();
+    expect(screen.getByText(strings.freeIsYours)).toBeInTheDocument();
+
+    // No way to pay for it, or to send anything at all.
+    expect(screen.queryByPlaceholderText(strings.referencePlaceholder)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: strings.submitPayment })).not.toBeInTheDocument();
+    expect(calls.some((c) => c.op === 'billing.submit')).toBe(false);
+  });
+
+  it('pays for a paid plan chosen from the free one, saying the free one comes back', async () => {
+    const { client, calls } = fakeClient(
+      {
+        'billing.plans': withFree,
+        'billing.submit': { payment: { id: '1', status: 'pending' } },
+      },
+      true,
+      onFree,
+    );
+    view(client);
+
+    fireEvent.click(await screen.findByRole('radio', { name: /Hamesh Teams/ }));
+    expect(screen.queryByText(strings.freeIsYours)).not.toBeInTheDocument();
+    expect(screen.getByText(strings.paidStartsNow('Hamesh Teams'))).toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText(strings.referencePlaceholder), {
+      target: { value: 'UP-1' },
+    });
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: strings.submitPayment }));
+    await waitFor(() => expect(calls.some((c) => c.op === 'billing.submit')).toBe(true));
+    expect(calls.find((c) => c.op === 'billing.submit')!.params).toMatchObject({
+      planCode: 'teams',
+      reference: 'UP-1',
+    });
+  });
+
+  it('says a paying account returns to the free plan by itself', async () => {
+    const onPaid = {
+      ...me,
+      entitlement: { ...me.entitlement, state: 'active', plan: 'teams', until },
+    } as unknown as typeof me;
+    const { client } = fakeClient({ 'billing.plans': withFree }, true, onPaid);
+    view(client);
+
+    expect(await screen.findByRole('radio', { name: /Hamesh Teams/ })).toBeChecked();
+    // Not the free plan's line: this account pays.
+    expect(screen.getByText(strings.planActive(formatDate(until, 'en')))).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('radio', { name: /Free/ }));
+    expect(screen.getByText(strings.freeLater)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: strings.submitPayment })).not.toBeInTheDocument();
   });
 
   it('says payments are closed when the server offers no account to pay', async () => {

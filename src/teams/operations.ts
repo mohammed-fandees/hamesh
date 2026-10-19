@@ -18,7 +18,7 @@ import {
   MentionsResponse,
   NoteResponse,
   PaymentsResponse,
-  PlansResponseV2,
+  PlansResponseV3,
   RealtimeTicketRequest,
   RealtimeTicketResponse,
   RenameFolderRequest,
@@ -362,9 +362,11 @@ function buildOperations() {
 
     'billing.plans': op({
       params: z.strictObject({}),
-      // v2: every plan on offer, with its name and any discount running on it.
-      result: PlansResponseV2,
-      request: () => ({ method: 'GET', path: '/v1/plans?v=2' }),
+      // v3: every plan on offer, with its name and any discount running on it,
+      // and the free plans too (a price of nothing). The server puts everyone
+      // with no access on the lowest free plan by itself; nothing claims it here.
+      result: PlansResponseV3,
+      request: () => ({ method: 'GET', path: '/v1/plans?v=3' }),
     }),
     'billing.payments': op({
       params: z.strictObject({}),

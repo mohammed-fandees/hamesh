@@ -106,6 +106,7 @@
     <link rel="stylesheet" href="./css/features.css" />
     <link rel="stylesheet" href="./css/feature-demos.css" />
     <link rel="stylesheet" href="./css/teams-demos.css" />
+    <link rel="stylesheet" href="./css/plans.css" />
     <link rel="stylesheet" href="./css/loader.css" />
     <link rel="stylesheet" href="./css/responsive.css" />
   </head>
@@ -303,6 +304,7 @@
         <nav class="site-nav" aria-label="Sections">
           <a href="#feature-1" data-ar="ماذا يفعل" data-en="What it does">ماذا يفعل</a>
           <a href="#teams" data-ar="الفرق" data-en="Teams">الفرق</a>
+          <a href="#plans" data-ar="الخطط" data-en="Plans">الخطط</a>
           <a href="#privacy" data-ar="الخصوصية" data-en="Privacy">الخصوصية</a>
           <a href="#install" data-ar="التثبيت" data-en="Install">التثبيت</a>
         </nav>
@@ -1625,6 +1627,90 @@
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      <!-- ============================ Plans ============================ -->
+      <!-- The cards come from the server (js/plans.js): no price is written
+           here. Until they arrive, two outlines of their size hold the room. -->
+      <section class="section rule plans" id="plans" aria-labelledby="plans-title">
+        <div class="wrap">
+          <div class="section__head" data-reveal>
+            <p class="kicker" data-ar="الخطط" data-en="Plans">الخطط</p>
+            <h2
+              id="plans-title"
+              data-ar="هامش لنفسك مجاني دائمًا. وللفرق خطتان."
+              data-en="Hamesh for yourself is always free. For teams, there are two plans."
+            >
+              هامش لنفسك مجاني دائمًا. وللفرق خطتان.
+            </h2>
+            <p
+              class="lede"
+              data-ar="ملاحظاتك الشخصية لا تحتاج حسابًا ولا اشتراكًا. الخطط لميزة الفرق وحدها: تبدأ على المجانية لحظة تسجيل الدخول، وتنتقل إلى المدفوعة حين تحتاج أكثر."
+              data-en="Your own notes need no account and no subscription. Plans are for Teams alone: you start on the free one the moment you sign in, and move to the paid one when you need more."
+            >
+              ملاحظاتك الشخصية لا تحتاج حسابًا ولا اشتراكًا. الخطط لميزة الفرق وحدها: تبدأ على
+              المجانية لحظة تسجيل الدخول، وتنتقل إلى المدفوعة حين تحتاج أكثر.
+            </p>
+          </div>
+
+          <div class="tiers" data-plans aria-busy="true">
+            <div class="tier tier--outline" aria-hidden="true">
+              <span class="tier__sk" style="--w: 40%; --h: 16px"></span>
+              <span class="tier__sk"></span>
+              <span class="tier__sk" style="--w: 85%"></span>
+              <span class="tier__sk" style="--w: 35%; --h: 28px"></span>
+              <span class="tier__sk"></span>
+              <span class="tier__sk"></span>
+              <span class="tier__sk" style="--h: 44px"></span>
+            </div>
+            <div class="tier tier--outline" aria-hidden="true">
+              <span class="tier__sk" style="--w: 40%; --h: 16px"></span>
+              <span class="tier__sk"></span>
+              <span class="tier__sk" style="--w: 85%"></span>
+              <span class="tier__sk" style="--w: 35%; --h: 28px"></span>
+              <span class="tier__sk"></span>
+              <span class="tier__sk"></span>
+              <span class="tier__sk" style="--h: 44px"></span>
+            </div>
+          </div>
+
+          <div class="plans-unavailable" data-plans-unavailable role="status" hidden>
+            <p
+              data-ar="تعذّر عرض الخطط الآن. تجدها كاملة بأسعارها داخل الإضافة، في الإعدادات ← الخطة، والبداية مجانية دائمًا."
+              data-en="The plans can't be shown right now. You'll find them, with their prices, inside the extension under Settings → Plan, and starting is always free."
+            >
+              تعذّر عرض الخطط الآن. تجدها كاملة بأسعارها داخل الإضافة، في الإعدادات ← الخطة،
+              والبداية مجانية دائمًا.
+            </p>
+            <a
+              class="btn btn--primary"
+              href="https://chromewebstore.google.com/detail/hamesh-%E2%80%94-%D9%87%D8%A7%D9%85%D8%B4/giajamkkehcoienhhlcfgcckahjjbgnc"
+              target="_blank"
+              rel="noopener"
+              data-ar="أضِفه إلى Chrome ↗"
+              data-en="Add to Chrome ↗"
+              >أضِفه إلى Chrome ↗</a
+            >
+          </div>
+
+          <p class="plans-foot" data-plans-foot>
+            <span
+              data-ar="الأسعار بالجنيه المصري، وتشمل أي خصم سارٍ الآن."
+              data-en="Prices are in Egyptian pounds, and include any discount running now."
+              >الأسعار بالجنيه المصري، وتشمل أي خصم سارٍ الآن.</span
+            >
+            <span
+              data-ar="الخطة المدفوعة تبدأ فور قبول الدفعة."
+              data-en="A paid plan starts as soon as the payment is approved."
+              >الخطة المدفوعة تبدأ فور قبول الدفعة.</span
+            >
+            <span
+              data-ar="ملاحظاتك الشخصية لا تغادر جهازك، على أي خطة."
+              data-en="Your own notes never leave your device, on any plan."
+              >ملاحظاتك الشخصية لا تغادر جهازك، على أي خطة.</span
+            >
+          </p>
         </div>
       </section>
 

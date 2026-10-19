@@ -213,9 +213,10 @@ describe('the operation table', () => {
     expect(operations()['mentions.list'].params.safeParse({ before: 'nope' }).success).toBe(false);
   });
 
-  it('asks for the plans in the shape that carries names and discounts', () => {
+  it('asks for the plans in the shape that carries names, discounts and free plans', () => {
     const plans = operations()['billing.plans'];
-    expect(plans.request({}).path).toBe('/v1/plans?v=2');
+    // v3: v2 never lists a free plan, so the extension could never show one.
+    expect(plans.request({}).path).toBe('/v1/plans?v=3');
     // The old shape, without them, is refused: a v1 answer is not a v2 one.
     const v1 = {
       plans: [
@@ -240,6 +241,14 @@ describe('the operation table', () => {
       ],
     };
     expect(plans.result.safeParse(v2).success).toBe(true);
+    // A free plan is a price of nothing, as the live server sends it.
+    const free = {
+      ...v2,
+      plans: [
+        { ...v2.plans[0], code: 'teams-free', price: { ...v1.plans[0]!.price, amountMinor: 0 } },
+      ],
+    };
+    expect(plans.result.safeParse(free).success).toBe(true);
   });
 
   it('mints a request id the server will accept', () => {

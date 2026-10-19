@@ -758,6 +758,41 @@
   font-size: var(--hm-text-body-sm);
   font-weight: 600;
 }
+/* On a free plan: a quiet dot of success, then until when and that it renews. */
+.hm-plan-status {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--hm-space-2);
+  color: var(--hm-ink);
+}
+.hm-plan-status__dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--hm-success);
+}
+.hm-plan-status__more {
+  display: block;
+  color: var(--hm-ink-60);
+}
+/* Where the payment form would be, for a free plan: nothing to do. */
+.hm-plan-note {
+  width: min(100%, 32rem);
+  margin: 0;
+  padding: var(--hm-space-3) var(--hm-space-3);
+  border: 1px dashed var(--hm-border);
+  border-radius: var(--hm-radius-md);
+  background: var(--hm-paper);
+  color: var(--hm-ink-60);
+  font-size: var(--hm-text-body-sm);
+  line-height: var(--hm-lh-body-sm);
+}
+.hm-plan-note__lead {
+  color: var(--hm-ink);
+  font-weight: 600;
+}
 /* How to pay, and how much of it: the method beside the month count. */
 .hm-billing__choices {
   display: flex;

@@ -24,6 +24,9 @@ export default [
         setTimeout: 'readonly',
         clearTimeout: 'readonly',
         CSS: 'readonly',
+        fetch: 'readonly',
+        AbortController: 'readonly',
+        Intl: 'readonly',
       },
     },
     rules: {

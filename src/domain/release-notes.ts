@@ -37,6 +37,21 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    version: '2.0.3',
+    date: '2026-10-19',
+    title: { en: 'Teams starts free', ar: 'الفرق تبدأ مجانًا' },
+    items: [
+      {
+        en: 'When you sign in to Teams, you’re on the free plan right away: one team of your own, renewed every month, with nothing to pay.',
+        ar: 'حين تسجّل الدخول إلى الفرق تصبح على الخطة المجانية فورًا: فريق خاص بك، يتجدد كل شهر، بلا أي دفع.',
+      },
+      {
+        en: 'Need more teams? Choose a paid plan in Settings → Plan. It starts as soon as your payment is approved, and you go back to the free plan when it ends.',
+        ar: 'تحتاج فرقًا أكثر؟ اختر خطة مدفوعة من الإعدادات ← الخطة. تبدأ فور قبول دفعتك، وتعود إلى المجانية حين تنتهي.',
+      },
+    ],
+  },
+  {
     version: '2.0.2',
     date: '2026-10-10',
     title: { en: 'A nicer folder list', ar: 'قائمة مجلدات أجمل' },
