@@ -97,6 +97,7 @@ describe('releasesSince', () => {
   it('returns only what came after the given version', () => {
     const versions = releasesSince('1.1.0').map((r) => r.version);
     expect(versions).toEqual([
+      '2.0.3',
       '2.0.2',
       '2.0.1',
       '2.0.0',

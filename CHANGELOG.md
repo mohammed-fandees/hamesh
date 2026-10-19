@@ -6,6 +6,24 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.0.3] — 2026-10-19
+
+### Added
+
+- **Teams starts on a free plan.** Everyone who signs in to Teams is put on the free plan by the
+  server, and it renews by itself each period; no payment and no button. The Plan panel now lists
+  it ("Free · renews every month"), says until when the account is on it, and shows no payment
+  form for it. Choosing a paid plan says it starts once the payment is approved and that the free
+  plan comes back when it ends. The extension asks for `GET /v1/plans?v=3`, the only list that
+  includes free plans.
+- **The landing page lists the plans.** A new Plans section draws each plan's name, description,
+  price, discount and limits from `GET /v1/plans?v=3`, so no price is written into the site. It
+  shows outlines while loading and points to Settings → Plan if the server can't be reached.
+
+### Security
+
+- Dependency advisories patched: `source-map-js`, `vitest`, `@vitest/mocker` (dev only).
+
 ## [2.0.2] — 2026-10-10
 
 ### Changed
