@@ -5,7 +5,7 @@ import type {
   PaymentView,
   PlanDiscount,
   PlanOfferV2,
-  PlansResponseV2,
+  PlansResponseV3,
 } from '@hamesh/teams-contract';
 import type { Lang } from '../i18n';
 import { InlineError, StatusLine } from '../kit/Feedback';
@@ -23,6 +23,9 @@ interface BillingPanelProps {
 
 /** The most periods one payment may cover — the contract's own bound. */
 const MAX_PERIODS = 12;
+
+/** A free plan is listed at a price of nothing (`GET /v1/plans?v=3`). */
+const isFree = (offer: PlanOfferV2) => offer.price.amountMinor === 0;
 
 /** A WhatsApp link for a number the server sent, digits only. */
 const whatsappLink = (number: string) => `https://wa.me/${number.replace(/\D/g, '')}`;
@@ -43,9 +46,13 @@ const whatsappLink = (number: string) => `https://wa.me/${number.replace(/\D/g, 
  *
  * A discount is the server's too: the price it sends is already the one a
  * payment costs, and the price before it is only shown, struck through.
+ *
+ * A free plan is never paid for or claimed here: the server puts whoever has
+ * no access on it by itself, and again whenever it ends. Choosing it only says
+ * so; the payment form is for the paid plans.
  */
 export function BillingPanel({ strings, lang, page, me }: BillingPanelProps) {
-  const [plans, setPlans] = useState<PlansResponseV2 | null>(null);
+  const [plans, setPlans] = useState<PlansResponseV3 | null>(null);
   const [planCode, setPlanCode] = useState<string | null>(null);
   const [payments, setPayments] = useState<PaymentView[] | null>(null);
   const [method, setMethod] = useState<PaymentMethod | null>(null);
@@ -56,7 +63,7 @@ export function BillingPanel({ strings, lang, page, me }: BillingPanelProps) {
   const [submitted, setSubmitted] = useState(false);
 
   const adopt = useCallback(
-    (offered: PlansResponseV2 | null, history: { payments: PaymentView[] } | null) => {
+    (offered: PlansResponseV3 | null, history: { payments: PaymentView[] } | null) => {
       if (offered) {
         setPlans(offered);
         // Keep a choice still on offer; otherwise start from the plan this
@@ -116,7 +123,7 @@ export function BillingPanel({ strings, lang, page, me }: BillingPanelProps) {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!plan || !method || !plans || (first && !agreed)) return;
+    if (!plan || isFree(plan) || !method || !plans || (first && !agreed)) return;
     const result = await page.run(
       'billing.submit',
       { planCode: plan.code, method, reference, periods, termsVersion: plans.terms.version },
@@ -142,9 +149,16 @@ export function BillingPanel({ strings, lang, page, me }: BillingPanelProps) {
     }
   }
 
+  /** The plan this account is on, when it is one of the free ones on offer. */
+  const onFree =
+    me.entitlement.state === 'active' &&
+    (plans?.plans.some((p) => p.code === me.entitlement.plan && isFree(p)) ?? false);
+  const freeOffered = plans?.plans.some(isFree) ?? false;
+
   /** What the server says about this account's access, in one line. */
   function planLine(): string {
     const { entitlement, subscription } = me;
+    if (onFree && entitlement.until) return strings.planFree(formatDate(entitlement.until, lang));
     if (entitlement.state === 'active' && entitlement.until) {
       return subscription.canceled
         ? strings.planCanceled
@@ -183,7 +197,9 @@ export function BillingPanel({ strings, lang, page, me }: BillingPanelProps) {
               {money(offer.discount.listAmountMinor)}
             </s>
           )}
-          {strings.price(money(offer.price.amountMinor), offer.price.periodDays)}
+          {isFree(offer)
+            ? strings.freePrice(offer.price.periodDays)
+            : strings.price(money(offer.price.amountMinor), offer.price.periodDays)}
         </span>
         {offer.discount && (
           <span className="hm-plan__discount">{discountLine(offer.discount)}</span>
@@ -242,7 +258,17 @@ export function BillingPanel({ strings, lang, page, me }: BillingPanelProps) {
 
   return (
     <>
-      <p className="hm-section__intro">{planLine()}</p>
+      {onFree ? (
+        <p className="hm-section__intro hm-plan-status">
+          <span className="hm-plan-status__dot" aria-hidden="true" />
+          <span>
+            {planLine()}
+            <span className="hm-plan-status__more">{strings.planFreeRenews}</span>
+          </span>
+        </p>
+      ) : (
+        <p className="hm-section__intro">{planLine()}</p>
+      )}
 
       {plan && plans && (
         <form className="hm-billing" onSubmit={submit}>
@@ -255,7 +281,16 @@ export function BillingPanel({ strings, lang, page, me }: BillingPanelProps) {
             planCard(plan, false)
           )}
 
-          {plans.payment.accounts.length === 0 || !method || !account ? (
+          {isFree(plan) ? (
+            me.entitlement.state === 'active' && me.entitlement.plan === plan.code ? (
+              <p className="hm-plan-note">
+                <strong className="hm-plan-note__lead">{strings.freeIsYours}</strong>{' '}
+                {strings.freeIsYoursBody}
+              </p>
+            ) : (
+              <p className="hm-plan-note">{strings.freeLater}</p>
+            )
+          ) : plans.payment.accounts.length === 0 || !method || !account ? (
             <p className="hm-supporting">{strings.paymentsClosed}</p>
           ) : (
             <>
@@ -372,6 +407,10 @@ export function BillingPanel({ strings, lang, page, me }: BillingPanelProps) {
                   {strings.termsNoticeLead}
                   {termsLinks}
                 </p>
+              )}
+
+              {freeOffered && (
+                <p className="hm-supporting">{strings.paidStartsNow(plan.details.name[lang])}</p>
               )}
 
               <button

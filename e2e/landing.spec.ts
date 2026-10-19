@@ -61,6 +61,129 @@ test.afterAll(async () => {
   await new Promise<void>((resolve) => server.close(() => resolve()));
 });
 
+/**
+ * `GET /v1/plans?v=3`, as the live server answers it — with placeholder
+ * payment details: the page must never show them, and this repo never holds
+ * real ones.
+ */
+const PLANS_V3 = {
+  plans: [
+    {
+      code: 'teams-free',
+      price: { amountMinor: 0, currency: 'EGP', periodDays: 30 },
+      limits: { ownedTeams: 1, membersPerTeam: 10, notesPerTeam: 5000 },
+      details: {
+        name: { ar: 'المجانية', en: 'Free' },
+        description: { ar: 'فريقك الأول، تقرأ فيه مع من تختار.', en: 'Your first team.' },
+      },
+      discount: null,
+    },
+    {
+      code: 'teams',
+      price: { amountMinor: 14900, currency: 'EGP', periodDays: 30 },
+      limits: { ownedTeams: 3, membersPerTeam: 10, notesPerTeam: 5000 },
+      details: { name: { ar: 'الموسّعة', en: 'Plus' }, description: null },
+      discount: {
+        kind: 'amount',
+        percent: null,
+        listAmountMinor: 24900,
+        endsAt: Date.UTC(2026, 10, 10, 12),
+        label: { ar: 'سعر الإطلاق', en: 'Launch price' },
+      },
+    },
+  ],
+  payment: {
+    accounts: [{ method: 'instapay', account: '01000000000' }],
+    confirm: { whatsapp: '+201000000000' },
+  },
+  terms: {
+    version: 'test-terms',
+    termsUrl: 'https://hamesh.fandees.tech/terms.html',
+    privacyUrl: 'https://hamesh.fandees.tech/privacy.html',
+  },
+};
+const PLANS_URL = 'https://api.hamesh.fandees.tech/v1/plans?v=3';
+
+/** No test reaches the real API: every one gets the answer above unless it says otherwise. */
+test.beforeEach(async ({ page }) => {
+  await page.route('https://api.hamesh.fandees.tech/**', (route) =>
+    route.fulfill({ json: PLANS_V3, headers: { 'access-control-allow-origin': '*' } }),
+  );
+});
+
+test.describe('Landing page · plans', () => {
+  test('draws the plans the server sends, the free one first, and never where to pay', async ({
+    page,
+  }) => {
+    const asked = page.waitForRequest(PLANS_URL);
+    await page.goto(origin);
+    expect((await asked).url()).toBe(PLANS_URL);
+
+    const section = page.locator('#plans');
+    const free = section.locator('[data-plan="teams-free"]');
+    const paid = section.locator('[data-plan="teams"]');
+    await expect(free).toBeVisible();
+    await expect(section.locator('[data-plans]')).not.toHaveAttribute('aria-busy');
+
+    await expect(free).toHaveClass(/tier--default/);
+    await expect(free.locator('.tier__name')).toHaveText('المجانية');
+    await expect(free.locator('.tier__chip')).toHaveText('تبدأ بها تلقائيًا');
+    await expect(free.locator('.tier__price')).toContainText('مجانًا');
+    await expect(free.locator('.tier__desc')).toHaveText('فريقك الأول، تقرأ فيه مع من تختار.');
+
+    await expect(paid).not.toHaveClass(/tier--default/);
+    await expect(paid.locator('.tier__chip')).toHaveCount(0);
+    await expect(paid.locator('.tier__desc')).toHaveCount(0);
+    // The price and the one before it are the server's, formatted for Arabic (the digits are the browser's choice).
+    await expect(paid.locator('.tier__price strong')).toHaveText(/149|١٤٩/);
+    await expect(paid.locator('.tier__price s')).toHaveText(/249|٢٤٩/);
+    await expect(paid.locator('.tier__deal')).toContainText('سعر الإطلاق');
+    await expect(paid.locator('.tier__limits dd')).toHaveText(['3', '10', '5,000']);
+
+    const text = (await page.locator('body').innerText()).replace(/\s/g, '');
+    expect(text).not.toContain('01000000000');
+    expect(text).not.toContain('+201000000000');
+    await expect(section.locator('[data-plans-unavailable]')).toBeHidden();
+  });
+
+  test('redraws the plans in English when the language is switched', async ({ page }) => {
+    await page.goto(origin);
+    const paid = page.locator('#plans [data-plan="teams"]');
+    await expect(paid.locator('.tier__name')).toHaveText('الموسّعة');
+
+    await page.locator('#langToggle').click();
+    await expect(paid.locator('.tier__name')).toHaveText('Plus');
+    await expect(paid.locator('.tier__price strong')).toHaveText(/EGP\s?149\.00/);
+    await expect(paid.locator('.tier__deal')).toHaveText('Launch price · until Nov 10, 2026');
+    await expect(page.locator('#plans [data-plan="teams-free"] .tier__chip')).toHaveText(
+      'Where everyone starts',
+    );
+  });
+
+  test('says where the plans are when the server cannot be reached, quoting no price', async ({
+    page,
+  }) => {
+    await page.route(PLANS_URL, (route) => route.fulfill({ status: 503, json: { error: 'x' } }));
+    await page.goto(origin);
+    const section = page.locator('#plans');
+    await expect(section.locator('[data-plans-unavailable]')).toBeVisible();
+    await expect(section.locator('[data-plans]')).toBeHidden();
+    await expect(section.locator('[data-plans-foot]')).toBeHidden();
+    await expect(section.locator('.tier[data-plan]')).toHaveCount(0);
+  });
+
+  test('refuses an answer that is not the shape it expects', async ({ page }) => {
+    await page.route(PLANS_URL, (route) =>
+      route.fulfill({
+        json: { ...PLANS_V3, plans: [{ code: 'x', price: { amountMinor: '1' } }] },
+        headers: { 'access-control-allow-origin': '*' },
+      }),
+    );
+    await page.goto(origin);
+    await expect(page.locator('#plans [data-plans-unavailable]')).toBeVisible();
+  });
+});
+
 test.describe('Landing page', () => {
   test('is Arabic-first (RTL) and has a single, meaningful h1', async ({ page }) => {
     await page.goto(origin);
