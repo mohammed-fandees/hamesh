@@ -30,20 +30,29 @@ import {
 import { runIntro } from './animations/intro.js';
 import { ScrollTrigger } from './lib/gsap.js';
 import { onTabVisibilityChange, onMotionPreferenceChange } from './lib/motion.js';
+import { createPlans } from './plans.js';
 
 async function boot() {
   let heroIntro = null;
   let scenes = null;
+  let plans = null;
 
   /* Applies the visitor's saved language and sets `dir` before a single
      position is measured. The handler below only runs on a later toggle. */
   createLanguageToggle({
     onChange: () => {
+      plans?.render();
       heroIntro?.rebuild();
       scenes?.rebuild();
       ScrollTrigger.refresh();
     },
   });
+
+  /* Asked for now, so the answer is often in before anyone scrolls to it. */
+  const plansSection = qs('#plans');
+  plans = plansSection ? createPlans(plansSection) : null;
+  /* The cards may not be the outlines' exact height; triggers below them move. */
+  plans?.ready.then(() => ScrollTrigger.refresh());
 
   await runIntro({
     build: () => {

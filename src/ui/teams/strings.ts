@@ -228,6 +228,18 @@ export interface TeamsStrings extends SharedStrings {
   planPending: string;
   planExpired: string;
   planCanceled: string;
+  /** On a free plan: until when, and that it starts again by itself. */
+  planFree: (until: string) => string;
+  planFreeRenews: string;
+  /** A free plan's price line, in place of an amount. */
+  freePrice: (days: number) => string;
+  /** The free plan, chosen, while it is the account's plan. */
+  freeIsYours: string;
+  freeIsYoursBody: string;
+  /** The free plan, chosen, while the account is on a paid one. */
+  freeLater: string;
+  /** Above the payment button, when a free plan is on offer. */
+  paidStartsNow: (plan: string) => string;
   price: (amount: string, days: number) => string;
   choosePlan: string;
   /** The plan this account is on now, marked among the ones on offer. */
@@ -475,6 +487,15 @@ const en: TeamsOwnStrings = {
   planPending: 'Waiting for your payment to be checked',
   planExpired: 'Expired',
   planCanceled: 'Cancelled — the paid period is still yours',
+  planFree: (until) => `You're on the free plan until ${until}.`,
+  planFreeRenews: 'It renews by itself, at no cost.',
+  freePrice: (days) =>
+    days === 30 ? 'Free · renews every month' : `Free · renews every ${days} days`,
+  freeIsYours: 'This is your plan now.',
+  freeIsYoursBody: 'Nothing to pay and nothing to do. Choose a paid plan if you need more.',
+  freeLater: 'You return to this plan by yourself when your paid plan ends.',
+  paidStartsNow: (plan) =>
+    `${plan} starts as soon as your payment is approved, and you return to the free plan by yourself when it ends.`,
   price: (amount, days) => (days === 30 ? `${amount} a month` : `${amount} every ${days} days`),
   choosePlan: 'Choose a plan',
   yourPlan: 'Your plan',
@@ -786,6 +807,13 @@ const ar: TeamsOwnStrings = {
   planPending: 'في انتظار مراجعة دفعتك',
   planExpired: 'منتهٍ',
   planCanceled: 'مُلغى — المدة المدفوعة تبقى لك',
+  planFree: (until) => `أنت على الخطة المجانية حتى ${until}.`,
+  planFreeRenews: 'تتجدد من تلقاء نفسها، بلا دفع.',
+  freePrice: (days) => (days === 30 ? 'مجانًا · تتجدد كل شهر' : `مجانًا · تتجدد كل ${days} يومًا`),
+  freeIsYours: 'هذه خطتك الآن.',
+  freeIsYoursBody: 'لا شيء تدفعه ولا شيء تفعله. اختر خطة مدفوعة إن احتجت أكثر.',
+  freeLater: 'تعود إلى هذه الخطة وحدك حين تنتهي خطتك المدفوعة.',
+  paidStartsNow: (plan) => `تبدأ ${plan} فور قبول دفعتك، وتعود إلى المجانية وحدك حين تنتهي.`,
   price: (amount, days) => (days === 30 ? `${amount} شهريًا` : `${amount} كل ${days} يومًا`),
   choosePlan: 'اختر الخطة',
   yourPlan: 'خطتك الحالية',

@@ -1,0 +1,181 @@
+/* The Plans section. The cards are drawn by js/plans.js from the server's
+ * list; the same classes draw the outlines that stand in for them. */
+
+.tiers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 18px;
+  max-width: 880px;
+}
+
+.tier {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  min-width: 0;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+/* The plan everyone starts on: the accent, and a ring of its tint. */
+.tier--default {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 3px var(--accent-tint),
+    var(--shadow-sm);
+}
+
+.tier__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tier__name {
+  font-size: 1.15rem;
+  letter-spacing: 0;
+}
+
+.tier__chip {
+  padding: 2px 9px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-tint);
+  color: var(--accent-strong);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.tier__desc {
+  min-height: 4.6em;
+  color: var(--ink-60);
+}
+
+.tier__price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 10px;
+}
+
+.tier__price strong {
+  font-size: 2rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.tier__price span {
+  color: var(--ink-60);
+}
+
+.tier__price s {
+  color: var(--ink-40);
+}
+
+.tier__deal {
+  margin-top: -8px;
+  color: var(--accent-strong);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.tier__limits {
+  display: grid;
+  border-top: 1px solid var(--border-soft);
+}
+
+.tier__limits div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.tier__limits dt {
+  color: var(--ink-60);
+}
+
+.tier__limits dd {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.tier__cta {
+  justify-content: center;
+}
+
+.tier__how {
+  color: var(--ink-60);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* Until the answer comes: the cards' own shape, in bars. */
+.tier--outline {
+  box-shadow: none;
+}
+
+.tier__sk {
+  display: block;
+  width: var(--w, 100%);
+  height: var(--h, 12px);
+  border-radius: var(--radius-sm);
+  background: var(--ink-20);
+  opacity: 0.5;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .tier__sk {
+    animation: tier-pulse 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes tier-pulse {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.plans-unavailable {
+  display: grid;
+  justify-items: start;
+  gap: 14px;
+  max-width: 880px;
+  padding: 22px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+}
+
+.plans-unavailable p {
+  max-width: 52ch;
+}
+
+.plans-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+  margin-top: 22px;
+  color: var(--ink-60);
+  font-size: 0.85rem;
+}
+
+.plans-foot span::before {
+  content: '·';
+  margin-inline-end: 8px;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* `hidden` must win over the display these set. */
+.tiers[hidden],
+.plans-unavailable[hidden],
+.plans-foot[hidden] {
+  display: none;
+}
