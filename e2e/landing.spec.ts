@@ -584,3 +584,14 @@ test.describe('Landing page', () => {
     ).toEqual([]);
   });
 });
+
+test.describe('Landing page · visit counter', () => {
+  test('counts visits on the home page only, and the privacy page says so', async ({ page }) => {
+    await page.goto(origin);
+    await expect(page.locator('script[data-cf-beacon]')).toHaveCount(1);
+
+    await page.goto(`${origin}privacy.html`);
+    await expect(page.locator('script[data-cf-beacon]')).toHaveCount(0);
+    await expect(page.locator('[data-en^="This website (not the extension)"]')).toHaveCount(1);
+  });
+});

@@ -40,11 +40,17 @@ like everything else; a default for all pages stores no URL at all.
 - Does not collect personal information
 - Does not track browsing history
 - Does not send data to any server (unless you turn on Teams, and then only what is listed below)
-- Does not use analytics or crash reporting
+- Does not use analytics or crash reporting (the extension; see the website note below)
 - Does not share data with third parties
 - Does not use cookies
 
 If you uninstall the extension, all stored notes remain in `chrome.storage.local` until cleared via the browser's extension data management tools.
+
+## This website
+
+The Hamesh website (not the extension) uses Cloudflare Web Analytics to count
+visits to its home page. It sets no cookies, does not fingerprint devices and
+does not track people across sites. The extension never talks to it.
 
 ## Backup
 
