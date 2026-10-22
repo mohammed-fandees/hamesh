@@ -1,231 +1,174 @@
-<!--
-  Chrome Web Store marquee promotional image source, rendered at exactly
-  1400x560 by scripts/generate-promo-assets.mjs. Uses the approved brand
-  tokens and a small recreation of the real composer UI (not fabricated Chrome
-  chrome — just the extension's own card, same as the landing page hero mock).
--->
 <!doctype html>
 <html lang="en" dir="ltr">
   <head>
     <meta charset="utf-8" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <title>Hamesh — marquee promo tile</title>
     <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@600&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,500&display=swap"
       rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap"
     />
+    <link rel="stylesheet" href="../../../landing/css/reset.css" />
+    <link rel="stylesheet" href="../../../landing/css/variables.css" />
+    <link rel="stylesheet" href="../../../landing/css/base.css" />
     <style>
+      /* Chrome Web Store marquee, 1400×560.
+         The idea: the mark is the margin. A page of a notebook — ruled, with
+         its margin line — where one phrase is tinted, and the mark itself,
+         at its exact proportions, reaches from those words into the margin to
+         hold the thought written there. Logo, marker and connector at once,
+         as the brand defines it. */
       html,
       body {
-        margin: 0;
         width: 1400px;
         height: 560px;
         overflow: hidden;
       }
       body {
-        background: #f7f3ec;
-        display: flex;
-        align-items: center;
-        font-family: 'IBM Plex Sans', sans-serif;
-      }
-      .wrap {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        width: 100%;
-        padding: 0 90px;
-        box-sizing: border-box;
-      }
-      .left {
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
-      }
-      .lockup {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-      }
-      .mark {
-        flex: none;
-        color: #b5502f;
-      }
-      .ar {
-        font-family: 'IBM Plex Sans Arabic', sans-serif;
-        font-weight: 600;
-        font-size: 64px;
-        color: #1e1b18;
-        line-height: 1;
-      }
-      .en {
-        font-family: 'IBM Plex Serif', serif;
-        font-style: italic;
-        font-weight: 500;
-        font-size: 26px;
-        color: rgba(30, 27, 24, 0.62);
-      }
-      h1 {
-        font-family: 'IBM Plex Serif', serif;
-        font-weight: 500;
-        font-size: 42px;
-        line-height: 1.15;
-        color: #14110d;
-        margin: 18px 0 0;
-        max-width: 480px;
-      }
-      .tag {
-        font-size: 16px;
-        color: rgba(30, 27, 24, 0.55);
-        max-width: 420px;
-        line-height: 1.5;
-        margin: 0;
+        --rule: 52px;
+        --top: 110px;
+        position: relative;
+        background:
+          radial-gradient(640px 420px at 100% 0%, rgb(var(--accent-rgb) / 0.08), transparent 70%),
+          repeating-linear-gradient(
+              to bottom,
+              transparent 0 calc(var(--rule) - 1px),
+              rgb(30 27 24 / 0.07) calc(var(--rule) - 1px) var(--rule)
+            )
+            0 calc(var(--top) - 13px) / 100% 100% no-repeat,
+          var(--paper);
+        font-family: var(--sans);
+        color: var(--ink);
       }
 
-      /* Product mock, matching the landing page hero style */
-      .mock {
-        width: 460px;
-        background: #fff;
-        border: 1px solid rgba(30, 27, 24, 0.14);
-        border-radius: 16px;
-        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.14);
-        overflow: hidden;
-      }
-      .mock-chrome {
-        display: flex;
-        gap: 7px;
-        padding: 14px 16px;
-        border-bottom: 1px solid rgba(30, 27, 24, 0.1);
-      }
-      .mock-chrome i {
-        width: 11px;
-        height: 11px;
-        border-radius: 50%;
-        background: rgba(30, 27, 24, 0.14);
-      }
-      .mock-body {
-        position: relative;
-        padding: 30px 28px 44px;
-      }
-      .mock-body p {
-        font-family: 'IBM Plex Serif', serif;
-        font-size: 16px;
-        line-height: 1.75;
-        color: #1e1b18;
-        margin: 0;
-      }
-      .sel {
-        box-shadow:
-          0 0 0 1.5px #b5502f,
-          0 0 0 4.5px #f1dccc;
-        border-radius: 3px;
-      }
-      .card {
-        position: relative;
-        margin-top: 28px;
-        background: #fff;
-        border: 1px solid rgba(30, 27, 24, 0.14);
-        border-radius: 10px;
-        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.16);
-        padding: 18px;
-        max-width: 320px;
-      }
-      .card .connector {
+      /* The printed page. */
+      .text {
         position: absolute;
-        top: -10px;
-        left: 20px;
-        width: 1px;
-        height: 10px;
-        background: #b5502f;
+        left: 72px;
+        top: var(--top);
+        width: 770px;
+        font-family: var(--serif);
+        font-size: 31px;
+        line-height: var(--rule);
+        color: rgb(30 27 24 / 0.3);
       }
-      .card .lbl {
+      .text span {
+        display: block;
+        white-space: nowrap;
+      }
+      .text .is-here {
+        color: var(--ink);
+      }
+      mark {
+        position: relative;
+        background: rgb(var(--accent-rgb) / 0.26);
+        color: inherit;
+        border-radius: 2px;
+        box-shadow: inset 0 -1.5px 0 rgb(var(--accent-rgb) / 0.85);
+        padding: 0 2px;
+      }
+
+      /* The notebook's margin line, and the mark standing on it. */
+      .margin-line {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 1.5px;
+        background: rgb(var(--accent-rgb) / 0.3);
+      }
+      .mark-big {
+        position: absolute;
+        color: var(--accent);
+      }
+
+      /* What was written in the margin. */
+      .note {
+        position: absolute;
+        font-family: var(--serif);
+        font-style: italic;
+        font-size: 36px;
+        line-height: 1.3;
+        width: 360px;
+      }
+      .brand {
+        position: absolute;
+        bottom: 44px;
         display: flex;
         align-items: center;
-        gap: 6px;
-        font-size: 11px;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        color: rgba(30, 27, 24, 0.42);
-        margin-bottom: 10px;
+        gap: 9px;
+        font-family: var(--serif);
+        font-size: 24px;
+        font-weight: 600;
       }
-      .card .lbl svg {
-        color: #b5502f;
+      .brand svg {
+        width: 22px;
+        height: 22px;
+        color: var(--accent);
       }
-      .card .txt {
-        font-family: 'IBM Plex Serif', serif;
+      .brand small {
+        font-family: var(--sans);
         font-size: 15px;
-        line-height: 1.6;
-        color: #1e1b18;
-      }
-      .btns {
-        display: flex;
-        justify-content: flex-end;
-        gap: 8px;
-        margin-top: 16px;
-      }
-      .mini {
-        font-size: 13px;
-        font-weight: 500;
-        padding: 7px 14px;
-        border-radius: 6px;
-        border: 1px solid rgba(30, 27, 24, 0.14);
-      }
-      .mini.primary {
-        background: #b5502f;
-        color: #fff;
-        border-color: #b5502f;
+        font-weight: 400;
+        color: var(--ink-40);
+        margin-left: 4px;
       }
     </style>
   </head>
   <body>
-    <div class="wrap">
-      <div class="left">
-        <div class="lockup">
-          <svg class="mark" width="56" height="56" viewBox="0 0 32 32" fill="none">
-            <g stroke="currentColor" stroke-width="3" stroke-linecap="round">
-              <path d="M10 5V27" />
-              <path d="M10 14H20" />
-              <path d="M20 10.5V17.5" />
-            </g>
-          </svg>
-          <div>
-            <div class="ar">هامش</div>
-            <div class="en">Hamesh</div>
-          </div>
-        </div>
-        <h1>Leave context where it belongs.</h1>
-        <p class="tag">
-          Attach a note to any element on a page. Find it restored there when you return.
-        </p>
-      </div>
-
-      <div class="mock">
-        <div class="mock-chrome"><i></i><i></i><i></i></div>
-        <div class="mock-body">
-          <p>
-            Encoding is the process by which
-            <span class="sel">perceived information</span> is converted into a construct that can be
-            stored and later retrieved.
-          </p>
-          <div class="card">
-            <span class="connector"></span>
-            <span class="lbl">
-              <svg width="12" height="12" viewBox="0 0 32 32" fill="none">
-                <g stroke="currentColor" stroke-width="4" stroke-linecap="round">
-                  <path d="M10 5V27" />
-                  <path d="M10 14H20" />
-                  <path d="M20 10.5V17.5" />
-                </g>
-              </svg>
-              Note
-            </span>
-            <div class="txt">Revisit before the design review — this maps to our drop-off.</div>
-            <div class="btns">
-              <span class="mini">Cancel</span>
-              <span class="mini primary">Save</span>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div class="text" id="text">
+      <span>Reading is a quiet conversation with what you</span>
+      <span>read. Hamesh gives that conversation a place:</span>
+      <span class="is-here"
+        >write beside <mark id="phrase">the sentence that stopped you</mark>,</span
+      >
+      <span>and your thought is waiting there whenever you</span>
+      <span>return, the way a reader finds their note in the</span>
+      <span>margin of a book.</span>
     </div>
+
+    <div class="margin-line" id="line"></div>
+    <svg class="mark-big" id="mark" viewBox="0 0 32 32">
+      <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="3.2">
+        <path d="M10 5V27" />
+        <path d="M10 14H20" />
+        <path d="M20 10.5V17.5" />
+      </g>
+    </svg>
+
+    <p class="note" id="note">This is where the thought was born.</p>
+
+    <div class="brand" id="brand">
+      <svg viewBox="0 0 32 32">
+        <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="3.4">
+          <path d="M10 5V27" />
+          <path d="M10 14H20" />
+          <path d="M20 10.5V17.5" />
+        </g></svg
+      >Hamesh<small>A margin for the web · Free for Chrome</small>
+    </div>
+
+    <script>
+      // The mark is placed from the words it belongs to: its branch at the
+      // tinted line's middle, its stem on the margin line just past the text.
+      window.place = () => {
+        const S = 6.4; // pixels per unit of the mark's 32-unit grid
+        const text = document.getElementById('text').getBoundingClientRect();
+        const phrase = document.getElementById('phrase').getBoundingClientRect();
+        const stemX = text.right + 40;
+        const branchY = phrase.top + phrase.height / 2;
+        const mark = document.getElementById('mark');
+        Object.assign(mark.style, {
+          width: `${32 * S}px`,
+          height: `${32 * S}px`,
+          left: `${stemX - 10 * S}px`,
+          top: `${branchY - 14 * S}px`,
+        });
+        document.getElementById('line').style.left = `${stemX - 0.75}px`;
+        const noteX = stemX + 10 * S + 1.6 * S + 30;
+        const note = document.getElementById('note');
+        note.style.left = `${noteX}px`;
+        note.style.top = `${branchY - note.offsetHeight / 2}px`;
+        document.getElementById('brand').style.left = `${noteX}px`;
+      };
+    </script>
   </body>
 </html>

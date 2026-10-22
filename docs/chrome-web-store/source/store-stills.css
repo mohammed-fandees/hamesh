@@ -1,0 +1,113 @@
+/* A still of one of the landing's feature scenes. Every piece is the site's
+   own (landing/css); this file only lays out the frame, shows the pieces the
+   animations would bring in, and places them. */
+html {
+  font-size: 16px;
+}
+body {
+  width: 1024px;
+  height: 640px;
+  overflow: hidden;
+  background: var(--paper);
+  font-family: var(--arabic);
+}
+.stage {
+  display: grid;
+  grid-template-columns: 290px 1fr;
+  align-items: center;
+  gap: 48px;
+  height: 100%;
+  padding: 0 56px 0 52px;
+}
+.copy {
+  display: grid;
+  gap: 14px;
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.brand span {
+  color: var(--ink-60);
+  font-weight: 500;
+}
+.brand b {
+  color: var(--ink);
+  font-weight: 600;
+}
+.copy h1 {
+  font-family: var(--page-ar);
+  font-size: 1.85rem;
+  line-height: 1.4;
+  font-weight: 600;
+  color: var(--ink);
+}
+.copy p {
+  font-size: 0.86rem;
+  line-height: 1.85;
+  color: var(--ink-60);
+}
+.copy .keys-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.72rem;
+  color: var(--ink-40);
+}
+.copy .free {
+  justify-self: start;
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-tint);
+  color: var(--accent-strong);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+.copy .url {
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  color: var(--ink-40);
+  direction: ltr;
+  text-align: left;
+}
+:root[dir='rtl'] .copy .url {
+  text-align: right;
+}
+:root[lang='en'] body {
+  font-family: var(--sans);
+}
+:root[lang='en'] .copy h1 {
+  font-family: var(--serif);
+  letter-spacing: -0.01em;
+}
+
+.demo {
+  width: 100%;
+}
+
+/* What the animations bring in, shown at rest. */
+.ui-card,
+.ui-quick,
+.ui-video__marker,
+.ui-note-row__pin {
+  opacity: 1;
+}
+.ui-reveal,
+.ui-caret,
+.demo-cursor {
+  display: none;
+}
+.ui-highlight,
+.ui-underline {
+  transform: none;
+}
+.ui-video__played {
+  transform: scaleX(var(--played, 0.42));
+}
+.ui-video__marker {
+  left: calc(var(--played, 0.42) * 100%);
+}

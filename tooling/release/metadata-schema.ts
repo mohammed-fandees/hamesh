@@ -44,6 +44,8 @@ export const listingSchema = z.object({
   homepageUrl: optionalHttpsUrl,
   supportUrl: optionalHttpsUrl,
   privacyPolicyUrl: httpsUrl,
+  // Optional. The dashboard's promotional video field (a YouTube link).
+  promoVideoUrl: httpsUrl.optional(),
   chromeWebStoreItemId: z.string().trim().min(1).optional(),
   locales: z.object({ en: localeSchema }).catchall(localeSchema),
 });

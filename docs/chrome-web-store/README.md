@@ -17,10 +17,10 @@ This directory contains Hamesh's Chrome Web Store submission package, kept in sy
 | `REVIEWER_NOTES.md`            | Testing instructions for the Chrome reviewer — no login required.                                       |
 | `ASSET_MANIFEST.md`            | Every screenshot/promo/icon asset: how it was made, dimensions, QA status.                              |
 | `RELEASE_CHECKLIST.md`         | Audit of the actual `.zip` package that would be uploaded.                                              |
-| `screenshots/`                 | 5 product screenshots, 1280×800, from the real running extension.                                       |
+| `screenshots/`                 | 5 screenshots, 1280×800, composed from the landing page's own components.                               |
 | `promotional/`                 | Small tile (440×280) and marquee (1400×560).                                                            |
-| `icons/`                       | Store + manifest icon set, copied from `public/icon/`.                                                  |
-| `source/`                      | Editable HTML sources used to generate the demo page and promotional images.                            |
+| `icons/`                       | The store icon (a clay tile), and the manifest icons copied from `public/icon/`.                        |
+| `source/`                      | Editable HTML sources for the screenshots, promotional images, store icon and demo page.                |
 
 ## How current requirements were verified
 
