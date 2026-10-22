@@ -81,6 +81,27 @@ describe('validateListing', () => {
     expect(result.success).toBe(false);
   });
 
+  it('keeps an optional promoVideoUrl', () => {
+    const url = 'https://www.youtube.com/watch?v=v-Kum8qhSUc';
+    const result = validateListing(validListing({ promoVideoUrl: url }));
+    expect(result.success).toBe(true);
+    expect(result.data?.promoVideoUrl).toBe(url);
+  });
+
+  it('accepts a listing without promoVideoUrl', () => {
+    const result = validateListing(validListing());
+    expect(result.success).toBe(true);
+    expect(result.data?.promoVideoUrl).toBeUndefined();
+  });
+
+  it('rejects a non-https promoVideoUrl', () => {
+    const result = validateListing(
+      validListing({ promoVideoUrl: 'http://www.youtube.com/watch?v=v-Kum8qhSUc' }),
+    );
+    expect(result.success).toBe(false);
+    expect(result.errors.some((error) => error.includes('promoVideoUrl'))).toBe(true);
+  });
+
   it('accepts an optional ar locale alongside required en', () => {
     const result = validateListing(
       validListing({

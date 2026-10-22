@@ -56,11 +56,11 @@ Use the full English block from `STORE_LISTING.md` → "Detailed description →
 
 Upload all five, in this exact order (the dashboard preserves upload order for display order):
 
-1. `screenshots/01-contextual-notes.png`
-2. `screenshots/02-select-element.png`
-3. `screenshots/03-write-in-context.png`
-4. `screenshots/04-return-and-restore.png`
-5. `screenshots/05-edit-your-note.png`
+1. `screenshots/01-overview.png`
+2. `screenshots/02-teams.png`
+3. `screenshots/03-notes-on-words.png`
+4. `screenshots/04-notes-on-a-moment.png`
+5. `screenshots/05-notes-library.png`
 
 All are exactly 1280×800 (verified — see `ASSET_MANIFEST.md`).
 
@@ -69,9 +69,13 @@ All are exactly 1280×800 (verified — see `ASSET_MANIFEST.md`).
 - **Small promotional tile (440×280):** `promotional/small-tile-440x280.png` — required by most submission flows.
 - **Marquee promotional image (1400×560):** `promotional/marquee-1400x560.png` — optional; only relevant if Google features the extension. Upload it anyway since it's already prepared, at no cost if unused.
 
+### Promotional video
+
+Paste `promoVideoUrl` from `listing.yaml` (the YouTube walkthrough) into the dashboard's promotional video field.
+
 ### Icon
 
-The 128×128 icon is read directly from the uploaded package (`icon/128.png` inside the zip) — no separate icon upload field exists in most current flows. If a standalone icon upload field is present, use `icons/store-icon-128.png` (byte-identical to the one in the package).
+The manifest icons come from the uploaded package (`icon/*.png` inside the zip). The dashboard's **Store icon** field takes `icons/store-icon-128.png`: the mark on a clay tile, made for the listing so it stands out in store results. It is deliberately not the same file as the package's `icon/128.png`, which stays the plain mark for Chrome's toolbar.
 
 ### Official website / homepage
 

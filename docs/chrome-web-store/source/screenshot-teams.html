@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <title>Hamesh Teams — The Conditions of Renaissance</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,500;0,600;1,400&family=Noto+Naskh+Arabic:wght@400;600&display=swap"
+    />
+    <link rel="stylesheet" href="../../../landing/css/reset.css" />
+    <link rel="stylesheet" href="../../../landing/css/variables.css" />
+    <link rel="stylesheet" href="../../../landing/css/base.css" />
+    <link rel="stylesheet" href="../../../landing/css/feature-demos.css" />
+    <link rel="stylesheet" href="../../../landing/css/teams-demos.css" />
+    <style>
+      /* A still of the landing's Teams scene, set larger: every rule above is
+         the site's own; this block only places the pieces and scales them. */
+      html {
+        font-size: 17px;
+      }
+      body {
+        width: 1200px;
+        height: 750px;
+        overflow: hidden;
+        background: var(--paper);
+        font-family: var(--sans);
+      }
+      .stage {
+        position: relative;
+        display: grid;
+        grid-template-columns: 330px 1fr;
+        align-items: center;
+        gap: 56px;
+        height: 100%;
+        padding: 0 64px 0 72px;
+      }
+      .copy {
+        display: grid;
+        gap: 18px;
+      }
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--accent);
+        font-size: 0.9rem;
+        font-weight: 600;
+      }
+      .brand span {
+        color: var(--ink);
+      }
+      .copy h1 {
+        font-family: var(--serif);
+        font-size: 2.1rem;
+        line-height: 1.25;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        color: var(--ink);
+      }
+      .copy p {
+        font-size: 0.86rem;
+        line-height: 1.7;
+        color: var(--ink-60);
+      }
+      .copy .free {
+        justify-self: start;
+        padding: 6px 14px;
+        border-radius: var(--radius-pill);
+        background: var(--accent-tint);
+        color: var(--accent-strong);
+        font-size: 0.72rem;
+        font-weight: 600;
+      }
+      .copy .url {
+        font-size: 0.7rem;
+        color: var(--ink-40);
+      }
+
+      .demo {
+        width: 100%;
+        /* Room below the window for the popup that hangs over its edge. */
+        padding-bottom: 72px;
+      }
+      .ui-page {
+        min-height: 520px;
+      }
+      .ui-page__sub {
+        margin-top: -10px;
+        margin-bottom: 18px;
+        font-family: var(--sans);
+        font-size: 0.62rem;
+        color: var(--ink-40);
+      }
+      /* The page around the sentence, as lines of text seen out of focus. */
+      .ui-lines {
+        display: grid;
+        gap: 15px;
+        padding-block: 8px;
+      }
+      .ui-lines i {
+        display: block;
+        height: 9px;
+        border-radius: var(--radius-pill);
+        background: var(--ink-20);
+        opacity: 0.55;
+      }
+      .ui-lines i:last-child {
+        width: 62%;
+      }
+      .ui-quote {
+        margin-block: 16px;
+        font-size: 1.1rem;
+        font-weight: 600;
+      }
+      .ui-pin,
+      .ui-popup {
+        opacity: 1;
+      }
+      .ui-popup {
+        width: 380px;
+      }
+    </style>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <symbol id="i-mark" viewBox="0 0 32 32">
+        <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="3">
+          <path d="M10 5V27" />
+          <path d="M10 14H20" />
+          <path d="M20 10.5V17.5" />
+        </g>
+      </symbol>
+    </svg>
+
+    <div class="stage">
+      <div class="copy">
+        <span class="brand"
+          ><svg width="22" height="22"><use href="#i-mark" /></svg><span>Hamesh Teams</span></span
+        >
+        <h1>Reading is not finished alone.</h1>
+        <p>
+          Share a note with your circle on the very page, and talk where the thought was born. Your
+          own notes stay on your device.
+        </p>
+        <span class="free">Start on the free plan</span>
+        <span class="url">hamesh.fandees.tech</span>
+      </div>
+
+      <div class="demo" id="demo">
+        <div class="ui-window">
+          <div class="ui-window__chrome">
+            <div class="ui-window__dots"><i></i><i></i><i></i></div>
+            <div class="ui-window__url">maktaba.site/bennabi/shurut-al-nahda</div>
+          </div>
+          <div class="ui-page ui-page--margin">
+            <p class="ui-page__title">Malek Bennabi, The Conditions of Renaissance</p>
+            <p class="ui-page__sub">Part Two: The Future · From accumulation to construction</p>
+            <div class="ui-lines"><i></i><i></i></div>
+            <p class="ui-quote">
+              <span class="ui-target" id="target"
+                ><span class="ui-highlight is-on"></span
+                ><span class="ui-underline is-on"></span>Civilization = Man + Soil + Time</span
+              >
+            </p>
+            <div class="ui-lines"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          </div>
+        </div>
+
+        <span class="ui-pin" id="pin"><span class="ui-avatar" data-tone="2">S</span></span>
+        <span class="ui-pin" id="pin-2"><span class="ui-avatar" data-tone="4">M</span></span>
+
+        <div class="ui-popup" id="popup">
+          <div class="ui-popup__head">
+            <span class="ui-avatar" data-tone="2">S</span>
+            <span class="ui-who__text">
+              <b>Salma</b>
+              <small><span class="ui-popup__team">Reading circle</span> · 2h ago</small>
+            </span>
+          </div>
+          <p class="ui-popup__body">
+            The heart of the book: civilization isn't bought as heaps of things; it is built from
+            these three.
+          </p>
+          <div class="ui-popup__thread">
+            <div class="ui-line">
+              <span class="ui-avatar" data-tone="1">K</span>
+              <span class="ui-line__text">
+                <small>Karim · 1h ago</small>
+                <span
+                  >And for him, the religious idea is what binds the three; without it they stay
+                  heaps.</span
+                >
+              </span>
+            </div>
+            <div class="ui-line">
+              <span class="ui-avatar" data-tone="6">N</span>
+              <span class="ui-line__text">
+                <small>Nour · 50m ago</small>
+                <span
+                  ><b class="ui-mention">@Karim</b> I'm not convinced: Japan rose on poor soil. The
+                  will matters more than the land.</span
+                >
+              </span>
+            </div>
+            <div class="ui-line">
+              <span class="ui-avatar" data-tone="3">H</span>
+              <span class="ui-line__text">
+                <small>Hala · 20m ago</small>
+                <span
+                  >The questions remain, but the answers need renewing; much that was new then is
+                  obvious now.</span
+                >
+              </span>
+            </div>
+            <div class="ui-line">
+              <span class="ui-avatar" data-tone="5">Y</span>
+              <span class="ui-line__text">
+                <small>Youssef · just now</small>
+                <span>And yet we still pile up what we import… the same illness.</span>
+              </span>
+            </div>
+            <span class="ui-popup__more"><span>View the whole discussion (4)</span></span>
+          </div>
+          <div class="ui-reply">
+            <span class="ui-avatar" data-tone="0">A</span>
+            <span class="ui-reply__field"
+              ><span class="ui-reply__placeholder">Write a reply…</span></span
+            >
+            <span class="ui-reply__send"
+              ><svg width="11" height="11" viewBox="0 0 14 14">
+                <path
+                  d="M2 7h9M7.5 3.5 11 7l-3.5 3.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                /></svg
+            ></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Place the pins in the margin beside what they mark, and the popup
+      // under the first, as the demos do: measured from the real elements.
+      function place() {
+        const demo = document.getElementById('demo').getBoundingClientRect();
+        const target = document.getElementById('target').getBoundingClientRect();
+        const page = document.querySelector('.ui-page').getBoundingClientRect();
+        const lines = document.querySelectorAll('.ui-lines')[1].children[4].getBoundingClientRect();
+        const at = (el, x, y) => (el.style.transform = `translate(${x}px, ${y}px)`);
+        at(
+          document.getElementById('pin'),
+          page.left - demo.left + 12,
+          target.top - demo.top + target.height / 2 - 14,
+        );
+        at(
+          document.getElementById('pin-2'),
+          page.left - demo.left + 12,
+          lines.top - demo.top + lines.height / 2 - 14,
+        );
+        at(
+          document.getElementById('popup'),
+          page.left - demo.left + 52,
+          target.bottom - demo.top + 18,
+        );
+      }
+      document.fonts.ready.then(place);
+    </script>
+  </body>
+</html>

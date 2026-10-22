@@ -32,6 +32,15 @@
 >    limit already. **Action required:** the owner must still copy the updated `detailedDescription` into the
 >    live dashboard listing by hand (see `SUBMISSION_GUIDE.md`) — this repo change alone does not update what
 >    Chrome Web Store shows.
+>
+> 4. (2026-10-22) **Description rewritten after a rejection.** A draft was rejected for keyword stuffing
+>    ("Yellow Argon"), citing the description's "WHO IT'S FOR" list of user types. The copy was also out of
+>    date: since 2.0.0 Teams is in the store build, so "no backend server, and no network requests of any kind"
+>    was no longer true. `detailedDescription` (EN/AR) keeps the old voice and structure, drops the user-type
+>    list, keeps every keyword under five uses (`note`/`notes` four times), uses no em dashes, adds notes on
+>    selected words and Hamesh Teams, and scopes the privacy claim to personal notes. `shortDescription` now
+>    mirrors the Teams build's manifest description, which is what the store shows. `promoVideoUrl` was added
+>    for the dashboard's video field. **Action required:** paste them into the dashboard by hand.
 
 ---
 

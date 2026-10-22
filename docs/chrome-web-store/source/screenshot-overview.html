@@ -1,0 +1,706 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <title>Hamesh — overview</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    />
+    <link rel="stylesheet" href="../../../landing/css/reset.css" />
+    <link rel="stylesheet" href="../../../landing/css/variables.css" />
+    <link rel="stylesheet" href="../../../landing/css/base.css" />
+    <style>
+      /* The cover screenshot: everything Hamesh is, on one page. The promise
+         and its terms above; below, one tile per thing it does, each drawn
+         with the extension's own pieces in miniature. */
+      html,
+      body {
+        width: 1280px;
+        height: 800px;
+        overflow: hidden;
+      }
+      body {
+        position: relative;
+        background:
+          radial-gradient(700px 380px at 100% 0%, rgb(var(--accent-rgb) / 0.09), transparent 70%),
+          var(--paper);
+        font-family: var(--sans);
+        color: var(--ink);
+      }
+      svg.mk {
+        color: var(--accent);
+      }
+
+      /* ---- The promise ---- */
+      .hero {
+        position: absolute;
+        left: 56px;
+        right: 56px;
+        top: 50px;
+        display: grid;
+        grid-template-columns: 1fr 470px;
+        gap: 56px;
+        align-items: end;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-family: var(--serif);
+        font-size: 24px;
+        font-weight: 600;
+        margin-bottom: 18px;
+      }
+      .brand svg {
+        width: 26px;
+        height: 26px;
+      }
+      .brand small {
+        font-family: var(--sans);
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--ink-40);
+        margin-left: 6px;
+      }
+      h1 {
+        font-family: var(--serif);
+        font-size: 50px;
+        line-height: 1.1;
+        font-weight: 600;
+        letter-spacing: -0.015em;
+      }
+      h1 mark {
+        color: inherit;
+        background: linear-gradient(
+          transparent 56%,
+          rgb(var(--accent-rgb) / 0.24) 56% 90%,
+          transparent 90%
+        );
+      }
+      .terms {
+        display: grid;
+        gap: 14px;
+      }
+      .terms p {
+        font-size: 16.5px;
+        line-height: 1.6;
+        color: var(--ink-60);
+      }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .chips span {
+        padding: 5px 12px;
+        border-radius: var(--radius-pill);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        font-size: 13px;
+        font-weight: 500;
+      }
+      .chips span.is-accent {
+        background: var(--accent-tint);
+        border-color: transparent;
+        color: var(--accent-strong);
+        font-weight: 600;
+      }
+      .for {
+        font-size: 13px;
+        color: var(--ink-40);
+      }
+      .for b {
+        color: var(--ink);
+        font-weight: 600;
+      }
+
+      /* ---- The tiles ---- */
+      .grid {
+        position: absolute;
+        left: 56px;
+        right: 56px;
+        bottom: 46px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        grid-auto-rows: 222px;
+        gap: 16px;
+      }
+      .tile {
+        position: relative;
+        display: grid;
+        grid-template-rows: 1fr auto;
+        padding: 14px 16px 15px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        box-shadow: 0 16px 34px -26px rgba(30, 27, 24, 0.45);
+        overflow: hidden;
+      }
+      .tile--dark .art {
+        background: #241f18;
+      }
+      .art {
+        position: relative;
+        margin: -2px -4px 10px;
+        border-radius: 9px;
+        background: var(--surface-2);
+        border: 1px solid var(--border-soft);
+        overflow: hidden;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        align-content: center;
+        padding: 12px 14px;
+      }
+      .tile h3 {
+        font-size: 15px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+      }
+      .tile h3 i {
+        font-style: normal;
+        font-family: var(--sans);
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--accent);
+      }
+      .tile p {
+        margin-top: 3px;
+        font-size: 12.5px;
+        line-height: 1.45;
+        color: var(--ink-60);
+      }
+
+      /* Miniature pieces, drawn as the extension draws them. */
+      .serif {
+        font-family: var(--serif);
+        font-size: 13.5px;
+        line-height: 1.7;
+        color: var(--ink-60);
+      }
+      .hl {
+        color: var(--ink);
+        background: rgb(var(--accent-rgb) / 0.26);
+        box-shadow: inset 0 -1px 0 rgb(var(--accent-rgb) / 0.85);
+        border-radius: 2px;
+        padding: 0 1px;
+      }
+      .pill {
+        justify-self: start;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 8px;
+        padding: 4px 9px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        box-shadow: var(--shadow-md);
+        font-size: 11.5px;
+        color: var(--ink);
+      }
+      .pill::before {
+        content: '';
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--accent);
+      }
+      .chipmark {
+        display: inline-grid;
+        place-items: center;
+        width: 20px;
+        height: 23px;
+        border-radius: 5px;
+        background: var(--surface);
+        box-shadow:
+          0 0 0 1px var(--border),
+          var(--shadow-sm);
+      }
+      .frame {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .code {
+        flex: 1;
+        padding: 9px 11px;
+        border-radius: 6px;
+        background: var(--surface);
+        border: 1.5px solid var(--accent);
+        box-shadow: 0 0 0 3px rgb(var(--accent-rgb) / 0.12);
+        font-family: 'IBM Plex Mono', ui-monospace, monospace;
+        font-size: 13px;
+        color: var(--ink);
+      }
+      .tip {
+        justify-self: start;
+        margin-top: 9px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 9px;
+        border-radius: var(--radius-pill);
+        background: #1e1b18;
+        color: #f7f3ec;
+        font-size: 11px;
+      }
+      .tip svg {
+        color: #e08b5c;
+      }
+      .video {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(150deg, #241f18 0%, #3a2f22 58%, #1b1712 100%);
+      }
+      .video .bar {
+        position: absolute;
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
+        height: 3px;
+        border-radius: 3px;
+        background: rgba(255, 255, 255, 0.22);
+      }
+      .video .bar::before {
+        content: '';
+        position: absolute;
+        inset: 0 58% 0 0;
+        border-radius: 3px;
+        background: rgba(255, 255, 255, 0.72);
+      }
+      .video .bar::after {
+        content: '';
+        position: absolute;
+        left: 42%;
+        top: 50%;
+        width: 9px;
+        height: 9px;
+        margin: -4.5px 0 0 -4.5px;
+        border-radius: 50%;
+        background: var(--accent);
+        box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.35);
+      }
+      .quick {
+        position: relative;
+        justify-self: center;
+        width: 190px;
+        padding: 7px 9px;
+        background: var(--surface);
+        border-radius: 8px;
+        box-shadow: var(--shadow-lg);
+        margin-bottom: 12px;
+      }
+      .quick small {
+        display: flex;
+        justify-content: space-between;
+        font-size: 10px;
+        color: var(--ink-40);
+      }
+      .quick small b {
+        color: var(--accent);
+        font-weight: 500;
+      }
+      .quick div {
+        margin-top: 4px;
+        font-family: var(--serif);
+        font-size: 12px;
+      }
+      .rows {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 6px;
+      }
+      .row {
+        position: relative;
+        padding: 6px 9px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 7px;
+      }
+      .row b {
+        display: block;
+        font-family: var(--serif);
+        font-size: 12px;
+        font-weight: 400;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        padding-right: 14px;
+      }
+      .row small {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 10px;
+        color: var(--ink-40);
+      }
+      .row .pin {
+        position: absolute;
+        top: 6px;
+        right: 7px;
+        color: var(--accent);
+      }
+      .tree {
+        display: grid;
+        gap: 4px;
+        font-size: 12.5px;
+      }
+      .tree span {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 5px 8px;
+        border-radius: 6px;
+      }
+      .tree span.is-on {
+        background: var(--accent-tint);
+        color: var(--accent-strong);
+        font-weight: 600;
+      }
+      .tree span.child {
+        margin-left: 18px;
+      }
+      .tree em {
+        margin-left: auto;
+        font-style: normal;
+        font-size: 11px;
+        color: var(--ink-40);
+      }
+      .av {
+        display: inline-grid;
+        place-items: center;
+        flex: none;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: oklch(0.52 0.1 var(--h, 25));
+        color: #fff;
+        font-size: 10px;
+        font-weight: 600;
+      }
+      .stack {
+        display: flex;
+      }
+      .stack .av {
+        margin-left: -6px;
+        box-shadow: 0 0 0 2px var(--surface-2);
+      }
+      .stack .av:first-child {
+        margin-left: 0;
+      }
+      .dest {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+        margin-top: 10px;
+      }
+      .dest span {
+        display: grid;
+        padding: 5px 8px;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        font-size: 11.5px;
+        font-weight: 600;
+        background: var(--surface);
+      }
+      .dest span small {
+        font-size: 10px;
+        font-weight: 400;
+        color: var(--ink-40);
+      }
+      .dest span.is-on {
+        border-color: var(--accent);
+        background: #fbf4ef;
+      }
+      .pinface {
+        display: inline-grid;
+        place-items: center;
+        width: 28px;
+        height: 28px;
+        padding: 3px;
+        border-radius: 50%;
+        border-top-right-radius: 4px;
+        background: var(--surface);
+        box-shadow:
+          0 0 0 1px var(--border),
+          var(--shadow-md);
+      }
+      .pinface .av {
+        width: 22px;
+        height: 22px;
+      }
+      .line {
+        display: flex;
+        gap: 7px;
+        align-items: flex-start;
+      }
+      .line + .line {
+        margin-top: 8px;
+      }
+      .line .av {
+        width: 18px;
+        height: 18px;
+        font-size: 9px;
+      }
+      .line div {
+        font-size: 11.5px;
+        line-height: 1.4;
+      }
+      .line small {
+        display: block;
+        font-size: 10px;
+        color: var(--ink-40);
+      }
+      .mention {
+        padding: 0 3px;
+        border-radius: 3px;
+        background: var(--accent-tint);
+        color: var(--accent-strong);
+        font-weight: 500;
+      }
+      .err {
+        display: inline-block;
+        padding: 0 4px;
+        border-radius: 3px;
+        background: rgb(140 47 39 / 0.12);
+        color: var(--danger);
+        font-weight: 500;
+      }
+      .devnote {
+        margin-top: 9px;
+        padding: 7px 9px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        box-shadow: var(--shadow-md);
+        font-size: 11.5px;
+        line-height: 1.4;
+      }
+      .devnote small {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        margin-bottom: 3px;
+        font-size: 10px;
+        color: var(--ink-40);
+      }
+      .devnote small b {
+        color: var(--accent-strong);
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <section class="hero">
+      <div>
+        <div class="brand">
+          <svg class="mk" viewBox="0 0 32 32">
+            <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="3.4">
+              <path d="M10 5V27" />
+              <path d="M10 14H20" />
+              <path d="M20 10.5V17.5" />
+            </g></svg
+          >Hamesh<small>A margin for the web</small>
+        </div>
+        <h1>Leave your thoughts<br /><mark>where they lit up.</mark></h1>
+      </div>
+      <div class="terms">
+        <p>
+          Write beside the words, the thing, or the moment that stopped you, and find your thought
+          there whenever you return.
+        </p>
+        <div class="chips">
+          <span class="is-accent">Free</span>
+          <span>No account</span>
+          <span>Your notes never leave your device</span>
+          <span>Teams start on a free plan</span>
+        </div>
+        <span class="for">For <b>readers</b> · <b>learners</b> · <b>developers</b></span>
+      </div>
+    </section>
+
+    <section class="grid">
+      <!-- 01 words -->
+      <article class="tile">
+        <div class="art">
+          <span class="pill">Al-Khwarizmi translated, then wrote algebra.</span>
+          <span class="serif"
+            >imported, even its goods; <span class="hl">for civilization is creation</span>, not
+            imitation.</span
+          >
+        </div>
+        <div>
+          <h3><i>01</i>Notes on words</h3>
+          <p>Select what stopped you and write beside it. <b>Alt+T</b></p>
+        </div>
+      </article>
+
+      <!-- 02 anything -->
+      <article class="tile">
+        <div class="art">
+          <div class="frame">
+            <span class="chipmark"
+              ><svg class="mk" viewBox="0 0 32 32" width="11" height="11">
+                <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="3.6">
+                  <path d="M10 5V27" />
+                  <path d="M10 14H20" />
+                  <path d="M20 10.5V17.5" />
+                </g></svg
+            ></span>
+            <span class="code">x² + 10x = 39</span>
+          </div>
+          <span class="tip"
+            ><svg viewBox="0 0 32 32" width="10" height="10">
+              <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="3.6">
+                <path d="M10 5V27" />
+                <path d="M10 14H20" />
+                <path d="M20 10.5V17.5" />
+              </g></svg
+            >Click to add a note</span
+          >
+        </div>
+        <div>
+          <h3><i>02</i>Notes on anything</h3>
+          <p>An image, an equation, a whole paragraph. <b>Alt+H</b></p>
+        </div>
+      </article>
+
+      <!-- 03 video -->
+      <article class="tile">
+        <div class="art" style="align-content: end; padding-bottom: 22px">
+          <div class="video"><span class="bar"></span></div>
+          <div class="quick">
+            <small>Quick note <b>1:12</b></small>
+            <div>He doubted Ptolemy, then tested it.</div>
+          </div>
+        </div>
+        <div>
+          <h3><i>03</i>Notes on a moment</h3>
+          <p>The video waits while you write, then marks the spot. <b>Alt+V</b></p>
+        </div>
+      </article>
+
+      <!-- 04 library -->
+      <article class="tile">
+        <div class="art">
+          <div class="rows">
+            <div class="row">
+              <b>The House of Wisdom: translation, then creation.</b>
+              <small
+                ><svg width="9" height="9"><use href="#i-globe" /></svg>maktaba.site · 4h ago</small
+              >
+              <svg class="pin" width="10" height="10"><use href="#i-pin-filled" /></svg>
+            </div>
+            <div class="row">
+              <b>The margins of manuscripts.</b>
+              <small
+                ><svg width="9" height="9"><use href="#i-globe" /></svg>manuscripts.archive ·
+                1w</small
+              >
+            </div>
+          </div>
+        </div>
+        <div>
+          <h3><i>04</i>One library</h3>
+          <p>Every note from every site. Search, pin, go back in one click.</p>
+        </div>
+      </article>
+
+      <!-- 05 folders -->
+      <article class="tile">
+        <div class="art">
+          <div class="tree">
+            <span class="is-on"
+              ><svg width="12" height="12"><use href="#i-folder" /></svg>Renaissance<em
+                >12</em
+              ></span
+            >
+            <span class="child"
+              ><svg width="12" height="12"><use href="#i-folder" /></svg>House of Wisdom<em
+                >5</em
+              ></span
+            >
+            <span class="child"
+              ><svg width="12" height="12"><use href="#i-folder" /></svg>Translation<em>3</em></span
+            >
+          </div>
+        </div>
+        <div>
+          <h3><i>05</i>Folders</h3>
+          <p>A folder for each big question, and what branches from it.</p>
+        </div>
+      </article>
+
+      <!-- 06 teams -->
+      <article class="tile">
+        <div class="art">
+          <div style="display: flex; align-items: center; gap: 10px">
+            <span class="pinface"><span class="av" style="--h: 120">S</span></span>
+            <span class="serif" style="color: var(--ink)"
+              >So with reading: it is only finished with others.</span
+            >
+          </div>
+          <div class="dest">
+            <span>Just me<small>On this device</small></span>
+            <span class="is-on">Reading circle<small>4 members</small></span>
+          </div>
+        </div>
+        <div>
+          <h3><i>06</i>Hamesh Teams</h3>
+          <p>Share a note with your circle; it shows on the page, with your face.</p>
+        </div>
+      </article>
+
+      <!-- 07 discussion -->
+      <article class="tile">
+        <div class="art">
+          <div class="line">
+            <span class="av" style="--h: 70">K</span>
+            <div>
+              <small>Karim · 1h ago</small><span class="mention">@Layla</span> didn't Aristotle say
+              this first?
+            </div>
+          </div>
+          <div class="line">
+            <span class="av" style="--h: 155">L</span>
+            <div><small>Layla · 40m ago</small>He did, but Ibn Khaldun built a science on it.</div>
+          </div>
+        </div>
+        <div>
+          <h3><i>07</i>Talk in the margin</h3>
+          <p>Comments, @mentions, and the whole thread beside the page.</p>
+        </div>
+      </article>
+
+      <!-- 08 developers -->
+      <article class="tile">
+        <div class="art">
+          <span class="code" style="flex: none; font-size: 11.5px"
+            >POST /api/checkout <span class="err">500</span></span
+          >
+          <div class="devnote">
+            <small
+              ><span class="stack"
+                ><span class="av" style="--h: 240; width: 16px; height: 16px; font-size: 8px"
+                  >Y</span
+                ></span
+              ><b>Frontend team</b> · just now</small
+            >
+            Returns 500 when the coupon is empty.
+          </div>
+        </div>
+        <div>
+          <h3><i>08</i>For developers</h3>
+          <p>Pin bugs and technical notes to the page, for your whole team.</p>
+        </div>
+      </article>
+    </section>
+    <script>
+      window.place = () => {};
+    </script>
+  </body>
+</html>

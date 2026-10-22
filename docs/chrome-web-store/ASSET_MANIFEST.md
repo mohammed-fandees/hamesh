@@ -1,55 +1,53 @@
 # Asset Manifest
 
-Every visual asset prepared for submission, how it was produced, and its QA status. All dimensions below were verified **programmatically** by reading each PNG's IHDR chunk, not assumed from the generation script.
+Every visual asset prepared for submission, how it was produced, and its QA status. All dimensions below were verified **programmatically**, not assumed from the generation script.
 
 ## Screenshots (`screenshots/`)
 
-Captured from the **real, built extension** (`pnpm build` → `.output/chrome-mv3`) running against a deterministic demo article page (`source/demo-page.html`), via `scripts/capture-store-screenshots.mjs` (Playwright, `--headless=new`, viewport locked to 1280×800). No staged mockups, no fabricated UI — every pixel is the actual product.
+Composed brand graphics, not raw captures: each is drawn from the landing page's own stylesheets and demo markup (the same pieces the landing's feature scenes animate), with a caption beside it. They replace the earlier set of five raw captures from the built extension (2026-10). Rendered from `source/screenshot-*.html` (with `source/store-stills.css`) by `scripts/generate-promo-assets.mjs`.
 
-| #   | File                        | Dimensions | Format    | What it shows                                                      | Story beat                |
-| --- | --------------------------- | ---------- | --------- | ------------------------------------------------------------------ | ------------------------- |
-| 1   | `01-contextual-notes.png`   | 1280×800   | PNG (RGB) | A saved note open in place, next to the paragraph that inspired it | Core promise, shown whole |
-| 2   | `02-select-element.png`     | 1280×800   | PNG (RGB) | Selection mode: accent outline on the headline + instruction pill  | Select                    |
-| 3   | `03-write-in-context.png`   | 1280×800   | PNG (RGB) | The composer, mid-typing, attached to the selected paragraph       | Write                     |
-| 4   | `04-return-and-restore.png` | 1280×800   | PNG (RGB) | Page reloaded; the marker has reappeared automatically             | Return                    |
-| 5   | `05-edit-your-note.png`     | 1280×800   | PNG (RGB) | The note reopened in edit mode                                     | Manage                    |
+| #   | File                       | Dimensions | Format    | What it shows                                                                                             |
+| --- | -------------------------- | ---------- | --------- | --------------------------------------------------------------------------------------------------------- |
+| 1   | `01-overview.png`          | 1280×800   | PNG (RGB) | Everything at once: the promise, its terms (free, no account, local notes, Teams' free plan), eight tiles |
+| 2   | `02-teams.png`             | 1280×800   | PNG (RGB) | A shared note on a page with its author's face, and its discussion with an @mention                       |
+| 3   | `03-notes-on-words.png`    | 1280×800   | PNG (RGB) | Tinted words and the composer attached to them (Alt+T)                                                    |
+| 4   | `04-notes-on-a-moment.png` | 1280×800   | PNG (RGB) | A quick note on a video, and its mark on the timeline (Alt+V)                                             |
+| 5   | `05-notes-library.png`     | 1280×800   | PNG (RGB) | The Notes Library: personal and team notes, a pinned one, search and filters                              |
 
-**QA performed:** dimensions verified via PNG IHDR read (all exactly 1280×800, matching Chrome Web Store's recommended screenshot size); PNG signature validated; no duplicate files (MD5 comparison); visually inspected each image for clipping, unreadable text, or broken layout — none found. Content is English only, consistent with the "English primary listing" strategy in `STORE_LISTING.md`.
+**Content:** English, light theme. Every person in them is a made-up name and every site an example domain. The discussion in `02-teams.png` paraphrases points readers made in public reviews of the book, under invented names; it quotes no one.
 
-**Known gap, not blocking:** no Arabic-locale product screenshots yet. If/when an Arabic store listing is added (see `STORE_LISTING.md`'s language strategy), regenerate a parallel set with a `browser.i18n` override or an Arabic demo page — the capture script and demo-page pattern both support this with minor edits.
+**QA performed:** dimensions and pixel format read with `ffprobe` (all exactly 1280×800, RGB, no alpha); each visually inspected for clipping, overlap and legibility; the output of the script compared pixel for pixel with the reviewed renders (identical for all but `04`, whose video glow gradient differs imperceptibly).
 
-**To regenerate after a UI change:** `pnpm build && node scripts/capture-store-screenshots.mjs`.
+**Not a capture of the running extension.** `scripts/capture-store-screenshots.mjs` still captures the real product on `source/demo-page.html`, under the old file names; this set does not come from it.
 
 ## Promotional images (`promotional/`)
 
-Rendered from brand-token HTML sources (`source/promo-small-tile.html`, `source/promo-marquee.html`) via `scripts/generate-promo-assets.mjs` (Playwright, real font rendering — IBM Plex Sans/Sans Arabic/Serif, same fonts as the landing page and extension UI). Not photographs of the extension; these are composed brand graphics, which is standard practice for this asset type and was chosen because the small tile in particular is too small to legibly show live UI.
+Rendered from `source/promo-small-tile.html` and `source/promo-marquee.html` by `scripts/generate-promo-assets.mjs`, with the same fonts and tokens as the landing page.
 
 | File                     | Dimensions | Purpose                                       | Required or optional                                   |
 | ------------------------ | ---------- | --------------------------------------------- | ------------------------------------------------------ |
 | `small-tile-440x280.png` | 440×280    | Store search results / category browsing tile | Commonly requested by the dashboard; treat as required |
 | `marquee-1400x560.png`   | 1400×560   | Featured placement banner                     | Optional — only used if Google features the extension  |
 
-**Design notes:** paper background, clay accent mark, IBM Plex Sans Arabic for هامش and IBM Plex Serif italic for "Hamesh" — identical token values to `landing/index.html` and `src/ui/tokens.css`. The marquee includes a small recreation of the real composer card (same corner radius, connector stub, and button styles as the shipped UI) so it stays visually truthful without being a raw screenshot. Text kept minimal per Chrome Web Store guidance against overcrowded promotional images. No fake Chrome browser chrome is drawn — the small window-dot decoration is a generic, unbranded "app window" cue, not a claimed Chrome screenshot.
+**Design:** the mark is the margin. A ruled notebook page with its margin line; one phrase is tinted, and the mark itself, at its exact proportions and in its one fixed orientation, reaches from those words into the margin to hold what was written there. In the small tile what is written there is the name, "Hamesh"; in the marquee, a note beside the landing's own hero copy.
 
-**QA performed:** dimensions verified via PNG IHDR read (exact match); Arabic glyph rendering visually inspected (هامش renders correctly, properly shaped, no tofu/missing-glyph boxes); mixed Arabic/English layout inspected for spacing issues — none found.
-
-**To regenerate after a brand/token change:** `node scripts/generate-promo-assets.mjs` (no build step needed — these don't depend on the extension bundle).
+**QA performed:** dimensions and pixel format read with `ffprobe` (exact sizes, RGB); the small tile checked at half size, where the ruled page becomes texture and the mark and name stay legible.
 
 ## Icons (`icons/`)
 
-Copied from `public/icon/` (the same files the production manifest references) — not redesigned, since the audit found the existing set already meets requirements.
-
-| File                 | Dimensions | Source manifest use                               | Format                  |
+| File                 | Dimensions | Use                                               | Format                  |
 | -------------------- | ---------- | ------------------------------------------------- | ----------------------- |
-| `store-icon-128.png` | 128×128    | Chrome Web Store listing icon requirement         | PNG, RGBA (transparent) |
+| `store-icon-128.png` | 128×128    | The dashboard's **Store icon** field              | PNG, RGBA (transparent) |
 | `toolbar-16.png`     | 16×16      | `manifest.icons["16"]`, favicon-scale UI          | PNG, RGBA               |
 | `toolbar-32.png`     | 32×32      | `manifest.icons["32"]`                            | PNG, RGBA               |
 | `manifest-48.png`    | 48×48      | `manifest.icons["48"]`, extension management page | PNG, RGBA               |
 | `manifest-96.png`    | 96×96      | `manifest.icons["96"]`                            | PNG, RGBA               |
 
-**Source of truth:** `scripts/generate-icons.mjs` — a dependency-free rasterizer that draws the exact brand margin-mark glyph (same path data as `src/ui/MarginMark.tsx` and the landing page's inline SVGs) with 4× supersampled anti-aliasing, in the approved clay color (`#B5502F`).
+**Store icon:** rendered from `source/store-icon.html` by `scripts/generate-promo-assets.mjs`, following Chrome's image guidelines: a 96×96 clay tile (rounded, with a subtle top-to-bottom gradient) inside 16px of fully transparent padding on every side, and the mark in paper colour, stem on the left as everywhere else. No edge and no shadow, so the padding stays clear; the clay reads on light and dark backgrounds alike. It is no longer a copy of `public/icon/128.png`: the package keeps the plain mark for Chrome's toolbar.
 
-**QA performed:** all five files confirmed RGBA with real alpha transparency (required for correct rendering on both light and dark Chrome toolbars); dimensions verified via PNG IHDR read; visually inspected at native size — the glyph remains crisp and recognizable even at 16×16; consistent single-color treatment across all sizes (no inconsistent logo variants).
+**Toolbar and manifest icons:** copied from `public/icon/` (the files the production manifest references), drawn by `scripts/generate-icons.mjs` in the clay colour (`#B5502F`).
+
+**QA performed:** the store icon's padding verified fully transparent (alpha 0 on all four 16px bands); checked over white and over `#202124`; every file confirmed RGBA at the stated size.
 
 ## Social preview (already existed, referenced for completeness)
 
@@ -57,9 +55,13 @@ Copied from `public/icon/` (the same files the production manifest references) �
 
 ## Source files (`source/`)
 
-Editable inputs kept for future regeneration, not themselves submission assets:
+Editable inputs kept for regeneration, not themselves submission assets. They link the landing's stylesheets (`../../../landing/css/`), so a token change there carries through on the next render.
 
-- `demo-page.html` — the deterministic article page used for screenshot capture.
-- `promo-small-tile.html`, `promo-marquee.html` — the HTML/CSS sources for the promotional images.
+- `screenshot-overview.html`, `screenshot-teams.html`, `screenshot-words.html`, `screenshot-moment.html`, `screenshot-library.html`, and `store-stills.css`: the five screenshots.
+- `promo-small-tile.html`, `promo-marquee.html`: the promotional images.
+- `store-icon.html`: the store icon.
+- `demo-page.html`: the article page `scripts/capture-store-screenshots.mjs` captures the real extension on.
+
+**To regenerate:** `node scripts/generate-promo-assets.mjs`, or `PLAYWRIGHT_CHANNEL=chrome node scripts/generate-promo-assets.mjs` to use an installed Chrome. No build step needed.
 
 `privacy.html` was moved out of this folder — the actual, publicly-hosted, bilingual privacy policy now lives at `landing/privacy.html` (see `PRIVACY_POLICY.md`).

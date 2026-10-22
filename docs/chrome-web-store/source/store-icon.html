@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Hamesh — store icon</title>
+    <style>
+      /* Chrome Web Store icon, 128×128: a 96×96 tile inside 16px of
+         transparent padding on every side, as Chrome's image guidelines ask.
+         Clay tile, paper-coloured mark, in the mark's one fixed orientation
+         (stem on the left, branch to the right). No edge and no shadow, so
+         the padding stays fully transparent; the clay reads on light and
+         dark alike. */
+      html,
+      body {
+        margin: 0;
+        width: 128px;
+        height: 128px;
+        background: transparent;
+      }
+      svg {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="clay" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#BF5833" />
+          <stop offset="1" stop-color="#A9492A" />
+        </linearGradient>
+      </defs>
+      <!-- The tile: 96×96 at (16,16). -->
+      <rect x="16" y="16" width="96" height="96" rx="22" fill="url(#clay)" />
+      <!-- The mark, on its 32-unit grid scaled 2.6×, centred on its own box
+           (x 10–20, y 5–27, centre 15,16) at the tile's centre. -->
+      <g
+        transform="translate(64 64) scale(2.6) translate(-15 -16)"
+        fill="none"
+        stroke="#F7F3EC"
+        stroke-width="3.4"
+        stroke-linecap="round"
+      >
+        <path d="M10 5V27" />
+        <path d="M10 14H20" />
+        <path d="M20 10.5V17.5" />
+      </g>
+    </svg>
+  </body>
+</html>
