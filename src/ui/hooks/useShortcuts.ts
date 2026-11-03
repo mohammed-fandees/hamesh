@@ -17,6 +17,17 @@ export type CommandName = (typeof COMMANDS)[keyof typeof COMMANDS];
  * shortcuts page at any time, and that page is the only place they can be
  * changed — Chrome gives an extension `getAll` and nothing to set them with.
  */
+/**
+ * The shortcut to name in a sentence: the reader's binding, the manifest's until
+ * Chrome has answered, or `null` once it says they have none.
+ */
+export function addNoteShortcut(
+  bindings: Partial<Record<CommandName, string | null>>,
+): string | null {
+  const binding = bindings[COMMANDS.addNote];
+  return binding === undefined ? 'Alt+H' : binding;
+}
+
 export function useShortcuts(): Partial<Record<CommandName, string | null>> {
   const [bindings, setBindings] = useState<Partial<Record<CommandName, string | null>>>({});
   useEffect(() => {

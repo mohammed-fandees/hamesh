@@ -1,3 +1,4 @@
+import { folderNameConflict } from '../folder-name-conflict';
 import { useState } from 'react';
 import { FOLDER_NAME_MAX } from '@/domain/folder';
 import { mayMutateNote, type Note } from '@/domain/note';
@@ -57,6 +58,10 @@ export function NoteActionsMenu({ note, strings, actions, movable = false }: Not
                   maxLength={FOLDER_NAME_MAX}
                   submitLabel={strings.create}
                   cancelLabel={strings.cancel}
+                  conflict={folderNameConflict(
+                    strings,
+                    actions.folders.filter((f) => !f.parent).map((f) => f.folder.name),
+                  )}
                   onCancel={back}
                   onSubmit={async (name) => {
                     const folderId = await actions.createFolder(name);

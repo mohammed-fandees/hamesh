@@ -20,8 +20,12 @@ Hamesh ships two builds from this repo: the **store build** (no Teams) and the
 - **Teams styles are imported `?inline`** and applied by the component that
   needs them (`<style>{css}</style>`, or `teams/styles.ts` on Hamesh's own
   pages). A plain `import './x.css'` survives tree-shaking and ships anyway.
-- **Teams permissions and manifest keys** (`sidePanel`, `side_panel`, the API
-  origin) are added only in `wxt.config.ts`'s Teams branch.
+- **Teams permissions and manifest keys** (`sidePanel`, `side_panel`,
+  `sidebar_action`, the API origin) are added only in `wxt.config.ts`'s Teams
+  branch.
+- **Open a panel only through `src/teams/side-panel.ts`**, as the first thing in a
+  click's own handler, and always handle a `false`. Browsers differ: see
+  [teams-client.md](teams-client.md).
 - **Check for leaks before every PR that touches Teams.** Move `.env` and
   `.env.local` aside, run `npx wxt build`, and confirm:
   - the manifest's permissions are still `storage, activeTab, favicon, alarms`;
@@ -84,6 +88,8 @@ Everything Hamesh draws on a page lives in a shadow root.
   LTR, and in both themes. Use logical properties (`inset-inline-start`,
   `border-start-end-radius`). A glyph that points along the line of reading uses
   `hm-mirror`.
+- **Names can be told apart.** Two teams, or two folders in one place, never share
+  a name: `NameField`'s `conflict` warns and offers the next free `Name (N)`.
 - **People are told apart.** An `Avatar` gets `seed={userId}` wherever the id is
   known, so its monogram takes that person's tone.
 
@@ -117,6 +123,8 @@ Everything Hamesh draws on a page lives in a shadow root.
   something. Don't rely on a single read.
 - When a note moves (shared to a team), every surface drops its old copy at
   once. A note is never drawn twice.
+- **Nothing needs a reload.** A page showing server state follows `TEAMS_EVENT`, and
+  one showing stored state watches storage. The address says where the reader is.
 
 ## 9. Tests
 

@@ -120,6 +120,21 @@ describe('Notes Library page', () => {
     expect(location.search).toBe('');
   });
 
+  it('keeps the Library’s sort across a reload', async () => {
+    seedNote({ pageKey: 'https://a.test/', originalUrl: 'https://a.test/' });
+    const App = await importApp();
+    const first = render(<App />);
+    fireEvent.click(await screen.findByRole('radio', { name: 'Recent' }));
+    await waitFor(async () => {
+      const stored = await fakeStorage.api.getItem('local:hamesh:preferences');
+      expect((stored as { library: { sort: string } }).library.sort).toBe('recent');
+    });
+    first.unmount();
+
+    render(<App />);
+    expect(await screen.findByRole('radio', { name: 'Recent' })).toBeChecked();
+  });
+
   it('offers the guide from an empty Library', async () => {
     const App = await importApp();
     render(<App />);

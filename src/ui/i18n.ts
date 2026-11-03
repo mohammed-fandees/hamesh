@@ -48,7 +48,10 @@ export interface Strings {
   continueLastActivity: (rel: string) => string;
   notesCount: (n: number) => string;
   notesLibraryEmptyTitle: string;
-  notesLibraryEmptyBody: string;
+  /** `null` when the reader has unbound the shortcut. */
+  notesLibraryEmptyBody: (shortcut: string | null) => string;
+  folderNameTaken: (name: string) => string;
+  folderNameUse: (name: string) => string;
   searchPlaceholder: string;
   searchNoResultsTitle: string;
   searchNoResultsBody: (query: string) => string;
@@ -199,7 +202,12 @@ const en: Strings = {
   continueLastActivity: (rel) => `Updated ${rel}`,
   notesCount: (n) => (n === 1 ? '1 note' : `${n} notes`),
   notesLibraryEmptyTitle: 'No notes yet',
-  notesLibraryEmptyBody: 'Press Alt+H on any page to leave your first note.',
+  notesLibraryEmptyBody: (shortcut) =>
+    shortcut
+      ? `Press ${shortcut} on any page to leave your first note.`
+      : 'Click Hamesh in the toolbar on any page to leave your first note.',
+  folderNameTaken: (name) => `There’s already a folder called “${name}” here.`,
+  folderNameUse: (name) => `Use “${name}”`,
   searchPlaceholder: 'Search notes…',
   searchNoResultsTitle: 'No matches',
   searchNoResultsBody: (query) => `Nothing found for "${query}".`,
@@ -360,7 +368,12 @@ const ar: Strings = {
   continueLastActivity: (rel) => `آخر تحديث ${rel}`,
   notesCount: (n) => `${n} ${n === 1 ? 'ملاحظة' : 'ملاحظات'}`,
   notesLibraryEmptyTitle: 'لا توجد ملاحظات بعد',
-  notesLibraryEmptyBody: 'اضغط Alt+H في أي صفحة لتترك ملاحظتك الأولى.',
+  notesLibraryEmptyBody: (shortcut) =>
+    shortcut
+      ? `اضغط ${shortcut} في أي صفحة لتترك ملاحظتك الأولى.`
+      : 'اضغط هامش في شريط الأدوات في أي صفحة لتترك ملاحظتك الأولى.',
+  folderNameTaken: (name) => `يوجد فولدر باسم «${name}» هنا بالفعل.`,
+  folderNameUse: (name) => `استخدم «${name}»`,
   searchPlaceholder: 'ابحث في الملاحظات…',
   searchNoResultsTitle: 'لا نتائج',
   searchNoResultsBody: (query) => `لا توجد نتائج لـ "${query}".`,

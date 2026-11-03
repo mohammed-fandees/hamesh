@@ -40,6 +40,7 @@ describe('PreferencesRepository', () => {
       teams: { lastSeenMentionId: null, skipShareConsent: false },
       onboarding: { guide: 'hidden' },
       announcements: { enabled: true, dismissed: [], snoozedUntil: {} },
+      library: { mode: 'domain', sort: 'alphabetical' },
     });
   });
 
@@ -77,6 +78,7 @@ describe('PreferencesRepository', () => {
       teams: { lastSeenMentionId: null, skipShareConsent: false },
       onboarding: { guide: 'hidden' },
       announcements: { enabled: true, dismissed: [], snoozedUntil: {} },
+      library: { mode: 'domain', sort: 'alphabetical' },
     });
 
     await repo.setLanguage('en');
@@ -90,6 +92,7 @@ describe('PreferencesRepository', () => {
       teams: { lastSeenMentionId: null, skipShareConsent: false },
       onboarding: { guide: 'hidden' },
       announcements: { enabled: true, dismissed: [], snoozedUntil: {} },
+      library: { mode: 'domain', sort: 'alphabetical' },
     });
   });
 
@@ -105,6 +108,7 @@ describe('PreferencesRepository', () => {
       teams: { lastSeenMentionId: null, skipShareConsent: false },
       onboarding: { guide: 'hidden' },
       announcements: { enabled: true, dismissed: [], snoozedUntil: {} },
+      library: { mode: 'domain', sort: 'alphabetical' },
     });
   });
 

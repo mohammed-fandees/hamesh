@@ -595,3 +595,39 @@ test.describe('Landing page · visit counter', () => {
     await expect(page.locator('[data-en^="This website (not the extension)"]')).toHaveCount(1);
   });
 });
+
+test.describe('The page an invite link opens', () => {
+  const TOKEN = 'a'.repeat(43);
+
+  test('offers the link to copy, and never sends the invitation anywhere', async ({ page }) => {
+    const requested: string[] = [];
+    page.on('request', (request) => requested.push(request.url()));
+    await page.goto(`${origin}join.html#${TOKEN}`);
+
+    await expect(page.locator('#copy')).toBeVisible();
+    await expect(page.locator('#noToken')).toBeHidden();
+    expect(await page.locator('meta[name="referrer"]').getAttribute('content')).toBe('no-referrer');
+
+    const external = requested.filter((url) => !url.startsWith(origin));
+    expect(external).toEqual([]);
+    // A browser never puts a fragment on the wire; this catches a script doing so.
+    expect(requested.filter((url) => url.split('#')[0].includes(TOKEN))).toEqual([]);
+  });
+
+  test('says so when the link has no invitation in it', async ({ page }) => {
+    await page.goto(`${origin}join.html`);
+    await expect(page.locator('#copy')).toBeHidden();
+    await expect(page.locator('#noToken')).toBeVisible();
+  });
+
+  test('speaks both languages, each in its own direction', async ({ page }) => {
+    await page.goto(`${origin}join.html#${TOKEN}`);
+    const start = await page.locator('html').getAttribute('lang');
+    await page.locator('#langToggle').click();
+    const html = page.locator('html');
+    await expect(html).toHaveAttribute('lang', start === 'ar' ? 'en' : 'ar');
+    await expect(html).toHaveAttribute('dir', start === 'ar' ? 'ltr' : 'rtl');
+    await page.locator('#langToggle').click();
+    await expect(html).toHaveAttribute('dir', start === 'ar' ? 'rtl' : 'ltr');
+  });
+});

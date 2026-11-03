@@ -53,6 +53,7 @@ function makePrefsRepo(prefs: Preferences = DEFAULT_PREFERENCES): PreferencesRep
     setLastSeenReleaseVersion: vi.fn(),
     setLastSeenMention: vi.fn(),
     setSkipShareConsent: vi.fn(),
+    setLibrary: vi.fn(),
     setOnboarding: vi.fn(),
     setAnnouncements: vi.fn(),
     setPageDefaultFolder: vi.fn(async (pageKey: string, folderId: string | null) => ({

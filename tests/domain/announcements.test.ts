@@ -81,6 +81,18 @@ describe('what is remembered about them', () => {
     ).toEqual({ enabled: true, dismissed: ['a'], snoozedUntil: { a: 5 } });
   });
 
+  it('remembers how the Library was left, and defaults anything unknown', () => {
+    expect(parsePreferences({}).library).toEqual({ mode: 'domain', sort: 'alphabetical' });
+    expect(parsePreferences({ library: { mode: 'folder', sort: 'recent' } }).library).toEqual({
+      mode: 'folder',
+      sort: 'recent',
+    });
+    expect(parsePreferences({ library: { mode: 'grid', sort: 3 } }).library).toEqual({
+      mode: 'domain',
+      sort: 'alphabetical',
+    });
+  });
+
   it('keeps the guide off unless a fresh install turned it on', () => {
     expect(parsePreferences({}).onboarding.guide).toBe('hidden');
     expect(parsePreferences({ onboarding: { guide: 'showing' } }).onboarding.guide).toBe('showing');

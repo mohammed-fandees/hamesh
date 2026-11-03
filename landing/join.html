@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>انضم إلى فريق · هامش · Join a team on Hamesh</title>
+    <meta name="description" content="Someone invited you to a team on Hamesh." />
+    <!-- The invitation is in the address's fragment. It stays out of every request
+         this page makes, and no other site should hear where the reader came from. -->
+    <meta name="referrer" content="no-referrer" />
+    <meta name="robots" content="noindex" />
+    <meta name="theme-color" content="#f7f3ec" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#16140f" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href="./assets/favicon.ico" sizes="32x32" />
+    <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml" />
+    <style>
+      :root {
+        --ink: #1e1b18;
+        --ink-60: rgba(30, 27, 24, 0.62);
+        --paper: #f7f3ec;
+        --surface: #ffffff;
+        --accent: #b5502f;
+        --accent-strong: #8f3e22;
+        --on-accent: #ffffff;
+        --border: rgba(30, 27, 24, 0.14);
+        --sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        --arabic: 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, sans-serif;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --ink: #f3ede3;
+          --ink-60: rgba(243, 237, 227, 0.64);
+          --paper: #16140f;
+          --surface: #262219;
+          --accent: #e08b5c;
+          --accent-strong: #f0a578;
+          --on-accent: #16140f;
+          --border: rgba(243, 237, 227, 0.16);
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: var(--sans);
+        line-height: 1.65;
+      }
+      html[dir='rtl'] body {
+        font-family: var(--arabic);
+      }
+      main {
+        max-width: 560px;
+        margin: 0 auto;
+        padding: 48px 20px;
+      }
+      .top {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 32px;
+      }
+      .mark {
+        flex: none;
+        color: var(--accent);
+      }
+      .lang {
+        margin-inline-start: auto;
+        padding: 4px 12px;
+        background: none;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        color: inherit;
+        font: inherit;
+        cursor: pointer;
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 26px;
+        line-height: 1.3;
+      }
+      .lead {
+        margin: 0 0 24px;
+        color: var(--ink-60);
+      }
+      ol {
+        margin: 0 0 24px;
+        padding: 20px 20px 20px 20px;
+        padding-inline-start: 40px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+      }
+      li + li {
+        margin-top: 10px;
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .btn {
+        display: inline-block;
+        padding: 9px 16px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: none;
+        color: inherit;
+        font: inherit;
+        font-weight: 500;
+        text-decoration: none;
+        cursor: pointer;
+      }
+      .btn--primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: var(--on-accent);
+      }
+      :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .note {
+        margin: 24px 0 0;
+        color: var(--ink-60);
+        font-size: 14px;
+      }
+      [hidden] {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="top">
+        <svg class="mark" width="22" height="22" viewBox="0 0 32 32" aria-hidden="true">
+          <g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+            <path d="M10 5V27" />
+            <path d="M10 14H20" />
+            <path d="M20 10.5V17.5" />
+          </g>
+        </svg>
+        <strong data-ar="هامش" data-en="Hamesh">هامش</strong>
+        <button type="button" class="lang" id="langToggle" lang="en">EN</button>
+      </div>
+
+      <h1
+        id="title"
+        data-ar="دعاك أحدهم إلى فريق على هامش"
+        data-en="Someone invited you to a team on Hamesh"
+      >
+        دعاك أحدهم إلى فريق على هامش
+      </h1>
+      <p
+        class="lead"
+        data-ar="ثلاث خطوات وتصبح معهم، وترى ملاحظات الفريق على صفحاتها نفسها."
+        data-en="Three steps and you're in, seeing the team's notes on the pages they belong to."
+      >
+        ثلاث خطوات وتصبح معهم، وترى ملاحظات الفريق على صفحاتها نفسها.
+      </p>
+
+      <ol>
+        <li
+          data-ar="ثبّت هامش من متجر Chrome، إن لم يكن عندك."
+          data-en="Install Hamesh from the Chrome Web Store, if you don't have it."
+        >
+          ثبّت هامش من متجر Chrome، إن لم يكن عندك.
+        </li>
+        <li
+          data-ar="انسخ رابط الدعوة من الزر أدناه."
+          data-en="Copy your invite link with the button below."
+        >
+          انسخ رابط الدعوة من الزر أدناه.
+        </li>
+        <li
+          data-ar="افتح «الفرق» في هامش، والصق الرابط في «الانضمام إلى فريق». إن لم تجدها هناك فهي في الإعدادات."
+          data-en="Open Teams in Hamesh and paste the link under “Join a team”. If it isn't there, it's in Settings."
+        >
+          افتح «الفرق» في هامش، والصق الرابط في «الانضمام إلى فريق». إن لم تجدها هناك فهي في
+          الإعدادات.
+        </li>
+      </ol>
+
+      <div class="actions">
+        <button
+          type="button"
+          class="btn btn--primary"
+          id="copy"
+          data-ar="نسخ رابط الدعوة"
+          data-en="Copy invite link"
+          hidden
+        >
+          نسخ رابط الدعوة
+        </button>
+        <a
+          class="btn"
+          href="https://chromewebstore.google.com/detail/hamesh-%E2%80%94-%D9%87%D8%A7%D9%85%D8%B4/giajamkkehcoienhhlcfgcckahjjbgnc"
+          target="_blank"
+          rel="noopener noreferrer"
+          data-ar="تثبيت هامش"
+          data-en="Install Hamesh"
+          >تثبيت هامش</a
+        >
+      </div>
+
+      <p
+        class="note"
+        id="noToken"
+        data-ar="هذا الرابط لا يحمل دعوة. اطلب من صاحب الفريق أن يرسل الرابط كاملًا."
+        data-en="This link has no invitation in it. Ask the team's owner to send the whole link."
+        hidden
+      >
+        هذا الرابط لا يحمل دعوة. اطلب من صاحب الفريق أن يرسل الرابط كاملًا.
+      </p>
+      <p
+        class="note"
+        id="safe"
+        data-ar="الدعوة تبقى في هذا المتصفح: هذه الصفحة لا ترسلها إلى أي مكان."
+        data-en="The invitation stays in this browser: this page doesn't send it anywhere."
+      >
+        الدعوة تبقى في هذا المتصفح: هذه الصفحة لا ترسلها إلى أي مكان.
+      </p>
+    </main>
+
+    <script>
+      (function () {
+        var html = document.documentElement;
+        var toggle = document.getElementById('langToggle');
+        var copy = document.getElementById('copy');
+        var nodes = document.querySelectorAll('[data-ar]');
+        var hasToken = /^#[A-Za-z0-9_-]{43}$/.test(location.hash);
+
+        copy.hidden = !hasToken;
+        document.getElementById('noToken').hidden = hasToken;
+
+        function apply(lang) {
+          var isAr = lang === 'ar';
+          html.lang = lang;
+          html.dir = isAr ? 'rtl' : 'ltr';
+          nodes.forEach(function (el) {
+            var val = el.getAttribute(isAr ? 'data-ar' : 'data-en');
+            if (val !== null) el.textContent = val;
+          });
+          toggle.textContent = isAr ? 'EN' : 'ع';
+          toggle.setAttribute('aria-label', isAr ? 'Switch to English' : 'التبديل إلى العربية');
+          try {
+            localStorage.setItem('hamesh-lang', lang);
+          } catch (e) {}
+        }
+
+        var saved = null;
+        try {
+          saved = localStorage.getItem('hamesh-lang');
+        } catch (e) {}
+        if (saved === 'en' || (!saved && !/^ar\b/i.test(navigator.language))) apply('en');
+
+        toggle.addEventListener('click', function () {
+          apply(html.lang === 'ar' ? 'en' : 'ar');
+        });
+
+        copy.addEventListener('click', function () {
+          var isAr = html.lang === 'ar';
+          navigator.clipboard.writeText(location.href).then(
+            function () {
+              copy.textContent = isAr ? 'نُسخ' : 'Copied';
+            },
+            function () {
+              copy.textContent = isAr
+                ? 'انسخ العنوان من شريط المتصفح'
+                : 'Copy it from the address bar';
+            },
+          );
+        });
+      })();
+    </script>
+  </body>
+</html>

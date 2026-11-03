@@ -28,6 +28,8 @@ const SHARED = [
   'unfiledSection',
   'noFolderOption',
   'moveToFolder',
+  'folderNameTaken',
+  'folderNameUse',
 ] as const satisfies readonly (keyof Strings)[];
 
 export type SharedStrings = Pick<Strings, (typeof SHARED)[number]>;
@@ -106,7 +108,7 @@ export interface TeamsStrings extends SharedStrings {
   sharePickTitle: string;
   sharePickSearch: string;
   sharePickAction: string;
-  sharePickEmpty: string;
+  sharePickEmpty: (shortcut: string | null) => string;
   sharePickNoMatches: (query: string) => string;
 
   /** What Hamesh announces, over its own pages. */
@@ -161,6 +163,7 @@ export interface TeamsStrings extends SharedStrings {
   destUploadHint: string;
   saveAndShare: string;
   /** Hamesh in Chrome's side panel. */
+  panelOpenForPage: string;
   panelShow: string;
   panelThisNote: string;
   panelWholePage: (count: number) => string;
@@ -231,7 +234,7 @@ export interface TeamsStrings extends SharedStrings {
   subscribeToCreate: string;
   atTeamLimit: (allowed: number) => string;
   emptyNotesTitle: (team: string) => string;
-  emptyNotesBody: (team: string) => string;
+  emptyNotesBody: (team: string, shortcut: string | null) => string;
   emptyMentionsTitle: string;
   emptyMentionsBody: string;
   emptyCommentsTitle: string;
@@ -403,7 +406,10 @@ const en: TeamsOwnStrings = {
   sharePickTitle: 'Share one of your notes',
   sharePickSearch: 'Search your notes…',
   sharePickAction: 'Share',
-  sharePickEmpty: 'You have no notes of your own yet. Press Alt+H on any page to leave one.',
+  sharePickEmpty: (shortcut) =>
+    shortcut
+      ? `You have no notes of your own yet. Press ${shortcut} on any page to leave one.`
+      : 'You have no notes of your own yet. Click Hamesh in the toolbar on any page to leave one.',
   sharePickNoMatches: (query) => `None of your notes mention “${query}”.`,
 
   announcementLabel: 'News from Hamesh',
@@ -456,6 +462,7 @@ const en: TeamsOwnStrings = {
   destTeamLabel: 'Team',
   destUploadHint: 'It is uploaded to Hamesh’s servers when you save it.',
   saveAndShare: 'Save and share',
+  panelOpenForPage: 'Shared notes on this page',
   panelShow: 'Show',
   panelThisNote: 'This note',
   panelWholePage: (count) => `Whole page (${count})`,
@@ -523,8 +530,8 @@ const en: TeamsOwnStrings = {
   atTeamLimit: (allowed) =>
     `Your plan allows ${allowed} ${allowed === 1 ? 'team' : 'teams'} of your own, and you have them all.`,
   emptyNotesTitle: (team) => `Nothing in ${team} yet`,
-  emptyNotesBody: (team) =>
-    `Share one of your notes here, or press Alt+H on any page and choose ${team} as you write. Everyone here will see it on that page.`,
+  emptyNotesBody: (team, shortcut) =>
+    `Share one of your notes here, or ${shortcut ? `press ${shortcut}` : 'click Hamesh in the toolbar'} on any page and choose ${team} as you write. Everyone here will see it on that page.`,
   emptyMentionsTitle: 'Nobody has named you yet',
   emptyMentionsBody:
     'When someone types @ and picks you in a comment, it turns up here \u2014 whichever team it was in.',
@@ -737,7 +744,10 @@ const ar: TeamsOwnStrings = {
   sharePickTitle: 'شارك إحدى ملاحظاتك',
   sharePickSearch: 'ابحث في ملاحظاتك…',
   sharePickAction: 'مشاركة',
-  sharePickEmpty: 'ليست لديك ملاحظات بعد. اضغط Alt+H في أي صفحة لتترك واحدة.',
+  sharePickEmpty: (shortcut) =>
+    shortcut
+      ? `ليست لديك ملاحظات بعد. اضغط ${shortcut} في أي صفحة لتترك واحدة.`
+      : 'ليست لديك ملاحظات بعد. اضغط هامش في شريط الأدوات في أي صفحة لتترك واحدة.',
   sharePickNoMatches: (query) => `لا توجد ملاحظة لك تذكر «${query}».`,
 
   announcementLabel: 'أخبار هامش',
@@ -788,6 +798,7 @@ const ar: TeamsOwnStrings = {
   destTeamLabel: 'الفريق',
   destUploadHint: 'تُرفع إلى خوادم هامش عند الحفظ.',
   saveAndShare: 'حفظ ومشاركة',
+  panelOpenForPage: 'الملاحظات المشتركة في هذه الصفحة',
   panelShow: 'عرض',
   panelThisNote: 'هذه الملحوظة',
   panelWholePage: (count) => `كل الصفحة (${count})`,
@@ -875,8 +886,8 @@ const ar: TeamsOwnStrings = {
     `خطتك تسمح بـ${allowed} ${allowed <= 10 && allowed >= 3 ? 'فرق' : 'فريق'} خاصة بك، وقد أنشأتها كلها.`,
   emptyNotesTitle: (team) =>
     `\u0644\u0627 \u0634\u064a\u0621 \u0641\u064a ${team} \u0628\u0639\u062f`,
-  emptyNotesBody: (team) =>
-    `شارك إحدى ملاحظاتك من هنا، أو اضغط Alt+H في أي صفحة واختر ${team} أثناء الكتابة. سيراها كل من هنا على صفحتها.`,
+  emptyNotesBody: (team, shortcut) =>
+    `شارك إحدى ملاحظاتك من هنا، أو اضغط ${shortcut ?? 'هامش في شريط الأدوات'} في أي صفحة واختر ${team} أثناء الكتابة. سيراها كل من هنا على صفحتها.`,
   emptyMentionsTitle:
     '\u0644\u0645 \u064a\u0630\u0643\u0631\u0643 \u0623\u062d\u062f \u0628\u0639\u062f',
   emptyMentionsBody:

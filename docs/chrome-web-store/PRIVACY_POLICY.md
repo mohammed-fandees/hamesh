@@ -54,6 +54,8 @@ On every page you visit, Hamesh also computes a normalized version of that page'
 
 All of this is stored using your browser's built-in local extension storage (`chrome.storage.local`). It stays on your device.
 
+> **Stale since 2.0.0:** this file describes the build before Teams. The policy that is actually published is `landing/privacy.html`, which covers Teams and, since 2.1.0, the news request.
+
 ## What Hamesh does NOT do
 
 - Hamesh does **not** have a backend server of any kind.

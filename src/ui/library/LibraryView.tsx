@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { revealElement } from '@/utils/dom';
 import type { Folder, FolderLike } from '@/domain/folder';
 import { buildFolderTree } from '@/domain/folder-grouping';
@@ -11,6 +11,7 @@ import {
   sortWebsiteGroups,
   type GroupSortMode,
 } from '@/domain/notes-grouping';
+import type { LibraryPreferences } from '@/domain/preferences';
 import { EmptyState } from '../kit/EmptyState';
 import { stagger } from '../kit/motion';
 import { Page, PageHeader } from '../kit/Page';
@@ -55,6 +56,11 @@ interface LibraryViewProps {
   onMoveNote: (noteId: string, folderId: string | undefined) => void;
   /** How to leave a first note. */
   onOpenGuide: () => void;
+  /** The shortcut for a new note, or null when it has none. */
+  addShortcut?: string | null;
+  /** How the reader last left the list, and how to remember a change. */
+  listView?: LibraryPreferences;
+  onListViewChange?: (patch: Partial<LibraryPreferences>) => void;
 }
 
 /**
@@ -82,10 +88,28 @@ export function LibraryView({
   onDeleteFolder,
   onMoveNote,
   onOpenGuide,
+  addShortcut = 'Alt+H',
+  listView,
+  onListViewChange,
 }: LibraryViewProps) {
   const [query, setQuery] = useState('');
-  const [sortMode, setSortMode] = useState<GroupSortMode>('alphabetical');
-  const [mode, setMode] = useState<LibraryMode>('domain');
+  // Held here as well, so a page with nowhere to remember them still works, and a
+  // click shows before storage has answered.
+  const [ownSort, setOwnSort] = useState<GroupSortMode>('alphabetical');
+  const [ownMode, setOwnMode] = useState<LibraryMode>('domain');
+  const sortMode = listView?.sort ?? ownSort;
+  const mode = listView?.mode ?? ownMode;
+  const setSortMode = (sort: GroupSortMode) => {
+    setOwnSort(sort);
+    onListViewChange?.({ sort });
+  };
+  const setMode = useCallback(
+    (next: LibraryMode) => {
+      setOwnMode(next);
+      onListViewChange?.({ mode: next });
+    },
+    [onListViewChange],
+  );
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -151,7 +175,7 @@ export function LibraryView({
       cancelAnimationFrame(first);
       cancelAnimationFrame(next);
     };
-  }, [focusing, focusGroup]);
+  }, [focusing, focusGroup, setMode]);
   // Only this device's notes can be pinned, so a team's never appear here.
   const pinned = useMemo(() => getPinnedNotes(notes ?? []), [notes]);
 
@@ -170,7 +194,7 @@ export function LibraryView({
       return (
         <EmptyState
           title={strings.notesLibraryEmptyTitle}
-          body={strings.notesLibraryEmptyBody}
+          body={strings.notesLibraryEmptyBody(addShortcut)}
           action={{ label: strings.guideSeeHow, onClick: onOpenGuide }}
         />
       );

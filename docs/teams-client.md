@@ -177,13 +177,12 @@ Teams messages the worker answers to a content script: `thread` and `reply` for
 a team note the worker has cached for the very page asking, `share` for a note
 this device holds for that page (the worker reads the note itself — nothing the
 page sends is trusted as the note), `destinations` (the teams and folders a new
-note can go to) and `open` (opens the note's discussion in Chrome's side panel
-beside the page, or its page in Hamesh — asked for by the popup's menu with
-`in: 'hamesh'`, and the fallback where there is no side panel). The side
-panel is `notes.html?view=panel` (`src/ui/teams/PanelView.tsx`) — one of
-Hamesh's own pages, so it asks the worker like any other and the web page
-beside it is handed nothing; the `sidePanel` permission is added only to a
-Chrome build that has Teams. The sender must be
+note can go to) and `open` (opens the note's discussion in the panel beside the
+page, or its page in Hamesh — asked for by the popup's menu with `in: 'hamesh'`,
+and the fallback where there is no panel). The panel is
+`notes.html?view=panel` (`src/ui/teams/PanelView.tsx`) — one of Hamesh's own pages,
+so it asks the worker like any other and the web page beside it is handed nothing;
+see "The panel, browser by browser" below. The sender must be
 this extension's own content script in a page's top frame, and the page is the
 URL the browser reports for that frame. Every other Teams message is still
 answered only to Hamesh's own pages, and the server checks every request as
@@ -250,6 +249,34 @@ Teams follows the rest of the library rather than sitting beside it.
 - **Nothing there yet is a state, not a grey line.** Empty states carry the
   margin mark, say what to do, and offer the control that does it; what is still
   loading is a skeleton, as in the Library.
+
+## The panel, browser by browser
+
+Browsers don't share an API for a panel beside the page, and they differ on what
+may open one. `src/teams/side-panel.ts` is the one place that knows. It resolves
+`false` when it can't open, and every caller then opens a tab instead.
+
+| Browser           | API             | From a note's button on a page | From the toolbar popup |
+| ----------------- | --------------- | ------------------------------ | ---------------------- |
+| Chrome 116+, Edge | `sidePanel`     | Opens                          | Opens                  |
+| Brave             | `sidePanel`     | Opens                          | Opens                  |
+| Firefox 140+      | `sidebarAction` | Opens a tab (see below)        | Opens                  |
+| Opera, Vivaldi    | Unconfirmed     | A tab if the panel refuses     | A tab if it refuses    |
+| Safari            | None            | Opens a tab                    | Button not shown       |
+
+Chrome and Brave were tried in a real browser. Edge, Firefox's sidebar opening, Opera
+and Vivaldi were not: this table comes from their documentation and user reports. Firefox
+157 did install a build and accept its manifest.
+
+**Firefox.** It doesn't count a click on a web page as a user action, and relaying
+it to the worker doesn't help, so a note's button can't open the sidebar. The panel
+is still set for that tab, so the sidebar shows the note if the reader opens it
+themselves. A click in the popup is on one of Hamesh's own pages, so it can open it.
+Firefox builds are `pnpm build:firefox` and `pnpm zip:firefox`. They aren't released
+yet: that needs an add-ons.mozilla.org account and review.
+
+**Vivaldi.** Its users report that `sidePanel.setOptions` doesn't work there, which
+would show a blank panel and resolve as if it had opened. Hamesh can't detect that.
 
 ## Comments and mentions
 

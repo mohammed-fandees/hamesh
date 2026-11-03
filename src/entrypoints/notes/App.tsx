@@ -12,6 +12,7 @@ import { getStrings, resolveLang, dirForLang } from '@/ui/i18n';
 import { usePreferences, systemTheme } from '@/ui/hooks/usePreferences';
 import { useFolders } from '@/ui/hooks/useFolders';
 import { useNoteMutations } from '@/ui/hooks/useNoteMutations';
+import { addNoteShortcut, useShortcuts } from '@/ui/hooks/useShortcuts';
 import { useToolbarPin } from '@/ui/hooks/useToolbarPin';
 import { usePageBackground } from '@/ui/hooks/usePageBackground';
 import { createNotesRepository } from '@/storage/notes-repository';
@@ -134,6 +135,29 @@ const matched = systemTheme();
  *  build's Teams constant. */
 const NO_SHARING: PersonalNotes = { forget: async () => {}, keep: async () => {} };
 
+/** The Library's filter, for as long as this tab lasts: a reload keeps it, and a
+ *  new tab starts on everything. */
+const OWNER_KEY = 'hamesh:library-owner';
+function readOwner(): NoteOwner {
+  try {
+    const saved: unknown = JSON.parse(sessionStorage.getItem(OWNER_KEY) ?? '"all"');
+    if (saved === 'all' || saved === 'mine') return saved;
+    if (saved && typeof (saved as { teamId?: unknown }).teamId === 'string') {
+      return saved as NoteOwner;
+    }
+  } catch {
+    /* blocked or malformed: everything, as a new tab starts */
+  }
+  return 'all';
+}
+function rememberOwner(owner: NoteOwner): void {
+  try {
+    sessionStorage.setItem(OWNER_KEY, JSON.stringify(owner));
+  } catch {
+    /* the filter simply won't outlive this page */
+  }
+}
+
 const repo = createNotesRepository();
 const prefsRepo = createPreferencesRepository();
 const foldersRepo = createFoldersRepository();
@@ -234,7 +258,11 @@ export function App() {
    *  empty in a build without Teams, and while nobody is signed in. */
   const [shared, setShared] = useState<LibraryTeamNotes>(NO_TEAM_NOTES);
   /** Whose notes the library is showing. */
-  const [owner, setOwner] = useState<NoteOwner>('all');
+  const [owner, setOwnerNow] = useState<NoteOwner>(readOwner);
+  const setOwner = useCallback((next: NoteOwner) => {
+    setOwnerNow(next);
+    rememberOwner(next);
+  }, []);
   /** The newest mention the server has — against the newest the reader has
    *  looked at, what puts a dot on Mentions in the sidebar. */
   const [newestMention, setNewestMention] = useState<string | null>(null);
@@ -553,6 +581,7 @@ export function App() {
   const mentionsUnseen = newestMention !== null && newestMention !== lastSeenMention;
 
   const pinned = useToolbarPin();
+  const addShortcut = addNoteShortcut(useShortcuts());
   const guideDone = useMemo(
     () =>
       stepsDone({
@@ -584,6 +613,7 @@ export function App() {
           }}
           personal={personalNotes}
           myNotes={notes ?? []}
+          addShortcut={addShortcut}
           onShare={shareToTeam}
           route={place.teams}
           onRoute={(teams) => navigate('teams', teams)}
@@ -655,6 +685,9 @@ export function App() {
         onDeleteFolder={deleteFolder}
         onMoveNote={noteActions.move}
         onOpenGuide={() => navigate('start')}
+        addShortcut={addShortcut}
+        listView={prefs?.library}
+        onListViewChange={preferences.setLibrary}
       />
     );
   }

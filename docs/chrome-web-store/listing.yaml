@@ -70,7 +70,7 @@ locales:
 
       PRIVACY
 
-      Your personal notes stay on your device, in your browser's own extension storage. There is no account and nothing is sent anywhere. Teams is the only exception: once you turn it on and sign in, what you share goes to our server, and nothing else. See our privacy policy for full details.
+      Your personal notes stay on your device, in your browser's own extension storage. There is no account, and no note is ever sent anywhere. Teams is the only exception: once you turn it on and sign in, what you share goes to our server, and nothing else. Hamesh also asks our server for a short list of news about the extension, with nothing about you in the request; you can turn that off in Settings. See our privacy policy for full details.
 
       CURRENT FEATURES
 
