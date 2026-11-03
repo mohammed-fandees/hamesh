@@ -11,9 +11,22 @@ interface NameFieldProps {
   submitLabel: string;
   cancelLabel: string;
   busy?: boolean;
+  /**
+   * Whether this name is already in use, asked on every keystroke. Saying so
+   * there and then stops the field being submitted, and offers a free name
+   * instead, the way Windows names a second folder.
+   */
+  conflict?: (name: string) => NameConflict | null;
   /** Called with the name trimmed, and only when it is valid. */
   onSubmit: (name: string) => void;
   onCancel: () => void;
+}
+
+export interface NameConflict {
+  message: string;
+  /** A name that is free, and the words on the button that takes it. */
+  suggestion: string;
+  useLabel: string;
 }
 
 /**
@@ -35,11 +48,13 @@ export function NameField({
   submitLabel,
   cancelLabel,
   busy = false,
+  conflict,
   onSubmit,
   onCancel,
 }: NameFieldProps) {
   const [value, setValue] = useState(initial);
-  const valid = nameProblem(value, maxLength) === null;
+  const clash = conflict && value.trim() ? conflict(value.trim()) : null;
+  const valid = nameProblem(value, maxLength) === null && !clash;
   const submit = () => {
     if (valid && !busy) onSubmit(value.trim());
   };
@@ -86,6 +101,19 @@ export function NameField({
       <button type="button" className="hm-btn hm-btn-ghost hm-btn--compact" onClick={onCancel}>
         {cancelLabel}
       </button>
+      {clash && (
+        <p className="hm-name-field__conflict" role="status">
+          <span>{clash.message}</span>
+          <button
+            type="button"
+            className="hm-link hm-link--accent"
+            disabled={busy}
+            onClick={() => onSubmit(clash.suggestion)}
+          >
+            <bdi>{clash.useLabel}</bdi>
+          </button>
+        </p>
+      )}
     </form>
   );
 }

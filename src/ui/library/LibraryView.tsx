@@ -53,8 +53,8 @@ interface LibraryViewProps {
   onRenameFolder: (folderId: string, name: string) => Promise<unknown>;
   onDeleteFolder: (folderId: string) => Promise<unknown>;
   onMoveNote: (noteId: string, folderId: string | undefined) => void;
-  /** Where the shortcuts that make a first note are. */
-  onOpenSettings: () => void;
+  /** How to leave a first note. */
+  onOpenGuide: () => void;
 }
 
 /**
@@ -81,7 +81,7 @@ export function LibraryView({
   onRenameFolder,
   onDeleteFolder,
   onMoveNote,
-  onOpenSettings,
+  onOpenGuide,
 }: LibraryViewProps) {
   const [query, setQuery] = useState('');
   const [sortMode, setSortMode] = useState<GroupSortMode>('alphabetical');
@@ -171,7 +171,7 @@ export function LibraryView({
         <EmptyState
           title={strings.notesLibraryEmptyTitle}
           body={strings.notesLibraryEmptyBody}
-          action={{ label: strings.settingsShortcuts, onClick: onOpenSettings }}
+          action={{ label: strings.guideSeeHow, onClick: onOpenGuide }}
         />
       );
     }

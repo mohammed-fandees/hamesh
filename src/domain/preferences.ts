@@ -128,6 +128,36 @@ export const DEFAULT_TEAMS_PREFERENCES: TeamsPreferences = {
   skipShareConsent: false,
 };
 
+/**
+ * The getting-started guide. Only a fresh install turns it on (`showing`), so
+ * nobody who already knows Hamesh is walked through it after an update; closing
+ * it, or doing what it asks, turns it off.
+ */
+export interface OnboardingPreferences {
+  guide: 'showing' | 'hidden';
+}
+
+export const DEFAULT_ONBOARDING_PREFERENCES: OnboardingPreferences = { guide: 'hidden' };
+
+/**
+ * What this reader has said about Hamesh's announcements. Local only: the server
+ * hands the same list to everyone and never hears what was closed.
+ */
+export interface AnnouncementPreferences {
+  /** Off means none are shown, and none are asked for. */
+  enabled: boolean;
+  /** "Don't show again", by announcement id. */
+  dismissed: string[];
+  /** Closed for now: when each may come back, by announcement id. */
+  snoozedUntil: Record<string, number>;
+}
+
+export const DEFAULT_ANNOUNCEMENT_PREFERENCES: AnnouncementPreferences = {
+  enabled: true,
+  dismissed: [],
+  snoozedUntil: {},
+};
+
 export interface Preferences {
   schemaVersion: SchemaVersion;
   /** No explicit choice yet — callers fall back to the browser's UI language.
@@ -139,6 +169,8 @@ export interface Preferences {
   releaseNotes: ReleaseNotesPreferences;
   folderDefaults: FolderDefaultPreferences;
   teams: TeamsPreferences;
+  onboarding: OnboardingPreferences;
+  announcements: AnnouncementPreferences;
 }
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -149,6 +181,8 @@ export const DEFAULT_PREFERENCES: Preferences = {
   releaseNotes: DEFAULT_RELEASE_NOTES_PREFERENCES,
   folderDefaults: DEFAULT_FOLDER_DEFAULT_PREFERENCES,
   teams: DEFAULT_TEAMS_PREFERENCES,
+  onboarding: DEFAULT_ONBOARDING_PREFERENCES,
+  announcements: DEFAULT_ANNOUNCEMENT_PREFERENCES,
 };
 
 function parseTextNotes(value: unknown): TextNotePreferences {
@@ -179,6 +213,29 @@ function parseTeams(value: unknown): TeamsPreferences {
     lastSeenMentionId:
       typeof record.lastSeenMentionId === 'string' ? record.lastSeenMentionId : null,
     skipShareConsent: record.skipShareConsent === true,
+  };
+}
+
+function parseOnboarding(value: unknown): OnboardingPreferences {
+  if (!value || typeof value !== 'object') return DEFAULT_ONBOARDING_PREFERENCES;
+  return { guide: (value as Record<string, unknown>).guide === 'showing' ? 'showing' : 'hidden' };
+}
+
+function parseAnnouncements(value: unknown): AnnouncementPreferences {
+  if (!value || typeof value !== 'object') return DEFAULT_ANNOUNCEMENT_PREFERENCES;
+  const record = value as Record<string, unknown>;
+  const snoozedUntil: Record<string, number> = {};
+  if (record.snoozedUntil && typeof record.snoozedUntil === 'object') {
+    for (const [id, until] of Object.entries(record.snoozedUntil)) {
+      if (typeof until === 'number') snoozedUntil[id] = until;
+    }
+  }
+  return {
+    enabled: record.enabled !== false,
+    dismissed: Array.isArray(record.dismissed)
+      ? record.dismissed.filter((id): id is string => typeof id === 'string')
+      : [],
+    snoozedUntil,
   };
 }
 
@@ -253,5 +310,7 @@ export function parsePreferences(data: unknown): Preferences {
     releaseNotes: parseReleaseNotes(record.releaseNotes),
     folderDefaults: parseFolderDefaults(record.folderDefaults),
     teams: parseTeams(record.teams),
+    onboarding: parseOnboarding(record.onboarding),
+    announcements: parseAnnouncements(record.announcements),
   };
 }

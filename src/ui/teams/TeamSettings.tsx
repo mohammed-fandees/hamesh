@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { TeamResponse } from '@hamesh/teams-contract';
+import { nameTaken, nextFreeName } from '@/domain/unique-name';
 import { InlineError } from '../kit/Feedback';
 import { InlineConfirm } from '../kit/InlineConfirm';
 import { NameField } from '../kit/NameField';
@@ -15,6 +16,8 @@ interface TeamSettingsProps {
   page: TeamsPage;
   team: TeamResponse;
   myUserId: string;
+  /** What this reader's teams are called, this one among them. */
+  teamNames: readonly string[];
   /** After the team was renamed, so what is shown is the server's version. */
   onRenamed: () => void;
   /** After the reader left the team or it was deleted — it is no longer theirs to show. */
@@ -37,12 +40,14 @@ export function TeamSettings({
   page,
   team,
   myUserId,
+  teamNames,
   onRenamed,
   onGone,
 }: TeamSettingsProps) {
   const [renaming, setRenaming] = useState(false);
   const [asking, setAsking] = useState<Asking | null>(null);
   const teamId = team.team.id;
+  const others = teamNames.filter((name) => name !== team.team.name);
 
   async function rename(name: string) {
     if (
@@ -83,6 +88,15 @@ export function TeamSettings({
                 submitLabel={strings.rename}
                 cancelLabel={strings.cancel}
                 busy={page.working('team.rename')}
+                conflict={(name) => {
+                  if (!nameTaken(name, others)) return null;
+                  const suggestion = nextFreeName(name, teamNames, TEAM_NAME_MAX);
+                  return {
+                    message: strings.teamNameTaken(name),
+                    suggestion,
+                    useLabel: strings.teamNameRenameTo(suggestion),
+                  };
+                }}
                 onCancel={() => setRenaming(false)}
                 onSubmit={(name) => void rename(name)}
               />

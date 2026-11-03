@@ -8,6 +8,7 @@ import type {
   ResultFor,
   TeamCacheResult,
   TeamsCacheOp,
+  TeamsEvent,
   TeamsOp,
   TeamsReply,
   TeamsStatus,
@@ -50,6 +51,8 @@ export interface SharedNotesDeps {
   clearCache: () => Promise<void>;
   /** Who is in the teams, for the pins on a page. Absent draws no faces. */
   people?: Pick<People, 'refresh'>;
+  /** Tells Hamesh's own pages something moved on, so they re-read it. Ids only. */
+  notify?: (event: TeamsEvent) => void;
   now: () => number;
 }
 
@@ -81,7 +84,13 @@ export function createTeamsService(deps: TeamsServiceDeps) {
       running = shared.sync
         .syncTeam(teamId)
         .then(
-          () => {},
+          // After the worker's bookkeeping is saved, not when the first bucket
+          // lands: a page reading the team before then would miss the new note.
+          (outcome) => {
+            if (outcome.changed) {
+              shared.notify?.({ type: 'TEAMS_EVENT', event: 'notes', teamId });
+            }
+          },
           () => {},
         )
         .finally(() => pulling.delete(teamId));
@@ -247,6 +256,7 @@ export function createTeamsService(deps: TeamsServiceDeps) {
     async accountChanged(): Promise<void> {
       peopleChanged = true;
       await status().catch(() => undefined);
+      deps.shared?.notify?.({ type: 'TEAMS_EVENT', event: 'account' });
     },
     /**
      * The server says this device is signed out. Nothing local is kept: the

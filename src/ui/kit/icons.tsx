@@ -353,6 +353,15 @@ export function ImportIcon({ size, className }: IconProps) {
   );
 }
 
+/** Getting started: a path with a flag at its end. */
+export function GuideIcon({ size, className }: IconProps) {
+  return (
+    <Glyph size={size} className={className}>
+      <path d="M3.5 12.2 V2 H10.6 L8.9 4.4 L10.6 6.8 H3.5" />
+    </Glyph>
+  );
+}
+
 /** Teams: two heads, side by side. */
 export function TeamIcon({ size, className }: IconProps) {
   return (

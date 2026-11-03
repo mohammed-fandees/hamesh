@@ -8,7 +8,7 @@ unless you turn on Hamesh Teams, and then only what is listed under
 
 All your personal notes are stored exclusively in your browser's local storage using `chrome.storage.local`. This data never leaves your device.
 
-Hamesh has no analytics services and no telemetry. Unless you turn on Hamesh Teams (see below), the extension makes no network requests of any kind.
+Hamesh has no analytics services and no telemetry. Apart from asking for news about Hamesh (see below), which you can turn off, the extension makes no network requests unless you turn on Hamesh Teams.
 
 ## Permissions
 
@@ -63,6 +63,12 @@ your own device. Hamesh does not upload it, does not send it anywhere, and has
 nowhere to send it to. Once the file exists it is an ordinary file you own — if
 you later put it somewhere shared, that is your choice and outside Hamesh's
 control.
+
+## News about Hamesh
+
+When you open the Notes Library, Hamesh may fetch a short list of announcements from its server, such as a new feature, at most once every six hours. The request carries no account, no cookie, no notes and no page addresses, and the list is the same for everyone. Like any request, it shows the server your IP address, which is used only for rate limiting and is not stored against you. What you close stays on your device.
+
+To stop it, turn off **Show news about new features** in Settings. Hamesh then makes no such request at all.
 
 ## Hamesh Teams (optional)
 

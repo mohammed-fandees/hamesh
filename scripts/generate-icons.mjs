@@ -7,6 +7,11 @@
  * The glyph is the brand mark from the approved Hamesh design system:
  * a full-height vertical rule with a short tick reaching off it.
  * viewBox 0 0 32 32, stroke-width 3, round caps.
+ *
+ * The extension's own icons are the store icon's clay tile with the mark in
+ * paper (docs/chrome-web-store/source/store-icon.html), so what someone installs
+ * looks like what they saw in the store. The landing's favicons stay the bare
+ * mark.
  */
 import { deflateSync } from 'node:zlib';
 import { writeFileSync, mkdirSync } from 'node:fs';
@@ -96,6 +101,71 @@ function renderIcon(size, { inset = 0, background = null } = {}) {
   return encodePng(size, size, data);
 }
 
+/** How far (x, y) is inside a rounded square, in [0,1], from a signed distance. */
+function insideRoundedSquare(x, y, from, to, radius) {
+  const qx = Math.abs(x - (from + to) / 2) - ((to - from) / 2 - radius);
+  const qy = Math.abs(y - (from + to) / 2) - ((to - from) / 2 - radius);
+  const outside = Math.hypot(Math.max(qx, 0), Math.max(qy, 0));
+  return outside + Math.min(Math.max(qx, qy), 0) - radius <= 0;
+}
+
+// The store icon's own numbers, per pixel of a 96px tile.
+const TILE_RADIUS = 22 / 96;
+const MARK_SCALE = 2.6 / 96;
+const TILE_TOP = { r: 0xbf, g: 0x58, b: 0x33 };
+const TILE_BOTTOM = { r: 0xa9, g: 0x49, b: 0x2a };
+const PAPER = { r: 0xf7, g: 0xf3, b: 0xec };
+
+/**
+ * The clay tile with the mark on it.
+ *
+ * `padding` is the clear edge around the tile, in pixels. Chrome's guidelines
+ * ask for it on the large icons, where the browser draws them as artwork; on the
+ * toolbar's small ones every pixel of padding is a pixel the mark can't use, so
+ * those fill the canvas.
+ */
+function renderTile(size, { padding, strokeWidth = 3.4 }) {
+  const ss = 4;
+  const tile = size - padding * 2;
+  const markScale = tile * MARK_SCALE;
+  const half = strokeWidth / 2;
+  const data = Buffer.alloc(size * size * 4);
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      let tileHits = 0;
+      let markHits = 0;
+      for (let sy = 0; sy < ss; sy++) {
+        for (let sx = 0; sx < ss; sx++) {
+          const px = x + (sx + 0.5) / ss;
+          const py = y + (sy + 0.5) / ss;
+          if (!insideRoundedSquare(px, py, padding, size - padding, tile * TILE_RADIUS)) continue;
+          tileHits += 1;
+          // The mark's box (x 10–20, y 5–27, centre 15,16) on the tile's centre.
+          const vx = (px - size / 2) / markScale + 15;
+          const vy = (py - size / 2) / markScale + 16;
+          if (STROKES.some(([ax, ay, bx, by]) => distToSegment(vx, vy, ax, ay, bx, by) <= half)) {
+            markHits += 1;
+          }
+        }
+      }
+      if (tileHits === 0) continue;
+      const fall = Math.max(0, Math.min(1, (y + 0.5 - padding) / tile));
+      const paper = markHits / tileHits;
+      const i = (y * size + x) * 4;
+      for (const [offset, channel] of [
+        [0, 'r'],
+        [1, 'g'],
+        [2, 'b'],
+      ]) {
+        const clay = TILE_TOP[channel] + (TILE_BOTTOM[channel] - TILE_TOP[channel]) * fall;
+        data[i + offset] = Math.round(clay + (PAPER[channel] - clay) * paper);
+      }
+      data[i + 3] = Math.round((tileHits / (ss * ss)) * 255);
+    }
+  }
+  return encodePng(size, size, data);
+}
+
 /**
  * An .ico wrapping PNG payloads — allowed since Vista and understood by every
  * browser that still asks for `favicon.ico` at all. It exists for the
@@ -168,9 +238,17 @@ function encodePng(width, height, rgba) {
   ]);
 }
 
-const SIZES = [16, 32, 48, 96, 128];
-for (const size of SIZES) {
-  const png = renderIcon(size);
+// 128 and 96 keep the guidelines' one-eighth of padding; the smaller the icon,
+// the less of it can be spared, and the heavier the mark has to be to survive.
+const SIZES = [
+  { size: 16, padding: 0, strokeWidth: 4.2 },
+  { size: 32, padding: 1, strokeWidth: 3.8 },
+  { size: 48, padding: 3 },
+  { size: 96, padding: 12 },
+  { size: 128, padding: 16 },
+];
+for (const { size, ...tile } of SIZES) {
+  const png = renderTile(size, tile);
   writeFileSync(resolve(OUT_DIR, `${size}.png`), png);
   console.log(`icon/${size}.png (${png.length} bytes)`);
 }

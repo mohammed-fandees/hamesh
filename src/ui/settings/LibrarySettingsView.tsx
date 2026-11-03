@@ -6,10 +6,11 @@ import { Page, PageHeader } from '../kit/Page';
 import { Section } from '../kit/Section';
 import { SettingRow } from '../kit/SettingRow';
 import { Switch } from '../kit/Switch';
-import { PlayIcon, SelectionActionIcon, TextNoteIcon } from '../kit/icons';
+import { PlayIcon, SelectionActionIcon, TextNoteIcon, WhatsNewIcon } from '../kit/icons';
 import type { PreferencesState } from '../hooks/usePreferences';
 import { COMMANDS, useShortcuts } from '../hooks/useShortcuts';
 import { DevSignIn } from '../teams/DevSignIn';
+import { getTeamsStrings } from '../teams/strings';
 import { TeamsAccount } from '../teams/TeamsAccount';
 import type { Lang, Strings } from '../i18n';
 import { BackupSection, type BackupHandlers } from './BackupSection';
@@ -136,6 +137,22 @@ export function LibrarySettingsView({
           a build without Teams drops this section and its stylesheet too. */}
       {import.meta.env.WXT_TEAMS_API_ORIGIN && teams && (
         <>
+          <Section title={getTeamsStrings(lang).announcementsTitle}>
+            <div className="hm-settings__body">
+              <SettingRow
+                label={getTeamsStrings(lang).announcementsSwitch}
+                icon={<WhatsNewIcon />}
+                hint={getTeamsStrings(lang).announcementsHint}
+                value={
+                  <Switch
+                    label={getTeamsStrings(lang).announcementsSwitch}
+                    checked={prefs?.announcements.enabled ?? true}
+                    onChange={(enabled) => preferences.setAnnouncements({ enabled })}
+                  />
+                }
+              />
+            </div>
+          </Section>
           {/* Remounted after a dev sign-in, so it reads the new account. */}
           <TeamsSection lang={lang} client={teams} key={devSignedIn} />
           {/* Only a build that asked for it; the constant folds away in every

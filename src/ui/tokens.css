@@ -632,6 +632,16 @@ select.hm-input {
 .hm-name-field__input {
   flex: 1 1 10rem;
 }
+.hm-name-field__conflict {
+  flex: 1 0 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--hm-space-1) var(--hm-space-2);
+  margin: 0;
+  color: var(--hm-warning);
+  font-size: var(--hm-text-body-sm);
+}
 
 .hm-note-editor .hm-alert {
   margin-top: var(--hm-space-2);

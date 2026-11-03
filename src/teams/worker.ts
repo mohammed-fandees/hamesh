@@ -23,16 +23,14 @@ import { clearPeople, readPeople, writePeople } from './people-cache';
  * the moment the worker starts.
  */
 /**
- * Tells Hamesh's own pages that a note's discussion moved on. Ids only — the
- * page fetches the comments themselves through the authorized path, as it would
- * anyway.
+ * Tells Hamesh's own pages that something moved on. Ids only: the page reads the
+ * rest itself through the authorized path, as it would anyway.
  *
  * `runtime.sendMessage` reaches the extension's own pages and never a content
  * script. It rejects when nothing is listening, which is the ordinary case: no
  * page of Hamesh's is open. That is not an error.
  */
-function notifyPages(where: { teamId: string; noteId: string }): void {
-  const event: TeamsEvent = { type: 'TEAMS_EVENT', event: 'comments', ...where };
+function notifyPages(event: TeamsEvent): void {
   void browser.runtime.sendMessage(event).catch(() => {});
 }
 
@@ -60,7 +58,8 @@ export function createService(config: TeamsConfig): TeamsService {
     open: (url) => new WebSocket(url),
     onChanged: (teamId) => void service?.changed(teamId),
     onMembers: () => void service?.accountChanged(),
-    onComments: (teamId, noteId) => notifyPages({ teamId, noteId }),
+    onComments: (teamId, noteId) =>
+      notifyPages({ type: 'TEAMS_EVENT', event: 'comments', teamId, noteId }),
     onRevoked: (_teamId, reason) => {
       if (reason === 'signed_out') void service?.revoked();
       else void service?.accountChanged();
@@ -95,6 +94,7 @@ export function createService(config: TeamsConfig): TeamsService {
         fetch: (input, init) => fetch(input, init),
         now: Date.now,
       }),
+      notify: notifyPages,
       now: Date.now,
     },
   });

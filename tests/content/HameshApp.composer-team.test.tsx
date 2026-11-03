@@ -41,6 +41,8 @@ function makeRepo(): NotesRepository {
     setPinned: vi.fn(),
     setFolder: vi.fn(),
     saveAll: vi.fn(),
+    watchPage: vi.fn(() => () => {}),
+    watchAll: vi.fn(() => () => {}),
   };
 }
 
@@ -56,6 +58,8 @@ function makePrefsRepo(prefs: Preferences): PreferencesRepository {
     setSkipShareConsent: vi.fn(),
     setPageDefaultFolder: vi.fn(),
     setGlobalDefaultFolder: vi.fn(),
+    setOnboarding: vi.fn(),
+    setAnnouncements: vi.fn(),
   };
 }
 

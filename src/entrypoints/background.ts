@@ -2,6 +2,7 @@ import { defineBackground } from 'wxt/utils/define-background';
 import { browser } from 'wxt/browser';
 import type { HameshMessage, ShortcutsResponse } from '@/messaging/types';
 import { shouldAnnounceUpdate } from '@/domain/release-notes';
+import { createPreferencesRepository } from '@/storage/preferences-repository';
 import { registerTeams } from '@/teams/background';
 
 /** Secondary keep-alive for the `commands.onCommand` path below. Chrome tears
@@ -116,6 +117,17 @@ export default defineBackground(() => {
    * what keeps the sidebar's badge honest afterwards.
    */
   browser.runtime.onInstalled.addListener(async (details) => {
+    // A first install opens the guide, in the foreground: someone who just added
+    // Hamesh is waiting to find out what to do with it.
+    if (details.reason === 'install') {
+      try {
+        await createPreferencesRepository().setOnboarding({ guide: 'showing' });
+        await browser.tabs.create({ url: browser.runtime.getURL('/notes.html?view=start') });
+      } catch {
+        /* nothing to do if the browser refuses a tab here */
+      }
+      return;
+    }
     const currentVersion = browser.runtime.getManifest().version;
     if (!shouldAnnounceUpdate(details.reason, details.previousVersion, currentVersion)) return;
     try {

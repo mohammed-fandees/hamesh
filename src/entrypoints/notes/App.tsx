@@ -6,11 +6,13 @@ import { NoteActionsContext, type NoteActions } from '@/ui/library/NoteActions';
 import { NoteDiscussSlot, NoteShareSlot, type DiscussAction } from '@/ui/library/NoteShareSlot';
 import { LibrarySettingsView } from '@/ui/settings/LibrarySettingsView';
 import { WhatsNewView } from '@/ui/WhatsNewView';
-import { Page, PageHeader } from '@/ui/kit/Page';
+import { GettingStartedView, GuideCard } from '@/ui/GettingStartedView';
+import { Page, PageHeader, PageTopSlot } from '@/ui/kit/Page';
 import { getStrings, resolveLang, dirForLang } from '@/ui/i18n';
 import { usePreferences, systemTheme } from '@/ui/hooks/usePreferences';
 import { useFolders } from '@/ui/hooks/useFolders';
 import { useNoteMutations } from '@/ui/hooks/useNoteMutations';
+import { useToolbarPin } from '@/ui/hooks/useToolbarPin';
 import { usePageBackground } from '@/ui/hooks/usePageBackground';
 import { createNotesRepository } from '@/storage/notes-repository';
 import { createPreferencesRepository } from '@/storage/preferences-repository';
@@ -18,6 +20,13 @@ import { createFoldersRepository } from '@/storage/folders-repository';
 import { flattenFolderTree } from '@/domain/folder-grouping';
 import { resolveTheme } from '@/domain/preferences';
 import { getLatestReleaseVersion, hasUnseenReleases } from '@/domain/release-notes';
+import {
+  announcementsToShow,
+  SNOOZE_MS,
+  type Announcement,
+  type AnnouncementDestination,
+} from '@/domain/announcements';
+import { CORE_STEPS, coreStepsDone, stepsDone } from '@/domain/getting-started';
 import type { NoteOwner } from '@/domain/note-owner';
 import {
   backupFileName,
@@ -30,6 +39,8 @@ import {
 import type { BackupImportOutcome } from '@/ui/settings/BackupSection';
 import { teamsConfig } from '@/teams/config';
 import { createTeamsClient } from '@/teams/client';
+import { readAnnouncements } from '@/teams/announcements';
+import { AnnouncementBanner } from '@/ui/teams/AnnouncementBanner';
 import { TeamsView } from '@/ui/teams/TeamsView';
 import { ShareNoteAction } from '@/ui/teams/ShareNoteAction';
 import { ShareConsent } from '@/ui/teams/ShareConsent';
@@ -49,7 +60,7 @@ import {
 import { MentionsInbox } from '@/ui/teams/MentionsInbox';
 import { getTeamsStrings } from '@/ui/teams/strings';
 import type { PersonalNotes } from '@/ui/teams/personal-notes';
-import { isSharedNote, type Note } from '@/domain/note';
+import type { Note } from '@/domain/note';
 import '@/ui/tokens.css';
 import '@/ui/pages.css';
 import '@/ui/notes-library.css';
@@ -61,7 +72,14 @@ const initialLang = resolveLang(browser.i18n?.getUILanguage?.());
 // update (`notes.html?view=whats-new`). Every view the sidebar offers is
 // reachable this way, so a link can point at one — anything else opens the
 // Library, as an unrecognised view always has.
-const DEEP_LINKS: readonly View[] = ['library', 'settings', 'teams', 'mentions', 'whats-new'];
+const DEEP_LINKS: readonly View[] = [
+  'library',
+  'settings',
+  'teams',
+  'mentions',
+  'whats-new',
+  'start',
+];
 /** A part of Settings a link can open straight onto — `?view=settings&focus=plan`. */
 type SettingsFocus = 'plan';
 /** Where an address says the reader is: a view, and inside Teams, a place in it. */
@@ -85,6 +103,13 @@ function placeFrom(search: string): Place {
   };
 }
 const initialPlace = placeFrom(location.search);
+/** The address that says where someone is. The Library is what no address opens on. */
+function addressOf({ view, teams, focus }: Pick<Place, 'view' | 'teams' | 'focus'>): string {
+  if (view === 'library') return location.pathname;
+  const params = new URLSearchParams({ view, ...(view === 'teams' ? routeToParams(teams) : {}) });
+  if (focus) params.set('focus', focus);
+  return `?${params}`;
+}
 /**
  * Opened in Chrome's side panel (`?view=panel`, set by the worker for the tab a
  * shared note was opened from): the page is the panel and nothing else — no
@@ -123,28 +148,25 @@ export function App() {
   /**
    * Moves to a view, and — for Teams — to a place inside it.
    *
-   * Switching between the sidebar's views is not a navigation: the same document
-   * shows another view, and the address does not change (a reload opens the
-   * Library, as it always has). Only a page reached *from* Teams — a team's
-   * members, one shared note — is a history entry, so the browser's back button
-   * returns to where the reader came from instead of leaving the Library
-   * altogether, and so the page can be linked to. Each entry carries the place
-   * it stands for, because the address alone cannot say where a sidebar switch
-   * left the reader.
+   * The address always says where the reader is, so a reload stays there and any
+   * page can be linked to, and each move is a history entry so the back button
+   * walks them. The exception is a move that stays on the same page of the same
+   * view, such as another team on the team bar, which replaces the entry: back
+   * should leave Teams, not replay every team that was looked at.
    */
   const navigate = useCallback(
     (next: View, teams: TeamsRoute = OVERVIEW, focus: SettingsFocus | null = null) => {
       const target: Place = { view: next, teams, focus, note: null };
-      const deep = next === 'teams' && teams.page !== 'overview';
-      if (deep) {
-        // Remember where this entry is before stepping past it.
-        history.replaceState({ place: placeRef.current }, '');
-        const params = new URLSearchParams({ view: 'teams', ...routeToParams(teams) });
-        history.pushState({ place: target }, '', `?${params}`);
-      } else if (new URLSearchParams(location.search).has('page')) {
-        // Leaving a linkable page for a top-level one: the address should not go on
-        // saying the reader is somewhere they no longer are.
-        history.replaceState({ place: target }, '', location.pathname);
+      const from = placeRef.current;
+      if (addressOf(from) !== addressOf(target)) {
+        const samePage = from.view === next && (next !== 'teams' || from.teams.page === teams.page);
+        if (samePage) {
+          history.replaceState({ place: target }, '', addressOf(target));
+        } else {
+          // Remember where this entry is before stepping past it.
+          history.replaceState({ place: from }, '');
+          history.pushState({ place: target }, '', addressOf(target));
+        }
       }
       setPlace(target);
     },
@@ -180,8 +202,17 @@ export function App() {
       notesRef.current = all;
       setNotes(all);
     })();
+    // A note left in another tab, or changed there, shows here as it happens.
+    const unwatch = repo.watchAll(() => {
+      void repo.getAll().then((all) => {
+        if (cancelled) return;
+        notesRef.current = all;
+        setNotes(all);
+      });
+    });
     return () => {
       cancelled = true;
+      unwatch();
     };
   }, []);
   const mutations = useNoteMutations(
@@ -241,14 +272,48 @@ export function App() {
       if (!cancelled) setNewestMention(newest);
     })();
     const unwatch = watchTeamIndex(() => void loadShared());
+    // What the worker says moved on: a pull that brought something in, or someone
+    // named in a discussion. Local reads, except the one small mentions request.
+    const unfollow = teamsClient.onEvent((event) => {
+      if (event.event === 'comments' || event.event === 'account') {
+        void newestMentionId(teamsClient).then(
+          (newest) => {
+            if (!cancelled) setNewestMention(newest);
+          },
+          () => {},
+        );
+      }
+      if (event.event === 'notes' || event.event === 'account') void loadShared();
+    });
     const onFocus = () => void loadShared();
     window.addEventListener('focus', onFocus);
     return () => {
       cancelled = true;
       unwatch();
+      unfollow();
       window.removeEventListener('focus', onFocus);
     };
   }, [teamsClient, loadShared]);
+
+  /** What Hamesh is announcing, as the server last said. */
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [openedAt] = useState(() => Date.now());
+  const announcementsOn = prefs?.announcements.enabled ?? false;
+  useEffect(() => {
+    if (!import.meta.env.WXT_TEAMS_API_ORIGIN || !teamsClient || !announcementsOn) return;
+    let cancelled = false;
+    void (async () => {
+      const items = await readAnnouncements({
+        apiOrigin: import.meta.env.WXT_TEAMS_API_ORIGIN as string,
+        fetch: (input, init) => fetch(input, init),
+        now: Date.now,
+      });
+      if (!cancelled) setAnnouncements(items);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [teamsClient, announcementsOn]);
 
   // Opening What's New *is* reading it — the badge and the auto-open both key
   // off this, so it's recorded on arrival rather than on some "mark as read"
@@ -408,16 +473,22 @@ export function App() {
     // reachable and the Teams module this reaches is dropped from the bundle.
     if (!import.meta.env.WXT_TEAMS_API_ORIGIN) return null;
     if (!teamsClient || shared.teams.length === 0) return null;
-    return (note: Note, close: () => void) => (
-      <ShareNoteAction
-        lang={lang}
-        teams={shared.teams}
-        // A team note is not shared again; from here it is only opened.
-        open={isSharedNote(note) ? () => navigate('teams') : undefined}
-        share={(teamId) => shareToTeam(note, teamId, null)}
-        onDone={close}
-      />
-    );
+    return (note: Note, close: () => void) => {
+      const teamId = note.team?.id;
+      return (
+        <ShareNoteAction
+          lang={lang}
+          teams={shared.teams}
+          // A team note is not shared again; from here it is only opened, on its
+          // own page rather than somewhere near it.
+          open={
+            teamId ? () => navigate('teams', { page: 'note', teamId, noteId: note.id }) : undefined
+          }
+          share={(id) => shareToTeam(note, id, null)}
+          onDone={close}
+        />
+      );
+    };
   }, [teamsClient, shared.teams, lang, navigate, shareToTeam]);
 
   /** What the Library's folder view may do to teams' notes and folders. */
@@ -481,19 +552,39 @@ export function App() {
   /** Somebody named this reader since they last looked at Mentions. */
   const mentionsUnseen = newestMention !== null && newestMention !== lastSeenMention;
 
+  const pinned = useToolbarPin();
+  const guideDone = useMemo(
+    () =>
+      stepsDone({
+        pinned,
+        notes: [...(notes ?? []), ...shared.notes],
+        folderCount: folders?.length ?? 0,
+        teamCount: shared.teams.length,
+      }),
+    [pinned, notes, shared, folders],
+  );
+  const guideDoneCount = coreStepsDone(guideDone);
+
+  /** Where an announcement's button leads. */
+  function openAnnounced(to: AnnouncementDestination) {
+    if (to === 'plan') navigate('settings', OVERVIEW, 'plan');
+    else navigate(to);
+  }
+
   function content() {
     if (import.meta.env.WXT_TEAMS_API_ORIGIN && view === 'teams' && teamsClient) {
       return (
         <TeamsView
           lang={lang}
           client={teamsClient}
-          onOpenSettings={() => navigate('settings')}
           onOpenPlan={() => navigate('settings', OVERVIEW, 'plan')}
           onOpenLibrary={(next) => {
             setOwner(next);
             navigate('library');
           }}
           personal={personalNotes}
+          myNotes={notes ?? []}
+          onShare={shareToTeam}
           route={place.teams}
           onRoute={(teams) => navigate('teams', teams)}
         />
@@ -510,6 +601,17 @@ export function App() {
             onRead={(commentId) => void prefsRepo.setLastSeenMention(commentId)}
           />
         </Page>
+      );
+    }
+    if (view === 'start') {
+      return (
+        <GettingStartedView
+          strings={strings}
+          done={guideDone}
+          showTeamStep={teamsClient !== null}
+          onOpenTeams={() => navigate('teams')}
+          onOpenLibrary={() => navigate('library')}
+        />
       );
     }
     if (view === 'whats-new') {
@@ -552,10 +654,51 @@ export function App() {
         onRenameFolder={(folderId, name) => foldersRepo.rename(folderId, name)}
         onDeleteFolder={deleteFolder}
         onMoveNote={noteActions.move}
-        onOpenSettings={() => navigate('settings')}
+        onOpenGuide={() => navigate('start')}
       />
     );
   }
+
+  /** What is said over the Library: the guide until the basics are done, and news. */
+  const pageTop = () => {
+    if (view !== 'library') return null;
+    const showGuide = prefs?.onboarding.guide === 'showing' && guideDoneCount < CORE_STEPS.length;
+    return (
+      <>
+        {showGuide && (
+          <GuideCard
+            strings={strings}
+            done={guideDoneCount}
+            onOpen={() => navigate('start')}
+            onClose={() => void prefsRepo.setOnboarding({ guide: 'hidden' })}
+          />
+        )}
+        {/* Someone still finding their feet has the guide; news can wait for them. */}
+        {import.meta.env.WXT_TEAMS_API_ORIGIN && prefs && !showGuide && (
+          <AnnouncementBanner
+            lang={lang}
+            items={announcementsToShow(announcements, prefs.announcements, openedAt, {
+              inTeam: shared.teams.length > 0,
+            })}
+            onOpen={openAnnounced}
+            onClose={(id) =>
+              void prefsRepo.setAnnouncements({
+                snoozedUntil: {
+                  ...prefs.announcements.snoozedUntil,
+                  [id]: Date.now() + SNOOZE_MS,
+                },
+              })
+            }
+            onDismiss={(id) =>
+              void prefsRepo.setAnnouncements({
+                dismissed: [...prefs.announcements.dismissed, id],
+              })
+            }
+          />
+        )}
+      </>
+    );
+  };
 
   if (import.meta.env.WXT_TEAMS_API_ORIGIN && panelPlace && teamsClient) {
     return (
@@ -589,7 +732,7 @@ export function App() {
               showTeams={teamsClient !== null}
               mentionsUnseen={mentionsUnseen}
             />
-            {content()}
+            <PageTopSlot.Provider value={pageTop()}>{content()}</PageTopSlot.Provider>
             {/* Inside the scope, so the dialog wears Hamesh's tokens even though
                 the browser lifts it to the top layer. */}
             {import.meta.env.WXT_TEAMS_API_ORIGIN && consent && (

@@ -45,7 +45,7 @@ describe('the Library, opened on one note', () => {
         onRenameFolder={vi.fn(async () => {})}
         onDeleteFolder={vi.fn(async () => {})}
         onMoveNote={vi.fn()}
-        onOpenSettings={vi.fn()}
+        onOpenGuide={vi.fn()}
       />,
     );
 

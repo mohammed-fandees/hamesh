@@ -87,6 +87,11 @@ function setup(answers: (ChangesResponse | Error)[]) {
 beforeEach(() => vi.clearAllMocks());
 
 describe('pulling a team’s changes', () => {
+  it('says when the server had nothing new', async () => {
+    const { sync } = setup([changes({ notes: [], folders: [], cursor: 'c1' })]);
+    expect((await sync.syncTeam(TEAM)).changed).toBe(false);
+  });
+
   it('files every note under the page it belongs to, and remembers where', async () => {
     const { sync, buckets, store } = setup([
       changes({
@@ -98,7 +103,12 @@ describe('pulling a team’s changes', () => {
 
     const outcome = await sync.syncTeam(TEAM);
 
-    expect(outcome).toEqual({ rounds: 1, resynced: false, folders: [expect.anything()] });
+    expect(outcome).toEqual({
+      rounds: 1,
+      resynced: false,
+      folders: [expect.anything()],
+      changed: true,
+    });
     expect([...buckets.keys()]).toEqual(['key:https://a.test/', 'key:https://b.test/']);
     expect(buckets.get('key:https://a.test/')![0]).toMatchObject({ id: 'n1', teamId: TEAM });
     const state = store.states.get(TEAM)!;

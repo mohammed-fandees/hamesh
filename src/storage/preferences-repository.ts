@@ -1,6 +1,8 @@
 import type {
+  AnnouncementPreferences,
   AppearanceMode,
   FolderDefaultPreferences,
+  OnboardingPreferences,
   Preferences,
   SupportedLanguage,
   TextNotePreferences,
@@ -33,6 +35,9 @@ export interface PreferencesRepository {
   /** Sets (or, with `null`, clears) the default folder for every page that
    *  has none of its own. */
   setGlobalDefaultFolder(folderId: string | null): Promise<Preferences>;
+  setOnboarding(onboarding: OnboardingPreferences): Promise<Preferences>;
+  /** Patches what the reader has said about announcements, leaving the rest. */
+  setAnnouncements(patch: Partial<AnnouncementPreferences>): Promise<Preferences>;
   /** Fires on changes from any extension context — popup, other tabs' content
    *  scripts, background — backed by `chrome.storage.onChanged`. Lets open
    *  tabs pick up a preference change made elsewhere without extra messaging. */
@@ -111,6 +116,23 @@ export function createPreferencesRepository(): PreferencesRepository {
     async setGlobalDefaultFolder(folderId: string | null): Promise<Preferences> {
       const current = await this.get();
       return saveFolderDefaults(current, withGlobalDefaultFolder(current.folderDefaults, folderId));
+    },
+
+    async setOnboarding(onboarding: OnboardingPreferences): Promise<Preferences> {
+      const current = await this.get();
+      const next: Preferences = { ...current, onboarding };
+      await storage.setItem(STORAGE_KEY, next);
+      return next;
+    },
+
+    async setAnnouncements(patch: Partial<AnnouncementPreferences>): Promise<Preferences> {
+      const current = await this.get();
+      const next: Preferences = {
+        ...current,
+        announcements: { ...current.announcements, ...patch },
+      };
+      await storage.setItem(STORAGE_KEY, next);
+      return next;
     },
 
     watch(cb: (prefs: Preferences) => void): () => void {

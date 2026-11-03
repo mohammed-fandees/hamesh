@@ -150,6 +150,10 @@ answers one question — what changed since this cursor — and the worker files
 everything it gets by page, under `hamesh:team-notes:<pageKey>`, exactly the way
 personal notes are stored. Matching a note to a page happens on this device.
 
+**A team's page lists its notes.** Edited, filed, taken back and deleted from the
+row; found by searching or by folder; and shared from this device without leaving
+the page. The discussion is the one thing that needs the note's own page.
+
 **Shared notes are in the Library too.** A reader thinks of their notes as
 theirs, so the Library lists what this device stored and what its teams have
 shared, together, with a chip on the row naming the team and pills for narrowing
@@ -219,9 +223,9 @@ Teams follows the rest of the library rather than sitting beside it.
 - **Notes first.** A team page opens on what the team has: its folders in a rail
   on one side, its notes on the other. Who is in the team, and the handful of
   things that end one, are folded away in panels until they are wanted.
-- **The account's half is in Settings.** Joining a team and paying for one are
-  not about any one team, and Settings already holds the account — signing in,
-  signing out, turning Teams off. So they live there.
+- **Starting is on the Teams page.** Turning Teams on, signing in, founding a team
+  and joining one from a link all happen there (`TeamsStart`). Settings still
+  holds the same controls, and the plan, beside the rest of the account.
 - **Being named is a destination.** It is the one thing in Teams addressed to a
   person rather than to a team, and it can come from any of them, so Mentions is
   its own entry in the rail with a dot when there is something new — the same
@@ -290,9 +294,11 @@ pull goes through the ordinary authorized API — so a socket that lingers for a
 moment after someone's access ends cannot show them anything.
 
 `comments` names one note, and the worker passes it on to Hamesh's own pages as
-a `TEAMS_EVENT` — the only message that travels worker → page, carrying the two
-ids and nothing else. A page showing that note's discussion reads it again
-through the ordinary path; a page showing anything else ignores it.
+a `TEAMS_EVENT` — the only message that travels worker → page, carrying ids and
+nothing else. A pull that brought anything in sends `notes` with the team's id,
+after the worker's bookkeeping is saved, and a change of members or access sends
+`account`. A page showing that thing reads it again through the ordinary path;
+a page showing anything else ignores it.
 `runtime.sendMessage` reaches the extension's own pages and never a content
 script, and it rejects when no page is open, which is the ordinary case.
 
@@ -300,9 +306,21 @@ The socket is a convenience, never the source of truth. The server ends each
 connection's authorization lease on a timer (`revoked: expired`), which is a
 reconnection with a fresh ticket rather than a refusal; any other reason stops
 the link and sends the worker back to `GET /v1/me` to find out what is true now.
-An MV3 service worker the browser shut down has no socket at all, so the worker
-pulls on a five-minute alarm as well: a missed poke is a delay, not a note nobody
-ever sees.
+The worker pings every 20 seconds, because traffic on a socket is what keeps an
+MV3 service worker from being shut down (Chrome 116+); the server answers from a
+canned reply without waking its Durable Object. A worker that is shut down anyway
+opens its sockets again as soon as it wakes, if Teams is on, and pulls on a
+five-minute alarm as well: a missed poke is a delay, not a note nobody ever sees.
+
+## Announcements
+
+`GET /v1/announcements` is public: no session, no cookie, no referrer. It works
+before Teams is on and needs no host permission, only the server's CORS for the
+extension's own origin. The Notes Library reads it at most every six hours
+(`src/teams/announcements.ts`) and keeps the last copy. Every answer is checked
+against the contract, so a banner can only say text and open a named place or an
+https link. What a reader closes stays in `Preferences.announcements`. Turned off
+in Settings, the request is not made at all.
 
 ## Trying it against a server on this machine
 

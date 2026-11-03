@@ -247,6 +247,44 @@ describe('the realtime link', () => {
     expect(sockets[0].sent).toEqual(['ping']);
   });
 
+  it('pings within the 30 seconds an idle service worker has before Chrome stops it', async () => {
+    const delays: number[] = [];
+    const sockets: { emit: (t: 'open') => void }[] = [];
+    const realtime = createRealtime({
+      config: { apiOrigin: 'https://api.example.test', googleClientId: 'x' },
+      api: {
+        run: vi.fn(async () => ({
+          ticket: 't',
+          url: 'wss://api.example.test/v1/realtime?t=t',
+          expiresAt: 1,
+        })),
+      } as never,
+      open: () => {
+        const handlers = new Map<string, () => void>();
+        const socket = {
+          send: vi.fn(),
+          close: vi.fn(),
+          addEventListener: (type: string, fn: () => void) => handlers.set(type, fn),
+          emit: (type: 'open') => handlers.get(type)?.(),
+        };
+        sockets.push(socket);
+        return socket as never;
+      },
+      onChanged: vi.fn(),
+      onMembers: vi.fn(),
+      onComments: vi.fn(),
+      onRevoked: vi.fn(),
+      setTimeout: (_fn, ms) => {
+        delays.push(ms);
+        return 1;
+      },
+      clearTimeout: () => {},
+    });
+    await realtime.follow([TEAM]);
+    sockets[0].emit('open');
+    expect(delays[delays.length - 1]).toBeLessThan(30_000);
+  });
+
   it('opens nothing for a team it was told to drop while the ticket was in flight', async () => {
     const { realtime, sockets } = setup();
     const following = realtime.follow([TEAM]);

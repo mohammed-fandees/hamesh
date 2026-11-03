@@ -41,6 +41,8 @@ export interface SyncOutcome {
   resynced: boolean;
   /** The team's folders after this pull. */
   folders: CachedFolder[];
+  /** True when the server had anything new: what a page open on it wants to know. */
+  changed: boolean;
 }
 
 const isTombstone = (entry: unknown): entry is { id: string; deleted: true } =>
@@ -168,12 +170,14 @@ export function createTeamSync(deps: TeamSyncDeps) {
   async function pull(teamId: string, from: TeamSyncState): Promise<SyncOutcome> {
     const state: TeamSyncState = { ...from, pages: { ...from.pages }, folders: [...from.folders] };
     let rounds = 0;
+    let changed = false;
     for (;;) {
       const changes = await deps.api.run('notes.changes', {
         teamId,
         ...(state.cursor ? { since: state.cursor } : {}),
       });
       rounds += 1;
+      changed ||= changes.notes.length > 0 || changes.folders.length > 0;
       const buckets = new Buckets();
       await apply(teamId, changes, state, buckets);
       // Notes first, cursor second. If the worker dies in between, the next
@@ -184,7 +188,7 @@ export function createTeamSync(deps: TeamSyncDeps) {
       state.syncedAt = deps.now();
       await deps.store.set(teamId, state);
       if (!changes.hasMore || rounds >= MAX_ROUNDS) {
-        return { rounds, resynced: false, folders: state.folders };
+        return { rounds, resynced: false, folders: state.folders, changed };
       }
     }
   }

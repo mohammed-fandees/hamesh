@@ -67,6 +67,19 @@ describe('popup Settings navigation', () => {
     cleanup();
   });
 
+  it('says how to start on a page with no notes, and steps aside once there are some', async () => {
+    sendMessage.mockResolvedValue({ type: 'PAGE_STATE', count: 0 });
+    const App = await importApp();
+    const { unmount } = render(<App />);
+    expect(await screen.findByText(/then click what your note is about/)).toBeInTheDocument();
+    unmount();
+
+    sendMessage.mockResolvedValue({ type: 'PAGE_STATE', count: 2 });
+    render(<App />);
+    await screen.findByText('Active on this page');
+    expect(screen.queryByText(/then click what your note is about/)).not.toBeInTheDocument();
+  });
+
   it('opens Settings from the gear button: Language and Appearance are both live controls', async () => {
     const App = await importApp();
     render(<App />);

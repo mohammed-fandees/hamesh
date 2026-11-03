@@ -98,7 +98,9 @@ export function CommentThread({
   // this reads the thread again rather than trusting what arrived.
   useEffect(() => {
     return page.onEvent((event) => {
-      if (event.teamId === teamId && event.noteId === noteId) void load();
+      if (event.event === 'comments' && event.teamId === teamId && event.noteId === noteId) {
+        void load();
+      }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teamId, noteId, load]);

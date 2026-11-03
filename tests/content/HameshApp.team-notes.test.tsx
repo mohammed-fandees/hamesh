@@ -57,6 +57,8 @@ function repoWith(notes: Note[]): NotesRepository {
     setPinned: vi.fn(),
     setFolder: vi.fn(),
     saveAll: vi.fn(),
+    watchPage: vi.fn(() => () => {}),
+    watchAll: vi.fn(() => () => {}),
   };
 }
 
@@ -71,6 +73,8 @@ const prefsRepo = (): PreferencesRepository => ({
   setSkipShareConsent: vi.fn(),
   setPageDefaultFolder: vi.fn(),
   setGlobalDefaultFolder: vi.fn(),
+  setOnboarding: vi.fn(),
+  setAnnouncements: vi.fn(),
 });
 
 const foldersRepo = (): FoldersRepository => ({

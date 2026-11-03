@@ -59,6 +59,9 @@ vi.mock('wxt/browser', () => ({
     i18n: {
       getUILanguage: () => 'en',
     },
+    storage: {
+      onChanged: { addListener: vi.fn(), removeListener: vi.fn() },
+    },
   },
 }));
 
@@ -106,6 +109,25 @@ describe('Notes Library page', () => {
     fakeStorage.api.snapshot.mockClear();
     tabsCreate.mockReset().mockResolvedValue({ id: 42 });
     cleanup();
+  });
+
+  it('keeps the address on the page the reader is on, so a reload stays there', async () => {
+    const App = await importApp();
+    render(<App />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Settings' }));
+    expect(new URLSearchParams(location.search).get('view')).toBe('settings');
+    fireEvent.click(screen.getByRole('button', { name: 'Notes Library' }));
+    expect(location.search).toBe('');
+  });
+
+  it('offers the guide from an empty Library', async () => {
+    const App = await importApp();
+    render(<App />);
+    fireEvent.click(await screen.findByRole('button', { name: 'See how it works' }));
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Getting started' }),
+    ).toBeInTheDocument();
+    history.replaceState(null, '', location.pathname);
   });
 
   it('shows the empty state when there are no notes', async () => {

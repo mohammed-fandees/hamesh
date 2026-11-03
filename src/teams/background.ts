@@ -1,5 +1,5 @@
 import { browser } from 'wxt/browser';
-import { teamsConfig } from './config';
+import { teamsConfig, teamsPermissions } from './config';
 import { isContentScriptSender, isTeamsPageMessage } from './page-channel';
 import { createNotesRepository } from '@/storage/notes-repository';
 import { generatePageKey } from '@/domain/page-key';
@@ -165,6 +165,13 @@ export function registerTeams(): void {
   // the user has turned Teams on and signed in: `tick` asks the service, which
   // checks both first.
   browser.alarms?.create(SYNC_ALARM, { periodInMinutes: SYNC_EVERY_MINUTES });
+
+  // A worker Chrome shut down lost its sockets, and nothing else would open them
+  // again before the next alarm. Asked about first, so someone who never turned
+  // Teams on does not load any of it just because the worker woke.
+  void browser.permissions?.contains(teamsPermissions(config)).then((granted) => {
+    if (granted) void getService().then((service) => service.tick());
+  });
   browser.alarms?.onAlarm.addListener((alarm) => {
     if (alarm.name !== SYNC_ALARM) return;
     void getService().then((service) => service.tick());

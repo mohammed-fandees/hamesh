@@ -1,10 +1,17 @@
 import type { ReactNode } from 'react';
 import { MarginMark } from '../kit/MarginMark';
-import { LibraryIcon, MentionsIcon, SettingsIcon, TeamIcon, WhatsNewIcon } from '../kit/icons';
+import {
+  GuideIcon,
+  LibraryIcon,
+  MentionsIcon,
+  SettingsIcon,
+  TeamIcon,
+  WhatsNewIcon,
+} from '../kit/icons';
 import type { Lang, Strings } from '../i18n';
 import { getTeamsStrings } from '../teams/strings';
 
-export type LibraryView = 'library' | 'settings' | 'teams' | 'mentions' | 'whats-new';
+export type LibraryView = 'library' | 'settings' | 'teams' | 'mentions' | 'whats-new' | 'start';
 
 interface SidebarProps {
   view: LibraryView;
@@ -33,8 +40,8 @@ interface Destination {
 
 /**
  * The column beside every one of Hamesh's own pages: where the reader is, and
- * everywhere else they can go. Switching is not navigating — the address stays
- * the same, and a reload opens the Library.
+ * everywhere else they can go. Switching is not navigating — the address follows,
+ * so a reload stays where the reader is.
  *
  * What's New sits apart at the foot: it isn't somewhere anyone works, it's
  * somewhere they go once after an update.
@@ -62,6 +69,7 @@ export function Sidebar({
   }
   main.push({ view: 'settings', label: strings.settings, icon: <SettingsIcon /> });
   const foot: Destination[] = [
+    { view: 'start', label: strings.gettingStarted, icon: <GuideIcon /> },
     { view: 'whats-new', label: strings.whatsNew, icon: <WhatsNewIcon />, unseen: whatsNewUnseen },
   ];
 
