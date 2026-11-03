@@ -6,7 +6,9 @@ import '@testing-library/jest-dom/vitest';
 import { TeamsView } from '@/ui/teams/TeamsView';
 import { getTeamsStrings } from '@/ui/teams/strings';
 import type { TeamsClient } from '@/teams/client';
+import type { TeamsEvent } from '@/teams/messages';
 import type { TeamsOpName } from '@/teams/operation-names';
+import type { Note } from '@/domain/note';
 import { OVERVIEW, type TeamsRoute } from '@/ui/teams/route';
 
 const strings = getTeamsStrings('en');
@@ -86,6 +88,7 @@ function fakeClient(overrides: Partial<Record<TeamsOpName, unknown>> = {}, signe
     ...overrides,
   };
   const calls: { op: TeamsOpName; params: unknown }[] = [];
+  const listeners = new Set<(event: TeamsEvent) => void>();
   const client = {
     send: vi.fn(async () => ({
       status: signedIn ? { state: 'signed_in', me } : { state: 'signed_out' },
@@ -102,9 +105,33 @@ function fakeClient(overrides: Partial<Record<TeamsOpName, unknown>> = {}, signe
     })),
     requestPermissions: vi.fn(async () => true),
     removePermissions: vi.fn(async () => {}),
+    onEvent: vi.fn((listener: (event: TeamsEvent) => void) => {
+      listeners.add(listener);
+      return () => void listeners.delete(listener);
+    }),
   };
-  return { client: client as unknown as TeamsClient & typeof client, calls };
+  const notify = (event: TeamsEvent) => listeners.forEach((listener) => listener(event));
+  return { client: client as unknown as TeamsClient & typeof client, calls, notify };
 }
+
+/** One of this device's notes, to share from the team's page. */
+const myNotes = [
+  {
+    id: 'mine',
+    schemaVersion: 1,
+    pageKey: 'k',
+    originalUrl: 'https://example.test/mine',
+    content: 'something of my own',
+    anchor: {
+      primarySelector: 'p',
+      signals: { tagName: 'p' },
+      fallbackDocumentPosition: { x: 0, y: 0 },
+    },
+    workspaceId: 'default',
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-01T00:00:00.000Z',
+  },
+] as Note[];
 
 /** Sharing and unsharing, which the page asks the library to carry out. */
 const personal = { forget: vi.fn(async () => {}), keep: vi.fn(async () => {}) };
@@ -122,13 +149,13 @@ afterEach(() => {
 /** The page above owns the route in the real app; a test needs the same owner. */
 function Harness({
   client,
-  onOpenSettings,
   onOpenLibrary,
+  onShare,
   initial = OVERVIEW,
 }: {
   client: TeamsClient;
-  onOpenSettings: () => void;
   onOpenLibrary: (owner: unknown) => void;
+  onShare: (note: Note, teamId: string, folderId: string | null) => Promise<boolean>;
   initial?: TeamsRoute;
 }) {
   const [route, setRoute] = useState<TeamsRoute>(initial);
@@ -136,10 +163,11 @@ function Harness({
     <TeamsView
       lang="en"
       client={client}
-      onOpenSettings={onOpenSettings}
       onOpenPlan={openPlan}
       onOpenLibrary={onOpenLibrary}
       personal={personal}
+      myNotes={myNotes}
+      onShare={onShare}
       route={route}
       onRoute={setRoute}
     />
@@ -148,17 +176,14 @@ function Harness({
 
 const render_ = (
   client: TeamsClient,
-  onOpenSettings = vi.fn(),
+  onShare: (note: Note, teamId: string, folderId: string | null) => Promise<boolean> = vi.fn(
+    async () => true,
+  ),
   onOpenLibrary = vi.fn(),
   initial?: TeamsRoute,
 ) =>
   render(
-    <Harness
-      client={client}
-      onOpenSettings={onOpenSettings}
-      onOpenLibrary={onOpenLibrary}
-      initial={initial}
-    />,
+    <Harness client={client} onShare={onShare} onOpenLibrary={onOpenLibrary} initial={initial} />,
   );
 
 /** The members page, which is where the people and the invitations are. */
@@ -213,27 +238,43 @@ function note(id: string, folderId: string | null, content: string) {
 }
 
 describe('the Teams page', () => {
-  it('sends someone who is not signed in to Settings, and asks the server for nothing', async () => {
+  it('lets someone who is not signed in do it from here, and asks the server for nothing', async () => {
     const { client, calls } = fakeClient({}, false);
-    const onOpenSettings = vi.fn();
-    render_(client, onOpenSettings);
-    fireEvent.click(await screen.findByRole('button', { name: strings.goToSettings }));
-    expect(onOpenSettings).toHaveBeenCalled();
+    render_(client);
+    fireEvent.click(await screen.findByRole('button', { name: strings.signIn }));
+    await waitFor(() => expect(client.send).toHaveBeenCalledWith('signIn'));
     expect(calls).toHaveLength(0);
+  });
+
+  it('asks for the Teams permissions straight from the click', async () => {
+    const { client } = fakeClient();
+    client.send = vi.fn(async () => ({ status: { state: 'permission_needed' } })) as never;
+    render_(client);
+    fireEvent.click(await screen.findByRole('button', { name: strings.turnOn }));
+    expect(client.requestPermissions).toHaveBeenCalledTimes(1);
+  });
+
+  it('offers a link’s way in beside founding one, to someone with no team', async () => {
+    const { client } = fakeClient();
+    client.send = vi.fn(async () => ({
+      status: { state: 'signed_in', me: { ...me, teams: [] } },
+    })) as never;
+    render_(client);
+    expect(await screen.findByRole('textbox', { name: strings.joinTeam })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: strings.createTeam })).toBeInTheDocument();
   });
 
   it('lists the teams the server reported, and opens the first', async () => {
     const { client } = fakeClient();
     render_(client);
-    // The switcher is a segmented control, so each team is a radio.
-    expect(await screen.findByRole('radio', { name: 'Alpha' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Alpha', pressed: true })).toBeInTheDocument();
     // Who is in it is shown at a glance, as names; emails are for the page that
     // manages them.
     expect(await screen.findByText('Sara')).toBeInTheDocument();
     expect(screen.queryByText('sara@example.test')).not.toBeInTheDocument();
   });
 
-  it('is an overview: no list of notes, folders as tiles, and a way into the Library', async () => {
+  it('lists the team’s notes, narrowed by folder, with a way into the Library', async () => {
     const onOpenLibrary = vi.fn();
     const { client } = fakeClient();
     withSnapshot(
@@ -246,36 +287,131 @@ describe('the Teams page', () => {
       ],
       [{ id: 'FOLDER', parentId: null, name: 'Onboarding' }],
     );
-    render_(client, vi.fn(), onOpenLibrary);
+    render_(client, undefined, onOpenLibrary);
 
-    const tile = await screen.findByRole('button', { name: /Onboarding/ });
-    expect(tile).toHaveTextContent('1 note');
-    expect(screen.getByRole('button', { name: /Unfiled/ })).toHaveTextContent('2 notes');
-    // The notes themselves are read in the Library, not listed here.
+    expect(await screen.findByText('a thought worth keeping')).toBeInTheDocument();
+    expect(screen.getByText('a loose one')).toBeInTheDocument();
+    expect(screen.getByText('an orphan')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /^Onboarding/, pressed: false }));
+    expect(screen.getByText('a thought worth keeping')).toBeInTheDocument();
+    expect(screen.queryByText('a loose one')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /^Unfiled/, pressed: false }));
     expect(screen.queryByText('a thought worth keeping')).not.toBeInTheDocument();
+    expect(screen.getByText('an orphan')).toBeInTheDocument();
 
-    fireEvent.click(tile);
-    expect(onOpenLibrary).toHaveBeenLastCalledWith({
-      teamId: TEAM,
-      folder: { id: 'FOLDER', name: 'Onboarding' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: /Unfiled/ }));
-    expect(onOpenLibrary).toHaveBeenLastCalledWith({
-      teamId: TEAM,
-      folder: { id: null, name: strings.unfiledSection },
-    });
     fireEvent.click(screen.getByRole('button', { name: strings.openInLibrary }));
     expect(onOpenLibrary).toHaveBeenLastCalledWith({ teamId: TEAM });
   });
 
-  it('says what to do about a team with nothing shared, and offers the way to do it', async () => {
-    const onOpenLibrary = vi.fn();
+  it('searches the team’s notes in place', async () => {
     const { client } = fakeClient();
-    render_(client, vi.fn(), onOpenLibrary);
+    withSnapshot(
+      client,
+      ['one', 'two', 'three', 'four'].map((word) => note(`n-${word}`, null, `note ${word}`)),
+      [],
+    );
+    render_(client);
+    fireEvent.change(await screen.findByLabelText(strings.teamNotesSearch), {
+      target: { value: 'three' },
+    });
+    expect(screen.getByText('note three')).toBeInTheDocument();
+    expect(screen.queryByText('note one')).not.toBeInTheDocument();
+  });
+
+  it('shows a note someone else shared without being asked to refresh', async () => {
+    const { client, notify } = fakeClient();
+    withSnapshot(client, [note('n1', null, 'first')], []);
+    render_(client);
+    await screen.findByText('first');
+
+    withSnapshot(client, [note('n2', null, 'someone else’s'), note('n1', null, 'first')], []);
+    notify({ type: 'TEAMS_EVENT', event: 'notes', teamId: TEAM });
+    expect(await screen.findByText('someone else’s')).toBeInTheDocument();
+  });
+
+  it('ignores news of a team it is not showing', async () => {
+    const { client, notify } = fakeClient();
+    withSnapshot(client, [note('n1', null, 'first')], []);
+    render_(client);
+    await screen.findByText('first');
+    const asked = (client.cache as ReturnType<typeof vi.fn>).mock.calls.length;
+    notify({ type: 'TEAMS_EVENT', event: 'notes', teamId: MATE_ID });
+    expect((client.cache as ReturnType<typeof vi.fn>).mock.calls.length).toBe(asked);
+  });
+
+  it('reads the account again when the worker says it changed', async () => {
+    const { client, notify } = fakeClient();
+    render_(client);
+    await screen.findByRole('button', { name: 'Alpha', pressed: true });
+    client.send = vi.fn(async () => ({
+      status: {
+        state: 'signed_in',
+        me: { ...me, teams: [...me.teams, { id: MATE_ID, name: 'Beta', role: 'member' }] },
+      },
+    })) as never;
+    notify({ type: 'TEAMS_EVENT', event: 'account' });
+    expect(await screen.findByRole('button', { name: 'Beta' })).toBeInTheDocument();
+  });
+
+  it('opens a note’s discussion from its row', async () => {
+    const { client } = fakeClient({ 'comments.list': { comments: [], nextAfter: null } });
+    withSnapshot(client, [note('n1', null, 'a thought')], []);
+    render_(client);
+    await screen.findByText('a thought');
+    fireEvent.click(screen.getByRole('button', { name: strings.discuss }));
+    expect(await screen.findByRole('heading', { name: strings.comments })).toBeInTheDocument();
+  });
+
+  it('edits and deletes a note from its row, asking first', async () => {
+    const { client, calls } = fakeClient({
+      'team.get': {
+        ...team,
+        capabilities: [...team.capabilities, 'notes.edit_own', 'notes.delete_own'],
+      },
+      'notes.delete': undefined,
+      'notes.update': { note: note('n1', null, 'changed') },
+    });
+    withSnapshot(client, [note('n1', null, 'a thought')], []);
+    render_(client);
+    await screen.findByText('a thought');
+
+    fireEvent.click(screen.getByRole('button', { name: strings.noteActions }));
+    fireEvent.click(screen.getByRole('menuitem', { name: strings.delete }));
+    expect(screen.getByText(strings.deleteSharedConfirm)).toBeInTheDocument();
+    expect(calls.some((c) => c.op === 'notes.delete')).toBe(false);
+    fireEvent.click(screen.getByRole('button', { name: strings.delete }));
+    await waitFor(() => expect(calls.some((c) => c.op === 'notes.delete')).toBe(true));
+  });
+
+  it('shows nothing a note’s reader may not do', async () => {
+    const { client } = fakeClient({ 'team.get': { ...team, capabilities: ['team.view'] } });
+    withSnapshot(client, [note('n1', null, 'a thought')], []);
+    render_(client);
+    await screen.findByText('a thought');
+    expect(screen.queryByRole('button', { name: strings.noteActions })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: strings.sharePickOpen })).not.toBeInTheDocument();
+  });
+
+  it('shares one of this device’s notes without leaving the team', async () => {
+    const { client } = fakeClient({
+      'team.get': { ...team, capabilities: [...team.capabilities, 'notes.create'] },
+    });
+    const onShare = vi.fn(async () => true);
+    render_(client, onShare);
 
     expect(await screen.findByText(strings.emptyNotesTitle('Alpha'))).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: strings.goToLibrary }));
-    expect(onOpenLibrary).toHaveBeenCalledWith({ teamId: TEAM });
+    fireEvent.click(screen.getByRole('button', { name: strings.sharePickOpen }));
+    expect(screen.getByText('something of my own')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: strings.sharePickAction }));
+    await waitFor(() => expect(onShare).toHaveBeenCalledWith(myNotes[0], TEAM, null));
+  });
+
+  it('points someone who is alone in a team at inviting a teammate', async () => {
+    const { client } = fakeClient({ 'members.list': { members: [members.members[0]] } });
+    render_(client);
+    expect(await screen.findByText(strings.aloneHint)).toBeInTheDocument();
   });
 
   it('creates, renames and deletes a team folder, asking on the tile before deleting', async () => {
@@ -285,9 +421,13 @@ describe('the Teams page', () => {
       'folders.rename': { folder: {} },
       'folders.delete': {},
     });
-    withSnapshot(client, [], [{ id: 'FOLDER', parentId: null, name: 'Reading' }]);
+    withSnapshot(
+      client,
+      [note('n1', 'FOLDER', 'a thought')],
+      [{ id: 'FOLDER', parentId: null, name: 'Reading' }],
+    );
     render_(client);
-    await screen.findByText('Reading');
+    fireEvent.click(await screen.findByRole('button', { name: /^Reading/, pressed: false }));
 
     fireEvent.click(screen.getByRole('button', { name: strings.newFolder }));
     fireEvent.change(screen.getByLabelText(strings.newFolder), {
@@ -328,9 +468,13 @@ describe('the Teams page', () => {
 
   it('shows no folder controls at all to someone the server did not let manage them', async () => {
     const { client } = fakeClient({ 'team.get': { ...team, capabilities: ['team.view'] } });
-    withSnapshot(client, [], [{ id: 'FOLDER', parentId: null, name: 'Reading' }]);
+    withSnapshot(
+      client,
+      [note('n1', 'FOLDER', 'a thought')],
+      [{ id: 'FOLDER', parentId: null, name: 'Reading' }],
+    );
     render_(client);
-    await screen.findByText('Reading');
+    fireEvent.click(await screen.findByRole('button', { name: /^Reading/, pressed: false }));
 
     expect(screen.queryByRole('button', { name: strings.newFolder })).not.toBeInTheDocument();
     expect(
@@ -350,7 +494,7 @@ describe('the Teams page', () => {
       screen.getByRole('heading', { level: 1, name: strings.whoIsIn('Alpha') }),
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: strings.teams }));
-    expect(await screen.findByRole('radio', { name: 'Alpha' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Alpha', pressed: true })).toBeInTheDocument();
   });
 
   it('shows only the controls the server said this caller holds', async () => {
@@ -366,7 +510,7 @@ describe('the Teams page', () => {
     cleanup();
 
     // And on the page that manages people: no promote, remove or invite.
-    render_(client, vi.fn(), vi.fn(), MEMBERS);
+    render_(client, undefined, undefined, MEMBERS);
     await screen.findByText('sara@example.test');
     for (const name of [strings.makeAdmin, strings.removeMember, strings.sendInvite]) {
       expect(screen.queryByRole('button', { name }), name).toBeNull();
@@ -375,7 +519,7 @@ describe('the Teams page', () => {
 
   it('promotes a member through the server, then re-reads it', async () => {
     const { client, calls } = fakeClient();
-    render_(client, vi.fn(), vi.fn(), MEMBERS);
+    render_(client, undefined, undefined, MEMBERS);
     fireEvent.click(await idle(strings.makeAdmin));
     await waitFor(() => expect(calls.some((c) => c.op === 'members.setRole')).toBe(true));
     expect(calls.find((c) => c.op === 'members.setRole')!.params).toEqual({
@@ -404,7 +548,7 @@ describe('the Teams page', () => {
         link,
       },
     });
-    render_(client, vi.fn(), vi.fn(), MEMBERS);
+    render_(client, undefined, undefined, MEMBERS);
     await idle(strings.sendInvite);
     fireEvent.change(screen.getByPlaceholderText(strings.inviteEmailPlaceholder), {
       target: { value: 'new@example.test' },
@@ -433,7 +577,7 @@ describe('the Teams page', () => {
   it('says nothing at all about a team that is simply working', async () => {
     const { client } = fakeClient();
     render_(client);
-    await screen.findByRole('radio', { name: 'Alpha' });
+    await screen.findByRole('button', { name: 'Alpha', pressed: true });
     expect(screen.queryByText(/Read-only/)).not.toBeInTheDocument();
     expect(screen.queryByText(/^Active$/)).not.toBeInTheDocument();
   });
@@ -480,5 +624,72 @@ describe('founding a team is an owner’s, and owners subscribe', () => {
     render_(signedInAs(atLimit));
     expect(await screen.findByText(strings.atTeamLimit(1))).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: strings.createTeam })).not.toBeInTheDocument();
+  });
+});
+
+describe('a team’s name', () => {
+  const namedNew = async () => {
+    const { client, calls } = fakeClient({
+      'team.create': { team: { id: MATE_ID, name: 'x', role: 'owner' } },
+    });
+    render_(client);
+    fireEvent.click(await idle(strings.createTeam));
+    return { client, calls };
+  };
+
+  it('warns about one already taken, however it is cased, and won’t submit it', async () => {
+    const { calls } = await namedNew();
+    fireEvent.change(screen.getByLabelText(strings.createTeam), {
+      target: { value: '  ALPHA ' },
+    });
+    expect(screen.getByText(strings.teamNameTaken('ALPHA'))).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: strings.create })).toBeDisabled();
+    expect(calls.some((c) => c.op === 'team.create')).toBe(false);
+  });
+
+  it('offers the next free name, and creates it in one click', async () => {
+    const { calls } = await namedNew();
+    fireEvent.change(screen.getByLabelText(strings.createTeam), { target: { value: 'Alpha' } });
+    fireEvent.click(screen.getByRole('button', { name: strings.teamNameUse('Alpha (2)') }));
+    await waitFor(() => {
+      expect(calls.find((c) => c.op === 'team.create')?.params).toMatchObject({
+        name: 'Alpha (2)',
+      });
+    });
+  });
+
+  it('leaves a free name alone', async () => {
+    const { calls } = await namedNew();
+    fireEvent.change(screen.getByLabelText(strings.createTeam), { target: { value: 'Beta' } });
+    expect(screen.queryByText(strings.teamNameTaken('Beta'))).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: strings.create }));
+    await waitFor(() => {
+      expect(calls.find((c) => c.op === 'team.create')?.params).toMatchObject({ name: 'Beta' });
+    });
+  });
+
+  it('retries a failed create with the same request id, so it can’t found two', async () => {
+    const { client, calls } = fakeClient();
+    (client.request as ReturnType<typeof vi.fn>).mockImplementation(
+      async (op: TeamsOpName, params: unknown) => {
+        calls.push({ op, params });
+        if (op === 'team.create') return { ok: false, error: 'network' };
+        if (op === 'team.get') return { ok: true, data: team };
+        if (op === 'members.list') return { ok: true, data: members };
+        return { ok: true, data: undefined };
+      },
+    );
+    render_(client);
+    fireEvent.click(await idle(strings.createTeam));
+    fireEvent.change(screen.getByLabelText(strings.createTeam), { target: { value: 'Beta' } });
+    fireEvent.click(screen.getByRole('button', { name: strings.create }));
+    await waitFor(() => expect(calls.filter((c) => c.op === 'team.create')).toHaveLength(1));
+    await idle(strings.create);
+    fireEvent.click(screen.getByRole('button', { name: strings.create }));
+    await waitFor(() => expect(calls.filter((c) => c.op === 'team.create')).toHaveLength(2));
+    const [first, second] = calls.filter((c) => c.op === 'team.create');
+    expect((first.params as { requestId: string }).requestId).toBe(
+      (second.params as { requestId: string }).requestId,
+    );
   });
 });

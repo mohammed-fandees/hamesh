@@ -3,6 +3,7 @@ import type { PreferencesRepository } from '@/storage/preferences-repository';
 import {
   withGlobalDefaultFolder,
   withPageDefaultFolder,
+  type AnnouncementPreferences,
   type AppearanceMode,
   type Preferences,
   type TextNotePreferences,
@@ -31,6 +32,7 @@ export interface PreferencesState {
   setLanguage: (lang: Lang) => void;
   setAppearance: (appearance: AppearanceMode) => void;
   setTextNotes: (patch: Partial<TextNotePreferences>) => void;
+  setAnnouncements: (patch: Partial<AnnouncementPreferences>) => void;
   /** Sets (or, with `null`, clears) one page's default folder; `false` if the
    *  write failed, in which case what storage really holds is put back. */
   setPageDefaultFolder: (pageKey: string, folderId: string | null) => Promise<boolean>;
@@ -101,6 +103,13 @@ export function usePreferences(repo: PreferencesRepository): PreferencesState {
       (change) => {
         patch((p) => ({ ...p, textNotes: { ...p.textNotes, ...change } }));
         void repo.setTextNotes(change);
+      },
+      [patch, repo],
+    ),
+    setAnnouncements: useCallback(
+      (change) => {
+        patch((p) => ({ ...p, announcements: { ...p.announcements, ...change } }));
+        void repo.setAnnouncements(change);
       },
       [patch, repo],
     ),

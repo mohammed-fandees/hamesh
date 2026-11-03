@@ -1,5 +1,8 @@
-import type { ReactNode } from 'react';
+import { createContext, useContext, type ReactNode } from 'react';
 import { MarginMark } from './MarginMark';
+
+/** Whatever the page above wants said over this one, before its own content. */
+export const PageTopSlot = createContext<ReactNode>(null);
 
 /**
  * One of Hamesh's own pages beside the sidebar: the Library, Settings, What's
@@ -7,9 +10,11 @@ import { MarginMark } from './MarginMark';
  * content is grids of cards rather than lines of text.
  */
 export function Page({ wide = false, children }: { wide?: boolean; children: ReactNode }) {
+  const top = useContext(PageTopSlot);
   return (
     <main className="hm-page">
       <div className={wide ? 'hm-page__inner hm-page__inner--wide' : 'hm-page__inner'}>
+        {top}
         {children}
       </div>
     </main>

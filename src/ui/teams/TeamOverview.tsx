@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { TeamMember, TeamResponse } from '@hamesh/teams-contract';
 import { FOLDER_NAME_MAX } from '@/domain/folder';
-import { countInFolder, flattenFolderTree } from '@/domain/folder-grouping';
+import { countInFolder, flattenFolderTree, resolveFolderId } from '@/domain/folder-grouping';
+import type { Note } from '@/domain/note';
 import type { NoteOwner } from '@/domain/note-owner';
 import type { TeamCacheSnapshot } from '@/teams/messages';
 import { FolderMenu } from '../FolderMenu';
@@ -13,11 +14,18 @@ import { InlineError } from '../kit/Feedback';
 import { NameField } from '../kit/NameField';
 import { Section } from '../kit/Section';
 import { Skeleton } from '../kit/Skeleton';
-import { FolderIcon, PlusIcon } from '../kit/icons';
+import { PlusIcon } from '../kit/icons';
 import { inviteRights, teamCan } from './permissions';
+import type { PersonalNotes } from './personal-notes';
 import type { TeamsRoute } from './route';
+import { ShareFromDevice } from './ShareFromDevice';
 import type { TeamsStrings } from './strings';
+import { TeamNoteRow } from './TeamNoteRow';
 import type { TeamsPage } from './useTeams';
+
+/** Which of the team's notes are showing: all, one folder, or those in none. */
+type Shelf = { kind: 'all' } | { kind: 'folder'; id: string } | { kind: 'unfiled' };
+const ALL: Shelf = { kind: 'all' };
 
 interface TeamOverviewProps {
   strings: TeamsStrings;
@@ -27,21 +35,27 @@ interface TeamOverviewProps {
   myUserId: string;
   /** Who is in the team, or null while that is still being asked. */
   members: TeamMember[] | null;
-  /** Sends the reader to the Library, narrowed to this team or one of its folders. */
+  /** This device's notes, to share from without leaving the team. */
+  myNotes: readonly Note[];
+  /** Shares one into this team, asking for consent first; `false` if declined. */
+  onShare: (note: Note, teamId: string, folderId: string | null) => Promise<boolean>;
+  personal: PersonalNotes;
+  /** Sends the reader to the Library, narrowed to this team. */
   onOpenLibrary: (owner: NoteOwner) => void;
   onRoute: (route: TeamsRoute) => void;
 }
 
 /**
- * A team at a glance: how its notes are divided, and who is in it.
+ * A team's page: its notes, and everything that can be done to them, right here.
  *
- * Deliberately not a list of notes. The Library already lists a team's notes
- * beside the reader's own, with a filter for each team, so this page only says
- * how many there are and where they are filed, and sends the reader there to
- * read them. A second list here was a second thing to keep in step.
+ * The notes are this page's whole point. Filed in folders, found by searching,
+ * edited, moved or taken back from the row itself; discussed on the note's own
+ * page, one click in. A note of one's own can be shared from here too, which is
+ * the question a team with nothing in it is actually asking.
  *
- * Folders are tiles, because a folder is a place to go, not a row to read; what
- * can be done to one is in its "⋮" — the same menu a folder in the Library has.
+ * Nothing needs refreshing. The worker says when a pull brought anything in
+ * (`TEAMS_EVENT`), and this reads its cache again; that read is local, so it
+ * costs no request and can't flash the list away.
  */
 export function TeamOverview({
   strings,
@@ -50,21 +64,30 @@ export function TeamOverview({
   team,
   myUserId,
   members,
+  myNotes,
+  onShare,
+  personal,
   onOpenLibrary,
   onRoute,
 }: TeamOverviewProps) {
   const teamId = team.team.id;
   const [snapshot, setSnapshot] = useState<TeamCacheSnapshot | null>(null);
   const [adding, setAdding] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const [shelf, setShelf] = useState<Shelf>(ALL);
+  const [query, setQuery] = useState('');
 
-  // Switching teams starts the tiles over. Adjusted during render rather than
-  // in an effect: there is no async work in it, and an effect would cascade a
-  // second render for something this is.
+  // Switching teams starts the page over. Adjusted during render rather than in
+  // an effect: there is no async work in it, and an effect would cascade a second
+  // render for something this is.
   const [shownTeam, setShownTeam] = useState(teamId);
   if (shownTeam !== teamId) {
     setShownTeam(teamId);
     setSnapshot(null);
     setAdding(false);
+    setSharing(false);
+    setShelf(ALL);
+    setQuery('');
   }
 
   /** Pulls first, then reads: after a change, what is shown is what the server has. */
@@ -84,8 +107,15 @@ export function TeamOverview({
       const next = await page.cache(teamId, 'sync', 'notes.reload');
       if (!cancelled && next) setSnapshot(next);
     })();
+    const unsubscribe = page.onEvent((event) => {
+      if (event.event !== 'notes' || event.teamId !== teamId) return;
+      void page.cache(teamId, 'notes', 'notes.reload').then((next) => {
+        if (!cancelled && next) setSnapshot(next);
+      });
+    });
     return () => {
       cancelled = true;
+      unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teamId]);
@@ -105,15 +135,44 @@ export function TeamOverview({
 
   async function deleteFolder(folderId: string) {
     const done = await page.run('folders.delete', { teamId, folderId }, `folder:${folderId}`);
-    if (done !== null) await reload();
+    if (done === null) return;
+    setShelf(ALL);
+    await reload();
   }
 
-  const folders = flattenFolderTree(snapshot?.folders ?? []);
-  const notes = snapshot?.notes ?? [];
-  const knownIds = new Set(folders.map((f) => f.folder.id));
+  const folders = useMemo(() => flattenFolderTree(snapshot?.folders ?? []), [snapshot]);
+  const knownIds = useMemo(() => new Set(folders.map((f) => f.folder.id)), [folders]);
+  const notes = useMemo(() => snapshot?.notes ?? [], [snapshot]);
   const filedIn = notes.map((n) => n.folderId);
-  const nothingYet = snapshot !== null && notes.length === 0 && folders.length === 0;
+
+  // A folder deleted by someone else while the reader was on it leaves them on
+  // everything rather than on a shelf that no longer exists.
+  const onShelf: Shelf = shelf.kind === 'folder' && !knownIds.has(shelf.id) ? ALL : shelf;
+  const shown = useMemo(() => {
+    const wanted = query.trim().toLocaleLowerCase();
+    return notes
+      .filter((note) => {
+        const folder = resolveFolderId(note.folderId, knownIds);
+        if (onShelf.kind === 'folder') return folder === onShelf.id;
+        if (onShelf.kind === 'unfiled') return folder === null;
+        return true;
+      })
+      .filter(
+        (note) =>
+          !wanted ||
+          note.content.toLocaleLowerCase().includes(wanted) ||
+          (note.pageTitle ?? '').toLocaleLowerCase().includes(wanted) ||
+          note.originalUrl.toLocaleLowerCase().includes(wanted),
+      );
+  }, [notes, onShelf, query, knownIds]);
+
+  const nothingYet = snapshot !== null && notes.length === 0;
   const manage = teamCan(team, 'folders.manage');
+  const canShare = teamCan(team, 'notes.create');
+  const folderOf = onShelf.kind === 'folder' ? onShelf.id : null;
+  const chosenFolder = folders.find((f) => f.folder.id === folderOf)?.folder;
+  const alone = members !== null && members.length === 1;
+  const invite = inviteRights(team).any;
 
   return (
     <>
@@ -131,95 +190,104 @@ export function TeamOverview({
         }
         actions={
           <>
-            <button
-              type="button"
-              className="hm-link"
-              disabled={page.working('notes.reload')}
-              onClick={() => void reload()}
-              aria-busy={page.working('notes.reload')}
-            >
-              {strings.refreshNotes}
-            </button>
-            <button
-              type="button"
-              className="hm-link hm-link--accent"
-              onClick={() => onOpenLibrary({ teamId })}
-            >
+            <button type="button" className="hm-link" onClick={() => onOpenLibrary({ teamId })}>
               {strings.openInLibrary}
             </button>
+            {canShare && !nothingYet && !sharing && (
+              <button
+                type="button"
+                className="hm-btn hm-btn-primary hm-btn--compact"
+                onClick={() => setSharing(true)}
+              >
+                <PlusIcon size={11} />
+                {strings.sharePickOpen}
+              </button>
+            )}
           </>
         }
       >
+        {sharing && (
+          <ShareFromDevice
+            strings={strings}
+            notes={myNotes}
+            onShare={async (note) => {
+              const shared = await onShare(note, teamId, folderOf);
+              if (shared) await reload();
+              return shared;
+            }}
+            onClose={() => setSharing(false)}
+          />
+        )}
+
         {!snapshot ? (
-          <Skeleton shape="tiles" />
-        ) : nothingYet ? (
+          <Skeleton rows={3} />
+        ) : nothingYet && !sharing ? (
           <EmptyState
             size="inline"
             title={strings.emptyNotesTitle(team.team.name)}
-            body={strings.emptyNotesBody(team.team.name)}
-            action={{ label: strings.goToLibrary, onClick: () => onOpenLibrary({ teamId }) }}
+            body={canShare ? strings.emptyNotesBody(team.team.name) : strings.emptyNotesReadOnly}
+            action={
+              canShare
+                ? { label: strings.sharePickOpen, onClick: () => setSharing(true) }
+                : undefined
+            }
           />
-        ) : (
-          <ul className="hm-tiles" aria-label={strings.teamFolders}>
-            {folders.map(({ folder, parent }) => {
-              const key = `folder:${folder.id}`;
-              const failed = page.failed(key);
-              return (
-                <li key={folder.id} className="hm-tile" data-busy={page.working(key) || undefined}>
-                  <button
-                    type="button"
-                    className="hm-tile__open"
-                    onClick={() =>
-                      onOpenLibrary({ teamId, folder: { id: folder.id, name: folder.name } })
-                    }
-                  >
-                    <span className="hm-tile__name">
-                      <FolderIcon size={14} className="hm-tile__glyph" />
-                      <bdi>{folder.name}</bdi>
-                    </span>
-                    <span className="hm-tile__count">
-                      {strings.notesShared(countInFolder(filedIn, knownIds, folder.id))}
-                      {parent && <> · {strings.folderIn(parent.name)}</>}
-                    </span>
-                  </button>
-                  {manage && (
-                    <FolderMenu
-                      name={folder.name}
-                      strings={strings}
-                      deleteQuestion={strings.deleteTeamFolderConfirm(folder.name)}
-                      working={page.working(key)}
-                      onRename={(name) => renameFolder(folder.id, name)}
-                      onDelete={() => deleteFolder(folder.id)}
-                    />
-                  )}
-                  {failed && <InlineError>{strings.error(failed)}</InlineError>}
-                </li>
-              );
-            })}
-
-            {folders.length > 0 && (
-              <li className="hm-tile">
-                <button
-                  type="button"
-                  className="hm-tile__open"
-                  onClick={() =>
-                    onOpenLibrary({ teamId, folder: { id: null, name: strings.unfiledSection } })
-                  }
-                >
-                  <span className="hm-tile__name hm-tile__name--quiet">
-                    {strings.unfiledSection}
-                  </span>
-                  <span className="hm-tile__count">
-                    {strings.notesShared(countInFolder(filedIn, knownIds, null))}
-                  </span>
-                </button>
-              </li>
+        ) : nothingYet ? null : (
+          <>
+            {notes.length > 3 && (
+              <input
+                type="search"
+                className="hm-input hm-team-notes__search"
+                placeholder={strings.teamNotesSearch}
+                aria-label={strings.teamNotesSearch}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
             )}
 
-            {manage && (
-              <li className="hm-tile hm-tile--add">
-                {adding ? (
-                  <div className="hm-tile__form">
+            <div className="hm-shelves" role="group" aria-label={strings.teamFolders}>
+              <button
+                type="button"
+                className="hm-owner-filter__pill"
+                aria-pressed={onShelf.kind === 'all'}
+                onClick={() => setShelf(ALL)}
+              >
+                {strings.shelfAll(notes.length)}
+              </button>
+              {folders.map(({ folder }) => (
+                <button
+                  key={folder.id}
+                  type="button"
+                  className="hm-owner-filter__pill"
+                  aria-pressed={folderOf === folder.id}
+                  onClick={() => setShelf({ kind: 'folder', id: folder.id })}
+                >
+                  <bdi>{folder.name}</bdi> {countInFolder(filedIn, knownIds, folder.id)}
+                </button>
+              ))}
+              {folders.length > 0 && (
+                <button
+                  type="button"
+                  className="hm-owner-filter__pill"
+                  aria-pressed={onShelf.kind === 'unfiled'}
+                  onClick={() => setShelf({ kind: 'unfiled' })}
+                >
+                  {strings.unfiledSection} {countInFolder(filedIn, knownIds, null)}
+                </button>
+              )}
+              {chosenFolder && manage && (
+                <FolderMenu
+                  name={chosenFolder.name}
+                  strings={strings}
+                  deleteQuestion={strings.deleteTeamFolderConfirm(chosenFolder.name)}
+                  working={page.working(`folder:${chosenFolder.id}`)}
+                  onRename={(name) => renameFolder(chosenFolder.id, name)}
+                  onDelete={() => deleteFolder(chosenFolder.id)}
+                />
+              )}
+              {manage &&
+                (adding ? (
+                  <div className="hm-shelves__form">
                     <NameField
                       label={strings.newFolder}
                       placeholder={strings.folderNamePlaceholder}
@@ -232,17 +300,46 @@ export function TeamOverview({
                     />
                   </div>
                 ) : (
-                  <button type="button" className="hm-tile__add" onClick={() => setAdding(true)}>
+                  <button type="button" className="hm-add" onClick={() => setAdding(true)}>
                     <PlusIcon size={11} />
                     {strings.newFolder}
                   </button>
-                )}
-              </li>
+                ))}
+            </div>
+            {folderOf && page.failed(`folder:${folderOf}`) && (
+              <InlineError>{strings.error(page.failed(`folder:${folderOf}`)!)}</InlineError>
             )}
-          </ul>
-        )}
-        {page.failed('folders.create') && (
-          <InlineError>{strings.error(page.failed('folders.create')!)}</InlineError>
+            {page.failed('folders.create') && (
+              <InlineError>{strings.error(page.failed('folders.create')!)}</InlineError>
+            )}
+
+            {shown.length === 0 ? (
+              <p className="hm-supporting hm-team-notes__none">
+                {query.trim()
+                  ? strings.teamNotesNoMatches(query.trim())
+                  : strings.teamNotesEmptyShelf}
+              </p>
+            ) : (
+              <ul className="hm-team-rows" aria-label={strings.sharedNotes}>
+                {shown.map((note) => (
+                  <TeamNoteRow
+                    key={note.id}
+                    strings={strings}
+                    lang={lang}
+                    page={page}
+                    team={team}
+                    note={note}
+                    folders={folders}
+                    members={members}
+                    myUserId={myUserId}
+                    personal={personal}
+                    reload={reload}
+                    onOpen={() => onRoute({ page: 'note', teamId, noteId: note.id })}
+                  />
+                ))}
+              </ul>
+            )}
+          </>
         )}
       </Section>
 
@@ -258,6 +355,7 @@ export function TeamOverview({
           </button>
         }
       >
+        {alone && invite && <p className="hm-section__intro">{strings.aloneHint}</p>}
         {!members ? (
           <Skeleton rows={1} shape="chips" />
         ) : (
@@ -275,7 +373,7 @@ export function TeamOverview({
                 </span>
               </li>
             ))}
-            {inviteRights(team).any && (
+            {invite && (
               <li>
                 <button
                   type="button"

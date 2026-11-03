@@ -1,40 +1,45 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { TeamMember, TeamResponse } from '@hamesh/teams-contract';
+import type { Note } from '@/domain/note';
 import type { NoteOwner } from '@/domain/note-owner';
+import { nameTaken, nextFreeName } from '@/domain/unique-name';
 import type { TeamsClient } from '@/teams/client';
 import { newRequestId } from '@/teams/operation-names';
 import { formatDate } from '../format';
 import type { Lang } from '../i18n';
 import { EmptyState } from '../kit/EmptyState';
 import { InlineError, StatusLine } from '../kit/Feedback';
-import { NameField } from '../kit/NameField';
+import { NameField, type NameConflict } from '../kit/NameField';
 import { Page, PageHeader } from '../kit/Page';
-import { SegmentedControl } from '../kit/SegmentedControl';
 import { Skeleton } from '../kit/Skeleton';
 import { PlusIcon } from '../kit/icons';
 import type { PersonalNotes } from './personal-notes';
 import type { TeamsRoute } from './route';
 import { getTeamsStrings, type TeamsStrings } from './strings';
 import './styles';
+import { JoinTeam } from './JoinTeam';
 import { TEAM_NAME_MAX } from './limits';
 import { TeamNotePage } from './TeamNotePage';
 import { TeamOverview } from './TeamOverview';
 import { TeamPeople } from './TeamPeople';
 import { TeamSettings } from './TeamSettings';
+import { TeamsStart } from './TeamsStart';
 import { PAGE, useTeams } from './useTeams';
 import { teamCreation } from './permissions';
 
 interface TeamsViewProps {
   lang: Lang;
   client: TeamsClient;
-  /** Sends the reader to Settings, where Teams is turned on and signed into. */
-  onOpenSettings: () => void;
   /** Sends the reader to the plan in Settings, opened, to subscribe. */
   onOpenPlan: () => void;
   /** Sends the reader to the Notes Library, narrowed to what they opened. */
   onOpenLibrary: (owner: NoteOwner) => void;
   /** How a note moves between this device and a team — see `PersonalNotes`. */
   personal: PersonalNotes;
+  /** This device's notes, to share from without leaving the team. */
+  myNotes: readonly Note[];
+  /** Shares one into a team, asking for consent first; `false` if declined. */
+  onShare: (note: Note, teamId: string, folderId: string | null) => Promise<boolean>;
   /** Where inside Teams the reader is. Owned by the page above, so the browser's
    *  back button can walk it. */
   route: TeamsRoute;
@@ -55,18 +60,21 @@ function stateLine(t: TeamResponse, strings: TeamsStrings, lang: Lang): string |
   }
 }
 
+/** How often coming back to the page asks the server again. A window can gain
+ *  focus many times a minute, and the socket has usually said so already. */
+const REFRESH_ON_FOCUS_MS = 30_000;
+
 /**
- * The Teams page: a team at a glance, and the two pages it leads to.
+ * The Teams page: a team's notes and the people in it, and the two pages it leads
+ * to. Who is in a team, and one shared note with its discussion, are pages of
+ * their own; the handful of things that end a team are folded away until wanted.
  *
- * The overview says how a team's notes are filed and who is in it, and nothing
- * more — the notes themselves are read in the Library, where a team's sit
- * beside the reader's own. Who is in a team, and one shared note with its
- * discussion, are pages of their own; the handful of things that end a team are
- * folded away until they are wanted.
+ * Starting is here too, however far along the reader is: turning Teams on and
+ * signing in, founding a team, or joining one from a link. Paying is the one part
+ * of the account that stays in Settings. Mentions are their own destination.
  *
- * Joining a team and paying for one are not here: they belong to the account,
- * and the account lives in Settings. Mentions are their own destination, for
- * the same reason.
+ * The page is live: it follows the worker's notices, and reads again when the
+ * reader comes back to it.
  *
  * The page decides nothing. Which teams exist, what this reader may do in each,
  * and whether a team is active, read-only or locked all arrive from the server
@@ -76,10 +84,11 @@ function stateLine(t: TeamResponse, strings: TeamsStrings, lang: Lang): string |
 export function TeamsView({
   lang,
   client,
-  onOpenSettings,
   onOpenPlan,
   onOpenLibrary,
   personal,
+  myNotes,
+  onShare,
   route,
   onRoute,
 }: TeamsViewProps) {
@@ -88,6 +97,10 @@ export function TeamsView({
   const [team, setTeam] = useState<TeamResponse | null>(null);
   const [members, setMembers] = useState<TeamMember[] | null>(null);
   const [creating, setCreating] = useState(false);
+  const [joining, setJoining] = useState(false);
+  // Kept for as long as the same name is being tried, so a retry after a dropped
+  // connection returns the team the first try made rather than founding a second.
+  const creation = useRef<{ name: string; requestId: string } | null>(null);
 
   const me = page.me;
   const teams = me?.teams ?? [];
@@ -144,16 +157,41 @@ export function TeamsView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadTeam]);
 
+  // A member added, a role changed, a team gone: the worker heard it on the socket
+  // and has already asked the server who this account is now.
+  useEffect(
+    () =>
+      page.onEvent((event) => {
+        if (event.event === 'account') void reload();
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [reload],
+  );
+
+  // Anything missed while away, such as a plan approved or a socket that dropped.
+  const lastAsked = useRef(0);
+  useEffect(() => {
+    const onReturn = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (Date.now() - lastAsked.current < REFRESH_ON_FOCUS_MS) return;
+      lastAsked.current = Date.now();
+      void reload();
+    };
+    window.addEventListener('focus', onReturn);
+    document.addEventListener('visibilitychange', onReturn);
+    return () => {
+      window.removeEventListener('focus', onReturn);
+      document.removeEventListener('visibilitychange', onReturn);
+    };
+  }, [reload]);
+
   const toOverview = (teamId: string | null) => onRoute({ page: 'overview', teamId });
 
   async function createTeam(name: string) {
-    // A retry of the same create returns the original team rather than a second one.
-    const result = await page.run(
-      'team.create',
-      { name, requestId: newRequestId() },
-      'team.create',
-    );
+    if (creation.current?.name !== name) creation.current = { name, requestId: newRequestId() };
+    const result = await page.run('team.create', creation.current, 'team.create');
     if (!result) return;
+    creation.current = null;
     setCreating(false);
     toOverview(result.team.id);
     await page.refresh();
@@ -167,6 +205,30 @@ export function TeamsView({
 
   /** Asked before the control is offered, so nobody names a team they cannot have. */
   const canCreate = me ? teamCreation(me) : 'needs_plan';
+
+  const teamNames = teams.map((t) => t.name);
+  /** Two teams called the same thing can't be told apart anywhere they're listed. */
+  const nameConflict = (name: string): NameConflict | null => {
+    if (!nameTaken(name, teamNames)) return null;
+    const suggestion = nextFreeName(name, teamNames, TEAM_NAME_MAX);
+    return {
+      message: strings.teamNameTaken(name),
+      suggestion,
+      useLabel: strings.teamNameUse(suggestion),
+    };
+  };
+
+  const joinForm = (
+    <JoinTeam
+      strings={strings}
+      page={page}
+      onJoined={(teamId) => {
+        setJoining(false);
+        toOverview(teamId);
+        void page.refresh();
+      }}
+    />
+  );
 
   const newTeam =
     canCreate === 'needs_plan' ? (
@@ -186,6 +248,7 @@ export function TeamsView({
         submitLabel={strings.create}
         cancelLabel={strings.cancel}
         busy={page.working('team.create')}
+        conflict={nameConflict}
         onCancel={() => setCreating(false)}
         onSubmit={(name) => void createTeam(name)}
       />
@@ -199,13 +262,13 @@ export function TeamsView({
   const body = () => {
     if (!page.status) return <Skeleton />;
 
-    // Signing in belongs to Settings; this page only ever points at it.
     if (page.status.state !== 'signed_in') {
       return (
-        <EmptyState
-          title={strings.signedOutTitle}
-          body={strings.signedOutBody}
-          action={{ label: strings.goToSettings, onClick: onOpenSettings }}
+        <TeamsStart
+          strings={strings}
+          client={client}
+          status={page.status}
+          onChanged={() => void page.refresh()}
         />
       );
     }
@@ -221,20 +284,32 @@ export function TeamsView({
     }
 
     if (teams.length === 0 && !creating) {
-      // Founding a team is an owner's, and owners subscribe: say so up front,
-      // with the way to the plan, rather than after a team has been named.
-      return canCreate === 'needs_plan' ? (
-        <EmptyState
-          title={strings.needsPlanTitle}
-          body={strings.needsPlanBody}
-          action={{ label: strings.seePlan, onClick: onOpenPlan }}
-        />
-      ) : (
-        <EmptyState
-          title={strings.emptyTeamsTitle}
-          body={strings.emptyTeamsBody}
-          action={{ label: strings.createTeam, onClick: () => setCreating(true) }}
-        />
+      // The two ways into a team, side by side: nobody who was sent a link should
+      // have to find out that joining lives somewhere else. Founding one is an
+      // owner's, and owners subscribe: say so up front, with the way to the plan,
+      // rather than after a team has been named.
+      return (
+        <div className="hm-team-doors">
+          {canCreate === 'needs_plan' ? (
+            <EmptyState
+              size="inline"
+              title={strings.needsPlanTitle}
+              body={strings.needsPlanBody}
+              action={{ label: strings.seePlan, onClick: onOpenPlan }}
+            />
+          ) : (
+            <EmptyState
+              size="inline"
+              title={strings.emptyTeamsTitle}
+              body={strings.emptyTeamsBody}
+              action={{ label: strings.createTeam, onClick: () => setCreating(true) }}
+            />
+          )}
+          <section className="hm-section hm-team-doors__join" aria-label={strings.joinTeam}>
+            <h2 className="hm-section__title">{strings.joinTeam}</h2>
+            {joinForm}
+          </section>
+        </div>
       );
     }
 
@@ -279,15 +354,31 @@ export function TeamsView({
       <>
         <div className="hm-team-bar">
           {teams.length > 0 && (
-            <SegmentedControl<string>
-              value={selectedId ?? ''}
-              name="hm-team-switcher"
-              groupLabel={strings.yourTeams}
-              options={teams.map((t) => ({ value: t.id, label: t.name }))}
-              onChange={toOverview}
-            />
+            <div className="hm-owner-filter" role="group" aria-label={strings.yourTeams}>
+              {teams.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  className="hm-owner-filter__pill"
+                  aria-pressed={t.id === selectedId}
+                  onClick={() => toOverview(t.id)}
+                >
+                  <bdi>{t.name}</bdi>
+                </button>
+              ))}
+            </div>
           )}
           <span className="hm-team-bar__new">{newTeam}</span>
+          {!creating && (
+            <button
+              type="button"
+              className="hm-link"
+              aria-expanded={joining}
+              onClick={() => setJoining((open) => !open)}
+            >
+              {strings.joinTeam}
+            </button>
+          )}
           {team && (
             <span className="hm-team-bar__meta">
               {strings.role(team.team.role)}
@@ -298,6 +389,7 @@ export function TeamsView({
         {page.failed('team.create') && (
           <InlineError>{strings.error(page.failed('team.create')!)}</InlineError>
         )}
+        {joining && <section className="hm-section">{joinForm}</section>}
 
         {team && (
           <>
@@ -309,6 +401,9 @@ export function TeamsView({
               team={team}
               myUserId={me.user.id}
               members={members}
+              myNotes={myNotes}
+              onShare={onShare}
+              personal={personal}
               onOpenLibrary={onOpenLibrary}
               onRoute={onRoute}
             />
@@ -317,6 +412,7 @@ export function TeamsView({
               page={page}
               team={team}
               myUserId={me.user.id}
+              teamNames={teamNames}
               onRenamed={() => void reload()}
               onGone={() => void gone()}
             />

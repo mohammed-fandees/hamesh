@@ -87,6 +87,13 @@ body {
 }
 
 /* The way out to the Library (and, on the settings pane, to full Settings). */
+.hm-popup__tip {
+  margin: 0;
+  color: var(--hm-ink-60);
+  font-size: var(--hm-text-body-sm);
+  line-height: var(--hm-lh-body-sm);
+}
+
 .hm-popup__link {
   display: flex;
   align-items: center;

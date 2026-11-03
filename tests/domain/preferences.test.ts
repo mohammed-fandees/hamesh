@@ -78,6 +78,8 @@ describe('parsePreferences', () => {
       releaseNotes: { lastSeenVersion: null },
       folderDefaults: { global: null, pages: {} },
       teams: { lastSeenMentionId: null, skipShareConsent: false },
+      onboarding: { guide: 'hidden' },
+      announcements: { enabled: true, dismissed: [], snoozedUntil: {} },
     });
   });
 
@@ -90,6 +92,8 @@ describe('parsePreferences', () => {
       releaseNotes: { lastSeenVersion: null },
       folderDefaults: { global: null, pages: {} },
       teams: { lastSeenMentionId: null, skipShareConsent: false },
+      onboarding: { guide: 'hidden' },
+      announcements: { enabled: true, dismissed: [], snoozedUntil: {} },
     });
     expect(parsePreferences({ language: 'en', appearance: 'light' })).toEqual({
       schemaVersion: 1,
@@ -99,6 +103,8 @@ describe('parsePreferences', () => {
       releaseNotes: { lastSeenVersion: null },
       folderDefaults: { global: null, pages: {} },
       teams: { lastSeenMentionId: null, skipShareConsent: false },
+      onboarding: { guide: 'hidden' },
+      announcements: { enabled: true, dismissed: [], snoozedUntil: {} },
     });
   });
 

@@ -63,7 +63,12 @@ export function backoffMs(attempt: number, random = Math.random): number {
 
 /** A lease ending is expected every few minutes; it is not a failure. */
 const RELEASE_DELAY_MS = 250;
-const PING_MS = 45_000;
+/**
+ * Under the 30 seconds an MV3 service worker sits idle before Chrome shuts it
+ * down, and with it the socket: traffic on a WebSocket is what resets that timer
+ * (Chrome 116+). The server answers from a canned reply without waking anything.
+ */
+const PING_MS = 20_000;
 /**
  * How long a team is left alone after the server ended its authorization for a
  * reason that is not a lease rotation. Long enough not to hammer a team that is

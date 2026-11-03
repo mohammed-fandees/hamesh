@@ -42,14 +42,15 @@ test.describe("Notes Library — What's New", () => {
     await page.goto(`chrome-extension://${extensionId}/notes.html`);
 
     const items = page.locator('.hm-sidebar__nav-item');
-    await expect(items).toHaveCount(3);
+    await expect(items).toHaveCount(4);
     await expect(items.nth(0)).toHaveText(/Notes Library/);
     await expect(items.nth(1)).toHaveText(/Settings/);
-    await expect(items.nth(2)).toHaveText(/What's New/);
+    await expect(items.nth(2)).toHaveText(/Getting started/);
+    await expect(items.nth(3)).toHaveText(/What's New/);
 
     // Actually docked to the foot of the column, not just last in source.
     const settings = await items.nth(1).boundingBox();
-    const whatsNew = await items.nth(2).boundingBox();
+    const whatsNew = await items.nth(3).boundingBox();
     const sidebar = await page.locator('.hm-sidebar').boundingBox();
     if (!settings || !whatsNew || !sidebar) throw new Error('no layout');
     expect(whatsNew.y).toBeGreaterThan(settings.y + 100);
@@ -146,6 +147,6 @@ test.describe("Notes Library — What's New", () => {
     await expect(page.locator('h1')).toHaveText('Notes Library');
     await page.getByRole('button', { name: 'Settings' }).click();
     await expect(page.locator('h1')).toHaveText('Settings');
-    await expect(page).toHaveURL(/notes\.html\?view=whats-new$/); // same document throughout
+    await expect(page).toHaveURL(/notes\.html\?view=settings$/);
   });
 });

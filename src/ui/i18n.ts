@@ -98,6 +98,31 @@ export interface Strings {
   settingsOn: string;
   settingsOff: string;
   whatsNew: string;
+  gettingStarted: string;
+  guideTitle: string;
+  guideIntro: string;
+  guideProgress: (done: number, total: number) => string;
+  guideBasics: string;
+  guideMore: string;
+  guidePinTitle: string;
+  guidePinBody: string;
+  guideNoteTitle: string;
+  guideNoteBody: string;
+  guideTry: string;
+  guideTextTitle: string;
+  guideTextBody: string;
+  guideVideoTitle: string;
+  guideVideoBody: string;
+  guideFolderTitle: string;
+  guideFolderBody: string;
+  guideOpenLibrary: string;
+  guideTeamTitle: string;
+  guideTeamBody: string;
+  guideOpenTeams: string;
+  guideContinue: string;
+  guideClose: string;
+  guideSeeHow: string;
+  popupTip: string;
   whatsNewIntro: string;
   whatsNewCurrentBadge: string;
   whatsNewNewBadge: string;
@@ -222,6 +247,34 @@ const en: Strings = {
   settingsOn: 'On',
   settingsOff: 'Off',
   whatsNew: "What's New",
+  gettingStarted: 'Getting started',
+  guideTitle: 'Getting started',
+  guideIntro:
+    'Hamesh keeps your notes in the margin of the web, on the exact spot they’re about, and brings them back when you return. Each step ticks itself when you’ve done it.',
+  guideProgress: (done, total) => `${done} of ${total} done`,
+  guideBasics: 'The basics',
+  guideMore: 'When you’re ready',
+  guidePinTitle: 'Pin Hamesh to your toolbar',
+  guidePinBody: 'Click the puzzle piece beside the address bar, then the pin next to Hamesh.',
+  guideNoteTitle: 'Leave your first note',
+  guideNoteBody:
+    'On any page, click Hamesh in the toolbar or press this, then click what the note is about:',
+  guideTry: 'Try it on a page',
+  guideTextTitle: 'Note a few words',
+  guideTextBody:
+    'Select some text on a page and press this. The words stay tinted when you come back:',
+  guideVideoTitle: 'Note a moment in a video',
+  guideVideoBody: 'While a video plays, press this. Your note sits on its timeline:',
+  guideFolderTitle: 'Keep notes in folders',
+  guideFolderBody: 'In the Library, switch to By folder, make one, and drag notes into it.',
+  guideOpenLibrary: 'Open the Library',
+  guideTeamTitle: 'Share notes with a team',
+  guideTeamBody: 'Your notes stay on this device until you choose to share one.',
+  guideOpenTeams: 'Open Teams',
+  guideContinue: 'Continue',
+  guideClose: 'Hide the guide',
+  guideSeeHow: 'See how it works',
+  popupTip: 'Press Add note, then click what your note is about. Or press',
   whatsNewIntro: 'Everything that has changed in Hamesh, newest first.',
   whatsNewCurrentBadge: 'Installed',
   whatsNewNewBadge: 'New',
@@ -355,6 +408,33 @@ const ar: Strings = {
   settingsOn: 'مفعّل',
   settingsOff: 'معطّل',
   whatsNew: 'ما الجديد',
+  gettingStarted: 'كيف تبدأ',
+  guideTitle: 'كيف تبدأ',
+  guideIntro:
+    'هامش يحفظ ملاحظاتك في هامش الويب، على المكان نفسه الذي تخصّه، ويعيدها إليك حين ترجع. كل خطوة تُعلَّم وحدها حين تنجزها.',
+  guideProgress: (done, total) => `${done} من ${total}`,
+  guideBasics: 'الأساسيات',
+  guideMore: 'حين تكون مستعدًا',
+  guidePinTitle: 'ثبّت هامش في شريط الأدوات',
+  guidePinBody: 'اضغط قطعة البازل بجوار شريط العنوان، ثم الدبوس بجانب هامش.',
+  guideNoteTitle: 'اترك ملاحظتك الأولى',
+  guideNoteBody:
+    'في أي صفحة، اضغط هامش في شريط الأدوات أو هذا الاختصار، ثم اضغط على ما تخصّه الملاحظة:',
+  guideTry: 'جرّبها على صفحة',
+  guideTextTitle: 'علّق على كلمات',
+  guideTextBody: 'حدّد نصًا في صفحة واضغط هذا الاختصار. تبقى الكلمات ملوّنة حين تعود:',
+  guideVideoTitle: 'علّق على لحظة في فيديو',
+  guideVideoBody: 'أثناء تشغيل الفيديو اضغط هذا الاختصار. تظهر ملاحظتك على شريطه الزمني:',
+  guideFolderTitle: 'رتّب ملاحظاتك في فولدرات',
+  guideFolderBody: 'في المكتبة، اختر العرض حسب الفولدر، وأنشئ فولدرًا واسحب الملاحظات إليه.',
+  guideOpenLibrary: 'افتح المكتبة',
+  guideTeamTitle: 'شارك ملاحظاتك مع فريق',
+  guideTeamBody: 'تبقى ملاحظاتك على هذا الجهاز حتى تختار مشاركة إحداها.',
+  guideOpenTeams: 'افتح الفرق',
+  guideContinue: 'أكمل',
+  guideClose: 'إخفاء الدليل',
+  guideSeeHow: 'اعرف كيف يعمل',
+  popupTip: 'اضغط «إضافة ملاحظة» ثم ما تخصّه الملاحظة. أو اضغط',
   whatsNewIntro: 'كل ما تغيّر في هامش، الأحدث أولًا.',
   whatsNewCurrentBadge: 'المثبّتة',
   whatsNewNewBadge: 'جديد',

@@ -1,3 +1,4 @@
+import { browser } from 'wxt/browser';
 import { groupNotesByPageKey } from '@/domain/backup';
 import type { Note, CreateNoteInput, UpdateNoteInput } from '@/domain/note';
 import {
@@ -11,6 +12,7 @@ import { DEFAULT_WORKSPACE_ID } from '@/domain/workspace';
 import { createStoredList, type LocalKey } from './stored-list';
 
 const STORAGE_KEY_PREFIX = 'hamesh:notes:';
+const WATCH_SETTLE_MS = 40;
 
 function storageKey(pageKey: string): string {
   return `${STORAGE_KEY_PREFIX}${pageKey}`;
@@ -45,6 +47,11 @@ export interface NotesRepository {
    *  policy decision, and it lives in `domain/backup.ts` where it can be
    *  reasoned about and tested without storage. */
   saveAll(notes: Note[]): Promise<void>;
+  /** Fires when one page's notes change, from any tab or context. */
+  watchPage(pageKey: string, onChange: () => void): () => void;
+  /** Fires when any page's notes change, from any tab or context. Several writes
+   *  close together (a restore, a note moving) are one call. */
+  watchAll(onChange: () => void): () => void;
 }
 
 const notesAt = (pageKey: string): LocalKey => `local:${storageKey(pageKey)}`;
@@ -99,6 +106,23 @@ export function createNotesRepository(): NotesRepository {
           list.write(notesAt(pageKey), pageNotes),
         ),
       );
+    },
+
+    watchPage: (pageKey, onChange) => storage.watch<unknown>(notesAt(pageKey), () => onChange()),
+
+    watchAll(onChange) {
+      let pending: ReturnType<typeof setTimeout> | undefined;
+      const listener = (changes: Record<string, unknown>, area: string) => {
+        if (area !== 'local') return;
+        if (!Object.keys(changes).some((key) => key.startsWith(STORAGE_KEY_PREFIX))) return;
+        clearTimeout(pending);
+        pending = setTimeout(onChange, WATCH_SETTLE_MS);
+      };
+      browser.storage.onChanged.addListener(listener);
+      return () => {
+        clearTimeout(pending);
+        browser.storage.onChanged.removeListener(listener);
+      };
     },
   };
 }

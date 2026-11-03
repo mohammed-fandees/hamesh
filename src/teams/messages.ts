@@ -95,22 +95,30 @@ export type TeamCacheResult = TeamsResult<TeamCacheSnapshot>;
  * it. Broadcast with `runtime.sendMessage`, which reaches the extension's own
  * pages and never a content script.
  */
-export interface TeamsEvent {
-  type: 'TEAMS_EVENT';
-  event: 'comments';
-  teamId: string;
-  noteId: string;
-}
+export type TeamsEvent = { type: 'TEAMS_EVENT' } &
+  /** A note's discussion moved on. */
+  (
+    | { event: 'comments'; teamId: string; noteId: string }
+    /** A pull brought in new notes or folders for this team. */
+    | { event: 'notes'; teamId: string }
+    /** The account's answer may be different: its teams, a member, a role. */
+    | { event: 'account' }
+  );
 
 export function isTeamsEvent(message: unknown): message is TeamsEvent {
   if (!message || typeof message !== 'object') return false;
   const m = message as Record<string, unknown>;
-  return (
-    m.type === 'TEAMS_EVENT' &&
-    m.event === 'comments' &&
-    typeof m.teamId === 'string' &&
-    typeof m.noteId === 'string'
-  );
+  if (m.type !== 'TEAMS_EVENT') return false;
+  switch (m.event) {
+    case 'comments':
+      return typeof m.teamId === 'string' && typeof m.noteId === 'string';
+    case 'notes':
+      return typeof m.teamId === 'string';
+    case 'account':
+      return true;
+    default:
+      return false;
+  }
 }
 
 /**

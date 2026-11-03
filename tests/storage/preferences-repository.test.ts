@@ -38,6 +38,8 @@ describe('PreferencesRepository', () => {
       releaseNotes: { lastSeenVersion: null },
       folderDefaults: { global: null, pages: {} },
       teams: { lastSeenMentionId: null, skipShareConsent: false },
+      onboarding: { guide: 'hidden' },
+      announcements: { enabled: true, dismissed: [], snoozedUntil: {} },
     });
   });
 
@@ -73,6 +75,8 @@ describe('PreferencesRepository', () => {
       releaseNotes: { lastSeenVersion: null },
       folderDefaults: { global: null, pages: {} },
       teams: { lastSeenMentionId: null, skipShareConsent: false },
+      onboarding: { guide: 'hidden' },
+      announcements: { enabled: true, dismissed: [], snoozedUntil: {} },
     });
 
     await repo.setLanguage('en');
@@ -84,6 +88,8 @@ describe('PreferencesRepository', () => {
       releaseNotes: { lastSeenVersion: null },
       folderDefaults: { global: null, pages: {} },
       teams: { lastSeenMentionId: null, skipShareConsent: false },
+      onboarding: { guide: 'hidden' },
+      announcements: { enabled: true, dismissed: [], snoozedUntil: {} },
     });
   });
 
@@ -97,6 +103,8 @@ describe('PreferencesRepository', () => {
       releaseNotes: { lastSeenVersion: null },
       folderDefaults: { global: null, pages: {} },
       teams: { lastSeenMentionId: null, skipShareConsent: false },
+      onboarding: { guide: 'hidden' },
+      announcements: { enabled: true, dismissed: [], snoozedUntil: {} },
     });
   });
 

@@ -35,7 +35,7 @@ test.describe('Notes Library — sidebar + Settings', () => {
     await profile?.close();
   });
 
-  test('the sidebar switches between Library and Settings without navigating away', async () => {
+  test('the sidebar switches views, and the address follows so a reload stays there', async () => {
     const extensionId = await getExtensionId(context);
     const page = await context.newPage();
     await page.goto(`chrome-extension://${extensionId}/notes.html`);
@@ -43,10 +43,13 @@ test.describe('Notes Library — sidebar + Settings', () => {
     await expect(page.locator('h1')).toHaveText('Notes Library');
     await page.getByRole('button', { name: 'Settings' }).click();
     await expect(page.locator('h1')).toHaveText('Settings');
-    await expect(page).toHaveURL(/notes\.html$/); // same document, not a navigation
+    await expect(page).toHaveURL(/notes\.html\?view=settings$/);
+    await page.reload();
+    await expect(page.locator('h1')).toHaveText('Settings');
 
     await page.getByRole('button', { name: 'Notes Library' }).click();
     await expect(page.locator('h1')).toHaveText('Notes Library');
+    await expect(page).toHaveURL(/notes\.html$/);
   });
 
   test('Settings shows every shortcut with its manifest-declared binding', async () => {
@@ -78,7 +81,6 @@ test.describe('Notes Library — sidebar + Settings', () => {
     await chip.click();
     await expect(chip).toHaveAttribute('aria-checked', 'false');
     await page.reload();
-    await page.getByRole('button', { name: 'Settings' }).click();
     await expect(page.getByRole('switch', { name: 'Show icon after selecting' })).toHaveAttribute(
       'aria-checked',
       'false',

@@ -646,6 +646,11 @@ export function HameshApp({
     };
   }, [repo, commitNotes]);
 
+  // A note edited or deleted in the Library, or in another tab on this page, is
+  // drawn as it now is, without a reload. Written here too, which is harmless:
+  // re-reading what was just saved changes nothing.
+  useEffect(() => repo.watchPage(pageKey, () => void loadNotes()), [repo, pageKey, loadNotes]);
+
   /** Replaces the team half of the list, leaving the personal half as it is. */
   const commitTeamNotes = useCallback(
     (next: Note[]) => {

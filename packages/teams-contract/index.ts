@@ -1,3 +1,4 @@
+export * from './announcements';
 export * from './auth';
 export * from './billing';
 export * from './comments';

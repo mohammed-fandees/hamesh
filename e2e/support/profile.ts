@@ -49,6 +49,27 @@ export interface LaunchOptions {
   args?: string[];
   /** Let the page save downloads (the backup spec reads the file it writes). */
   acceptDownloads?: boolean;
+  /** Leave the guide a first install opens. Every other spec starts past it. */
+  keepGuide?: boolean;
+}
+
+/**
+ * Closes the tab a first install opens, once it is there. Waiting for it is also
+ * what makes a spec's own stored preferences safe: the install handler writes
+ * preferences just before opening this tab, and would overwrite anything seeded
+ * ahead of it.
+ */
+async function dismissGuide(context: BrowserContext): Promise<void> {
+  const deadline = Date.now() + 15_000;
+  while (Date.now() < deadline) {
+    const guide = context.pages().find((page) => page.url().includes('view=start'));
+    if (guide) {
+      await guide.close();
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  throw new Error('the guide a first install opens never appeared');
 }
 
 /**
@@ -83,6 +104,8 @@ export async function launchExtension(
     removeProfileDir(userDataDir);
     throw err;
   }
+
+  if (!options.keepGuide) await dismissGuide(context);
 
   let closed: Promise<void> | undefined;
   return {

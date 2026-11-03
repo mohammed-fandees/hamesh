@@ -52,7 +52,6 @@ export interface TeamsStrings extends SharedStrings {
   teamNamePlaceholder: string;
   signedOutTitle: string;
   signedOutBody: string;
-  goToSettings: string;
 
   role: (role: 'owner' | 'admin' | 'member') => string;
   stateReadOnly: (until: string) => string;
@@ -83,6 +82,43 @@ export interface TeamsStrings extends SharedStrings {
   inviteExpired: string;
   revokeInvite: string;
   noInvitations: string;
+
+  /** Asked as a name is typed: two teams can't be told apart if they share one. */
+  teamNameTaken: (name: string) => string;
+  teamNameUse: (name: string) => string;
+  teamNameRenameTo: (name: string) => string;
+
+  /** Getting into Teams, on the Teams page itself. */
+  startTitle: string;
+  startIntro: string;
+  startStepTeam: string;
+  startStepTeamBody: string;
+
+  /** A team's notes, on its own page. */
+  noteActions: string;
+  shelfAll: (count: number) => string;
+  teamNotesSearch: string;
+  teamNotesNoMatches: (query: string) => string;
+  teamNotesEmptyShelf: string;
+  emptyNotesReadOnly: string;
+  aloneHint: string;
+  sharePickOpen: string;
+  sharePickTitle: string;
+  sharePickSearch: string;
+  sharePickAction: string;
+  sharePickEmpty: string;
+  sharePickNoMatches: (query: string) => string;
+
+  /** What Hamesh announces, over its own pages. */
+  announcementLabel: string;
+  announcementClose: string;
+  announcementDismiss: string;
+  announcementPrevious: string;
+  announcementNext: string;
+  announcementPosition: (at: number, of: number) => string;
+  announcementsTitle: string;
+  announcementsSwitch: string;
+  announcementsHint: string;
 
   joinTeam: string;
   joinHint: string;
@@ -134,7 +170,6 @@ export interface TeamsStrings extends SharedStrings {
   /** A shared note's pin on the page, read out: whose note it is. */
   notePin: (author: string | null) => string;
   shareFailedKept: (reason: string) => string;
-  refreshNotes: string;
   syncedAgo: (when: string) => string;
   neverSynced: string;
   unshareNote: string;
@@ -197,7 +232,6 @@ export interface TeamsStrings extends SharedStrings {
   atTeamLimit: (allowed: number) => string;
   emptyNotesTitle: (team: string) => string;
   emptyNotesBody: (team: string) => string;
-  goToLibrary: string;
   emptyMentionsTitle: string;
   emptyMentionsBody: string;
   emptyCommentsTitle: string;
@@ -316,7 +350,6 @@ const en: TeamsOwnStrings = {
   teamNamePlaceholder: 'Team name…',
   signedOutTitle: 'Teams is off',
   signedOutBody: 'Turn on Teams and sign in from Settings to share notes with your team.',
-  goToSettings: 'Open Settings',
 
   role: (role) => ({ owner: 'Owner', admin: 'Admin', member: 'Member' })[role],
   stateReadOnly: (until) => `Read-only until ${until}`,
@@ -348,6 +381,41 @@ const en: TeamsOwnStrings = {
   inviteExpired: 'Expired',
   revokeInvite: 'Revoke',
   noInvitations: 'No open invitations.',
+
+  teamNameTaken: (name) => `You already have a team called “${name}”.`,
+  teamNameUse: (name) => `Create “${name}”`,
+  teamNameRenameTo: (name) => `Rename to “${name}”`,
+
+  startTitle: 'Work on the same notes as your team',
+  startIntro:
+    'Share a note and everyone in the team sees it on the page it belongs to, and can reply to it. The rest of your notes stay on this device.',
+  startStepTeam: 'Start a team, or join one',
+  startStepTeamBody: 'Name a team of your own, or paste a link someone sent you.',
+
+  noteActions: 'Note actions',
+  shelfAll: (count) => `All ${count}`,
+  teamNotesSearch: 'Search this team’s notes…',
+  teamNotesNoMatches: (query) => `Nothing here mentions “${query}”.`,
+  teamNotesEmptyShelf: 'No notes in this folder yet.',
+  emptyNotesReadOnly: 'When someone shares a note, it will show up here.',
+  aloneHint: 'A team is more use with someone in it. Invite a teammate to share notes with.',
+  sharePickOpen: 'Share a note',
+  sharePickTitle: 'Share one of your notes',
+  sharePickSearch: 'Search your notes…',
+  sharePickAction: 'Share',
+  sharePickEmpty: 'You have no notes of your own yet. Press Alt+H on any page to leave one.',
+  sharePickNoMatches: (query) => `None of your notes mention “${query}”.`,
+
+  announcementLabel: 'News from Hamesh',
+  announcementClose: 'Close for now',
+  announcementDismiss: 'Don’t show again',
+  announcementPrevious: 'Previous',
+  announcementNext: 'Next',
+  announcementPosition: (at, of) => `${at} of ${of}`,
+  announcementsTitle: 'News from Hamesh',
+  announcementsSwitch: 'Show news about new features',
+  announcementsHint:
+    'A short notice at the top of the Library, never on websites. Turned off, Hamesh doesn’t ask for it at all.',
 
   joinTeam: 'Join a team',
   joinHint: 'Paste the invite link someone sent you.',
@@ -396,7 +464,6 @@ const en: TeamsOwnStrings = {
   panelNoneHere: 'No shared notes on this page',
   notePin: (author) => (author ? `${author}’s shared note` : 'A shared note'),
   shareFailedKept: (reason) => `Saved on this device, but not shared: ${reason}`,
-  refreshNotes: 'Check for changes',
   syncedAgo: (when) => `Up to date as of ${when}`,
   neverSynced: 'Not loaded on this device yet',
   unshareNote: 'Stop sharing',
@@ -457,8 +524,7 @@ const en: TeamsOwnStrings = {
     `Your plan allows ${allowed} ${allowed === 1 ? 'team' : 'teams'} of your own, and you have them all.`,
   emptyNotesTitle: (team) => `Nothing in ${team} yet`,
   emptyNotesBody: (team) =>
-    `Open a note in your Library and choose ${team}. It will appear on the page it belongs to, for everyone here.`,
-  goToLibrary: 'Go to the Library',
+    `Share one of your notes here, or press Alt+H on any page and choose ${team} as you write. Everyone here will see it on that page.`,
   emptyMentionsTitle: 'Nobody has named you yet',
   emptyMentionsBody:
     'When someone types @ and picks you in a comment, it turns up here \u2014 whichever team it was in.',
@@ -618,7 +684,6 @@ const ar: TeamsOwnStrings = {
   teamNamePlaceholder: 'اسم الفريق…',
   signedOutTitle: 'الفرق متوقفة',
   signedOutBody: 'فعّل الفرق وسجّل دخولك من الإعدادات لمشاركة الملاحظات مع فريقك.',
-  goToSettings: 'فتح الإعدادات',
 
   role: (role) => ({ owner: 'المالك', admin: 'مشرف', member: 'عضو' })[role],
   stateReadOnly: (until) => `للقراءة فقط حتى ${until}`,
@@ -650,6 +715,41 @@ const ar: TeamsOwnStrings = {
   inviteExpired: 'منتهية',
   revokeInvite: 'إلغاء',
   noInvitations: 'لا توجد دعوات مفتوحة.',
+
+  teamNameTaken: (name) => `لديك فريق باسم «${name}» بالفعل.`,
+  teamNameUse: (name) => `إنشاء «${name}»`,
+  teamNameRenameTo: (name) => `تغيير الاسم إلى «${name}»`,
+
+  startTitle: 'اعملوا على الملاحظات نفسها',
+  startIntro:
+    'شارك ملاحظة فيراها كل من في الفريق على صفحتها نفسها، ويردّ عليها. وتبقى بقية ملاحظاتك على هذا الجهاز.',
+  startStepTeam: 'أنشئ فريقًا أو انضم إلى فريق',
+  startStepTeamBody: 'سمِّ فريقك، أو الصق رابطًا أرسله لك أحدهم.',
+
+  noteActions: 'إجراءات الملاحظة',
+  shelfAll: (count) => `الكل ${count}`,
+  teamNotesSearch: 'ابحث في ملاحظات الفريق…',
+  teamNotesNoMatches: (query) => `لا شيء هنا يذكر «${query}».`,
+  teamNotesEmptyShelf: 'لا توجد ملاحظات في هذا الفولدر بعد.',
+  emptyNotesReadOnly: 'حين يشارك أحدهم ملاحظة ستظهر هنا.',
+  aloneHint: 'الفريق أنفع بوجود زملاء. ادعُ زميلًا لتتشاركا الملاحظات.',
+  sharePickOpen: 'مشاركة ملاحظة',
+  sharePickTitle: 'شارك إحدى ملاحظاتك',
+  sharePickSearch: 'ابحث في ملاحظاتك…',
+  sharePickAction: 'مشاركة',
+  sharePickEmpty: 'ليست لديك ملاحظات بعد. اضغط Alt+H في أي صفحة لتترك واحدة.',
+  sharePickNoMatches: (query) => `لا توجد ملاحظة لك تذكر «${query}».`,
+
+  announcementLabel: 'أخبار هامش',
+  announcementClose: 'إغلاق الآن',
+  announcementDismiss: 'عدم الإظهار مرة أخرى',
+  announcementPrevious: 'السابق',
+  announcementNext: 'التالي',
+  announcementPosition: (at, of) => `${at} من ${of}`,
+  announcementsTitle: 'أخبار هامش',
+  announcementsSwitch: 'إظهار أخبار الميزات الجديدة',
+  announcementsHint:
+    'تنبيه قصير أعلى المكتبة، ولا يظهر على المواقع أبدًا. عند إيقافه لا يطلبه هامش من الأساس.',
 
   joinTeam: 'الانضمام إلى فريق',
   joinHint: 'الصق رابط الدعوة الذي أرسله لك أحدهم.',
@@ -696,7 +796,6 @@ const ar: TeamsOwnStrings = {
   panelNoneHere: 'لا توجد ملحوظات مشتركة على هذه الصفحة',
   notePin: (author) => (author ? `ملحوظة مشتركة من ${author}` : 'ملحوظة مشتركة'),
   shareFailedKept: (reason) => `حُفظت على جهازك، لكن لم تُشارك: ${reason}`,
-  refreshNotes: 'تحقق من التغييرات',
   syncedAgo: (when) => `محدَّثة حتى ${when}`,
   neverSynced: 'لم تُحمَّل على هذا الجهاز بعد',
   unshareNote: 'إيقاف المشاركة',
@@ -749,12 +848,20 @@ const ar: TeamsOwnStrings = {
     '\u0625\u0639\u0627\u062f\u0629 \u062a\u0633\u0645\u064a\u0629\u060c \u062a\u0633\u0644\u064a\u0645\u060c \u0645\u063a\u0627\u062f\u0631\u0629\u060c \u062d\u0630\u0641',
   seatsUsed: (count) =>
     count === 1
-      ? '\u0639\u0636\u0648 \u0648\u0627\u062d\u062f'
-      : `${count} \u0623\u0639\u0636\u0627\u0621`,
+      ? 'عضو واحد'
+      : count === 2
+        ? 'عضوان'
+        : count <= 10
+          ? `${count} أعضاء`
+          : `${count} عضوًا`,
   notesShared: (count) =>
     count === 1
-      ? '\u0645\u0644\u0627\u062d\u0638\u0629 \u0648\u0627\u062d\u062f\u0629'
-      : `${count} \u0645\u0644\u0627\u062d\u0638\u0629`,
+      ? 'ملاحظة واحدة'
+      : count === 2
+        ? 'ملاحظتان'
+        : count >= 3 && count <= 10
+          ? `${count} ملاحظات`
+          : `${count} ملاحظة`,
 
   emptyTeamsTitle: '\u0644\u0627 \u062a\u0648\u062c\u062f \u0641\u0631\u0642 \u0628\u0639\u062f',
   emptyTeamsBody:
@@ -769,9 +876,7 @@ const ar: TeamsOwnStrings = {
   emptyNotesTitle: (team) =>
     `\u0644\u0627 \u0634\u064a\u0621 \u0641\u064a ${team} \u0628\u0639\u062f`,
   emptyNotesBody: (team) =>
-    `\u0627\u0641\u062a\u062d \u0645\u0644\u0627\u062d\u0638\u0629 \u0641\u064a \u0645\u0643\u062a\u0628\u062a\u0643 \u0648\u0627\u062e\u062a\u0631 ${team}\u060c \u0641\u062a\u0638\u0647\u0631 \u0639\u0644\u0649 \u0635\u0641\u062d\u062a\u0647\u0627 \u0644\u0643\u0644 \u0645\u0646 \u0647\u0646\u0627.`,
-  goToLibrary:
-    '\u0627\u0644\u0630\u0647\u0627\u0628 \u0625\u0644\u0649 \u0627\u0644\u0645\u0643\u062a\u0628\u0629',
+    `شارك إحدى ملاحظاتك من هنا، أو اضغط Alt+H في أي صفحة واختر ${team} أثناء الكتابة. سيراها كل من هنا على صفحتها.`,
   emptyMentionsTitle:
     '\u0644\u0645 \u064a\u0630\u0643\u0631\u0643 \u0623\u062d\u062f \u0628\u0639\u062f',
   emptyMentionsBody:

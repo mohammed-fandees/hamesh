@@ -43,9 +43,9 @@ Rendered from `source/promo-small-tile.html` and `source/promo-marquee.html` by 
 | `manifest-48.png`    | 48×48      | `manifest.icons["48"]`, extension management page | PNG, RGBA               |
 | `manifest-96.png`    | 96×96      | `manifest.icons["96"]`                            | PNG, RGBA               |
 
-**Store icon:** rendered from `source/store-icon.html` by `scripts/generate-promo-assets.mjs`, following Chrome's image guidelines: a 96×96 clay tile (rounded, with a subtle top-to-bottom gradient) inside 16px of fully transparent padding on every side, and the mark in paper colour, stem on the left as everywhere else. No edge and no shadow, so the padding stays clear; the clay reads on light and dark backgrounds alike. It is no longer a copy of `public/icon/128.png`: the package keeps the plain mark for Chrome's toolbar.
+**Store icon:** rendered from `source/store-icon.html` by `scripts/generate-promo-assets.mjs`, following Chrome's image guidelines: a 96×96 clay tile (rounded, with a subtle top-to-bottom gradient) inside 16px of fully transparent padding on every side, and the mark in paper colour, stem on the left as everywhere else. No edge and no shadow, so the padding stays clear; the clay reads on light and dark backgrounds alike. `public/icon/128.png` is drawn to the same numbers.
 
-**Toolbar and manifest icons:** copied from `public/icon/` (the files the production manifest references), drawn by `scripts/generate-icons.mjs` in the clay colour (`#B5502F`).
+**Toolbar and manifest icons:** copied from `public/icon/` (the files the production manifest references), drawn by `scripts/generate-icons.mjs` as the same clay tile with the mark in paper colour. 128 and 96 keep the guidelines' one-eighth padding; 48, 32 and 16 use less, and the two smallest draw the mark heavier, so it survives at toolbar size.
 
 **QA performed:** the store icon's padding verified fully transparent (alpha 0 on all four 16px bands); checked over white and over `#202124`; every file confirmed RGBA at the stated size.
 

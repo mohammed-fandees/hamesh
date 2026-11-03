@@ -61,7 +61,7 @@ function view(teamActions: TeamLibraryActions | null) {
       onRenameFolder={vi.fn(async () => {})}
       onDeleteFolder={vi.fn(async () => {})}
       onMoveNote={vi.fn()}
-      onOpenSettings={vi.fn()}
+      onOpenGuide={vi.fn()}
     />,
   );
   fireEvent.click(screen.getByRole('radio', { name: strings.modeFolder }));

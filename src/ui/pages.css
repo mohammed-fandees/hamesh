@@ -417,6 +417,94 @@
 
 /* "+ New folder", "+ New team", "+ Invite someone" — an outline that says
    there could be more here, set apart from the solid things beside it. */
+/* ---- Steps: getting started, and getting into Teams ---- */
+.hm-guide__intro {
+  margin: 0 0 var(--hm-space-4);
+  color: var(--hm-ink-60);
+  font-size: var(--hm-text-body);
+  line-height: var(--hm-lh-body);
+}
+.hm-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--hm-space-4);
+}
+.hm-step {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--hm-space-3);
+}
+.hm-step__mark {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  border-radius: var(--hm-radius-pill);
+  border: 1.5px solid var(--hm-ink-20);
+  color: var(--hm-paper);
+}
+.hm-step[data-done] .hm-step__mark {
+  background: var(--hm-accent);
+  border-color: var(--hm-accent);
+}
+.hm-step__text {
+  flex: 1;
+  min-width: 0;
+}
+.hm-step__title {
+  margin: 0 0 var(--hm-space-1);
+  color: var(--hm-ink);
+  font-size: var(--hm-text-body);
+  font-weight: 500;
+}
+.hm-step[data-done] .hm-step__title {
+  color: var(--hm-ink-60);
+}
+.hm-step__body {
+  margin: 0;
+  color: var(--hm-ink-60);
+  font-size: var(--hm-text-body-sm);
+  line-height: var(--hm-lh-body-sm);
+}
+.hm-step__action {
+  flex: none;
+}
+.hm-step__action a.hm-btn {
+  text-decoration: none;
+}
+.hm-guide-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--hm-space-2) var(--hm-space-3);
+  margin-bottom: var(--hm-space-3);
+  padding: var(--hm-space-2) var(--hm-space-3);
+  background: var(--hm-surface);
+  border: 1px solid var(--hm-ink-10);
+  border-radius: var(--hm-radius-lg);
+}
+.hm-guide-card__icon {
+  flex: none;
+  color: var(--hm-accent);
+}
+.hm-guide-card__text {
+  flex: 1 1 12rem;
+  margin: 0;
+  color: var(--hm-ink-60);
+  font-size: var(--hm-text-body-sm);
+}
+.hm-guide-card__text strong {
+  color: var(--hm-ink);
+  font-size: var(--hm-text-body);
+  font-weight: 500;
+}
+
 .hm-add {
   display: inline-flex;
   align-items: center;

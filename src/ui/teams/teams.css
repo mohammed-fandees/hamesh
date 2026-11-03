@@ -1141,3 +1141,250 @@
   bottom: 100%;
   margin: 0 0 6px;
 }
+
+/* ---- A team's notes, on its own page ---- */
+.hm-team-notes__search {
+  width: 100%;
+  margin-bottom: var(--hm-space-3);
+}
+.hm-shelves {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--hm-space-2);
+  margin-bottom: var(--hm-space-3);
+}
+.hm-shelves__form {
+  flex: 1 1 16rem;
+}
+.hm-team-notes__none {
+  margin: var(--hm-space-3) 0 0;
+}
+.hm-team-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.hm-team-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--hm-space-3);
+  padding: var(--hm-space-3) 0;
+  border-top: 1px solid var(--hm-ink-10);
+}
+.hm-team-row:last-child {
+  padding-bottom: 0;
+}
+.hm-team-row__actions .hm-btn,
+.hm-section__actions .hm-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hm-space-1);
+}
+.hm-section__actions {
+  align-items: center;
+}
+.hm-team-row[data-working] {
+  opacity: 0.6;
+}
+.hm-team-row__main {
+  flex: 1;
+  min-width: 0;
+}
+.hm-team-row__open {
+  display: block;
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.hm-team-row__open:focus-visible {
+  outline: 2px solid var(--hm-accent);
+  outline-offset: 2px;
+  border-radius: var(--hm-radius-sm);
+}
+.hm-team-row__content {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow-wrap: anywhere;
+}
+.hm-team-row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--hm-space-1);
+  margin: var(--hm-space-1) 0 0;
+  color: var(--hm-ink-60);
+  font-size: var(--hm-text-body-sm);
+}
+.hm-team-row__page {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--hm-ink-20);
+  text-underline-offset: 2px;
+}
+.hm-team-row__page:hover {
+  color: var(--hm-accent);
+}
+.hm-team-row__folder {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hm-space-1);
+  margin-inline-start: var(--hm-space-2);
+  color: var(--hm-ink-40);
+}
+.hm-team-row__move {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--hm-space-2);
+  margin-top: var(--hm-space-2);
+}
+.hm-team-row__actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--hm-space-1);
+}
+@media (max-width: 640px) {
+  .hm-team-row {
+    flex-wrap: wrap;
+  }
+  .hm-team-row__actions {
+    margin-inline-start: auto;
+  }
+}
+
+/* Picking one of this device's notes to share. */
+.hm-share-pick {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hm-space-2);
+  margin-bottom: var(--hm-space-4);
+  padding: var(--hm-space-3);
+  background: var(--hm-paper);
+  border: 1px solid var(--hm-ink-10);
+  border-radius: var(--hm-radius-md);
+}
+.hm-share-pick__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--hm-space-3);
+}
+.hm-share-pick__title {
+  margin: 0;
+  color: var(--hm-ink);
+  font-size: var(--hm-text-body);
+  font-weight: 500;
+}
+.hm-share-pick__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 18rem;
+  overflow-y: auto;
+}
+.hm-share-pick__row {
+  display: flex;
+  align-items: center;
+  gap: var(--hm-space-3);
+  padding: var(--hm-space-2) 0;
+  border-top: 1px solid var(--hm-ink-10);
+}
+.hm-share-pick__row:first-child {
+  border-top: 0;
+}
+.hm-share-pick__text {
+  flex: 1;
+  min-width: 0;
+}
+.hm-share-pick__content {
+  margin: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.hm-share-pick__meta {
+  margin: 0;
+  overflow: hidden;
+  color: var(--hm-ink-60);
+  font-size: var(--hm-text-body-sm);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* The two ways into a first team. */
+.hm-team-doors {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: var(--hm-space-3);
+  align-items: start;
+}
+.hm-team-doors > .hm-empty,
+.hm-team-doors > .hm-section {
+  margin: 0;
+  height: 100%;
+}
+.hm-team-doors > .hm-empty {
+  background: var(--hm-surface);
+  border: 1px solid var(--hm-ink-10);
+  border-radius: var(--hm-radius-lg);
+}
+.hm-team-doors__join .hm-section__title {
+  margin-bottom: var(--hm-space-2);
+}
+
+/* ---- What Hamesh announces, over its own pages ---- */
+.hm-announcement {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--hm-space-2) var(--hm-space-3);
+  margin-bottom: var(--hm-space-3);
+  padding: var(--hm-space-2) var(--hm-space-3);
+  background: var(--hm-accent-tint);
+  border-radius: var(--hm-radius-lg);
+}
+.hm-announcement a.hm-btn {
+  text-decoration: none;
+}
+.hm-announcement__mark {
+  flex: none;
+  color: var(--hm-accent);
+}
+.hm-announcement__text {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+.hm-announcement__title {
+  margin: 0;
+  color: var(--hm-ink);
+  font-size: var(--hm-text-body);
+  font-weight: 500;
+}
+.hm-announcement__body {
+  margin: 0;
+  color: var(--hm-ink-60);
+  font-size: var(--hm-text-body-sm);
+  line-height: var(--hm-lh-body-sm);
+}
+.hm-announcement__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--hm-space-2);
+}
+.hm-announcement__pager {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hm-space-1);
+  color: var(--hm-ink-60);
+  font-size: var(--hm-text-label);
+}

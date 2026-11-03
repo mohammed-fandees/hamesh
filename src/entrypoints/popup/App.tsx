@@ -171,7 +171,19 @@ export function App() {
                   <PlusIcon size={12} />
                   {strings.addNote}
                 </button>
-                <StatusLine tone="success">{strings.activeOnPage}</StatusLine>
+                {count === 0 ? (
+                  <p className="hm-popup__tip">
+                    {strings.popupTip}
+                    {addShortcut && (
+                      <>
+                        {' '}
+                        <kbd className="hm-kbd">{addShortcut}</kbd>
+                      </>
+                    )}
+                  </p>
+                ) : (
+                  <StatusLine tone="success">{strings.activeOnPage}</StatusLine>
+                )}
               </div>
             )}
 

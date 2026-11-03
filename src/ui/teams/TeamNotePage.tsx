@@ -15,6 +15,7 @@ import { Skeleton } from '../kit/Skeleton';
 import { NoteEditor } from '../NoteEditor';
 import { CommentThread } from './CommentThread';
 import { noteRights } from './permissions';
+import { useSharedNote } from './useSharedNote';
 import type { PersonalNotes } from './personal-notes';
 import type { TeamsRoute } from './route';
 import type { TeamsStrings } from './strings';
@@ -34,9 +35,6 @@ interface TeamNotePageProps {
   onGone: () => void;
   onRoute: (route: TeamsRoute) => void;
 }
-
-/** What is waiting to be confirmed for this note. */
-type Asking = 'delete' | 'unshare';
 
 /**
  * One shared note: what it says, what can be done to it, and what has been said
@@ -65,8 +63,6 @@ export function TeamNotePage({
 }: TeamNotePageProps) {
   const teamId = team.team.id;
   const [snapshot, setSnapshot] = useState<TeamCacheSnapshot | null>(null);
-  const [editing, setEditing] = useState(false);
-  const [asking, setAsking] = useState<Asking | null>(null);
 
   /** Pulls first, then reads: after a change, what is shown is what the server has. */
   const reload = useCallback(async () => {
@@ -85,49 +81,34 @@ export function TeamNotePage({
       const next = await page.cache(teamId, 'sync', 'notes.reload');
       if (!cancelled && next) setSnapshot(next);
     })();
+    // Someone else edited or moved it: read what this device now holds.
+    const unsubscribe = page.onEvent((event) => {
+      if (event.event !== 'notes' || event.teamId !== teamId) return;
+      void page.cache(teamId, 'notes', 'notes.reload').then((next) => {
+        if (!cancelled && next) setSnapshot(next);
+      });
+    });
     return () => {
       cancelled = true;
+      unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teamId]);
 
   const note: CachedTeamNote | undefined = snapshot?.notes.find((n) => n.id === noteId);
-  const key = `note:${noteId}`;
-  const working = page.working(key);
-  const failed = page.failed(key);
+  const {
+    working,
+    failed,
+    editing,
+    setEditing,
+    asking,
+    setAsking,
+    move,
+    saveEdit,
+    unshare,
+    remove,
+  } = useSharedNote({ page, teamId, note, noteId, personal, reload, onGone });
   const may = noteRights(team, note?.authorId ?? null, myUserId);
-
-  async function move(to: string | null) {
-    if (!note) return;
-    await page.run('notes.update', { teamId, noteId, version: note.version, folderId: to }, key);
-    // A refused edit (someone else got there first) is reported beside the
-    // note; either way what is shown afterwards is the server's version.
-    await reload();
-  }
-
-  async function saveEdit(content: string) {
-    if (!note) return;
-    setEditing(false);
-    if (content === note.content) return;
-    await page.run('notes.update', { teamId, noteId, version: note.version, content }, key);
-    await reload();
-  }
-
-  async function unshare() {
-    const result = await page.run('notes.unshare', { teamId, noteId }, key);
-    setAsking(null);
-    if (!result) return;
-    // Handed back, so it is kept: the note becomes a personal one again rather
-    // than disappearing along with the team's copy.
-    await personal.keep(result.note);
-    onGone();
-  }
-
-  async function remove() {
-    const gone = await page.run('notes.delete', { teamId, noteId }, key);
-    setAsking(null);
-    if (gone !== null) onGone();
-  }
 
   /** The trail back. What the last step says is the note itself once it is known. */
   const trail = (last: string) => (
