@@ -2,6 +2,7 @@ import type {
   AnnouncementPreferences,
   AppearanceMode,
   FolderDefaultPreferences,
+  LibraryPreferences,
   OnboardingPreferences,
   Preferences,
   SupportedLanguage,
@@ -35,6 +36,7 @@ export interface PreferencesRepository {
   /** Sets (or, with `null`, clears) the default folder for every page that
    *  has none of its own. */
   setGlobalDefaultFolder(folderId: string | null): Promise<Preferences>;
+  setLibrary(patch: Partial<LibraryPreferences>): Promise<Preferences>;
   setOnboarding(onboarding: OnboardingPreferences): Promise<Preferences>;
   /** Patches what the reader has said about announcements, leaving the rest. */
   setAnnouncements(patch: Partial<AnnouncementPreferences>): Promise<Preferences>;
@@ -116,6 +118,13 @@ export function createPreferencesRepository(): PreferencesRepository {
     async setGlobalDefaultFolder(folderId: string | null): Promise<Preferences> {
       const current = await this.get();
       return saveFolderDefaults(current, withGlobalDefaultFolder(current.folderDefaults, folderId));
+    },
+
+    async setLibrary(patch: Partial<LibraryPreferences>): Promise<Preferences> {
+      const current = await this.get();
+      const next: Preferences = { ...current, library: { ...current.library, ...patch } };
+      await storage.setItem(STORAGE_KEY, next);
+      return next;
     },
 
     async setOnboarding(onboarding: OnboardingPreferences): Promise<Preferences> {

@@ -80,6 +80,7 @@ describe('parsePreferences', () => {
       teams: { lastSeenMentionId: null, skipShareConsent: false },
       onboarding: { guide: 'hidden' },
       announcements: { enabled: true, dismissed: [], snoozedUntil: {} },
+      library: { mode: 'domain', sort: 'alphabetical' },
     });
   });
 
@@ -94,6 +95,7 @@ describe('parsePreferences', () => {
       teams: { lastSeenMentionId: null, skipShareConsent: false },
       onboarding: { guide: 'hidden' },
       announcements: { enabled: true, dismissed: [], snoozedUntil: {} },
+      library: { mode: 'domain', sort: 'alphabetical' },
     });
     expect(parsePreferences({ language: 'en', appearance: 'light' })).toEqual({
       schemaVersion: 1,
@@ -105,6 +107,7 @@ describe('parsePreferences', () => {
       teams: { lastSeenMentionId: null, skipShareConsent: false },
       onboarding: { guide: 'hidden' },
       announcements: { enabled: true, dismissed: [], snoozedUntil: {} },
+      library: { mode: 'domain', sort: 'alphabetical' },
     });
   });
 

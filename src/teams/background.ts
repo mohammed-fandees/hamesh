@@ -1,5 +1,6 @@
 import { browser } from 'wxt/browser';
 import { teamsConfig, teamsPermissions } from './config';
+import { canOpenPanel, openPanel } from './side-panel';
 import { isContentScriptSender, isTeamsPageMessage } from './page-channel';
 import { createNotesRepository } from '@/storage/notes-repository';
 import { generatePageKey } from '@/domain/page-key';
@@ -62,16 +63,16 @@ export function registerTeams(): void {
     if (isTeamsPageMessage(message)) {
       if (!isContentScriptSender(sender, browser.runtime.id)) return undefined;
       const pageUrl = sender.url as string;
-      // The whole discussion, in Chrome's side panel beside the page. Opened
-      // now, before anything is awaited: the click on the page is what lets
-      // the panel open, and it only counts until this handler yields.
+      // The whole discussion, in the panel beside the page. Opened now, before
+      // anything is awaited: the click on the page is what lets the panel open,
+      // and it only counts until this handler yields.
       const request = message.request;
       const tabId = sender.tab?.id;
       if (
         request.op === 'open' &&
         request.in !== 'hamesh' &&
         tabId !== undefined &&
-        browser.sidePanel
+        canOpenPanel()
       ) {
         const params = new URLSearchParams({
           view: 'panel',
@@ -79,12 +80,10 @@ export function registerTeams(): void {
           note: request.noteId,
           pagekey: generatePageKey(pageUrl),
         });
-        void browser.sidePanel.setOptions({ tabId, path: `notes.html?${params}`, enabled: true });
-        browser.sidePanel.open({ tabId }).then(
-          () => sendResponse({ ok: true, data: null }),
-          // Refused (no gesture after all, an older Chrome): the note's own
-          // page in Hamesh instead, as before there was a panel.
-          async () => {
+        void openPanel(params, tabId).then(async (opened) => {
+          // Refused (Firefox for a click on a web page, an older Chrome): the
+          // note's own page in Hamesh instead, as before there was a panel.
+          if (!opened) {
             const page = new URLSearchParams({
               view: 'teams',
               team: request.teamId,
@@ -94,9 +93,9 @@ export function registerTeams(): void {
             await browser.tabs.create({
               url: browser.runtime.getURL(`/notes.html?${page}` as '/notes.html'),
             });
-            sendResponse({ ok: true, data: null });
-          },
-        );
+          }
+          sendResponse({ ok: true, data: null });
+        });
         return true;
       }
       void (async () => {

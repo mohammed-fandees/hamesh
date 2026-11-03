@@ -3,6 +3,7 @@ import { FOLDER_NAME_MAX, type FolderLike } from '@/domain/folder';
 import type { FolderNode } from '@/domain/folder-grouping';
 import type { Note } from '@/domain/note';
 import { FolderMenu } from '../FolderMenu';
+import { folderNameConflict } from '../folder-name-conflict';
 import { NameField } from '../kit/NameField';
 import { ChevronIcon, FolderIcon, PlusIcon } from '../kit/icons';
 import type { Lang, Strings } from '../i18n';
@@ -123,6 +124,10 @@ export function FolderTree(props: FolderTreeProps) {
               maxLength={FOLDER_NAME_MAX}
               submitLabel={strings.create}
               cancelLabel={strings.cancel}
+              conflict={folderNameConflict(
+                strings,
+                tree.map((node) => node.folder.name),
+              )}
               onCancel={() => setCreating(false)}
               onSubmit={(name) => {
                 void onCreateFolder(name, null);
@@ -142,7 +147,12 @@ export function FolderTree(props: FolderTreeProps) {
           }
         >
           {tree.map((node) => (
-            <FolderItem key={node.folder.id} node={node} depth={0} />
+            <FolderItem
+              key={node.folder.id}
+              node={node}
+              depth={0}
+              siblings={tree.map((n) => n.folder.name)}
+            />
           ))}
           <UnfiledItem notes={unfiledNotes} />
         </ul>
@@ -285,7 +295,16 @@ function FolderNotes({ notes, depth }: { notes: Note[]; depth: number }) {
   );
 }
 
-function FolderItem({ node, depth }: { node: FolderNode<FolderLike>; depth: number }) {
+function FolderItem({
+  node,
+  depth,
+  siblings,
+}: {
+  node: FolderNode<FolderLike>;
+  depth: number;
+  /** The names of the folders beside this one, itself included. */
+  siblings: readonly string[];
+}) {
   const { strings, open, props } = useTree();
   const { folder } = node;
   return (
@@ -301,6 +320,8 @@ function FolderItem({ node, depth }: { node: FolderNode<FolderLike>; depth: numb
             name={folder.name}
             strings={strings}
             deleteQuestion={strings.deleteFolderConfirm(folder.name)}
+            renameTaken={siblings.filter((name) => name !== folder.name)}
+            childTaken={node.children.map((child) => child.folder.name)}
             onRename={(name) => props.onRenameFolder(folder.id, name)}
             onDelete={() => props.onDeleteFolder(folder.id)}
             onAddChild={async (name) => {
@@ -315,7 +336,12 @@ function FolderItem({ node, depth }: { node: FolderNode<FolderLike>; depth: numb
         {node.children.length > 0 && (
           <ul className="hm-rows">
             {node.children.map((child) => (
-              <FolderItem key={child.folder.id} node={child} depth={depth + 1} />
+              <FolderItem
+                key={child.folder.id}
+                node={child}
+                depth={depth + 1}
+                siblings={node.children.map((c) => c.folder.name)}
+              />
             ))}
           </ul>
         )}

@@ -11,7 +11,11 @@ import { usePreferences, systemTheme } from '@/ui/hooks/usePreferences';
 import { COMMANDS, useShortcuts } from '@/ui/hooks/useShortcuts';
 import { usePageBackground } from '@/ui/hooks/usePageBackground';
 import { createPreferencesRepository } from '@/storage/preferences-repository';
+import { generatePageKey } from '@/domain/page-key';
 import { resolveTheme } from '@/domain/preferences';
+import { readTeamIndex } from '@/teams/page-cache';
+import { canOpenPanel, openPanel } from '@/teams/side-panel';
+import { getTeamsStrings } from '@/ui/teams/strings';
 import type { PageStateResponse } from '@/messaging/types';
 import '@/ui/tokens.css';
 import '@/ui/pages.css';
@@ -36,6 +40,8 @@ export function App() {
    *  skeleton while it is finding out rather than a dash that reads as "none". */
   const [checked, setChecked] = useState(false);
   const [view, setView] = useState<View>('home');
+  /** The tab a panel would open beside, once this reader is known to be in a team. */
+  const [panelTab, setPanelTab] = useState<{ id: number; url: string } | null>(null);
   const preferences = usePreferences(prefsRepo);
   const shortcuts = useShortcuts();
   const settingsBtnRef = useRef<HTMLButtonElement>(null);
@@ -70,6 +76,34 @@ export function App() {
       setChecked(true);
     })();
   }, []);
+
+  // Asked ahead of the click: a panel only opens from the click's own handler, so
+  // nothing can be awaited once it comes.
+  useEffect(() => {
+    if (!import.meta.env.WXT_TEAMS_API_ORIGIN || !canOpenPanel()) return;
+    void (async () => {
+      const [{ teams }, [tab]] = await Promise.all([
+        readTeamIndex(),
+        browser.tabs.query({ active: true, currentWindow: true }),
+      ]);
+      if (teams.length > 0 && tab?.id != null && tab.url) {
+        setPanelTab({ id: tab.id, url: tab.url });
+      }
+    })();
+  }, []);
+
+  /** Every shared note on this page, beside it. */
+  function openSharedNotes() {
+    if (!import.meta.env.WXT_TEAMS_API_ORIGIN || !panelTab) return;
+    const params = new URLSearchParams({ view: 'panel', pagekey: generatePageKey(panelTab.url) });
+    void openPanel(params, panelTab.id).then(async (opened) => {
+      if (!opened)
+        await browser.tabs.create({
+          url: browser.runtime.getURL('/notes.html?view=teams' as '/notes.html'),
+        });
+      window.close();
+    });
+  }
 
   async function handleAdd() {
     const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
@@ -187,6 +221,12 @@ export function App() {
               </div>
             )}
 
+            {import.meta.env.WXT_TEAMS_API_ORIGIN && panelTab && active && (
+              <button type="button" className="hm-popup__link" onClick={openSharedNotes}>
+                {getTeamsStrings(lang).panelOpenForPage}
+                <ChevronIcon direction="forward" />
+              </button>
+            )}
             <button
               type="button"
               className="hm-popup__link"

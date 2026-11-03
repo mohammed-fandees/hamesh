@@ -1011,3 +1011,19 @@ Fixed in the Notes Library PR3 pass; it immediately caught two real (if
 narrow) type errors in existing test mocks. If you add a new `.test.tsx`
 file, it's now covered — if `pnpm typecheck` ever stops catching a test
 file's type errors again, check this `include` list first.
+
+## Staying current, and the first run
+
+**Nothing needs a reload.** The Library watches `hamesh:notes:*` in storage
+(`NotesRepository.watchAll`), and a web page watches its own bucket (`watchPage`), so a
+note saved, edited or deleted anywhere shows everywhere. The address follows every
+move in `notes.html`, so a reload stays where the reader is.
+
+**How the Library was left** (`Preferences.library`: by site or folder, and the sort)
+is remembered. Its filter lasts for the tab, in `sessionStorage`, so a new tab starts
+on everything.
+
+**The first run.** `onInstalled` with `reason: 'install'` turns on
+`Preferences.onboarding.guide` and opens `notes.html?view=start`. Updates don't, so
+nobody who knows Hamesh is walked through it. `domain/getting-started.ts` works out
+each step from what the reader actually did, so nothing is ticked by hand.

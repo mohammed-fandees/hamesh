@@ -38,6 +38,8 @@ interface TeamsViewProps {
   personal: PersonalNotes;
   /** This device's notes, to share from without leaving the team. */
   myNotes: readonly Note[];
+  /** The shortcut for a new note, or null when it has none. */
+  addShortcut?: string | null;
   /** Shares one into a team, asking for consent first; `false` if declined. */
   onShare: (note: Note, teamId: string, folderId: string | null) => Promise<boolean>;
   /** Where inside Teams the reader is. Owned by the page above, so the browser's
@@ -88,6 +90,7 @@ export function TeamsView({
   onOpenLibrary,
   personal,
   myNotes,
+  addShortcut = 'Alt+H',
   onShare,
   route,
   onRoute,
@@ -402,6 +405,7 @@ export function TeamsView({
               myUserId={me.user.id}
               members={members}
               myNotes={myNotes}
+              addShortcut={addShortcut}
               onShare={onShare}
               personal={personal}
               onOpenLibrary={onOpenLibrary}

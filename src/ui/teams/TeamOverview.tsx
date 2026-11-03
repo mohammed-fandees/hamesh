@@ -15,6 +15,7 @@ import { NameField } from '../kit/NameField';
 import { Section } from '../kit/Section';
 import { Skeleton } from '../kit/Skeleton';
 import { PlusIcon } from '../kit/icons';
+import { folderNameConflict } from '../folder-name-conflict';
 import { inviteRights, teamCan } from './permissions';
 import type { PersonalNotes } from './personal-notes';
 import type { TeamsRoute } from './route';
@@ -40,6 +41,8 @@ interface TeamOverviewProps {
   /** Shares one into this team, asking for consent first; `false` if declined. */
   onShare: (note: Note, teamId: string, folderId: string | null) => Promise<boolean>;
   personal: PersonalNotes;
+  /** The shortcut for a new note, or null when it has none. */
+  addShortcut: string | null;
   /** Sends the reader to the Library, narrowed to this team. */
   onOpenLibrary: (owner: NoteOwner) => void;
   onRoute: (route: TeamsRoute) => void;
@@ -67,6 +70,7 @@ export function TeamOverview({
   myNotes,
   onShare,
   personal,
+  addShortcut,
   onOpenLibrary,
   onRoute,
 }: TeamOverviewProps) {
@@ -209,6 +213,7 @@ export function TeamOverview({
         {sharing && (
           <ShareFromDevice
             strings={strings}
+            addShortcut={addShortcut}
             notes={myNotes}
             onShare={async (note) => {
               const shared = await onShare(note, teamId, folderOf);
@@ -225,7 +230,11 @@ export function TeamOverview({
           <EmptyState
             size="inline"
             title={strings.emptyNotesTitle(team.team.name)}
-            body={canShare ? strings.emptyNotesBody(team.team.name) : strings.emptyNotesReadOnly}
+            body={
+              canShare
+                ? strings.emptyNotesBody(team.team.name, addShortcut)
+                : strings.emptyNotesReadOnly
+            }
             action={
               canShare
                 ? { label: strings.sharePickOpen, onClick: () => setSharing(true) }
@@ -281,6 +290,13 @@ export function TeamOverview({
                   strings={strings}
                   deleteQuestion={strings.deleteTeamFolderConfirm(chosenFolder.name)}
                   working={page.working(`folder:${chosenFolder.id}`)}
+                  renameTaken={folders
+                    .filter(
+                      (f) =>
+                        f.folder.parentId === chosenFolder.parentId &&
+                        f.folder.id !== chosenFolder.id,
+                    )
+                    .map((f) => f.folder.name)}
                   onRename={(name) => renameFolder(chosenFolder.id, name)}
                   onDelete={() => deleteFolder(chosenFolder.id)}
                 />
@@ -295,6 +311,10 @@ export function TeamOverview({
                       submitLabel={strings.create}
                       cancelLabel={strings.cancel}
                       busy={page.working('folders.create')}
+                      conflict={folderNameConflict(
+                        strings,
+                        folders.filter((f) => !f.folder.parentId).map((f) => f.folder.name),
+                      )}
                       onCancel={() => setAdding(false)}
                       onSubmit={(name) => void createFolder(name)}
                     />

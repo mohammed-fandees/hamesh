@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { FOLDER_NAME_MAX } from '@/domain/folder';
+import { folderNameConflict } from './folder-name-conflict';
 import { InlineConfirm } from './kit/InlineConfirm';
 import { Menu, MenuDivider, MenuItem } from './kit/Menu';
 import { NameField } from './kit/NameField';
@@ -21,6 +22,8 @@ type FolderMenuStrings = Pick<
   | 'create'
   | 'cancel'
   | 'keepIt'
+  | 'folderNameTaken'
+  | 'folderNameUse'
 >;
 
 interface FolderMenuProps {
@@ -35,6 +38,10 @@ interface FolderMenuProps {
   onDelete: () => Promise<unknown> | void;
   /** Offered where folders nest from the Library's tree. */
   onAddChild?: (name: string) => Promise<unknown> | void;
+  /** Names it can't be renamed to: the folders beside it. */
+  renameTaken?: readonly string[];
+  /** Names a new folder inside it can't have. */
+  childTaken?: readonly string[];
 }
 
 /**
@@ -54,6 +61,8 @@ export function FolderMenu({
   onRename,
   onDelete,
   onAddChild,
+  renameTaken = [],
+  childTaken = [],
 }: FolderMenuProps) {
   const [view, setView] = useState<View>('menu');
   return (
@@ -79,6 +88,10 @@ export function FolderMenu({
                   submitLabel={view === 'renaming' ? strings.save : strings.create}
                   cancelLabel={strings.cancel}
                   busy={working}
+                  conflict={folderNameConflict(
+                    strings,
+                    view === 'renaming' ? renameTaken : childTaken,
+                  )}
                   onCancel={back}
                   onSubmit={(next) =>
                     then(view === 'renaming' ? onRename(next) : onAddChild?.(next))

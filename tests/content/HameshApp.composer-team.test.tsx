@@ -58,6 +58,7 @@ function makePrefsRepo(prefs: Preferences): PreferencesRepository {
     setSkipShareConsent: vi.fn(),
     setPageDefaultFolder: vi.fn(),
     setGlobalDefaultFolder: vi.fn(),
+    setLibrary: vi.fn(),
     setOnboarding: vi.fn(),
     setAnnouncements: vi.fn(),
   };

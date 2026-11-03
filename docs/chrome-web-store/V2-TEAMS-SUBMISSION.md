@@ -42,6 +42,16 @@ only, ≤ 64 KB, no cookies, no referrer). That host serves `Access-Control-Allo
 **no host permission** is needed. The pictures are stored on the device as `data:` URLs, so a web
 page never requests them.
 
+## Added in 2.1.0: news about Hamesh
+
+The Library asks `GET /v1/announcements` at most every six hours, unless the reader
+turns it off in Settings. This goes to the Teams API origin **without** a host
+permission, using the server's CORS for the extension's own origin. It runs before
+Teams is on. The request has no session, cookie, notes or page addresses, and the
+answer is plain text in both languages, checked against the contract, with no code.
+No answer below changes because of it, but the listing's privacy paragraph and the
+remote-code answer ("No") should be read again with it in mind.
+
 ## Privacy practices — dashboard answers for 2.0.0
 
 "Collected" means it leaves the device. Everything here concerns **only users who turn on Teams**.

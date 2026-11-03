@@ -11,6 +11,8 @@ const SHOWN = 30;
 
 interface ShareFromDeviceProps {
   strings: TeamsStrings;
+  /** What the shortcut for a new note is, or null when it has none. */
+  addShortcut: string | null;
   /** This device's notes. A team's own are filtered out here. */
   notes: readonly Note[];
   /** Shares one; `false` if the reader declined the consent question. */
@@ -22,7 +24,13 @@ interface ShareFromDeviceProps {
  * Picking one of this device's notes to share, without leaving the team.
  * Sharing moves a note, so a row leaves this list the moment it is in the team.
  */
-export function ShareFromDevice({ strings, notes, onShare, onClose }: ShareFromDeviceProps) {
+export function ShareFromDevice({
+  strings,
+  addShortcut,
+  notes,
+  onShare,
+  onClose,
+}: ShareFromDeviceProps) {
   const [query, setQuery] = useState('');
   const work = useWork((error) => failureOf<TeamsErrorCode>(error, 'internal'));
 
@@ -45,7 +53,7 @@ export function ShareFromDevice({ strings, notes, onShare, onClose }: ShareFromD
         </button>
       </div>
       {mine.length === 0 ? (
-        <p className="hm-supporting">{strings.sharePickEmpty}</p>
+        <p className="hm-supporting">{strings.sharePickEmpty(addShortcut)}</p>
       ) : (
         <>
           <input

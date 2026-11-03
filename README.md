@@ -102,7 +102,7 @@ was born. Edit, delete, or move any note without reopening its page.
 
 Choose who a note is for: just you, or your team. A shared note shows on the very page it belongs
 to, with your picture beside it. Talk in the margin with replies and @mentions, see where you were
-named in **Mentions**, or open the whole discussion in Chrome's side panel. Teams is optional, uses
+named in **Mentions**, or open the whole discussion in the panel beside the page. Teams is optional, uses
 Google sign-in, and starts on a free plan.
 
 <img src="docs/chrome-web-store/screenshots/02-teams.png" alt="A shared note and its discussion" />
@@ -118,8 +118,10 @@ Google sign-in, and starts on a free plan.
 ## Privacy
 
 Your personal notes stay on your device, in your browser's own extension storage: no account, no
-analytics, and nothing sent anywhere. **Hamesh Teams is the only exception**: once you turn it on
-and sign in, only what you choose to share goes to the Hamesh Teams server. The full details are in
+analytics, and no note is ever sent anywhere. **Hamesh Teams is the only exception**: once you turn
+it on and sign in, only what you choose to share goes to the Hamesh Teams server. Hamesh also asks
+its server for a short list of news about the extension, with nothing about you in the request, and
+a switch in Settings turns that off. The full details are in
 [PRIVACY.md](PRIVACY.md) and on the [website](https://hamesh.fandees.tech/privacy.html).
 
 ## Install

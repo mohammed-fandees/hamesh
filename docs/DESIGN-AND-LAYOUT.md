@@ -565,9 +565,9 @@ then every destination in one horizontally scrolling row (scrollbar hidden), the
 foot pushed to the inline end — the way a phone app keeps its places within
 reach instead of leaving the page a sliver.
 
-Sidebar switching is **not navigation** — same document, address unchanged, so a
-reload opens the Library. Only a page reached _from_ a view (a team's People, a
-shared note) becomes a history entry.
+Sidebar switching moves the address too (`?view=settings`), so a reload stays
+where the reader is, any view can be linked to, and the back button walks them.
+The Library is the view with no query at all.
 
 ### 5.3 Library view — vertical order
 
@@ -944,10 +944,11 @@ type TeamsRoute =
 URL: `?team=<id>`, `?team=<id>&page=members`, `?team=<id>&page=note&note=<id>`.
 Parsing never throws — a stale link opens the overview.
 
-History: sidebar switches are **not** navigation (address unchanged, so a reload
-opens the Library). Only a page reached _from_ Teams becomes a history entry
-(`replaceState` the current one first, then `pushState`), and leaving a
-linkable page for a top-level one strips the query.
+History: every move is a history entry (`replaceState` the current one first,
+then `pushState`), so a reload stays put and back walks them. The exception is a
+move that stays on the same page of the same view, such as another team on the
+team bar, which replaces the entry: back should leave Teams, not replay every team
+that was looked at.
 
 The overview renders in `.hm-page__inner--wide` (920px) — tiles and chips need
 more room than a reading column.

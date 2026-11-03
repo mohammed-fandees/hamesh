@@ -72,6 +72,22 @@ export default defineConfig({
      * so release tooling can read it without running it.
      */
     'build:manifestGenerated': (wxt, manifest) => {
+      // What addons.mozilla.org asks of every add-on. The favicon permission is
+      // Chrome's alone: Firefox warns about it, and the Library's site icons fall
+      // back on a monogram there.
+      if (wxt.config.browser === 'firefox') {
+        manifest.permissions = manifest.permissions?.filter((p) => p !== 'favicon');
+        (manifest as { browser_specific_settings?: unknown }).browser_specific_settings = {
+          gecko: {
+            id: 'hamesh@fandees.tech',
+            strict_min_version: '140.0',
+            data_collection_permissions: {
+              required: ['none'],
+              optional: ['personallyIdentifyingInfo', 'websiteActivity', 'websiteContent'],
+            },
+          },
+        };
+      }
       const teams = parseTeamsConfig({
         apiOrigin: process.env.WXT_TEAMS_API_ORIGIN,
         googleClientId: process.env.WXT_GOOGLE_CLIENT_ID,
@@ -86,11 +102,18 @@ export default defineConfig({
         manifest.optional_host_permissions = [hostPermissionFor(teams)];
       }
       manifest.optional_permissions = [...optional] as typeof manifest.optional_permissions;
-      // A shared note's whole discussion opens in Chrome's side panel, beside
-      // the page (src/ui/teams/PanelView.tsx). The permission carries no
-      // warning, and only a build with Teams asks for it. The default path is
-      // what the panel shows when opened without a note.
-      if (wxt.config.browser === 'chrome' && wxt.config.manifestVersion === 3) {
+      // A shared note's whole discussion opens in a panel beside the page
+      // (src/ui/teams/PanelView.tsx). The permission carries no warning, and only
+      // a build with Teams asks for it. The default path is what the panel shows
+      // when opened without a note. Firefox's own version is its sidebar.
+      if (wxt.config.browser === 'firefox') {
+        (manifest as { sidebar_action?: unknown }).sidebar_action = {
+          default_title: 'Hamesh',
+          default_panel: 'notes.html?view=panel',
+          default_icon: { 16: 'icon/16.png', 32: 'icon/32.png' },
+          open_at_install: false,
+        };
+      } else if (wxt.config.manifestVersion === 3) {
         manifest.permissions = [...new Set([...(manifest.permissions ?? []), 'sidePanel'])];
         (manifest as { side_panel?: { default_path: string } }).side_panel = {
           default_path: 'notes.html?view=panel',

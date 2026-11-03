@@ -1,3 +1,4 @@
+import { folderNameConflict } from './folder-name-conflict';
 import { useId, useMemo, useState } from 'react';
 import { FOLDER_NAME_MAX, type Folder } from '@/domain/folder';
 import { flattenFolderTree } from '@/domain/folder-grouping';
@@ -89,6 +90,10 @@ export function FolderPicker({
             maxLength={FOLDER_NAME_MAX}
             submitLabel={strings.create}
             cancelLabel={strings.cancel}
+            conflict={folderNameConflict(
+              strings,
+              folders.filter((f) => !f.parentId).map((f) => f.name),
+            )}
             onCancel={closeCreate}
             onSubmit={(name) => void create(name)}
           />

@@ -158,6 +158,17 @@ export const DEFAULT_ANNOUNCEMENT_PREFERENCES: AnnouncementPreferences = {
   snoozedUntil: {},
 };
 
+/** How the reader last left the Library's list. */
+export interface LibraryPreferences {
+  mode: 'domain' | 'folder';
+  sort: 'alphabetical' | 'recent';
+}
+
+export const DEFAULT_LIBRARY_PREFERENCES: LibraryPreferences = {
+  mode: 'domain',
+  sort: 'alphabetical',
+};
+
 export interface Preferences {
   schemaVersion: SchemaVersion;
   /** No explicit choice yet — callers fall back to the browser's UI language.
@@ -171,6 +182,7 @@ export interface Preferences {
   teams: TeamsPreferences;
   onboarding: OnboardingPreferences;
   announcements: AnnouncementPreferences;
+  library: LibraryPreferences;
 }
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -183,6 +195,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   teams: DEFAULT_TEAMS_PREFERENCES,
   onboarding: DEFAULT_ONBOARDING_PREFERENCES,
   announcements: DEFAULT_ANNOUNCEMENT_PREFERENCES,
+  library: DEFAULT_LIBRARY_PREFERENCES,
 };
 
 function parseTextNotes(value: unknown): TextNotePreferences {
@@ -213,6 +226,15 @@ function parseTeams(value: unknown): TeamsPreferences {
     lastSeenMentionId:
       typeof record.lastSeenMentionId === 'string' ? record.lastSeenMentionId : null,
     skipShareConsent: record.skipShareConsent === true,
+  };
+}
+
+function parseLibrary(value: unknown): LibraryPreferences {
+  if (!value || typeof value !== 'object') return DEFAULT_LIBRARY_PREFERENCES;
+  const record = value as Record<string, unknown>;
+  return {
+    mode: record.mode === 'folder' ? 'folder' : 'domain',
+    sort: record.sort === 'recent' ? 'recent' : 'alphabetical',
   };
 }
 
@@ -312,5 +334,6 @@ export function parsePreferences(data: unknown): Preferences {
     teams: parseTeams(record.teams),
     onboarding: parseOnboarding(record.onboarding),
     announcements: parseAnnouncements(record.announcements),
+    library: parseLibrary(record.library),
   };
 }
