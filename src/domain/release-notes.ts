@@ -37,6 +37,37 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    version: '2.1.0',
+    date: '2026-11-03',
+    title: { en: 'Teams that keep up with you', ar: 'فرق تواكبك أولًا بأول' },
+    items: [
+      {
+        en: 'A team’s page now lists its notes. Search them, edit them, file them and share yours, all from there.',
+        ar: 'صفحة الفريق تعرض ملاحظاته الآن. ابحث فيها وعدّلها ورتّبها وشارك ملاحظاتك، كل ذلك من مكان واحد.',
+      },
+      {
+        en: 'No more refreshing: what your teammates write shows up as they write it, and a reload keeps you where you were.',
+        ar: 'لا حاجة إلى التحديث بعد الآن: يظهر ما يكتبه زملاؤك فور كتابته، وإعادة تحميل الصفحة تبقيك حيث كنت.',
+      },
+      {
+        en: 'New here? A short guide walks you through your first notes, and is always in the sidebar.',
+        ar: 'جديد هنا؟ دليل قصير يرشدك إلى ملاحظاتك الأولى، وتجده دائمًا في القائمة الجانبية.',
+      },
+      {
+        en: 'Two teams or folders can’t quietly share a name any more: Hamesh tells you, and offers the next free one.',
+        ar: 'لن يحمل فريقان أو فولدران الاسم نفسه دون أن تعرف: ينبّهك هامش ويقترح اسمًا متاحًا.',
+      },
+      {
+        en: 'Now and then, a short note at the top of the Library tells you what’s new. Close it, or turn it off in Settings.',
+        ar: 'من حين لآخر، تنبيه قصير أعلى المكتبة يخبرك بالجديد. أغلقه، أو أوقفه من الإعدادات.',
+      },
+      {
+        en: 'Hamesh has a new icon in your toolbar, and the Library remembers how you like to read it.',
+        ar: 'لهامش أيقونة جديدة في شريط الأدوات، والمكتبة تتذكر طريقة العرض التي تفضّلها.',
+      },
+    ],
+  },
+  {
     version: '2.0.3',
     date: '2026-10-19',
     title: { en: 'Teams starts free', ar: 'الفرق تبدأ مجانًا' },

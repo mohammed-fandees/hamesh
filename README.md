@@ -39,6 +39,10 @@ where you left them.
 
 ## What's new
 
+- **A Teams page that does the work** (2.1). A team's notes are right there: search them, edit
+  them, file them and share yours, and they arrive as teammates write them, with no refresh.
+- **A guide for your first notes** (2.1). It opens when you install Hamesh, and ticks each step as
+  you do it.
 - **Hamesh Teams** (2.0). Read together: share a note on the page for your team to see, with your
   picture beside it, and discuss it right there with replies and @mentions, or in Chrome's side
   panel. Optional, off until you turn it on.
