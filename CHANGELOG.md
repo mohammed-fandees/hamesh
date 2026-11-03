@@ -6,6 +6,52 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.1.0] — 2026-11-03
+
+### Added
+
+- **The Teams page lists a team's notes.** Search them, filter by folder, edit, move, stop sharing
+  and delete from the row, and share one of this device's notes without leaving the page.
+- **Getting into Teams happens on the Teams page.** Turning it on, signing in, founding a team and
+  joining from a link are all there, not only in Settings.
+- **A first-run guide.** A fresh install opens it, and each step ticks itself from what the reader
+  actually did. There is a card in the Library until the basics are done, a tip in the popup on a
+  page with no notes, and an entry in the sidebar. Updates don't open it.
+- **News about Hamesh.** One notice at a time at the top of the Library, with up to three waiting,
+  written in the admin panel. The "×" hides one for a week, "Don't show again" for good, and a
+  switch in Settings stops the request altogether. This is a new network request: at most every
+  six hours, with no session, cookie, notes or page addresses (`GET /v1/announcements`).
+- **The panel beside the page on Firefox.** Firefox builds use its sidebar (`sidebarAction`), and
+  the popup can open the page's shared notes beside it on any browser with a panel. Every other
+  case opens a tab. Firefox builds aren't released yet.
+- **`/join` on the website**, the page invite links have always pointed at.
+- **Names can be told apart.** A team or a folder named like another beside it gets a warning and
+  the next free `Name (N)`, in one click.
+- **The Library remembers** by-site or by-folder and the sort, and keeps its filter for the tab.
+
+### Changed
+
+- **Nothing needs a reload.** Teams pages follow `TEAMS_EVENT` (now also `notes` and `account`), the
+  Library and open web pages watch storage, and the socket pings every 20s rather than 45s, under
+  the 30s after which Chrome stops an idle worker. A worker that wakes reopens its sockets.
+- **A reload stays where the reader is.** The address follows every move in `notes.html`, and back
+  walks them. It used to open the Library.
+- **The browser's icons are the store's clay tile**, at every size. The website's are unchanged.
+
+### Fixed
+
+- Opening a team note from the Library went to the Teams overview rather than the note.
+- A retried create after a dropped connection could found a second team.
+- A note deleted in the Library stayed on a page already open until a reload.
+- Arabic counts said "3 ملاحظة" and "2 أعضاء".
+- Copy named `Alt+H` even when the reader had changed or removed the shortcut.
+- `terms.html` carried the privacy page's description and canonical address.
+
+### Internal
+
+- The wire contract gains `AnnouncementsResponse`.
+- `PRIVACY.md` and `landing/privacy.html` describe the news request.
+
 ## [2.0.3] — 2026-10-19
 
 ### Added
