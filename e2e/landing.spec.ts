@@ -620,6 +620,26 @@ test.describe('The page an invite link opens', () => {
     await expect(page.locator('#noToken')).toBeVisible();
   });
 
+  test('says when Hamesh has taken the invitation, and still copies the whole link', async ({
+    page,
+    context,
+  }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await page.goto(`${origin}join.html#${TOKEN}`);
+    await expect(page.locator('#opened')).toBeHidden();
+    // What Hamesh's content script does on this page: clears the address, then
+    // says it took the invitation.
+    await page.evaluate(() => {
+      history.replaceState(null, '', location.pathname);
+      document.dispatchEvent(new CustomEvent('hamesh:join-opened'));
+    });
+    await expect(page.locator('#opened')).toBeVisible();
+    await page.locator('#copy').click();
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+      `${origin}join.html#${TOKEN}`,
+    );
+  });
+
   test('speaks both languages, each in its own direction', async ({ page }) => {
     await page.goto(`${origin}join.html#${TOKEN}`);
     const start = await page.locator('html').getAttribute('lang');

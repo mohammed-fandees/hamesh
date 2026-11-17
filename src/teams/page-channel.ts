@@ -21,6 +21,9 @@ import type { TeamsErrorCode } from './errors';
  *   server decides whether this member may;
  * - `open`: opens the note's discussion beside the page (Chrome's side panel),
  *   or its page in Hamesh (`in: 'hamesh'`); carries no data.
+ * - `join`: only from Hamesh's own join page (`./join-link.ts`), with the
+ *   invitation token from its link. The worker keeps it for the Teams page,
+ *   which shows the invitation before anything is accepted.
  *
  * The server still decides every one of them, as it does for the Library.
  */
@@ -34,7 +37,8 @@ export type PageRequest =
   | { op: 'share'; noteId: string; teamId: string; folderId: string | null }
   | { op: 'destinations' }
   | { op: 'delete'; teamId: string; noteId: string }
-  | { op: 'open'; teamId: string; noteId: string; in?: 'panel' | 'hamesh' };
+  | { op: 'open'; teamId: string; noteId: string; in?: 'panel' | 'hamesh' }
+  | { op: 'join'; token: string };
 
 export interface TeamsPageMessage {
   type: 'TEAMS_PAGE';
@@ -110,6 +114,8 @@ export function isTeamsPageMessage(message: unknown): message is TeamsPageMessag
       );
     case 'destinations':
       return true;
+    case 'join':
+      return typeof r.token === 'string' && /^[A-Za-z0-9_-]{43}$/.test(r.token);
     default:
       return false;
   }

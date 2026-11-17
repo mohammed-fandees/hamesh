@@ -17,6 +17,7 @@ import type { PersonalNotes } from './personal-notes';
 import type { TeamsRoute } from './route';
 import { getTeamsStrings, type TeamsStrings } from './strings';
 import './styles';
+import { readPendingJoin } from '@/teams/join-pending';
 import { JoinTeam } from './JoinTeam';
 import { TEAM_NAME_MAX } from './limits';
 import { TeamNotePage } from './TeamNotePage';
@@ -101,6 +102,20 @@ export function TeamsView({
   const [members, setMembers] = useState<TeamMember[] | null>(null);
   const [creating, setCreating] = useState(false);
   const [joining, setJoining] = useState(false);
+
+  // An invitation opened from its link: the join card is opened for it, even
+  // for a reader who already has teams.
+  useEffect(() => {
+    let cancelled = false;
+    void readPendingJoin(Date.now())
+      .catch(() => null)
+      .then((waiting) => {
+        if (!cancelled && waiting) setJoining(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   // Kept for as long as the same name is being tried, so a retry after a dropped
   // connection returns the team the first try made rather than founding a second.
   const creation = useRef<{ name: string; requestId: string } | null>(null);

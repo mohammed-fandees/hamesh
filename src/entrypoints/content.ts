@@ -12,6 +12,7 @@ import { HameshApp } from '@/content/HameshApp';
 import { resolveLang } from '@/ui/i18n';
 import { matchesShortcut } from '@/domain/shortcut';
 import { createTeamNotesSource } from '@/teams/page-notes';
+import { handOverJoinLink, joinPageDeps } from '@/teams/join-page';
 import '@/ui/tokens.css';
 
 export default defineContentScript({
@@ -28,6 +29,9 @@ export default defineContentScript({
     // session, no request, and no message to the worker (which refuses a
     // content script anyway).
     const teamNotes = import.meta.env.WXT_TEAMS_API_ORIGIN ? createTeamNotesSource() : undefined;
+    // On Hamesh's own join page only, the invitation in its link goes to the
+    // worker, which opens it in the Teams page (see @/teams/join-page).
+    if (import.meta.env.WXT_TEAMS_API_ORIGIN) void handOverJoinLink(joinPageDeps());
     // Resolved once, synchronously, from the browser's UI language — the
     // initial paint before the (async) stored preference loads, and exactly
     // today's behavior for users who never open Settings. HameshApp takes it
