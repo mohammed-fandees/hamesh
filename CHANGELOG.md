@@ -6,6 +6,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.2.1] — 2026-11-17
+
+### Security
+
+- **Build and test tooling patched.** vitest 4.1.12 (GHSA-qxg6-89mg-rqv8, GHSA-xp26-3454-mjgp),
+  vite 8.3.8 through wxt and vitest (GHSA-9jrq-w75r-8gcw, GHSA-rq7h-c2jc-7f22 and the
+  launch-editor advisories), and minimatch 11.0.8 through eslint (GHSA-g3hv-75wg-m249). All are
+  dev and build dependencies; the extension package was never exposed to them, and no permission
+  or behaviour changes.
+
 ## [2.2.0] — 2026-11-17
 
 ### Added
