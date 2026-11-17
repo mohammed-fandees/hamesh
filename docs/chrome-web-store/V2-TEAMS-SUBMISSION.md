@@ -52,6 +52,25 @@ answer is plain text in both languages, checked against the contract, with no co
 No answer below changes because of it, but the listing's privacy paragraph and the
 remote-code answer ("No") should be read again with it in mind.
 
+## Added in 2.2.0: usage counts, only with a yes
+
+Settings → Help improve Hamesh → **Share usage counts** is off until the reader turns it on;
+Hamesh asks once (What's New, end of Getting started) with two answers of the same weight.
+When on, the background counts uses of a closed list of features on the device and sends at
+most one `POST /v1/usage` a day, as `text/plain` with `mode: 'no-cors'`, no session, no cookie
+and no referrer, to the Teams API origin (no host permission needed). The report holds the day,
+version, browser, language and counts. No URL, title, note text, time of day or device id. The
+server adds it to daily totals and keeps nothing per report. Turning it off deletes the device's
+counts at once. On Firefox it also needs the optional `technicalAndInteraction` data permission.
+
+Dashboard changes for 2.2.0, **before** the release is submitted:
+
+- **User activity → Yes.** Describe it as: "Only if the user turns on Share usage counts: daily
+  counts of which Hamesh features were used, sent without any identifier, to improve Hamesh."
+- Certifications stay true: used only to improve the extension, not sold, not for unrelated
+  purposes, not for credit.
+- The privacy policy section "Usage counts" must be live first (it ships with the website).
+
 ## Privacy practices — dashboard answers for 2.0.0
 
 "Collected" means it leaves the device. Everything here concerns **only users who turn on Teams**.
