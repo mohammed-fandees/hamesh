@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { announcementEvent } from '@/domain/usage';
+import { countUse } from '@/usage/count';
 import type { Announcement, AnnouncementDestination } from '@/domain/announcements';
 import type { Lang } from '../i18n';
 import { MarginMark } from '../kit/MarginMark';
@@ -31,11 +33,19 @@ export function AnnouncementBanner({
 }: AnnouncementBannerProps) {
   const strings = getTeamsStrings(lang);
   const [wanted, setWanted] = useState(0);
-  if (items.length === 0) return null;
   // Whatever just closed may have been the last one in the list.
   const index = Math.min(wanted, items.length - 1);
+  const shownId = items[index]?.id;
+  // Seen once each time it comes into the slot; only counted if the reader
+  // shares usage counts.
+  useEffect(() => {
+    if (shownId) countUse(announcementEvent('shown', shownId));
+  }, [shownId]);
+  if (items.length === 0) return null;
   const item = items[index];
   const action = item.action;
+  const opened = () => countUse(announcementEvent('opened', item.id));
+  const closed = () => countUse(announcementEvent('closed', item.id));
 
   return (
     <aside className="hm-announcement hm-fade-in" aria-label={strings.announcementLabel}>
@@ -51,6 +61,7 @@ export function AnnouncementBanner({
               type="button"
               className="hm-btn hm-btn-primary hm-btn--compact"
               onClick={() => {
+                opened();
                 if ('open' in action.to) onOpen(action.to.open);
               }}
             >
@@ -62,11 +73,19 @@ export function AnnouncementBanner({
               href={action.to.url}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={opened}
             >
               {action.label[lang]}
             </a>
           ))}
-        <button type="button" className="hm-link" onClick={() => onDismiss(item.id)}>
+        <button
+          type="button"
+          className="hm-link"
+          onClick={() => {
+            closed();
+            onDismiss(item.id);
+          }}
+        >
           {strings.announcementDismiss}
         </button>
         {items.length > 1 && (
@@ -97,7 +116,10 @@ export function AnnouncementBanner({
           className="hm-icon-btn"
           aria-label={strings.announcementClose}
           title={strings.announcementClose}
-          onClick={() => onClose(item.id)}
+          onClick={() => {
+            closed();
+            onClose(item.id);
+          }}
         >
           <CloseIcon size={11} />
         </button>

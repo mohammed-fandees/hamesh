@@ -41,6 +41,8 @@ interface GettingStartedViewProps {
   showTeamStep: boolean;
   onOpenTeams: () => void;
   onOpenLibrary: () => void;
+  /** A card after the steps that is not one of them (the usage question). */
+  extra?: ReactNode;
 }
 
 /**
@@ -57,6 +59,7 @@ export function GettingStartedView({
   showTeamStep,
   onOpenTeams,
   onOpenLibrary,
+  extra,
 }: GettingStartedViewProps) {
   const shortcuts = useShortcuts();
   const key = (command: (typeof COMMANDS)[keyof typeof COMMANDS]) => (
@@ -130,6 +133,7 @@ export function GettingStartedView({
           )}
         </ol>
       </Section>
+      {extra}
     </Page>
   );
 }

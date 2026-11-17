@@ -50,6 +50,7 @@ function makePrefsRepo(prefs: Preferences = DEFAULT_PREFERENCES): PreferencesRep
     setLibrary: vi.fn(),
     setOnboarding: vi.fn(),
     setAnnouncements: vi.fn(),
+    setUsage: vi.fn(),
   };
 }
 

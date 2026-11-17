@@ -6,6 +6,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **Usage counts, only with a yes.** Settings → Help improve Hamesh shares, once a day, how many
+  times each feature was used, and nothing else: no notes, pages, times of day or device id. Off
+  until the reader turns it on; asked once, in What's New and at the end of Getting started, with
+  two answers of the same weight. "See what's shared" shows today's report from this device's real
+  counts, and turning it off deletes them at once. On Firefox it also needs Firefox's own
+  "Technical and interaction data" permission. Only in builds with a server (the Teams build).
+
 ## [2.1.0] — 2026-11-03
 
 ### Added

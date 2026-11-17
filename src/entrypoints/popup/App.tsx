@@ -19,6 +19,7 @@ import { getTeamsStrings } from '@/ui/teams/strings';
 import type { PageStateResponse } from '@/messaging/types';
 import '@/ui/tokens.css';
 import '@/ui/pages.css';
+import { countUse } from '@/usage/count';
 
 const initialLang = resolveLang(browser.i18n?.getUILanguage?.());
 /** The popup has no web page of its own to match — the system's scheme is the
@@ -54,6 +55,8 @@ export function App() {
   const dir = dirForLang(lang);
   const theme = resolveTheme(appearance, matched);
   usePageBackground(scopeRef, '--hm-surface', theme);
+
+  useEffect(() => countUse('open.popup'), []);
 
   useEffect(() => {
     void (async () => {

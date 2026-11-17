@@ -16,6 +16,7 @@ import type { Lang, Strings } from '../i18n';
 import { BackupSection, type BackupHandlers } from './BackupSection';
 import { AppearanceRow, LanguageRow } from './ChoiceRows';
 import { TeamsSection } from './TeamsSection';
+import { UsageSettings } from '../usage/UsageSettings';
 
 interface LibrarySettingsViewProps {
   strings: Strings;
@@ -168,6 +169,7 @@ export function LibrarySettingsView({
             revealPlan={focus === 'plan'}
             onJoined={(id) => onOpenTeam?.(id)}
           />
+          <UsageSettings lang={lang} preferences={preferences} />
         </>
       )}
 

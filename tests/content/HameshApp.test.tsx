@@ -39,6 +39,7 @@ function makePrefsRepo(): PreferencesRepository {
     setLibrary: vi.fn(),
     setOnboarding: vi.fn(),
     setAnnouncements: vi.fn(),
+    setUsage: vi.fn(),
   };
 }
 

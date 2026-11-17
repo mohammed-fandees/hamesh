@@ -8,6 +8,7 @@ import {
   type LibraryPreferences,
   type Preferences,
   type TextNotePreferences,
+  type UsagePreferences,
   type Theme,
 } from '@/domain/preferences';
 import type { Lang } from '../i18n';
@@ -35,6 +36,8 @@ export interface PreferencesState {
   setTextNotes: (patch: Partial<TextNotePreferences>) => void;
   setAnnouncements: (patch: Partial<AnnouncementPreferences>) => void;
   setLibrary: (patch: Partial<LibraryPreferences>) => void;
+  /** Records the answer about sharing usage counts; `false` if it was not saved. */
+  setUsage: (usage: UsagePreferences) => Promise<boolean>;
   /** Sets (or, with `null`, clears) one page's default folder; `false` if the
    *  write failed, in which case what storage really holds is put back. */
   setPageDefaultFolder: (pageKey: string, folderId: string | null) => Promise<boolean>;
@@ -114,6 +117,14 @@ export function usePreferences(repo: PreferencesRepository): PreferencesState {
         void repo.setAnnouncements(change);
       },
       [patch, repo],
+    ),
+    setUsage: useCallback(
+      (usage) =>
+        persist(
+          (p) => ({ ...p, usage }),
+          () => repo.setUsage(usage),
+        ),
+      [persist, repo],
     ),
     setLibrary: useCallback(
       (change) => {
