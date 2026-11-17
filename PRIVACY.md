@@ -113,6 +113,13 @@ With Teams on and you signed in:
   a page you share a note on, as above. Personal notes stay in
   `chrome.storage.local` exactly as described above.
 
+**How the Teams server's records are used:** to run Teams (showing what you
+share to your teammates, checking payments, protecting accounts from abuse),
+and, in aggregate only, to understand how Teams is used: counts such as how
+many teams exist or how many notes were shared in a month. Those counts name
+no one and are seen only by Hamesh's developer. Nothing is sold, used for
+advertising, or shared with data brokers.
+
 **Turn off Teams** in Settings signs you out, deletes the sign-in token from
 this device, and gives the permissions back. Removing the permissions from the
 browser's own extension settings does the same on this device.
