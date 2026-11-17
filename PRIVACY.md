@@ -1,14 +1,15 @@
 # Privacy Statement
 
 **Your personal notes never leave your device. Hamesh collects no user data
-unless you turn on Hamesh Teams, and then only what is listed under
-[Hamesh Teams](#hamesh-teams-optional).**
+unless you turn on Hamesh Teams or usage counts, and then only what is listed
+under [Hamesh Teams](#hamesh-teams-optional) and
+[Usage counts](#usage-counts-optional-off-by-default).**
 
 ## Data Storage
 
 All your personal notes are stored exclusively in your browser's local storage using `chrome.storage.local`. This data never leaves your device.
 
-Hamesh has no analytics services and no telemetry. Apart from asking for news about Hamesh (see below), which you can turn off, the extension makes no network requests unless you turn on Hamesh Teams.
+Hamesh uses no analytics services. Apart from asking for news about Hamesh (see below), which you can turn off, the extension makes no network requests unless you turn on Hamesh Teams or usage counts (see below), both of which are off until you turn them on.
 
 ## Permissions
 
@@ -42,8 +43,8 @@ like everything else; a default for all pages stores no URL at all.
 
 - Does not collect personal information (unless you turn on Teams, and then only what is listed below)
 - Does not track browsing history
-- Does not send data to any server (unless you turn on Teams, and then only what is listed below)
-- Does not use analytics or crash reporting (the extension; see the website note below)
+- Does not send data to any server (unless you turn on Teams or usage counts, and then only what is listed below)
+- Does not use analytics services or crash reporting (the extension; see the website note below)
 - Does not share data with third parties
 - Does not use cookies
 
@@ -69,6 +70,39 @@ control.
 When you open the Notes Library, Hamesh may fetch a short list of announcements from its server, such as a new feature, at most once every six hours. The request carries no account, no cookie, no notes and no page addresses, and the list is the same for everyone. Like any request, it shows the server your IP address, which is used only for rate limiting and is not stored against you. What you close stays on your device.
 
 To stop it, turn off **Show news about new features** in Settings. Hamesh then makes no such request at all.
+
+## Usage counts (optional, off by default)
+
+Settings → **Help improve Hamesh** → **Share usage counts** is off until you
+turn it on. Hamesh asks once, in What's New and at the end of Getting started,
+and "No thanks" is final until you change it in Settings yourself.
+
+With it on, Hamesh counts on your device how many times you used each feature
+that day, from a fixed list (a note on an element, on selected text or on a
+video; opening the toolbar popup, a keyboard shortcut, the Library, Settings,
+Getting started or What's New; making a folder; exporting or restoring a
+backup; sharing a note with a team or opening its discussion; and whether one
+of Hamesh's own announcements was shown, opened or closed). Once a day at most,
+and not at all on a day you didn't use Hamesh, it sends that day's counts to
+Hamesh's server together with the day, the extension's version, the browser
+(Chrome or Firefox) and the interface language.
+
+- **Not sent:** your notes, page addresses or titles, anything you type or
+  select, the time of day, your account, or any identifier for your device.
+  "See what's shared" in Settings shows the exact report, built from this
+  device's real counts.
+- **Kept by the server:** only daily totals across everyone who shares, by day,
+  version, browser and language. A report is added to those totals and not kept
+  on its own. Like any request, it shows the server your IP address, which is
+  used only for rate limiting and is not stored.
+- **Used for:** deciding what to improve in Hamesh. The totals are seen only by
+  Hamesh's developer. They are never sold, used for advertising, or shared.
+- **Turning it off** stops it at once and deletes the counts kept on your
+  device. Totals already sent cannot be traced back to you, so there is nothing
+  of yours left to delete.
+- **On Firefox**, it also needs Firefox's own "Technical and interaction data"
+  permission, which Firefox asks you for. Taking that permission back in
+  Firefox's add-on settings turns sharing off.
 
 ## Hamesh Teams (optional)
 
