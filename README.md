@@ -39,6 +39,10 @@ where you left them.
 
 ## What's new
 
+- **Joining a team from a link** (2.2). Open an invitation link and Hamesh shows the team, ready
+  to join; invitations are emailed too, in Arabic and English.
+- **Usage counts, only with a yes** (2.2). Hamesh can share how many times each feature is used,
+  and nothing else, if you turn it on in Settings.
 - **A Teams page that does the work** (2.1). A team's notes are right there: search them, edit
   them, file them and share yours, and they arrive as teammates write them, with no refresh.
 - **A guide for your first notes** (2.1). It opens when you install Hamesh, and ticks each step as
