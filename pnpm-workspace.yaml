@@ -33,3 +33,9 @@ overrides:
   # Event-loop DoS via crafted source-map section offsets. Transitive, deep
   # in the tree (postcss, lightningcss, css-tree, magicast), dev-only here.
   'source-map-js@>=1.0.0 <1.2.2': '1.2.2'
+  # Dev and build tooling only, nothing shipped: vite's dev-server and
+  # launch-editor advisories (GHSA-9jrq-w75r-8gcw and friends), reached
+  # through wxt and vitest; and minimatch's glob DoS (GHSA-g3hv-75wg-m249),
+  # reached through eslint. minimatch 10 has no patched release.
+  'vite@>=8.0.0 <8.3.3': '8.3.8'
+  'minimatch@>=7.0.0 <11.0.1': '11.0.8'
