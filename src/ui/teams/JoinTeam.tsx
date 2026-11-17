@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { InvitationPreviewResponse } from '@hamesh/teams-contract';
 import { InlineError } from '../kit/Feedback';
 import type { TeamsStrings } from './strings';
 import type { TeamsPage } from './useTeams';
+import { clearPendingJoin, readPendingJoin } from '@/teams/join-pending';
 import { inviteTokenFrom } from './invite-link';
 
 interface JoinTeamProps {
@@ -12,13 +13,16 @@ interface JoinTeamProps {
   onJoined: (teamId: string) => void;
 }
 
+/** How a waiting invitation is shown in the field: as the link it came from. */
+const JOIN_LINK = 'https://hamesh.fandees.tech/join#';
+
 /**
  * Joining a team from the link someone sent.
  *
- * The link is pasted here rather than opened: its token lives in the URL
- * fragment, and pasting it keeps the token inside the extension instead of
- * handing it to a web page. The invitation is shown before it is accepted, so
- * nobody joins something they can't see first.
+ * Opening the link hands its token to Hamesh (`@/teams/join-page`), which
+ * keeps it until this card shows it; pasting the link here does the same by
+ * hand. Either way the invitation is shown before it is accepted, so nobody
+ * joins something they can't see first.
  */
 export function JoinTeam({ strings, page, onJoined }: JoinTeamProps) {
   const [pasted, setPasted] = useState('');
@@ -26,6 +30,24 @@ export function JoinTeam({ strings, page, onJoined }: JoinTeamProps) {
   const [malformed, setMalformed] = useState(false);
 
   const token = inviteTokenFrom(pasted);
+
+  // An invitation opened from its link is checked at once; accepting it is
+  // still the reader's.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const waiting = await readPendingJoin(Date.now()).catch(() => null);
+      if (cancelled || !waiting) return;
+      setPasted(`${JOIN_LINK}${waiting}`);
+      const result = await page.run('invites.preview', { token: waiting }, 'invites.preview');
+      if (!cancelled && result) setPreview(result);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // Once, when the card appears: `page` changes on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function check(e: React.FormEvent) {
     e.preventDefault();
@@ -43,6 +65,7 @@ export function JoinTeam({ strings, page, onJoined }: JoinTeamProps) {
     if (!token) return;
     const result = await page.run('invites.accept', { token }, 'invites.accept');
     if (!result) return;
+    void clearPendingJoin().catch(() => {});
     setPasted('');
     setPreview(null);
     onJoined(result.team.id);
@@ -61,6 +84,9 @@ export function JoinTeam({ strings, page, onJoined }: JoinTeamProps) {
           onChange={(e) => {
             setPasted(e.target.value);
             setMalformed(false);
+            setPreview(null);
+            // Another link: the one that was waiting is no longer the one wanted.
+            void clearPendingJoin().catch(() => {});
           }}
         />
         <button

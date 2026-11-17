@@ -63,12 +63,14 @@ function deps(answers: Record<string, unknown> = {}) {
     delete: vi.fn(async () => true),
   };
   const openPage = vi.fn(async () => {});
+  const savePendingJoin = vi.fn(async () => {});
   const all = {
     service: { perform, readCache } as unknown as TeamsService,
     notes: notes as unknown as NotesRepository,
     openPage,
+    savePendingJoin,
   } satisfies PageHandlerDeps;
-  return { all, perform, notes, openPage };
+  return { all, perform, notes, openPage, savePendingJoin };
 }
 
 beforeEach(async () => {
@@ -309,5 +311,40 @@ describe('sharing from the page', () => {
         { id: TEAM, name: 'Research', folders: [{ id: 'F', name: 'Papers', parentId: null }] },
       ],
     });
+  });
+});
+
+describe('opening an invitation link', () => {
+  const JOIN = 'https://hamesh.fandees.tech/join';
+  const TOKEN = 'a'.repeat(43);
+  const message = (request: object) => ({ type: 'TEAMS_PAGE', request });
+
+  it('is a well-formed request only with a whole token', () => {
+    expect(isTeamsPageMessage(message({ op: 'join', token: TOKEN }))).toBe(true);
+    for (const token of ['', 'a'.repeat(42), 'a'.repeat(44), `${'a'.repeat(42)}#`, 7]) {
+      expect(isTeamsPageMessage(message({ op: 'join', token })), String(token)).toBe(false);
+    }
+  });
+
+  it('keeps the token for Hamesh’s Teams page and opens it', async () => {
+    const { all, savePendingJoin, openPage, perform } = deps();
+    const result = await handlePageRequest(all, { op: 'join', token: TOKEN }, JOIN);
+    expect(result).toEqual({ ok: true, data: null });
+    expect(savePendingJoin).toHaveBeenCalledWith(TOKEN);
+    expect(openPage).toHaveBeenCalledWith('/notes.html?view=teams');
+    // Nothing is asked of the server from here: the page shows it first.
+    expect(perform).not.toHaveBeenCalled();
+  });
+
+  it('takes a token from the join page only, whatever page sends it', async () => {
+    for (const url of [PAGE, 'https://hamesh.fandees.tech/', 'https://evil.example/join']) {
+      const { all, savePendingJoin, openPage } = deps();
+      expect(await handlePageRequest(all, { op: 'join', token: TOKEN }, url)).toEqual({
+        ok: false,
+        error: 'not_found',
+      });
+      expect(savePendingJoin).not.toHaveBeenCalled();
+      expect(openPage).not.toHaveBeenCalled();
+    }
   });
 });

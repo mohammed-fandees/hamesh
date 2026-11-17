@@ -4,12 +4,22 @@ import { useState } from 'react';
 import { render, screen, cleanup, fireEvent, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { TeamsView } from '@/ui/teams/TeamsView';
+import { clearPendingJoin, readPendingJoin } from '@/teams/join-pending';
 import { getTeamsStrings } from '@/ui/teams/strings';
 import type { TeamsClient } from '@/teams/client';
 import type { TeamsEvent } from '@/teams/messages';
 import type { TeamsOpName } from '@/teams/operation-names';
 import type { Note } from '@/domain/note';
 import { OVERVIEW, type TeamsRoute } from '@/ui/teams/route';
+
+/** An invitation opened from its link and waiting for this page, or none. */
+let waitingToken: string | null = null;
+vi.mock('@/teams/join-pending', () => ({
+  readPendingJoin: vi.fn(async () => waitingToken),
+  clearPendingJoin: vi.fn(async () => {
+    waitingToken = null;
+  }),
+}));
 
 const strings = getTeamsStrings('en');
 const TEAM = '01J0000000000000000000000A';
@@ -739,5 +749,52 @@ describe('a team’s name', () => {
     expect((first.params as { requestId: string }).requestId).toBe(
       (second.params as { requestId: string }).requestId,
     );
+  });
+});
+
+describe('an invitation opened from its link', () => {
+  const TOKEN = 'k'.repeat(43);
+  const preview = {
+    team: { id: '01J000000000000000000000B2', name: 'Bravo' },
+    invitedBy: 'Sara',
+    role: 'member',
+    expiresAt: 2,
+  };
+
+  afterEach(() => {
+    waitingToken = null;
+    vi.mocked(readPendingJoin).mockClear();
+    vi.mocked(clearPendingJoin).mockClear();
+  });
+
+  it('is shown at once, before anything is accepted', async () => {
+    waitingToken = TOKEN;
+    const { client, calls } = fakeClient({ 'invites.preview': preview });
+    render_(client);
+    expect(
+      await screen.findByText(strings.joinInvitedTo('Bravo', strings.role('member'))),
+    ).toBeInTheDocument();
+    expect(calls.find((c) => c.op === 'invites.preview')!.params).toEqual({ token: TOKEN });
+    expect(calls.some((c) => c.op === 'invites.accept')).toBe(false);
+  });
+
+  it('is forgotten once it is accepted', async () => {
+    waitingToken = TOKEN;
+    const { client, calls } = fakeClient({
+      'invites.preview': preview,
+      'invites.accept': { team: { id: '01J000000000000000000000B2' } },
+    });
+    render_(client);
+    fireEvent.click(await screen.findByRole('button', { name: strings.joinAccept }));
+    await waitFor(() => expect(clearPendingJoin).toHaveBeenCalled());
+    expect(calls.find((c) => c.op === 'invites.accept')!.params).toEqual({ token: TOKEN });
+  });
+
+  it('asks nothing when no invitation is waiting', async () => {
+    const { client, calls } = fakeClient();
+    render_(client);
+    await screen.findByRole('button', { name: 'Alpha', pressed: true });
+    await waitFor(() => expect(readPendingJoin).toHaveBeenCalled());
+    expect(calls.some((c) => c.op === 'invites.preview')).toBe(false);
   });
 });

@@ -10,6 +10,7 @@ import type {
   ThreadPreview,
   ThreadText,
 } from './page-channel';
+import { isJoinPage } from './join-link';
 import { readPageBucket, readTeamIndex } from './page-cache';
 import type { TeamsService } from './service';
 import { shareParams } from './share-request';
@@ -25,6 +26,8 @@ export interface PageHandlerDeps {
   notes: NotesRepository;
   /** Opens one of Hamesh's own pages in a new tab. */
   openPage: (path: string) => Promise<void>;
+  /** Keeps an opened invitation for the Teams page (`./join-pending.ts`). */
+  savePendingJoin: (token: string) => Promise<void>;
 }
 
 /**
@@ -93,6 +96,14 @@ export async function handlePageRequest(
         note: request.noteId,
       });
       await deps.openPage(`/notes.html?${params}`);
+      return { ok: true, data: null };
+    }
+    case 'join': {
+      // The URL is the browser's for the sender, so only the real join page
+      // can hand a token over; anywhere else, it is as if nothing was asked.
+      if (!isJoinPage(pageUrl)) return notFound();
+      await deps.savePendingJoin(request.token);
+      await deps.openPage('/notes.html?view=teams');
       return { ok: true, data: null };
     }
   }

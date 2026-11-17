@@ -13,6 +13,7 @@ import {
   type TeamsResult,
 } from './messages';
 import { codeOf } from './errors';
+import { savePendingJoin } from './join-pending';
 import type { TeamsService } from './service';
 
 /**
@@ -112,6 +113,7 @@ export function registerTeams(): void {
                 url: browser.runtime.getURL(path as '/notes.html'),
               });
             },
+            savePendingJoin: (token) => savePendingJoin(token, Date.now()),
           },
           message.request,
           pageUrl,
