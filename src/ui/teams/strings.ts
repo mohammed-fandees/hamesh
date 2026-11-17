@@ -1,4 +1,5 @@
 import { getStrings, type Lang, type Strings } from '../i18n';
+import type { InviteEmailFailure } from '@hamesh/teams-contract';
 import type { TeamsErrorCode } from '@/teams/errors';
 
 /**
@@ -80,6 +81,8 @@ export interface TeamsStrings extends SharedStrings {
   inviteLinkHint: string;
   copyLink: string;
   copied: string;
+  inviteEmailed: (email: string) => string;
+  inviteNotEmailed: (reason: InviteEmailFailure) => string;
   inviteExpires: (date: string) => string;
   inviteExpired: string;
   revokeInvite: string;
@@ -377,9 +380,18 @@ const en: TeamsOwnStrings = {
   inviteAsAdmin: 'As admin',
   sendInvite: 'Create invite link',
   inviteLinkReady: 'Here is the link — it is shown once.',
-  inviteLinkHint: 'Send it to them yourself. Hamesh sends no email.',
+  inviteLinkHint: 'You’ll get a link to share with them. It’s shown once.',
   copyLink: 'Copy link',
   copied: 'Copied',
+  inviteEmailed: (email) => `We emailed the invitation to ${email}. You can also copy the link.`,
+  inviteNotEmailed: (reason) =>
+    ({
+      limit:
+        'We couldn’t email this one: you’ve sent today’s invitation emails. Copy the link and send it yourself.',
+      unavailable: 'Email isn’t available right now. Copy the link and send it yourself.',
+      declined:
+        'This address asked not to get emails from Hamesh. Copy the link and send it yourself.',
+    })[reason],
   inviteExpires: (date) => `Expires ${date}`,
   inviteExpired: 'Expired',
   revokeInvite: 'Revoke',
@@ -715,9 +727,17 @@ const ar: TeamsOwnStrings = {
   inviteAsAdmin: 'كمشرف',
   sendInvite: 'إنشاء رابط دعوة',
   inviteLinkReady: 'هذا هو الرابط — يظهر مرة واحدة فقط.',
-  inviteLinkHint: 'أرسله إليه بنفسك. هامش لا يرسل أي بريد.',
+  inviteLinkHint: 'ستحصل على رابط تشاركه معه، ويظهر مرة واحدة فقط.',
   copyLink: 'نسخ الرابط',
   copied: 'نُسخ',
+  inviteEmailed: (email) => `أرسلنا الدعوة إلى ${email}، ويمكنك أيضًا نسخ الرابط.`,
+  inviteNotEmailed: (reason) =>
+    ({
+      limit:
+        'تعذّر إرسال هذه الدعوة بالبريد، فقد بلغت حد رسائل الدعوة لليوم. انسخ الرابط وأرسله بنفسك.',
+      unavailable: 'البريد غير متاح الآن. انسخ الرابط وأرسله بنفسك.',
+      declined: 'طلب صاحب هذا العنوان ألا تصله رسائل من هامش. انسخ الرابط وأرسله بنفسك.',
+    })[reason],
   inviteExpires: (date) => `ينتهي في ${date}`,
   inviteExpired: 'منتهية',
   revokeInvite: 'إلغاء',
