@@ -81,6 +81,7 @@ describe('parsePreferences', () => {
       onboarding: { guide: 'hidden' },
       announcements: { enabled: true, dismissed: [], snoozedUntil: {} },
       library: { mode: 'domain', sort: 'alphabetical' },
+      usage: { sharing: 'unasked' },
     });
   });
 
@@ -96,6 +97,7 @@ describe('parsePreferences', () => {
       onboarding: { guide: 'hidden' },
       announcements: { enabled: true, dismissed: [], snoozedUntil: {} },
       library: { mode: 'domain', sort: 'alphabetical' },
+      usage: { sharing: 'unasked' },
     });
     expect(parsePreferences({ language: 'en', appearance: 'light' })).toEqual({
       schemaVersion: 1,
@@ -108,6 +110,7 @@ describe('parsePreferences', () => {
       onboarding: { guide: 'hidden' },
       announcements: { enabled: true, dismissed: [], snoozedUntil: {} },
       library: { mode: 'domain', sort: 'alphabetical' },
+      usage: { sharing: 'unasked' },
     });
   });
 

@@ -93,6 +93,19 @@ export default defineConfig({
         googleClientId: process.env.WXT_GOOGLE_CLIENT_ID,
       });
       if (!teams) return;
+      // Usage counts are shared only with the reader's yes, and on Firefox only
+      // with Firefox's own "Technical and interaction data" permission too
+      // (src/usage/permission.ts). Optional, as Firefox requires of it.
+      if (wxt.config.browser === 'firefox') {
+        const gecko = (
+          manifest as {
+            browser_specific_settings?: {
+              gecko?: { data_collection_permissions?: { optional?: string[] } };
+            };
+          }
+        ).browser_specific_settings?.gecko?.data_collection_permissions;
+        if (gecko) gecko.optional = [...(gecko.optional ?? []), 'technicalAndInteraction'];
+      }
       const optional = new Set(manifest.optional_permissions ?? []);
       optional.add('identity');
       if (wxt.config.manifestVersion === 2) {

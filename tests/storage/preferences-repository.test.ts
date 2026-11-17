@@ -41,6 +41,7 @@ describe('PreferencesRepository', () => {
       onboarding: { guide: 'hidden' },
       announcements: { enabled: true, dismissed: [], snoozedUntil: {} },
       library: { mode: 'domain', sort: 'alphabetical' },
+      usage: { sharing: 'unasked' },
     });
   });
 
@@ -79,6 +80,7 @@ describe('PreferencesRepository', () => {
       onboarding: { guide: 'hidden' },
       announcements: { enabled: true, dismissed: [], snoozedUntil: {} },
       library: { mode: 'domain', sort: 'alphabetical' },
+      usage: { sharing: 'unasked' },
     });
 
     await repo.setLanguage('en');
@@ -93,6 +95,7 @@ describe('PreferencesRepository', () => {
       onboarding: { guide: 'hidden' },
       announcements: { enabled: true, dismissed: [], snoozedUntil: {} },
       library: { mode: 'domain', sort: 'alphabetical' },
+      usage: { sharing: 'unasked' },
     });
   });
 
@@ -109,6 +112,7 @@ describe('PreferencesRepository', () => {
       onboarding: { guide: 'hidden' },
       announcements: { enabled: true, dismissed: [], snoozedUntil: {} },
       library: { mode: 'domain', sort: 'alphabetical' },
+      usage: { sharing: 'unasked' },
     });
   });
 

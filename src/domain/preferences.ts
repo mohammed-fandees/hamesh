@@ -158,6 +158,17 @@ export const DEFAULT_ANNOUNCEMENT_PREFERENCES: AnnouncementPreferences = {
   snoozedUntil: {},
 };
 
+/**
+ * Whether this device shares its usage counts (Settings → Help improve Hamesh).
+ * `unasked` until the reader answers, and off until they say yes: Hamesh asks
+ * once, and "No thanks" is as final as turning it off.
+ */
+export interface UsagePreferences {
+  sharing: 'unasked' | 'on' | 'off';
+}
+
+export const DEFAULT_USAGE_PREFERENCES: UsagePreferences = { sharing: 'unasked' };
+
 /** How the reader last left the Library's list. */
 export interface LibraryPreferences {
   mode: 'domain' | 'folder';
@@ -183,6 +194,7 @@ export interface Preferences {
   onboarding: OnboardingPreferences;
   announcements: AnnouncementPreferences;
   library: LibraryPreferences;
+  usage: UsagePreferences;
 }
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -196,6 +208,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   onboarding: DEFAULT_ONBOARDING_PREFERENCES,
   announcements: DEFAULT_ANNOUNCEMENT_PREFERENCES,
   library: DEFAULT_LIBRARY_PREFERENCES,
+  usage: DEFAULT_USAGE_PREFERENCES,
 };
 
 function parseTextNotes(value: unknown): TextNotePreferences {
@@ -236,6 +249,12 @@ function parseLibrary(value: unknown): LibraryPreferences {
     mode: record.mode === 'folder' ? 'folder' : 'domain',
     sort: record.sort === 'recent' ? 'recent' : 'alphabetical',
   };
+}
+
+function parseUsage(value: unknown): UsagePreferences {
+  if (!value || typeof value !== 'object') return DEFAULT_USAGE_PREFERENCES;
+  const sharing = (value as Record<string, unknown>).sharing;
+  return { sharing: sharing === 'on' || sharing === 'off' ? sharing : 'unasked' };
 }
 
 function parseOnboarding(value: unknown): OnboardingPreferences {
@@ -335,5 +354,6 @@ export function parsePreferences(data: unknown): Preferences {
     onboarding: parseOnboarding(record.onboarding),
     announcements: parseAnnouncements(record.announcements),
     library: parseLibrary(record.library),
+    usage: parseUsage(record.usage),
   };
 }

@@ -62,6 +62,9 @@ import { MentionsInbox } from '@/ui/teams/MentionsInbox';
 import { getTeamsStrings } from '@/ui/teams/strings';
 import type { PersonalNotes } from '@/ui/teams/personal-notes';
 import type { Note } from '@/domain/note';
+import { countUse } from '@/usage/count';
+import { UsageAsk } from '@/ui/usage/UsageAsk';
+import type { FeatureEvent } from '@/domain/usage';
 import '@/ui/tokens.css';
 import '@/ui/pages.css';
 import '@/ui/notes-library.css';
@@ -158,6 +161,14 @@ function rememberOwner(owner: NoteOwner): void {
   }
 }
 
+/** The usage counter for arriving on each of this page's views. */
+const VIEW_EVENTS: Partial<Record<string, FeatureEvent>> = {
+  library: 'library.opened',
+  settings: 'settings.opened',
+  start: 'guide.opened',
+  'whats-new': 'whats_new.opened',
+};
+
 const repo = createNotesRepository();
 const prefsRepo = createPreferencesRepository();
 const foldersRepo = createFoldersRepository();
@@ -165,6 +176,11 @@ const foldersRepo = createFoldersRepository();
 export function App() {
   const [place, setPlace] = useState<Place>(initialPlace);
   const view = place.view;
+  // Each visit to a page counts once; nothing about where it was opened from.
+  useEffect(() => {
+    const event = panelPlace ? 'teams.panel_opened' : VIEW_EVENTS[view];
+    if (event) countUse(event);
+  }, [view]);
   const placeRef = useRef(place);
   useEffect(() => {
     placeRef.current = place;
@@ -382,6 +398,7 @@ export function App() {
       // download the click just started.
       setTimeout(() => URL.revokeObjectURL(url), 0);
     }
+    countUse('backup.exported');
     return { notes: allNotes.length, folders: allFolders.length };
   }
 
@@ -417,6 +434,7 @@ export function App() {
 
     notesRef.current = mergedNotes.items;
     setNotes(mergedNotes.items);
+    countUse('backup.imported');
     return { ok: true, notes: noteChanges, folders: folderChanges };
   }
 
@@ -488,6 +506,7 @@ export function App() {
         skipConsent || (await new Promise<boolean>((answer) => setConsent({ teamName, answer })));
       if (!agreed) return false;
       await shareNote(teamsClient, note, teamId, folderId);
+      countUse('teams.note_shared');
       await loadShared();
       await personalNotes.forget(note.id);
       return true;
@@ -641,6 +660,16 @@ export function App() {
           showTeamStep={teamsClient !== null}
           onOpenTeams={() => navigate('teams')}
           onOpenLibrary={() => navigate('library')}
+          extra={
+            import.meta.env.WXT_TEAMS_API_ORIGIN && (
+              <UsageAsk
+                lang={lang}
+                preferences={preferences}
+                where="guide"
+                onOpenSettings={() => navigate('settings')}
+              />
+            )
+          }
         />
       );
     }
@@ -651,6 +680,16 @@ export function App() {
           lang={lang}
           currentVersion={currentVersion}
           lastSeenVersion={lastSeenVersion ?? null}
+          ask={
+            import.meta.env.WXT_TEAMS_API_ORIGIN && (
+              <UsageAsk
+                lang={lang}
+                preferences={preferences}
+                where="whats-new"
+                onOpenSettings={() => navigate('settings')}
+              />
+            )
+          }
         />
       );
     }

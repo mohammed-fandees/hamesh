@@ -15,6 +15,7 @@ import {
 import { codeOf } from './errors';
 import { savePendingJoin } from './join-pending';
 import type { TeamsService } from './service';
+import { countInBackground } from '@/usage/background';
 
 /**
  * Only Hamesh's own pages may drive Teams. A content script runs inside an
@@ -118,7 +119,13 @@ export function registerTeams(): void {
           message.request,
           pageUrl,
         );
-      })().then(sendResponse, (err: unknown) => sendResponse({ ok: false, error: codeOf(err) }));
+      })().then(
+        (reply) => {
+          if (request.op === 'share' && reply.ok) countInBackground('teams.note_shared');
+          sendResponse(reply);
+        },
+        (err: unknown) => sendResponse({ ok: false, error: codeOf(err) }),
+      );
       return true;
     }
     const account = isTeamsRequest(message);

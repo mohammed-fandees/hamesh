@@ -7,6 +7,7 @@ import {
   localizeReleaseNote,
   type ReleaseNote,
 } from '@/domain/release-notes';
+import type { ReactNode } from 'react';
 import type { Lang, Strings } from './i18n';
 
 interface WhatsNewViewProps {
@@ -19,6 +20,8 @@ interface WhatsNewViewProps {
   /** The newest version the user has already read, or `null` if they have
    *  never opened this page. Everything above it is marked as new. */
   lastSeenVersion: string | null;
+  /** Asked of current readers above the releases: whether to share usage counts. */
+  ask?: ReactNode;
 }
 
 /** How many of the newest releases are open whatever the reader has seen. */
@@ -39,6 +42,7 @@ export function WhatsNewView({
   lang,
   currentVersion,
   lastSeenVersion,
+  ask,
 }: WhatsNewViewProps) {
   const isUnseen = (release: ReleaseNote) =>
     lastSeenVersion === null || compareVersions(release.version, lastSeenVersion) > 0;
@@ -75,6 +79,7 @@ export function WhatsNewView({
     <Page>
       <PageHeader title={strings.whatsNew} />
       <p className="hm-whats-new__intro">{strings.whatsNewIntro}</p>
+      {ask}
 
       {renderList(recent, 0)}
       {earlier.length > 0 && (

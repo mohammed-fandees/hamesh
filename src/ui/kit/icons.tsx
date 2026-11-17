@@ -225,6 +225,15 @@ export function TextNoteIcon({ size, className }: IconProps) {
   );
 }
 
+/** Three bars — counts of what gets used (Settings → Help improve Hamesh). */
+export function UsageIcon({ size, className }: IconProps) {
+  return (
+    <Glyph size={size} className={className}>
+      <path d="M2.6 11.4 V7 M7 11.4 V2.6 M11.4 11.4 V5.2" strokeWidth="1.5" />
+    </Glyph>
+  );
+}
+
 /** A run of selected text with a pointer on it — the chip after selecting. */
 export function SelectionActionIcon({ size, className }: IconProps) {
   return (

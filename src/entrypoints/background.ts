@@ -4,6 +4,7 @@ import type { HameshMessage, ShortcutsResponse } from '@/messaging/types';
 import { shouldAnnounceUpdate } from '@/domain/release-notes';
 import { createPreferencesRepository } from '@/storage/preferences-repository';
 import { registerTeams } from '@/teams/background';
+import { registerUsage } from '@/usage/background';
 
 /** Secondary keep-alive for the `commands.onCommand` path below. Chrome tears
  *  down an idle MV3 service worker ~30s after its last event or API call
@@ -148,6 +149,10 @@ export default defineBackground(() => {
   // constant, so other builds carry none of its code), and even then nothing
   // reaches the network until the user turns Teams on.
   if (import.meta.env.WXT_TEAMS_API_ORIGIN) registerTeams();
+
+  // Usage counts, only in a build that has a server to send them to, and even
+  // then nothing is counted until the reader turns sharing on in Settings.
+  if (import.meta.env.WXT_TEAMS_API_ORIGIN) registerUsage(import.meta.env.WXT_TEAMS_API_ORIGIN);
 
   // See KEEP_ALIVE_ALARM above. `create` with an existing name just resets
   // that alarm's schedule, so re-registering on every service-worker

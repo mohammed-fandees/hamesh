@@ -7,6 +7,7 @@ import type {
   Preferences,
   SupportedLanguage,
   TextNotePreferences,
+  UsagePreferences,
 } from '@/domain/preferences';
 import {
   parsePreferences,
@@ -38,6 +39,8 @@ export interface PreferencesRepository {
   setGlobalDefaultFolder(folderId: string | null): Promise<Preferences>;
   setLibrary(patch: Partial<LibraryPreferences>): Promise<Preferences>;
   setOnboarding(onboarding: OnboardingPreferences): Promise<Preferences>;
+  /** Records the reader's answer about sharing usage counts. */
+  setUsage(usage: UsagePreferences): Promise<Preferences>;
   /** Patches what the reader has said about announcements, leaving the rest. */
   setAnnouncements(patch: Partial<AnnouncementPreferences>): Promise<Preferences>;
   /** Fires on changes from any extension context — popup, other tabs' content
@@ -130,6 +133,13 @@ export function createPreferencesRepository(): PreferencesRepository {
     async setOnboarding(onboarding: OnboardingPreferences): Promise<Preferences> {
       const current = await this.get();
       const next: Preferences = { ...current, onboarding };
+      await storage.setItem(STORAGE_KEY, next);
+      return next;
+    },
+
+    async setUsage(usage: UsagePreferences): Promise<Preferences> {
+      const current = await this.get();
+      const next: Preferences = { ...current, usage };
       await storage.setItem(STORAGE_KEY, next);
       return next;
     },

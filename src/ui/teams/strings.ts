@@ -125,6 +125,28 @@ export interface TeamsStrings extends SharedStrings {
   announcementsSwitch: string;
   announcementsHint: string;
 
+  usageTitle: string;
+  usageSwitch: string;
+  usageHint: string;
+  usageTurnedOff: string;
+  usageSeeShared: string;
+  usageSharedIntro: string;
+  usageSharedIntroOff: string;
+  usageSharedFoot: string;
+  usagePrivacyLink: string;
+  usageAskTitle: string;
+  usageAskBody: string;
+  usageAskSee: string;
+  usageAskYes: string;
+  usageAskNo: string;
+  usageAskLater: string;
+  usageOptional: string;
+  usageThanks: string;
+  usageDeclined: string;
+  /** The line after an answer, around a link to Settings. */
+  usageAfterYes: { before: string; link: string; after: string };
+  usageAfterNo: { before: string; link: string; after: string };
+
   joinTeam: string;
   joinHint: string;
   joinPlaceholder: string;
@@ -434,6 +456,39 @@ const en: TeamsOwnStrings = {
   announcementsSwitch: 'Show news about new features',
   announcementsHint:
     'A short notice at the top of the Library, never on websites. Turned off, Hamesh doesn’t ask for it at all.',
+
+  usageTitle: 'Help improve Hamesh',
+  usageSwitch: 'Share usage counts',
+  usageHint:
+    'Once a day, how many times you used each feature, like “3 notes on text”. Never your notes, the pages you visit, or anything that identifies you. Off unless you turn it on.',
+  usageTurnedOff:
+    'Turned off. The counts kept on this device were deleted, and nothing more is sent.',
+  usageSeeShared: 'See what’s shared',
+  usageSharedIntro:
+    'Today’s report, from this device, so far. It goes once a day, and not at all on a day you don’t use Hamesh.',
+  usageSharedIntroOff: 'What a day’s report looks like. Nothing is sent while this is off.',
+  usageSharedFoot: 'No device id, no times of day, no addresses.',
+  usagePrivacyLink: 'How Hamesh handles data',
+  usageAskTitle: 'Help us see what’s useful',
+  usageAskBody:
+    'If you agree, Hamesh sends a count, once a day, of how many times you used each feature, like “3 notes on text”. Never your notes, the pages you visit, or anything that identifies you.',
+  usageAskSee: 'See what would be sent',
+  usageAskYes: 'Share counts',
+  usageAskNo: 'No thanks',
+  usageAskLater: 'You can change this any time in Settings.',
+  usageOptional: 'Optional',
+  usageThanks: 'Thank you. Hamesh will share usage counts once a day.',
+  usageDeclined: 'Nothing is shared. Hamesh won’t ask again.',
+  usageAfterYes: {
+    before: 'Turn it off any time in ',
+    link: 'Settings',
+    after: '. The card leaves this page the next time it opens.',
+  },
+  usageAfterNo: {
+    before: 'If you change your mind, it’s in ',
+    link: 'Settings',
+    after: '. The card leaves this page the next time it opens.',
+  },
 
   joinTeam: 'Join a team',
   joinHint: 'Paste the invite link someone sent you.',
@@ -780,6 +835,30 @@ const ar: TeamsOwnStrings = {
   announcementsSwitch: 'إظهار أخبار الميزات الجديدة',
   announcementsHint:
     'تنبيه قصير أعلى المكتبة، ولا يظهر على المواقع أبدًا. عند إيقافه لا يطلبه هامش من الأساس.',
+
+  usageTitle: 'ساعد في تحسين هامش',
+  usageSwitch: 'مشاركة أعداد الاستخدام',
+  usageHint:
+    'مرة في اليوم: عدد مرات استخدامك لكل ميزة، مثل «3 ملاحظات على نص». لا تُرسل ملاحظاتك، ولا الصفحات التي تزورها، ولا أي شيء يعرّفك. مغلقة ما لم تفتحها.',
+  usageTurnedOff: 'أُوقفت. حُذفت الأعداد المحفوظة على هذا الجهاز، ولن يُرسل شيء بعد الآن.',
+  usageSeeShared: 'اعرض ما يُرسل',
+  usageSharedIntro:
+    'تقرير اليوم من هذا الجهاز حتى الآن. يُرسل مرة في اليوم، ولا يُرسل شيء في يوم لا تستخدم فيه هامش.',
+  usageSharedIntroOff: 'هكذا يبدو تقرير اليوم. لا يُرسل شيء ما دامت المشاركة مغلقة.',
+  usageSharedFoot: 'لا معرّف للجهاز، ولا أوقات، ولا عناوين.',
+  usagePrivacyLink: 'كيف يتعامل هامش مع البيانات',
+  usageAskTitle: 'ساعدنا نعرف ما يفيدك',
+  usageAskBody:
+    'إن وافقت، يرسل هامش مرة في اليوم عدد مرات استخدامك لكل ميزة، مثل «3 ملاحظات على نص». لا تُرسل ملاحظاتك، ولا الصفحات التي تزورها، ولا أي شيء يعرّفك.',
+  usageAskSee: 'اعرض ما سيُرسل',
+  usageAskYes: 'مشاركة الأعداد',
+  usageAskNo: 'لا، شكرًا',
+  usageAskLater: 'يمكنك تغيير ذلك في أي وقت من الإعدادات.',
+  usageOptional: 'اختياري',
+  usageThanks: 'شكرًا لك. سيشارك هامش أعداد الاستخدام مرة في اليوم.',
+  usageDeclined: 'لن يُرسل شيء. ولن يسألك هامش مرة أخرى.',
+  usageAfterYes: { before: 'يمكنك تغيير ذلك في أي وقت من ', link: 'الإعدادات', after: '.' },
+  usageAfterNo: { before: 'يمكنك تغيير ذلك في أي وقت من ', link: 'الإعدادات', after: '.' },
 
   joinTeam: 'الانضمام إلى فريق',
   joinHint: 'الصق رابط الدعوة الذي أرسله لك أحدهم.',

@@ -76,6 +76,7 @@ const prefsRepo = (): PreferencesRepository => ({
   setLibrary: vi.fn(),
   setOnboarding: vi.fn(),
   setAnnouncements: vi.fn(),
+  setUsage: vi.fn(),
 });
 
 const foldersRepo = (): FoldersRepository => ({

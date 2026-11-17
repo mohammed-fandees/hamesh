@@ -13,6 +13,7 @@ import { resolveLang } from '@/ui/i18n';
 import { matchesShortcut } from '@/domain/shortcut';
 import { createTeamNotesSource } from '@/teams/page-notes';
 import { handOverJoinLink, joinPageDeps } from '@/teams/join-page';
+import { countUse } from '@/usage/count';
 import '@/ui/tokens.css';
 
 export default defineContentScript({
@@ -164,9 +165,11 @@ export default defineContentScript({
         if (matchesShortcut(e, addNoteShortcut)) {
           e.preventDefault();
           activate?.();
+          countUse('open.shortcut.h');
         } else if (matchesShortcut(e, videoNoteShortcut)) {
           e.preventDefault();
           activateVideo?.();
+          countUse('open.shortcut.v');
         } else if (matchesShortcut(e, textNoteShortcut)) {
           // Deliberately not preventDefault-ed up front: `activateText` is a
           // no-op unless there's a valid text selection right now (and the
@@ -175,6 +178,7 @@ export default defineContentScript({
           // to act. `HameshApp` reads the live selection itself — see
           // `captureTextSelection`.
           activateText?.();
+          countUse('open.shortcut.t');
         }
       },
       true,
