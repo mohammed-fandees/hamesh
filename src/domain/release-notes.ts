@@ -37,6 +37,25 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    version: '2.2.0',
+    date: '2026-11-17',
+    title: { en: 'Easier to join a team', ar: 'الانضمام إلى فريق أسهل' },
+    items: [
+      {
+        en: 'Open an invitation link and Hamesh shows you the team it’s for, ready to join.',
+        ar: 'افتح رابط الدعوة، فيعرض لك هامش الفريق الذي يدعوك إليه، جاهزًا للانضمام.',
+      },
+      {
+        en: 'When you invite someone, they get the invitation by email, in Arabic and English. If it couldn’t be sent, Hamesh tells you, and the link is still there to copy.',
+        ar: 'حين تدعو أحدًا تصله الدعوة بالبريد، بالعربية والإنجليزية. وإن تعذّر إرسالها يخبرك هامش بذلك، ويبقى الرابط جاهزًا للنسخ.',
+      },
+      {
+        en: 'You can now help us see which features are useful: Hamesh can share how many times each one is used, only if you say yes. Settings → Help improve Hamesh.',
+        ar: 'يمكنك الآن أن تساعدنا في معرفة الميزات المفيدة: يشارك هامش عدد مرات استخدام كل ميزة، فقط إن وافقت. الإعدادات ← ساعد في تحسين هامش.',
+      },
+    ],
+  },
+  {
     version: '2.1.0',
     date: '2026-11-03',
     title: { en: 'Teams that keep up with you', ar: 'فرق تواكبك أولًا بأول' },

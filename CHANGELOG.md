@@ -6,8 +6,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.2.0] — 2026-11-17
+
 ### Added
 
+- **Opening an invitation link opens it in Hamesh.** The website's join page hands the link to the
+  extension, which opens the Teams page on that team, ready to join. Nothing to paste.
+- **Invitations are emailed.** Inviting someone by address sends them the invitation in Arabic and
+  English. The invite list says whether it was sent, and why not when it wasn't; the link is kept
+  to copy either way.
 - **Usage counts, only with a yes.** Settings → Help improve Hamesh shares, once a day, how many
   times each feature was used, and nothing else: no notes, pages, times of day or device id. Off
   until the reader turns it on; asked once, in What's New and at the end of Getting started, with
