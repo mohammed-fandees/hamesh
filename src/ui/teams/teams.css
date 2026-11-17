@@ -350,6 +350,14 @@
   border-radius: var(--hm-radius-md);
   background: var(--hm-paper-dim);
 }
+.hm-invite-link__email {
+  margin: 0 0 var(--hm-space-2);
+  font-size: var(--hm-text-body-sm);
+  color: var(--hm-success);
+}
+.hm-invite-link__email--failed {
+  color: var(--hm-warning);
+}
 .hm-invite-link__title {
   margin: 0 0 var(--hm-space-2);
   font-size: var(--hm-text-body);

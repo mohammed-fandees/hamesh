@@ -9,7 +9,7 @@ import {
   CreateFolderRequest,
   CreateInvitationRequest,
   CreateNoteRequest,
-  InvitationCreatedResponse,
+  InvitationCreatedResponseV2,
   InvitationPreviewResponse,
   InvitationTokenRequest,
   InvitationsResponse,
@@ -142,10 +142,10 @@ function buildOperations() {
     /** The link comes back exactly once, so the page must show it there and then. */
     'invites.create': op({
       params: TeamId.extend(CreateInvitationRequest.shape),
-      result: InvitationCreatedResponse,
+      result: InvitationCreatedResponseV2,
       request: (p) => ({
         method: 'POST',
-        path: `/v1/teams/${p.teamId}/invitations`,
+        path: `/v1/teams/${p.teamId}/invitations?v=2`,
         body: { email: p.email, role: p.role },
       }),
     }),

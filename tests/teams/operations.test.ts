@@ -213,6 +213,39 @@ describe('the operation table', () => {
     expect(operations()['mentions.list'].params.safeParse({ before: 'nope' }).success).toBe(false);
   });
 
+  it('asks for an invitation in the shape that says whether it was emailed', () => {
+    const create = operations()['invites.create'];
+    // v2: only a client that can tell the inviter how the email went is mailed for.
+    expect(create.request(VALID['invites.create'] as never).path).toBe(
+      `/v1/teams/${TEAM}/invitations?v=2`,
+    );
+    const invitation = {
+      id: TEAM,
+      email: 'someone@example.test',
+      role: 'member',
+      createdAt: 1,
+      expiresAt: 2,
+      expired: false,
+    };
+    const link = `https://hamesh.app/join#${'a'.repeat(43)}`;
+    // A server that sends no email yet answers without the field.
+    expect(create.result.safeParse({ invitation, link }).success).toBe(true);
+    expect(create.result.safeParse({ invitation, link, email: { status: 'sent' } }).success).toBe(
+      true,
+    );
+    // A reason this client does not know yet is still an answer it can show.
+    expect(
+      create.result.safeParse({
+        invitation,
+        link,
+        email: { status: 'not_sent', reason: 'something_new' },
+      }).success,
+    ).toBe(true);
+    expect(create.result.safeParse({ invitation, link, email: { status: 'maybe' } }).success).toBe(
+      false,
+    );
+  });
+
   it('asks for the plans in the shape that carries names, discounts and free plans', () => {
     const plans = operations()['billing.plans'];
     // v3: v2 never lists a free plan, so the extension could never show one.

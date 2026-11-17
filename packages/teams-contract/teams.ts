@@ -123,14 +123,40 @@ export type Invitation = z.infer<typeof Invitation>;
 
 /**
  * The link is returned exactly once. The token sits in the URL fragment, so it
- * never reaches a server log or a Referer header. Hamesh sends no email: the
- * inviter shares the link.
+ * never reaches a server log or a Referer header. The inviter can always share
+ * the link themselves.
  */
 export const InvitationCreatedResponse = z.strictObject({
   invitation: Invitation,
   link: z.string(),
 });
 export type InvitationCreatedResponse = z.infer<typeof InvitationCreatedResponse>;
+
+/** Why an invitation was not emailed, for the reasons a client knows to name. */
+export const INVITE_EMAIL_FAILURES = ['limit', 'unavailable', 'declined'] as const;
+export type InviteEmailFailure = (typeof INVITE_EMAIL_FAILURES)[number];
+
+/**
+ * Whether the invitation went out by email. `reason` is a string rather than
+ * an enum so that a reason added later is still an answer an older client can
+ * show (as `unavailable`).
+ */
+export const InviteEmail = z.union([
+  z.strictObject({ status: z.literal('sent') }),
+  z.strictObject({ status: z.literal('not_sent'), reason: z.string().min(1).max(40) }),
+]);
+export type InviteEmail = z.infer<typeof InviteEmail>;
+
+/**
+ * `POST /v1/teams/:teamId/invitations?v=2`. Only a client that asks this way is
+ * emailed for, because only it can tell the inviter how the email went; the
+ * link is in the answer either way. `email` is absent while the server sends
+ * no email at all.
+ */
+export const InvitationCreatedResponseV2 = InvitationCreatedResponse.extend({
+  email: InviteEmail.optional(),
+});
+export type InvitationCreatedResponseV2 = z.infer<typeof InvitationCreatedResponseV2>;
 
 /** GET /v1/teams/:teamId/invitations (open invitations; tokens are never returned). */
 export const InvitationsResponse = z.strictObject({ invitations: z.array(Invitation) });

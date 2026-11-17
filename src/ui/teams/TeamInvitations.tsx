@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { Invitation, TeamResponse } from '@hamesh/teams-contract';
+import {
+  INVITE_EMAIL_FAILURES,
+  type Invitation,
+  type InviteEmail,
+  type InviteEmailFailure,
+  type TeamResponse,
+} from '@hamesh/teams-contract';
 import { formatDate } from '../format';
 import type { Lang } from '../i18n';
 import { InlineError } from '../kit/Feedback';
@@ -15,11 +21,19 @@ interface TeamInvitationsProps {
   team: TeamResponse;
 }
 
+/** A reason this version does not know reads as email being unavailable. */
+function failureOf(reason: string): InviteEmailFailure {
+  return (INVITE_EMAIL_FAILURES as readonly string[]).includes(reason)
+    ? (reason as InviteEmailFailure)
+    : 'unavailable';
+}
+
 /**
  * Invitations to this team: make a link, see the open ones, revoke one.
  *
- * Hamesh sends no email — the server hands back a link exactly once and the
- * inviter passes it on themselves. The token lives in the link's fragment, so
+ * The server hands back a link exactly once, and may also have emailed it; it
+ * says which. The link is shown either way, so a failed email never leaves the
+ * inviter without a way to send it. The token lives in the link's fragment, so
  * it never reaches a server log or a Referer header; this page therefore holds
  * a new link in memory until the user is done with it, and never stores it.
  */
@@ -28,6 +42,7 @@ export function TeamInvitations({ strings, lang, page, team }: TeamInvitationsPr
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<'member' | 'admin'>('member');
   const [link, setLink] = useState<string | null>(null);
+  const [emailed, setEmailed] = useState<{ to: string; email: InviteEmail } | null>(null);
   const [copied, setCopied] = useState(false);
 
   const teamId = team.team.id;
@@ -46,6 +61,7 @@ export function TeamInvitations({ strings, lang, page, team }: TeamInvitationsPr
       setInvitations(result?.invitations ?? null);
       // A link belongs to the team it was made for, and is never kept.
       setLink(null);
+      setEmailed(null);
     })();
     return () => {
       cancelled = true;
@@ -58,6 +74,7 @@ export function TeamInvitations({ strings, lang, page, team }: TeamInvitationsPr
     const result = await page.run('invites.create', { teamId, email, role }, 'invites.create');
     if (!result) return;
     setLink(result.link);
+    setEmailed(result.email ? { to: result.invitation.email, email: result.email } : null);
     setCopied(false);
     setEmail('');
     await load();
@@ -125,6 +142,19 @@ export function TeamInvitations({ strings, lang, page, team }: TeamInvitationsPr
         // Shown once and never stored, so it is given room to be read and
         // copied rather than truncated into a row.
         <div className="hm-invite-link" role="status">
+          {emailed && (
+            <p
+              className={
+                emailed.email.status === 'sent'
+                  ? 'hm-invite-link__email'
+                  : 'hm-invite-link__email hm-invite-link__email--failed'
+              }
+            >
+              {emailed.email.status === 'sent'
+                ? strings.inviteEmailed(emailed.to)
+                : strings.inviteNotEmailed(failureOf(emailed.email.reason))}
+            </p>
+          )}
           <p className="hm-invite-link__title">{strings.inviteLinkReady}</p>
           {/* Selectable, so it can be copied by hand if the clipboard is refused. */}
           <code className="hm-invite-link__value">{link}</code>

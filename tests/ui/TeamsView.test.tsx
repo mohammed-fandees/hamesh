@@ -562,6 +562,54 @@ describe('the Teams page', () => {
     });
   });
 
+  async function inviteWith(email: unknown) {
+    const link = `https://hamesh.app/join#${'b'.repeat(43)}`;
+    const { client } = fakeClient({
+      'invites.create': {
+        invitation: {
+          id: TEAM,
+          email: 'new@example.test',
+          role: 'member',
+          createdAt: 1,
+          expiresAt: 2,
+          expired: false,
+        },
+        link,
+        ...(email === undefined ? {} : { email }),
+      },
+    });
+    render_(client, undefined, undefined, MEMBERS);
+    await idle(strings.sendInvite);
+    fireEvent.change(screen.getByPlaceholderText(strings.inviteEmailPlaceholder), {
+      target: { value: 'new@example.test' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: strings.sendInvite }));
+    // The link is always there to copy, whatever happened to the email.
+    expect(await screen.findByText(link)).toBeInTheDocument();
+  }
+
+  it('says the invitation was emailed, and still offers the link', async () => {
+    await inviteWith({ status: 'sent' });
+    expect(screen.getByText(strings.inviteEmailed('new@example.test'))).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: strings.copyLink })).toBeInTheDocument();
+  });
+
+  it('says why an invitation could not be emailed', async () => {
+    await inviteWith({ status: 'not_sent', reason: 'limit' });
+    expect(screen.getByText(strings.inviteNotEmailed('limit'))).toBeInTheDocument();
+  });
+
+  it('reads a reason it does not know as email being unavailable', async () => {
+    await inviteWith({ status: 'not_sent', reason: 'something_new' });
+    expect(screen.getByText(strings.inviteNotEmailed('unavailable'))).toBeInTheDocument();
+  });
+
+  it('says nothing about email when the server sent none', async () => {
+    await inviteWith(undefined);
+    expect(screen.queryByText(strings.inviteEmailed('new@example.test'))).not.toBeInTheDocument();
+    expect(screen.queryByText(strings.inviteNotEmailed('unavailable'))).not.toBeInTheDocument();
+  });
+
   it('says when a team is read-only, with the date the server gave', async () => {
     const { client } = fakeClient({
       'team.get': {
