@@ -37,6 +37,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    version: '2.2.1',
+    date: '2026-11-17',
+    title: { en: 'Security updates', ar: 'تحديثات أمان' },
+    items: [
+      {
+        en: 'The tools Hamesh is built with were updated to fix known security issues. Nothing changes in how you use Hamesh.',
+        ar: 'حُدّثت الأدوات التي يُبنى بها هامش لإصلاح ثغرات أمنية معروفة. لا يتغير شيء في طريقة استخدامك لهامش.',
+      },
+    ],
+  },
+  {
     version: '2.2.0',
     date: '2026-11-17',
     title: { en: 'Easier to join a team', ar: 'الانضمام إلى فريق أسهل' },
