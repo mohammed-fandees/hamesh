@@ -37,6 +37,25 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    version: '2.3.0',
+    date: '2026-11-20',
+    title: { en: 'Take your notes to Obsidian and Notion', ar: 'خذ ملاحظاتك إلى Obsidian وNotion' },
+    items: [
+      {
+        en: 'Export a page, a folder or all your notes as Markdown for Obsidian or Notion. Each page keeps its notes in order, with a map of the page or a timeline of the video.',
+        ar: 'صدّر صفحة أو فولدرًا أو كل ملاحظاتك كـ Markdown إلى Obsidian أو Notion. تبقى ملاحظات كل صفحة بترتيبها، مع خريطة للصفحة أو خط زمني للفيديو.',
+      },
+      {
+        en: 'Hamesh picks a layout for each folder and site: notes, a glossary for words and their meaning, a timeline, or a checklist. Change it and see your own notes in it before you export.',
+        ar: 'يختار هامش طريقة عرض لكل فولدر وموقع: ملاحظات، أو قاموس للكلمات ومعانيها، أو خط زمني، أو قائمة مهام. غيّرها وشاهد ملاحظاتك بها قبل التصدير.',
+      },
+      {
+        en: 'Copy a page’s notes straight from any note’s menu, ready to paste.',
+        ar: 'انسخ ملاحظات صفحة مباشرة من قائمة أي ملاحظة، جاهزة للصق.',
+      },
+    ],
+  },
+  {
     version: '2.2.1',
     date: '2026-11-17',
     title: { en: 'Security updates', ar: 'تحديثات أمان' },

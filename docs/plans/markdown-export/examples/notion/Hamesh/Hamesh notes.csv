@@ -1,6 +1,13 @@
-Note,Page,Site,Kind,On,Section or chapter,Quote,Time,Link,Folder,Created,Last edited
-"تعريف Big-O: بيوصف أسوأ نمو للخطوات مع كبر المدخلات","مقدمة في الخوارزميات — المحاضرة 3",youtube.com,video,moment,التعقيد الزمني,,04:12,https://youtu.be/Qx7aL2mP9dE?t=252,Algorithms,2026-11-02,2026-11-02
-"لماذا نتجاهل الثوابت: 3n و 100n نفس الرتبة","مقدمة في الخوارزميات — المحاضرة 3",youtube.com,video,moment,التعقيد الزمني,,09:47,https://youtu.be/Qx7aL2mP9dE?t=587,Algorithms,2026-11-02,2026-11-02
-"A 404 still resolves. Always check response.ok before .json().","Using the Fetch API",developer.mozilla.org,article,words,Making a request,"the promise only rejects when the request itself fails",,https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch,Work / Frontend,2026-10-14,2026-10-14
-"Use this pattern in the search box: abort the previous request on every keystroke.","Using the Fetch API",developer.mozilla.org,article,code block,Canceling a request,,,https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch,Work / Frontend,2026-10-20,2026-11-09
-"Disabled until every field is valid, but nothing says which field is wrong.","Checkout — step 2",uxreview.example,mixed,button,Shipping address,,,https://uxreview.example/checkout/shipping,Work / Reviews,2026-10-30,2026-10-30
+﻿الملاحظة,الصفحة,الموقع,على,القسم,الوقت,المصدر,الفولدر,كُتبت,آخر ملاحظة
+This is the default api contract in useEffect: useEffect should only return undefined or a function.,Lifecycle of Reactive Effects – React,react.dev,connection.disconnect();,,,https://react.dev/learn/lifecycle-of-reactive-effects,Learning / React,2026-08-22T15:00:00.000Z,2026-08-22T15:00:00.000Z
+React lifecycle advice #1,Lifecycle of Reactive Effects – React,react.dev,"When you looked from the component’s perspective, it was tempting to think of Effects as callbacks.",,,https://react.dev/learn/lifecycle-of-reactive-effects,Learning / React,2026-08-22T15:00:00.000Z,2026-08-22T15:00:00.000Z
+Every Effect in React development env is done twice,Lifecycle of Reactive Effects – React,react.dev,React starts and stops your Effect one extra time in development,,,https://react.dev/learn/lifecycle-of-reactive-effects,Learning / React,2026-08-22T15:00:00.000Z,2026-08-22T15:00:00.000Z
+ينوي,Lifecycle of Reactive Effects – React,react.dev,intend,,,https://react.dev/learn/lifecycle-of-reactive-effects,English - Vocab,2026-08-22T15:00:00.000Z,2026-08-22T15:00:00.000Z
+مُتماسك أو مُلتحم,Lifecycle of Reactive Effects – React,react.dev,cohesive,,,https://react.dev/learn/lifecycle-of-reactive-effects,English - Vocab,2026-08-22T15:00:00.000Z,2026-08-22T15:00:00.000Z
+قمع,Lifecycle of Reactive Effects – React,react.dev,suppressing,,,https://react.dev/learn/lifecycle-of-reactive-effects,English - Vocab,2026-08-22T15:00:00.000Z,2026-08-22T15:00:00.000Z
+مُتقلب - مُتغير,Referencing Values with Refs – React,react.dev,mutable,,,https://react.dev/learn/referencing-values-with-refs,English - Vocab,2026-08-22T15:00:00.000Z,2026-08-22T15:00:00.000Z
+فتحة الهروب,Referencing Values with Refs – React,react.dev,escape hatch,,,https://react.dev/learn/referencing-values-with-refs,English - Vocab,2026-08-22T15:00:00.000Z,2026-08-22T15:00:00.000Z
+#2,useState – React,react.dev,The set function only updates the state variable for the next render.,,,https://react.dev/reference/react/useState,Learning / React,2026-08-22T15:00:00.000Z,2026-08-22T15:00:00.000Z
+Teamwork from the childhood,"لو بتفكر تسافر , شوف الفيديو دا الأول ! | ضيف",youtube.com,,,40:51,https://www.youtube.com/watch?v=DM6Uq2ixzjs,Youtube / Podcasts Notes,2026-08-22T15:00:00.000Z,2026-08-22T15:00:00.000Z
+مألات ما تتمنى,المناظرة الكبرى : سؤال كبير؟,youtube.com,,,9:45,https://www.youtube.com/watch?v=Jfl9kguMZj4,Youtube / Podcasts Notes,2026-08-22T15:00:00.000Z,2026-08-22T15:00:00.000Z
+ازااااي!!,صيد كاست 13 | حوار جريء,youtube.com,,,34:17,https://www.youtube.com/watch?v=JYDxiSJAwBE,,2026-11-07T13:12:47.515Z,2026-11-07T13:12:47.515Z

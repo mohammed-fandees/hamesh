@@ -1,0 +1,112 @@
+{
+  "nodes": [
+    {
+      "id": "page",
+      "type": "file",
+      "file": "Hamesh/Sites/react.dev/Lifecycle of Reactive Effects – React.md",
+      "x": -210,
+      "y": -360,
+      "width": 420,
+      "height": 160,
+      "color": "6"
+    },
+    {
+      "id": "n1",
+      "type": "text",
+      "text": "> connection.disconnect();\n\nThis is the default api contract in useEffect: useEffect should only return undefined or a function.\n\n[[Hamesh/Sites/react.dev/Lifecycle of Reactive Effects – React#^hm-ncleanup|↗]]",
+      "x": -670,
+      "y": 0,
+      "width": 420,
+      "height": 220
+    },
+    {
+      "id": "n2",
+      "type": "text",
+      "text": "> When you looked from the component’s perspective, it was tempting to think of Effects as callbacks.\n\nReact lifecycle advice #1\n\n[[Hamesh/Sites/react.dev/Lifecycle of Reactive Effects – React#^hm-nadvice|↗]]",
+      "x": -210,
+      "y": 0,
+      "width": 420,
+      "height": 220
+    },
+    {
+      "id": "n3",
+      "type": "text",
+      "text": "> React starts and stops your Effect one extra time in development\n\nEvery Effect in React development env is done twice\n\n[[Hamesh/Sites/react.dev/Lifecycle of Reactive Effects – React#^hm-ntwice|↗]]",
+      "x": 250,
+      "y": 0,
+      "width": 420,
+      "height": 220
+    },
+    {
+      "id": "n4",
+      "type": "text",
+      "text": "> intend\n\nينوي\n\n[[Hamesh/Sites/react.dev/Lifecycle of Reactive Effects – React#^hm-nintend|↗]]",
+      "x": -670,
+      "y": 260,
+      "width": 420,
+      "height": 220
+    },
+    {
+      "id": "n5",
+      "type": "text",
+      "text": "> cohesive\n\nمُتماسك أو مُلتحم\n\n[[Hamesh/Sites/react.dev/Lifecycle of Reactive Effects – React#^hm-ncohesiv|↗]]",
+      "x": -210,
+      "y": 260,
+      "width": 420,
+      "height": 220
+    },
+    {
+      "id": "n6",
+      "type": "text",
+      "text": "> suppressing\n\nقمع\n\n[[Hamesh/Sites/react.dev/Lifecycle of Reactive Effects – React#^hm-nsuppres|↗]]",
+      "x": 250,
+      "y": 260,
+      "width": 420,
+      "height": 220
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "fromNode": "page",
+      "fromSide": "bottom",
+      "toNode": "n1",
+      "toSide": "top"
+    },
+    {
+      "id": "e2",
+      "fromNode": "page",
+      "fromSide": "bottom",
+      "toNode": "n2",
+      "toSide": "top"
+    },
+    {
+      "id": "e3",
+      "fromNode": "page",
+      "fromSide": "bottom",
+      "toNode": "n3",
+      "toSide": "top"
+    },
+    {
+      "id": "e4",
+      "fromNode": "page",
+      "fromSide": "bottom",
+      "toNode": "n4",
+      "toSide": "top"
+    },
+    {
+      "id": "e5",
+      "fromNode": "page",
+      "fromSide": "bottom",
+      "toNode": "n5",
+      "toSide": "top"
+    },
+    {
+      "id": "e6",
+      "fromNode": "page",
+      "fromSide": "bottom",
+      "toNode": "n6",
+      "toSide": "top"
+    }
+  ]
+}

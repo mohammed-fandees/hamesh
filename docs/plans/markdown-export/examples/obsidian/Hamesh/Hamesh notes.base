@@ -3,30 +3,24 @@ filters:
     - file.hasTag("hamesh")
     - file.inFolder("Hamesh/Sites")
 properties:
+  note.site:
+    displayName: "Site"
+  note.layout:
+    displayName: "Layout"
   note.notes:
-    displayName: Notes
+    displayName: "Notes"
   note.updated:
-    displayName: Last written
+    displayName: "Last written"
 views:
   - type: table
-    name: Every page
+    name: "Pages"
     order:
       - file.name
       - site
       - kind
+      - layout
       - notes
       - updated
-      - folders
     sort:
       - property: updated
         direction: DESC
-  - type: table
-    name: Videos
-    filters:
-      and:
-        - file.hasTag("hamesh/video")
-    order:
-      - file.name
-      - duration
-      - notes
-      - updated

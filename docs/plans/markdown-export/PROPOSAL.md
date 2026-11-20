@@ -88,7 +88,7 @@ page order under a single "Notes" heading. Nothing is read from the page at expo
 
 ```
 Hamesh/
-  Hamesh.md                      overview: counts, a pie of notes per site, every page, every folder
+  Overview.md                    overview: counts, a pie of notes per site, every page, every folder
   Hamesh notes.base              Obsidian only: a live table of every page file
   Hamesh notes.csv               Notion only: one row per note → a Notion database
   Sites/<site>/<page title>.md   one file per page
