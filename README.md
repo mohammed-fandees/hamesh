@@ -39,6 +39,9 @@ where you left them.
 
 ## What's new
 
+- **Take your notes to Obsidian and Notion** (2.3). Export a page, a folder or everything as
+  Markdown, laid out for what your notes are: notes, a glossary, a timeline or a checklist, with a
+  map of each page and a timeline of each video.
 - **Joining a team from a link** (2.2). Open an invitation link and Hamesh shows the team, ready
   to join; invitations are emailed too, in Arabic and English.
 - **Usage counts, only with a yes** (2.2). Hamesh can share how many times each feature is used,
@@ -120,6 +123,7 @@ Google sign-in, and starts on a free plan.
 - **Arabic and English**, right to left and left to right, following Chrome's language or your own
   choice.
 - **Light, dark, or match the website**: Hamesh's own UI only; the page itself is never touched.
+- **Export to Obsidian or Notion** as Markdown, one page, a folder or everything.
 - **Backup** your notes and folders to a JSON file you own, and restore them from it.
 - **Rebindable shortcuts** in Chrome's own shortcuts page.
 
