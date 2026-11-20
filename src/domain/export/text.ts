@@ -33,6 +33,31 @@ export function truncateWords(text: string, max: number): string {
   return `${cut.trimEnd()}…`;
 }
 
+/** Obsidian's block id for a note (`^hm-1a2b3c4d`): the page links to it, and so do the
+ *  canvas cards. Made from the note id, so it stays the same from one export to the next. */
+export function blockId(noteId: string): string {
+  return `hm-${noteId
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .slice(0, 8)
+    .toLowerCase()}`;
+}
+
+const FENCE = /^ {0,3}(`{3,}|~{3,})/;
+
+/** A note's text with any code block it opens closed at its end, so a stray ``` can never turn
+ *  the rest of the file into code. Fences the note closes itself are left alone. */
+export function closeFences(text: string): string {
+  let open: string | null = null;
+  for (const line of text.split('\n')) {
+    const fence = FENCE.exec(line)?.[1];
+    if (!fence) continue;
+    if (open === null) open = fence;
+    else if (fence[0] === open[0] && fence.length >= open.length && line.trim() === fence)
+      open = null;
+  }
+  return open === null ? text : `${text}\n${open}`;
+}
+
 /** A YAML scalar that can never change type: a JSON string is a valid YAML string. */
 export function yamlString(value: string): string {
   return JSON.stringify(value);

@@ -9,6 +9,26 @@ import {
   dominantScript,
   wordCount,
 } from '@/domain/export/text';
+import { blockId, closeFences } from '@/domain/export/text';
+
+describe('closeFences', () => {
+  it('closes a fence the note leaves open, with the same marker', () => {
+    expect(closeFences('a\n````\ncode')).toBe('a\n````\ncode\n````');
+    expect(closeFences('~~~\nx')).toBe('~~~\nx\n~~~');
+  });
+
+  it('leaves closed fences and inline backticks alone', () => {
+    expect(closeFences('```\nx\n```')).toBe('```\nx\n```');
+    expect(closeFences('use `x` here')).toBe('use `x` here');
+    expect(closeFences('```\n~~~\n```')).toBe('```\n~~~\n```');
+  });
+});
+
+describe('blockId', () => {
+  it('is short, lower case and made only of letters and digits', () => {
+    expect(blockId('3F2A-91bc-0000')).toBe('hm-3f2a91bc');
+  });
+});
 
 describe('escapeBlock', () => {
   it('keeps a note that is just "#2" as text', () => {

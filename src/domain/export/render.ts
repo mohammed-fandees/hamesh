@@ -4,7 +4,15 @@ import { formatVideoTimestamp } from '../video-markers';
 import { isTermPair, type ExportLayout } from './layout';
 import type { ExportFolder, ExportModel, ExportPage } from './model';
 import { exportStrings, type ExportLang, type ExportStrings } from './strings';
-import { escapeBlock, escapeCell, linkAlias, truncateWords, yamlString } from './text';
+import {
+  blockId,
+  closeFences,
+  escapeBlock,
+  escapeCell,
+  linkAlias,
+  truncateWords,
+  yamlString,
+} from './text';
 import { assignPaths, safeFileName } from './file-names';
 import { mindmap, pie, timeline, type DiagramSection } from './mermaid';
 import { renderBase, renderCanvas, renderCsv, wantsCanvas } from './extras';
@@ -15,6 +23,7 @@ import { renderBase, renderCanvas, renderCsv, wantsCanvas } from './extras';
  */
 
 export const EXPORT_ROOT = 'Hamesh';
+const SITES_DIR = `${EXPORT_ROOT}/Sites`;
 
 export interface RenderOptions {
   flavor: ExportFlavor;
@@ -38,6 +47,9 @@ interface Ctx {
   standalone: boolean;
   pagePaths: Map<string, string>;
   folderPaths: Map<string, string>;
+  /** Lookups built once: a large library would otherwise be searched again for every note. */
+  pageByNote: Map<string, ExportPage>;
+  folderById: Map<string, ExportFolder>;
 }
 
 const MAP_MIN = 3;
@@ -62,20 +74,16 @@ const firstLine = (text: string) =>
     .find((l) => l.trim())
     ?.trim() ?? '';
 
-function blockId(note: Note): string {
-  return `hm-${note.id
-    .replace(/[^a-zA-Z0-9]/g, '')
-    .slice(0, 8)
-    .toLowerCase()}`;
-}
+/** A note's own words as a block of the file: structure escaped, code blocks closed. */
+const noteText = (note: Note) => closeFences(escapeBlock(note.content));
 
 function withBlockId(ctx: Ctx, text: string, note: Note): string {
   if (!ctx.obsidian) return text;
   const lines = text.split('\n');
   const last = lines[lines.length - 1].trim();
   return /^(```|~~~|\||[-*+] |\d+[.)] )/.test(last)
-    ? `${text}\n\n^${blockId(note)}`
-    : `${text} ^${blockId(note)}`;
+    ? `${text}\n\n^${blockId(note.id)}`
+    : `${text} ^${blockId(note.id)}`;
 }
 
 function videoHref(note: Note, page: ExportPage): string {
@@ -265,7 +273,7 @@ function noteBody(ctx: Ctx, page: ExportPage, note: Note): string[] {
   else if (a.type === 'video')
     out.push(`### [▶ ${formatVideoTimestamp(a.timestamp)}](${videoHref(note, page)})`, '');
   else out.push(elementBlock(ctx, note), '');
-  out.push(withBlockId(ctx, escapeBlock(note.content), note), '');
+  out.push(withBlockId(ctx, noteText(note), note), '');
   return out;
 }
 
@@ -352,7 +360,7 @@ function renderTimelineLayout(ctx: Ctx, page: ExportPage): string[] {
         out.push(`### ${s.date(n.createdAt)}`, '');
         if (n.anchor.type === 'text') out.push(quote(ctx, s.onThePage, n.anchor.exact), '');
         else out.push(elementBlock(ctx, n), '');
-        out.push(withBlockId(ctx, escapeBlock(n.content), n), '');
+        out.push(withBlockId(ctx, noteText(n), n), '');
       }
     }
   }
@@ -398,9 +406,9 @@ function renderChecklistLayout(ctx: Ctx, page: ExportPage): string[] {
 }
 
 function taskItem(ctx: Ctx, n: Note, page: ExportPage, pageLink: string | undefined): string[] {
-  const [head, ...rest] = escapeBlock(n.content).split('\n');
+  const [head, ...rest] = noteText(n).split('\n');
   const suffix = pageLink ? ` — ${pageLink}` : '';
-  const lines = [`- [ ] ${head}${suffix}${ctx.obsidian ? ` ^${blockId(n)}` : ''}`];
+  const lines = [`- [ ] ${head}${suffix}${ctx.obsidian ? ` ^${blockId(n.id)}` : ''}`];
   for (const line of rest) lines.push(`  ${line}`);
   const a = n.anchor;
   if (a.type === 'text') lines.push(`  > ${escapeBlock(truncateWords(a.exact, 140))}`);
@@ -424,7 +432,7 @@ function renderPage(ctx: Ctx, page: ExportPage, path: string): string {
 // ---------- folders and overview ----------
 
 function pageOfNote(ctx: Ctx, note: Note): ExportPage {
-  return ctx.model.pages.find((p) => p.notes.includes(note))!;
+  return ctx.pageByNote.get(note.id)!;
 }
 
 function renderFolder(ctx: Ctx, folder: ExportFolder, path: string): string {
@@ -565,10 +573,7 @@ function renderOverview(ctx: Ctx, path: string): string {
   if (model.folders.length) {
     const subtreeCount = (f: ExportFolder): number =>
       f.notes.length +
-      f.childIds.reduce(
-        (sum, id) => sum + subtreeCount(model.folders.find((c) => c.id === id)!),
-        0,
-      );
+      f.childIds.reduce((sum, id) => sum + subtreeCount(ctx.folderById.get(id)!), 0);
     const roots = model.folders.filter(
       (f) => !f.parentId || !model.folders.some((p) => p.id === f.parentId),
     );
@@ -576,11 +581,7 @@ function renderOverview(ctx: Ctx, path: string): string {
       out.push(
         `${'  '.repeat(depth)}- ${link(ctx, path, ctx.folderPaths.get(f.id), f.name, false)} · ${s.notesCount(subtreeCount(f))}`,
       );
-      for (const id of f.childIds)
-        walk(
-          model.folders.find((c) => c.id === id)!,
-          depth + 1,
-        );
+      for (const id of f.childIds) walk(ctx.folderById.get(id)!, depth + 1);
     };
     out.push(`## ${s.folders}`, '');
     roots.forEach((f) => walk(f, 0));
@@ -599,18 +600,30 @@ function context(model: ExportModel, opts: RenderOptions, standalone: boolean): 
   const pagePaths = assignPaths(
     model.pages.map((p) => ({
       id: p.id,
-      dir: `${EXPORT_ROOT}/Sites/${safeFileName(p.site)}`,
+      dir: `${SITES_DIR}/${safeFileName(p.site)}`,
       name: p.title,
       tiebreak: p.notes[0].id.slice(0, 4),
       order: p.created,
     })),
   );
-  const folderPaths = new Map(
-    model.folders.map((f) => [
-      f.id,
-      `${EXPORT_ROOT}/Folders/${f.path.map((name) => safeFileName(name)).join('/')}`,
-    ]),
-  );
+  // Parents first, so each folder is named inside its parent's final path; two siblings whose
+  // names come out the same once made safe ("C#" and "C") get told apart like pages do.
+  const folderPaths = new Map<string, string>();
+  const depths = [...new Set(model.folders.map((f) => f.path.length))].sort((a, b) => a - b);
+  for (const depth of depths) {
+    const level = assignPaths(
+      model.folders
+        .filter((f) => f.path.length === depth)
+        .map((f) => ({
+          id: f.id,
+          dir: (f.parentId && folderPaths.get(f.parentId)) || `${EXPORT_ROOT}/Folders`,
+          name: f.name,
+          tiebreak: f.id.slice(0, 4),
+          order: f.path.join('/'),
+        })),
+    );
+    for (const [id, path] of level) folderPaths.set(id, path);
+  }
   return {
     model,
     opts,
@@ -619,6 +632,8 @@ function context(model: ExportModel, opts: RenderOptions, standalone: boolean): 
     standalone,
     pagePaths,
     folderPaths,
+    pageByNote: new Map(model.pages.flatMap((p) => p.notes.map((n) => [n.id, p] as const))),
+    folderById: new Map(model.folders.map((f) => [f.id, f])),
   };
 }
 
@@ -641,7 +656,7 @@ export function renderExport(model: ExportModel, opts: RenderOptions): RenderedF
     files.push({ path: `${path}.md`, text: renderFolder(ctx, folder, `${path}.md`) });
   }
   if (ctx.obsidian)
-    files.push({ path: `${EXPORT_ROOT}/Hamesh notes.base`, text: renderBase(ctx.s) });
+    files.push({ path: `${EXPORT_ROOT}/Hamesh notes.base`, text: renderBase(ctx.s, SITES_DIR) });
   else files.push({ path: `${EXPORT_ROOT}/Hamesh notes.csv`, text: renderCsv(model, ctx.s) });
   return files;
 }

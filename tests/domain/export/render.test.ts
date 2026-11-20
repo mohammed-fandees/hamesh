@@ -183,6 +183,53 @@ describe('layouts on a page', () => {
   });
 });
 
+describe('names and code blocks', () => {
+  it('gives two folders whose names come out the same their own files', () => {
+    const model = buildExportModel(
+      [
+        textNote({ folderId: 'csharp', content: 'In C#' }),
+        textNote({ folderId: 'c', content: 'In C', start: 50 }),
+      ],
+      [folder('csharp', 'C#'), folder('c', 'C')],
+      { kind: 'all' },
+    );
+    const paths = renderExport(model, opts())
+      .map((f) => f.path)
+      .filter((p) => p.startsWith('Hamesh/Folders/'));
+    expect(paths).toHaveLength(2);
+    expect(new Set(paths.map((p) => p.toLowerCase())).size).toBe(2);
+  });
+
+  it('nests a folder under its parent’s final name', () => {
+    const model = buildExportModel(
+      [textNote({ folderId: 'kid', content: 'Deep' }), textNote({ folderId: 'p1', start: 9 })],
+      [folder('p1', 'Work'), folder('p2', 'work'), folder('kid', 'Notes', 'p2')],
+      { kind: 'all' },
+    );
+    const paths = renderExport(model, opts()).map((f) => f.path);
+    expect(paths).toEqual(
+      expect.arrayContaining([
+        'Hamesh/Folders/work.md',
+        'Hamesh/Folders/Work (p1).md',
+        'Hamesh/Folders/work/Notes.md',
+      ]),
+    );
+  });
+
+  it('closes a code block a note leaves open, so the rest of the file stays text', () => {
+    const model = buildExportModel(
+      [textNote({ content: 'Try this:\n```js\nuseEffect(() => {})' })],
+      [],
+      { kind: 'all' },
+    );
+    for (const flavor of ['obsidian', 'notion'] as const) {
+      const text = renderSinglePage(model, model.pages[0].id, opts({ flavor })).text;
+      const fences = text.split('\n').filter((l) => l.startsWith('```')).length;
+      expect(fences % 2).toBe(0);
+    }
+  });
+});
+
 describe('sections and chapters', () => {
   it('groups notes under the heading they were written under', () => {
     const notes = [

@@ -15,7 +15,9 @@ export function safeFileName(raw: string, max = FILE_NAME_MAX): string {
     .trim()
     .replace(/^\.+|\.+$/g, '')
     .trim();
-  if (name.length > max) name = name.slice(0, max).trim().replace(/\.+$/, '');
+  // Cut by code point, so an emoji at the limit is dropped whole rather than split in two.
+  const chars = Array.from(name);
+  if (chars.length > max) name = chars.slice(0, max).join('').trim().replace(/\.+$/, '');
   if (!name || DEVICE_NAMES.test(name)) name = `_${name || 'untitled'}`;
   return name;
 }
@@ -34,7 +36,8 @@ export interface NamedItem {
 }
 
 /** Paths without an extension, keyed by item id. A clash (same name, same folder, ignoring case)
- *  gets ` (tiebreak)` on every item after the first, so names never move between exports. */
+ *  gets ` (tiebreak)` on every item after the first, then a number if that is taken too, so
+ *  no two items ever share a path and names never move between exports. */
 export function assignPaths(items: readonly NamedItem[]): Map<string, string> {
   const taken = new Set<string>();
   const paths = new Map<string, string>();
@@ -42,12 +45,11 @@ export function assignPaths(items: readonly NamedItem[]): Map<string, string> {
     (a, b) => a.order.localeCompare(b.order) || a.id.localeCompare(b.id),
   );
   for (const item of sorted) {
-    let name = safeFileName(item.name);
-    let path = `${item.dir}/${name}`;
-    if (taken.has(path.toLowerCase())) {
-      const suffix = ` (${safeFileName(item.tiebreak)})`;
-      name = `${safeFileName(item.name, FILE_NAME_MAX - suffix.length)}${suffix}`;
-      path = `${item.dir}/${name}`;
+    const tiebreak = safeFileName(item.tiebreak);
+    let path = `${item.dir}/${safeFileName(item.name)}`;
+    for (let attempt = 1; taken.has(path.toLowerCase()); attempt++) {
+      const suffix = attempt === 1 ? ` (${tiebreak})` : ` (${tiebreak} ${attempt})`;
+      path = `${item.dir}/${safeFileName(item.name, FILE_NAME_MAX - suffix.length)}${suffix}`;
     }
     taken.add(path.toLowerCase());
     paths.set(item.id, path);

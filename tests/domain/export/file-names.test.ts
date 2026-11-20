@@ -25,6 +25,14 @@ describe('safeFileName', () => {
   });
 });
 
+describe('safeFileName length', () => {
+  it('drops an emoji at the limit whole instead of splitting it', () => {
+    const name = safeFileName(`${'a'.repeat(79)}\u{1F600}b`);
+    expect(name).toBe(`${'a'.repeat(79)}\u{1F600}`);
+    expect(name).not.toMatch(/\p{Cs}/u);
+  });
+});
+
 describe('assignPaths', () => {
   const item = (id: string, name: string, order: string, dir = 'Sites/react.dev') => ({
     id,
@@ -46,6 +54,18 @@ describe('assignPaths', () => {
   it('treats names that differ only by case as a clash', () => {
     const paths = assignPaths([item('a', 'Intro', '1'), item('b', 'intro', '2')]);
     expect(paths.get('b')).toBe('Sites/react.dev/intro (b)');
+  });
+
+  it('never hands out a suffixed name that is already taken', () => {
+    const paths = assignPaths([
+      item('aaaa-1', 'Intro', '1'),
+      item('x', 'Intro (aaaa)', '2'),
+      item('aaaa-3', 'Intro', '3'),
+      item('aaaa-4', 'Intro', '4'),
+    ]);
+    expect(new Set(paths.values()).size).toBe(4);
+    expect(paths.get('aaaa-3')).toBe('Sites/react.dev/Intro (aaaa 2)');
+    expect(paths.get('aaaa-4')).toBe('Sites/react.dev/Intro (aaaa 3)');
   });
 
   it('lets the same name live in two folders', () => {

@@ -1,9 +1,8 @@
-import type { Note } from '../note';
 import { formatVideoTimestamp } from '../video-markers';
 import type { ExportLayout } from './layout';
 import type { ExportModel, ExportPage } from './model';
 import type { ExportStrings } from './strings';
-import { truncateWords } from './text';
+import { blockId, truncateWords } from './text';
 
 /** The files each tool gets beyond Markdown: an Obsidian canvas and base, a Notion CSV. */
 
@@ -16,13 +15,6 @@ export function wantsCanvas(page: ExportPage, layout: ExportLayout): boolean {
     page.kind !== 'video' &&
     page.notes.filter((n) => n.anchor.type !== 'video').length >= CANVAS_MIN
   );
-}
-
-function blockId(note: Note): string {
-  return `hm-${note.id
-    .replace(/[^a-zA-Z0-9]/g, '')
-    .slice(0, 8)
-    .toLowerCase()}`;
 }
 
 /** JSON Canvas (jsoncanvas.org): the page on top, its notes below in rows, one edge each. */
@@ -53,7 +45,7 @@ export function renderCanvas(page: ExportPage, pagePath: string): string {
     nodes.push({
       id: `n${i + 1}`,
       type: 'text',
-      text: `${quote}${note.content}\n\n[[${pagePath}#^${blockId(note)}|↗]]`,
+      text: `${quote}${note.content}\n\n[[${pagePath}#^${blockId(note.id)}|↗]]`,
       x: -width / 2 + col * (W + GAP),
       y: row * (H + GAP),
       width: W,
@@ -71,12 +63,12 @@ export function renderCanvas(page: ExportPage, pagePath: string): string {
 }
 
 /** An Obsidian Base over every exported page: a live table to sort and filter. */
-export function renderBase(s: ExportStrings): string {
+export function renderBase(s: ExportStrings, sitesDir: string): string {
   return [
     'filters:',
     '  and:',
     '    - file.hasTag("hamesh")',
-    '    - file.inFolder("Hamesh/Sites")',
+    `    - file.inFolder(${JSON.stringify(sitesDir)})`,
     'properties:',
     '  note.site:',
     `    displayName: ${JSON.stringify(s.colSite)}`,
