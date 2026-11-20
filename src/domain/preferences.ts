@@ -1,4 +1,5 @@
 import type { SchemaVersion } from './note';
+import { isExportLayout, type ExportLayout } from './export/layout';
 
 /**
  * Supported interface languages. Kept structurally identical to `ui/i18n`'s
@@ -180,6 +181,21 @@ export const DEFAULT_LIBRARY_PREFERENCES: LibraryPreferences = {
   sort: 'alphabetical',
 };
 
+/** The tool an export is shaped for. */
+export type ExportFlavor = 'obsidian' | 'notion';
+
+/**
+ * How the reader last exported: the tool, and the layout they chose for each folder or site
+ * (keyed `folder:<id>` / `site:<host>`, as `ExportGroup.key`). A group with no entry gets the
+ * layout Hamesh suggests for it.
+ */
+export interface ExportPreferences {
+  flavor: ExportFlavor;
+  layouts: Record<string, ExportLayout>;
+}
+
+export const DEFAULT_EXPORT_PREFERENCES: ExportPreferences = { flavor: 'obsidian', layouts: {} };
+
 export interface Preferences {
   schemaVersion: SchemaVersion;
   /** No explicit choice yet — callers fall back to the browser's UI language.
@@ -195,6 +211,7 @@ export interface Preferences {
   announcements: AnnouncementPreferences;
   library: LibraryPreferences;
   usage: UsagePreferences;
+  export: ExportPreferences;
 }
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -209,6 +226,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   announcements: DEFAULT_ANNOUNCEMENT_PREFERENCES,
   library: DEFAULT_LIBRARY_PREFERENCES,
   usage: DEFAULT_USAGE_PREFERENCES,
+  export: DEFAULT_EXPORT_PREFERENCES,
 };
 
 function parseTextNotes(value: unknown): TextNotePreferences {
@@ -255,6 +273,18 @@ function parseUsage(value: unknown): UsagePreferences {
   if (!value || typeof value !== 'object') return DEFAULT_USAGE_PREFERENCES;
   const sharing = (value as Record<string, unknown>).sharing;
   return { sharing: sharing === 'on' || sharing === 'off' ? sharing : 'unasked' };
+}
+
+function parseExport(value: unknown): ExportPreferences {
+  if (!value || typeof value !== 'object') return DEFAULT_EXPORT_PREFERENCES;
+  const record = value as Record<string, unknown>;
+  const layouts: Record<string, ExportLayout> = {};
+  if (record.layouts && typeof record.layouts === 'object' && !Array.isArray(record.layouts)) {
+    for (const [key, layout] of Object.entries(record.layouts)) {
+      if (/^(folder|site):./.test(key) && isExportLayout(layout)) layouts[key] = layout;
+    }
+  }
+  return { flavor: record.flavor === 'notion' ? 'notion' : 'obsidian', layouts };
 }
 
 function parseOnboarding(value: unknown): OnboardingPreferences {
@@ -355,5 +385,6 @@ export function parsePreferences(data: unknown): Preferences {
     announcements: parseAnnouncements(record.announcements),
     library: parseLibrary(record.library),
     usage: parseUsage(record.usage),
+    export: parseExport(record.export),
   };
 }
