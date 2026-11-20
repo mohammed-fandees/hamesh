@@ -1,6 +1,9 @@
 name: Release
 
 # Cut a release by pushing a semver tag (vMAJOR.MINOR.PATCH), or run manually.
+# Run manually with a tag that does not exist yet, and the release creates it
+# on the commit the run is for, once that commit's package.json says the same
+# version. That is how a release is cut without a machine that can push tags.
 on:
   push:
     tags:
@@ -8,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Existing tag to release (e.g. v0.1.0)'
+        description: 'Tag to release (e.g. v0.1.0). Created on this commit if it does not exist yet.'
         required: true
 
 # Default: read-only. The publish job elevates to contents: write.
@@ -86,10 +89,24 @@ jobs:
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.meta.outputs.tag }}
         run: |
-          gh release create "${{ steps.meta.outputs.tag }}" \
+          # A pushed tag must already exist. A manual run may name a new one:
+          # it is created on this run's commit, and only if that commit is
+          # the version the tag names, so a tag never lands on the wrong code.
+          WHERE=(--verify-tag)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] \
+            && ! git ls-remote --exit-code --tags origin "refs/tags/$TAG" > /dev/null; then
+            VERSION=$(node -p "require('./package.json').version")
+            if [ "v$VERSION" != "$TAG" ]; then
+              echo "::error::$TAG does not exist, and this commit is version $VERSION, so it is not created here."
+              exit 1
+            fi
+            WHERE=(--target "$GITHUB_SHA")
+          fi
+          gh release create "$TAG" \
             "${{ steps.meta.outputs.zip }}" \
             "${{ steps.meta.outputs.sha256 }}" \
-            --title "${{ steps.meta.outputs.tag }}" \
+            --title "$TAG" \
             --notes-file notes.md \
-            --verify-tag
+            "${WHERE[@]}"

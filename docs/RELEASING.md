@@ -31,8 +31,11 @@ The version is the single source of truth in `package.json` and must match
    the extension `.zip` and checksum attached. Release notes are extracted from
    the matching `CHANGELOG.md` section.
 
-   You can also run it manually via **Actions → Release → Run workflow** and
-   supplying an existing tag.
+   You can also run it manually via **Actions → Release → Run workflow** on `main`, naming the
+   tag. If the tag doesn't exist yet, the release creates it on that run's commit, but only when
+   that commit's `package.json` is the same version, so the tag never lands on the wrong code.
+   Use this when no machine that can push tags is at hand. Start a new run rather than
+   re-running an old one: a re-run builds the commit it first ran on.
 
 7. Publishing that GitHub Release also triggers the Chrome Web Store automation pipeline
    (`docs/releases/CHROME_WEB_STORE_AUTOMATION.md`) — it validates, packages, and uploads the
