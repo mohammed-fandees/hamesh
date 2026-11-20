@@ -33,7 +33,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Personal notes only; a team's notes are not exported in this release. No new permission: the
   download goes through a link, the zip is written by `fflate` and loaded only when a zip is made.
-- Export is not counted in usage counts: that list is fixed in the privacy policy.
 
 ## [2.2.1] — 2026-11-17
 
