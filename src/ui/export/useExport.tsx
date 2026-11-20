@@ -6,6 +6,9 @@ import type { ExportLayout } from '@/domain/export/layout';
 import { buildExportModel, type ExportModel, type ExportScope } from '@/domain/export/model';
 import { renderExport, renderSinglePage, type RenderOptions } from '@/domain/export/render';
 import { safeFileName } from '@/domain/export/file-names';
+import { exportEvents } from '@/domain/export/usage';
+import type { UsageEvent } from '@/domain/usage';
+import { countUse } from '@/usage/count';
 import type { Lang, Strings } from '../i18n';
 import type { ExportActions } from './ExportActions';
 import { ExportDialog } from './ExportDialog';
@@ -25,6 +28,8 @@ interface UseExportArgs extends ExportSources {
   save?: (blob: Blob, fileName: string) => void;
   /** Writes text to the clipboard. */
   writeClipboard?: (text: string) => Promise<void>;
+  /** Counts one use, for a reader who shares usage counts. Injected so tests see what is counted. */
+  count?: (event: UsageEvent) => void;
 }
 
 export interface ExportController {
@@ -75,6 +80,7 @@ export function useExport({
   lang,
   save = saveWithLink,
   writeClipboard = clipboard,
+  count = countUse,
 }: UseExportArgs): ExportController {
   const [open, setOpen] = useState<{ model: ExportModel; now: Date; loadFailed?: boolean } | null>(
     null,
@@ -102,6 +108,14 @@ export function useExport({
     [flavor, lang, layouts],
   );
 
+  // Counted only once the file or the text is out: a failed export is not a use.
+  const counted = useCallback(
+    (model: ExportModel, how: 'download' | 'copy') => {
+      for (const event of exportEvents(model, flavor, layouts, how)) count(event);
+    },
+    [count, flavor, layouts],
+  );
+
   const actions = useMemo<ExportActions>(
     () => ({
       open: (scope) => {
@@ -116,13 +130,14 @@ export function useExport({
         try {
           const model = await build({ kind: 'page', pageId });
           await writeClipboard(renderSinglePage(model, pageId, options(new Date())).text);
+          counted(model, 'copy');
           return true;
         } catch {
           return false;
         }
       },
     }),
-    [build, options, writeClipboard],
+    [build, options, writeClipboard, counted],
   );
 
   let dialog: ReactNode = null;
@@ -146,17 +161,22 @@ export function useExport({
           if (pageId) {
             const file = renderSinglePage(model, pageId, options(now));
             save(new Blob([file.text], { type: 'text/markdown;charset=utf-8' }), file.path);
+            counted(model, 'download');
             return file.path;
           }
           const { toZip } = await import('@/domain/export/archive');
           const name = zipName(model, now);
           const bytes = toZip(renderExport(model, options(now)));
           save(new Blob([bytes as BlobPart], { type: 'application/zip' }), name);
+          counted(model, 'download');
           return name;
         }}
         onCopy={
           pageId
-            ? () => writeClipboard(renderSinglePage(model, pageId, options(now)).text)
+            ? async () => {
+                await writeClipboard(renderSinglePage(model, pageId, options(now)).text);
+                counted(model, 'copy');
+              }
             : undefined
         }
         onClose={() => setOpen(null)}

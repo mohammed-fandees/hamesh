@@ -77,14 +77,19 @@ Settings → **Help improve Hamesh** → **Share usage counts** is off until you
 turn it on. Hamesh asks once, in What's New and at the end of Getting started,
 and "No thanks" is final until you change it in Settings yourself.
 
-With it on, Hamesh counts on your device how many times you used each feature
-that day, from a fixed list (a note on an element, on selected text or on a
+With it on, Hamesh counts on your device how many times you used each of its
+features that day: for example a note on an element, on selected text or on a
 video; opening the toolbar popup, a keyboard shortcut, the Library, Settings,
 Getting started or What's New; making a folder; exporting or restoring a
-backup; sharing a note with a team or opening its discussion; and whether one
-of Hamesh's own announcements was shown, opened or closed). Once a day at most,
-and not at all on a day you didn't use Hamesh, it sends that day's counts to
-Hamesh's server together with the day, the extension's version, the browser
+backup; exporting your notes to Markdown, and for which tool, how much of the
+library and in which layout; sharing a note with a team or opening its
+discussion; and whether one of Hamesh's own announcements was shown, opened or
+closed. A count names a feature and, at most, which of Hamesh's own options it
+was used with, never anything about what you used it on. The full list is in
+the extension's source code ([`src/domain/usage.ts`](src/domain/usage.ts)), and
+grows as Hamesh gains features. Once a day at most, and not at all on a day you
+didn't use Hamesh, it sends that day's counts to Hamesh's server together with
+the day, the extension's version, the browser
 (Chrome or Firefox) and the interface language.
 
 - **Not sent:** your notes, page addresses or titles, anything you type or

@@ -2,7 +2,7 @@
 
 **Goal:** take any page, folder or the whole library out to Obsidian or Notion, shaped by what
 the notes are (notes, a glossary, a video timeline, a checklist).
-**Status:** in progress
+**Status:** done, waiting for the owner to tag v2.3.0
 **Canvas:** https://claude.ai/artifact/85WGz7qMJZtJ3zkoFheiNZ (boards A–D)
 **Flow tree:** [plan.excalidraw](plan.excalidraw) from [flow.json](flow.json)
 **Background:** [PROPOSAL.md](PROPOSAL.md) · [MONETIZATION.md](MONETIZATION.md) ·
@@ -37,7 +37,7 @@ the notes are (notes, a glossary, a video timeline, a checklist).
 | 02  | [Export model and escaping](02-model.md)     | B     | done   | 01         |
 | 03  | [Layouts and renderers](03-renderers.md)     | C     | done   | 02         |
 | 04  | [Export UI](04-ui.md)                        | D     | done   | 03         |
-| 05  | [Release prep](05-release.md)                | E     | todo   | 04         |
+| 05  | [Release prep](05-release.md)                | E     | done   | 04         |
 
 Each phase is its own PR, merged once CI is green. The release tag waits for the owner.
 
@@ -53,6 +53,6 @@ Each phase is its own PR, merged once CI is green. The release tag waits for the
 ## Risks and open questions
 
 - Notion import details shift without notice: renderer sticks to CommonMark + GFM tables, task
-  lists and `mermaid` fences; checked against the examples in Phase E.
+  lists and `mermaid` fences; checked by the render tests in Phase C.
 - GitHub was unreachable from this machine when work started (DNS). Branches stay local until
   it is back; PRs are opened and merged then.

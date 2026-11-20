@@ -138,7 +138,7 @@ test.describe('Markdown export', () => {
 
     // Site groups start collapsed.
     await page
-      .getByRole('button', { name: /react\.dev/ })
+      .getByRole('button', { name: /maktaba\.site/ })
       .first()
       .click();
     await page.getByRole('button', { name: 'Note actions' }).first().click();

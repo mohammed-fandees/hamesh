@@ -77,6 +77,7 @@ locales:
       - Notes on selected words, page elements, or a moment in a video.
       - Automatic restoration when you return.
       - A library with website grouping, folders, search, and pinning.
+      - Export to Obsidian or Notion as Markdown: a page, a folder, or everything.
       - Teams: sharing with your team, discussions, and mentions.
       - Light and dark appearance options.
       - English and Arabic interfaces with RTL support.
@@ -124,6 +125,7 @@ locales:
       - تعليقات على كلمات محددة، أو عناصر الصفحة، أو لحظة في فيديو.
       - استعادة تلقائية عند عودتك.
       - مكتبة بتجميع حسب الموقع، وفولدرات، وبحث، وتثبيت.
+      - تصدير إلى Obsidian أو Notion كـ Markdown: صفحة، أو فولدر، أو كل شيء.
       - الفرق: المشاركة مع فريقك، والنقاشات، والإشارات.
       - مظهر فاتح وداكن.
       - واجهات بالعربية والإنجليزية مع دعم الكتابة من اليمين لليسار.

@@ -17,7 +17,7 @@ const part = flags.find((f) => f.startsWith('--part='))?.slice('--part='.length)
 function markdownFiles(root) {
   return readdirSync(root).flatMap((name) => {
     const full = join(root, name);
-    if (statSync(full).isDirectory()) return name === 'examples' ? [] : markdownFiles(full);
+    if (statSync(full).isDirectory()) return markdownFiles(full);
     return name.endsWith('.md') ? [full] : [];
   });
 }

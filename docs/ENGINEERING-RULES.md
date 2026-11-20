@@ -168,3 +168,35 @@ See [RELEASING.md](RELEASING.md). In short:
 - **MAJOR** when what a store user gets changes in kind — for Hamesh, the day
   Teams is in the store build. It needs its store privacy disclosure and the
   release workflow's Teams variables.
+
+## 12. Every new feature is counted, with consent
+
+A feature we can't see used is one we can't judge. Every new feature a reader
+can use ships with a usage count, in the same PR — and only for readers who
+turned on "Share usage counts".
+
+- **Use the counter that exists.** Add the name to `USAGE_EVENTS` in
+  `src/domain/usage.ts`, and call `countUse(name)` from a page or the content
+  script, or `countInBackground(name)` from the worker. Never send a request of
+  your own, and never count anywhere but through these: they check consent, keep
+  the count on the device and send one report a day.
+- **Count the use, not the attempt.** Count once the thing happened (the file
+  saved, the text copied, the note stored), never on a click that could still
+  fail.
+- **Name it `area.thing` or `area.thing.detail`.** Two to four lowercase words
+  joined by dots (`export.notion`, `export.layout.glossary`). That is the shape
+  `hamesh-api` keeps; it holds no list of its own, so a new name needs **no
+  server change**. `tests/domain/usage.test.ts` fails on a name that doesn't fit.
+- **A name says which feature, never what for.** Nothing from a page, a note, a
+  folder, a team or the reader goes into a name: no address, title, id, text or
+  number they chose. A detail is one of a fixed set the code owns (a tool, a
+  scope, a layout).
+- **A test shows it is counted**, with an injected `count` (see
+  `tests/ui/export/useExport.test.tsx`), and that a failed use is not.
+- Optionally give it a readable label in `hamesh-api`'s Insights page
+  (`FEATURE_LABELS` in `src/admin/insights-view.ts`); until then it shows by
+  name.
+- The privacy policy describes the counts by kind, not one by one, so a new
+  name needs no policy change. A count of a **new kind** of thing — anything
+  beyond "this feature was used, in this way" — does: update `PRIVACY.md` and
+  `landing/privacy.html` in both languages first.

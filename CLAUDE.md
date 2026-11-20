@@ -15,6 +15,9 @@ It is the framework every task here follows. The non-negotiables:
   - Inside the shadow root, use `composedPath()`, not `target`.
 - **Approved canvas = build it as drawn.** Use tokens only. Check RTL + LTR, light + dark, Arabic
   - English.
+- **Every new feature is counted, with consent** (rules §12).
+  - Add a name to `USAGE_EVENTS` and call `countUse` once the use happened.
+  - Names are `area.thing[.detail]`; the server needs no change.
 - **Tests.**
   - Every change gets a test that fails without it.
   - Fakes answer like the real API.

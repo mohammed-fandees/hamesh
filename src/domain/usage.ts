@@ -25,9 +25,30 @@ export const USAGE_EVENTS = [
   'whats_new.opened',
   'teams.note_shared',
   'teams.panel_opened',
+  // A Markdown export finished (downloaded or copied): which tool it was for,
+  // how much of the library it took, and each layout its pages were drawn in.
+  'export.obsidian',
+  'export.notion',
+  'export.copied',
+  'export.scope.page',
+  'export.scope.folder',
+  'export.scope.all',
+  'export.layout.notes',
+  'export.layout.glossary',
+  'export.layout.timeline',
+  'export.layout.checklist',
 ] as const;
 
 export type FeatureEvent = (typeof USAGE_EVENTS)[number];
+
+/**
+ * The shape the server keeps a feature name in (hamesh-api, src/usage/report.ts):
+ * two to four lowercase words joined by dots. The server holds no list of its
+ * own, so a name added above is counted without a server change, as long as
+ * it fits this shape. The list above stays closed: it, not the server, is what
+ * decides what can be counted.
+ */
+export const FEATURE_NAME = /^[a-z][a-z_]{1,23}(?:\.[a-z][a-z0-9_]{0,23}){1,3}$/;
 
 /** What a reader did with one of Hamesh's announcements, by its server id. */
 export type AnnouncementEvent = `announcement.${'shown' | 'opened' | 'closed'}.${string}`;

@@ -6,6 +6,35 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.3.0] — 2026-11-20
+
+### Added
+
+- **Markdown export for Obsidian and Notion.** Export one page (from any note's menu, as a file or
+  straight to the clipboard), a folder (from its menu, sub-folders included) or everything
+  (Settings → Backup and export). Each page becomes a Markdown file with its notes in page order,
+  grouped by the heading or video chapter they were written under; Obsidian also gets a mind map
+  or timeline (Mermaid), a JSON Canvas, a Base and full-path wikilinks that draw the graph view,
+  and Notion gets a properties table, relative links and a CSV that imports as a database.
+- **Four layouts, suggested per folder or site.** Notes (quote, then the thought), Glossary (word
+  and meaning, for vocabulary), Timeline (moments in order, each time a link to that second) and
+  Checklist. Hamesh suggests one from the shape of the notes and the reader can change it from a
+  picker with a live preview of their own first page; the choice is remembered.
+- **Every exported file ends with an "Exported from Hamesh" line.**
+- **New notes remember where they were written**: the nearest heading above the words or element,
+  or the YouTube chapter playing. Read once when the note is saved, kept in `Note.capture`.
+- **Exports are counted for readers who share usage counts**: the tool, the scope, each layout
+  drawn and whether it was copied (`export.*` in `src/domain/usage.ts`), only once the file is
+  saved or the text copied. The privacy policy now describes the counts by kind and points to that
+  list, and the server keeps any name in the `area.thing[.detail]` shape, so the next feature's
+  count needs neither changed. Engineering rules §12: every new feature ships with its count.
+
+### Notes
+
+- Personal notes only; a team's notes are not exported in this release. No new permission: the
+  download goes through a link, the zip is written by `fflate` and loaded only when a zip is made.
+- Export is not counted in usage counts: that list is fixed in the privacy policy.
+
 ## [2.2.1] — 2026-11-17
 
 ### Security
