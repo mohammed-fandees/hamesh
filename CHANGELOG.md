@@ -23,6 +23,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Every exported file ends with an "Exported from Hamesh" line.**
 - **New notes remember where they were written**: the nearest heading above the words or element,
   or the YouTube chapter playing. Read once when the note is saved, kept in `Note.capture`.
+- **Exports are counted for readers who share usage counts**: the tool, the scope, each layout
+  drawn and whether it was copied (`export.*` in `src/domain/usage.ts`), only once the file is
+  saved or the text copied. The privacy policy now describes the counts by kind and points to that
+  list, and the server keeps any name in the `area.thing[.detail]` shape, so the next feature's
+  count needs neither changed. Engineering rules §12: every new feature ships with its count.
 
 ### Notes
 

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  FEATURE_NAME,
   MAX_COUNT,
+  USAGE_EVENTS,
   announcementEvent,
   countInto,
   emptyLedger,
@@ -21,6 +23,19 @@ const CONTEXT: UsageContext = { version: '2.2.0', browser: 'chrome', lang: 'ar' 
 const ID = '01K9ZZ0000000000000000TEAM';
 
 describe('the closed list', () => {
+  it('names every feature in the shape the server keeps, so none is dropped', () => {
+    for (const name of USAGE_EVENTS) {
+      expect(name, name).toMatch(FEATURE_NAME);
+      expect(name.length, name).toBeLessThanOrEqual(64);
+    }
+  });
+
+  it('counts the Markdown export', () => {
+    for (const name of ['export.obsidian', 'export.notion', 'export.scope.all']) {
+      expect(isUsageEvent(name), name).toBe(true);
+    }
+  });
+
   it('takes only names on the list, and announcements by a server id', () => {
     expect(isUsageEvent('note.created.text')).toBe(true);
     expect(isUsageEvent(announcementEvent('shown', ID))).toBe(true);

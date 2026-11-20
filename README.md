@@ -151,6 +151,7 @@ pages and a database. Every file ends with an "Exported from Hamesh" line, and t
 - **Arabic and English**, right to left and left to right, following Chrome's language or your own
   choice.
 - **Light, dark, or match the website**: Hamesh's own UI only; the page itself is never touched.
+- **Export to Obsidian or Notion** as Markdown, one page, a folder or everything.
 - **Backup** your notes and folders to a JSON file you own, and restore them from it.
 - **Rebindable shortcuts** in Chrome's own shortcuts page.
 - **Usage counts, only with a yes**: turn it on in Settings and Hamesh shares how many times each
