@@ -94,6 +94,8 @@ Not every thought belongs to words. Press <kbd>Alt</kbd>+<kbd>H</kbd>, move acro
 Hamesh frames whatever is under the pointer: an image, an equation, a whole paragraph. Click it and
 write. Nothing to draw, no screenshot to keep.
 
+<img src="docs/chrome-web-store/screenshots/07-notes-on-an-element.png" alt="A note on an equation, framed on the page" />
+
 ### Write down the moment, the video waits
 
 While you watch a lesson or a talk, press <kbd>Alt</kbd>+<kbd>V</kbd> and write your line. The video
@@ -118,14 +120,41 @@ Google sign-in, and starts on a free plan.
 
 <img src="docs/chrome-web-store/screenshots/02-teams.png" alt="A shared note and its discussion" />
 
+### Your team's notes, on the Teams page
+
+Everything your team has shared is on the Teams page: search it, file it into folders, edit it, or
+share one of your own notes without leaving the page, and new notes arrive as teammates write
+them. Inviting someone is one link, also sent by email in Arabic and English; opening it shows the
+team in Hamesh, ready to join.
+
+<img src="docs/chrome-web-store/screenshots/08-teams-page.png" alt="The Teams page: a team's notes, its members and an invite link" />
+
+### A guide for your first notes
+
+A fresh install opens a short guide, and each step ticks itself once you've done it: your first
+note, a few words, a moment in a video, a folder, a team. It stays in the sidebar under
+**Getting started** until you're done with it.
+
+<img src="docs/chrome-web-store/screenshots/09-getting-started.png" alt="The getting started guide, three of six steps done" />
+
+### Take your notes to Obsidian and Notion
+
+Export a page, a folder or everything as Markdown. Each folder and site starts on the layout that
+suits its notes (notes, a glossary, a timeline or a checklist), and a live preview shows the file
+before you download it. Obsidian gets a map of each page, a canvas and a live table; Notion gets
+pages and a database. Every file ends with an "Exported from Hamesh" line, and the export is free.
+
+<img src="docs/chrome-web-store/screenshots/06-export.png" alt="The export dialog: Obsidian or Notion, a layout per folder and a preview" />
+
 ### And the details
 
 - **Arabic and English**, right to left and left to right, following Chrome's language or your own
   choice.
 - **Light, dark, or match the website**: Hamesh's own UI only; the page itself is never touched.
-- **Export to Obsidian or Notion** as Markdown, one page, a folder or everything.
 - **Backup** your notes and folders to a JSON file you own, and restore them from it.
 - **Rebindable shortcuts** in Chrome's own shortcuts page.
+- **Usage counts, only with a yes**: turn it on in Settings and Hamesh shares how many times each
+  feature was used, once a day, and nothing else.
 
 ## Privacy
 

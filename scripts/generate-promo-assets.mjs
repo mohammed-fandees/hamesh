@@ -13,7 +13,8 @@
  * exact pixel size. The landing's icon sprite is injected so every glyph is the
  * site's own.
  *
- * Usage: node scripts/generate-promo-assets.mjs
+ * Usage: node scripts/generate-promo-assets.mjs [name …]
+ * Names pick targets by any part of their output path (`06 07`, `marquee`); none renders all.
  * With an installed Chrome instead of Playwright's bundled Chromium:
  *        PLAYWRIGHT_CHANNEL=chrome node scripts/generate-promo-assets.mjs
  */
@@ -71,6 +72,30 @@ const TARGETS = [
     px: SCREENSHOT,
   },
   {
+    file: 'screenshot-export.html',
+    out: 'screenshots/06-export.png',
+    css: [1024, 640],
+    px: SCREENSHOT,
+  },
+  {
+    file: 'screenshot-element.html',
+    out: 'screenshots/07-notes-on-an-element.png',
+    css: [1024, 640],
+    px: SCREENSHOT,
+  },
+  {
+    file: 'screenshot-teams-page.html',
+    out: 'screenshots/08-teams-page.png',
+    css: [1024, 640],
+    px: SCREENSHOT,
+  },
+  {
+    file: 'screenshot-getting-started.html',
+    out: 'screenshots/09-getting-started.png',
+    css: [1024, 640],
+    px: SCREENSHOT,
+  },
+  {
     file: 'promo-small-tile.html',
     out: 'promotional/small-tile-440x280.png',
     css: [440, 280],
@@ -95,7 +120,11 @@ const TARGETS = [
 async function main() {
   const channel = process.env.PLAYWRIGHT_CHANNEL;
   const browser = await chromium.launch(channel ? { channel } : {});
-  for (const t of TARGETS) {
+  const wanted = process.argv.slice(2);
+  const targets = wanted.length
+    ? TARGETS.filter((t) => wanted.some((w) => t.out.includes(w)))
+    : TARGETS;
+  for (const t of targets) {
     const [width, height] = t.css;
     const page = await browser.newPage({
       viewport: { width, height },

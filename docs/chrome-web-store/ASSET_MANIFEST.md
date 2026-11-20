@@ -14,6 +14,15 @@ Composed brand graphics, not raw captures: each is drawn from the landing page's
 | 4   | `04-notes-on-a-moment.png` | 1280×800   | PNG (RGB) | A quick note on a video, and its mark on the timeline (Alt+V)                                             |
 | 5   | `05-notes-library.png`     | 1280×800   | PNG (RGB) | The Notes Library: personal and team notes, a pinned one, search and filters                              |
 
+**For the README only (06–09).** The store takes five screenshots, so these four illustrate the features the README describes and the store set leaves out. Same sizes, sources and generator.
+
+| #   | File                         | Dimensions | Format    | What it shows                                                                 |
+| --- | ---------------------------- | ---------- | --------- | ----------------------------------------------------------------------------- |
+| 6   | `06-export.png`              | 1280×800   | PNG (RGB) | The Markdown export: Obsidian or Notion, a layout per folder, a live preview  |
+| 7   | `07-notes-on-an-element.png` | 1280×800   | PNG (RGB) | An equation framed under the pointer, and the composer attached to it (Alt+H) |
+| 8   | `08-teams-page.png`          | 1280×800   | PNG (RGB) | The Teams page: a team's notes, its members and an invite link                |
+| 9   | `09-getting-started.png`     | 1280×800   | PNG (RGB) | The getting started guide, three of six steps ticked                          |
+
 **Content:** English, light theme. Every person in them is a made-up name and every site an example domain. The discussion in `02-teams.png` paraphrases points readers made in public reviews of the book, under invented names; it quotes no one.
 
 **QA performed:** dimensions and pixel format read with `ffprobe` (all exactly 1280×800, RGB, no alpha); each visually inspected for clipping, overlap and legibility; the output of the script compared pixel for pixel with the reviewed renders (identical for all but `04`, whose video glow gradient differs imperceptibly).
@@ -58,10 +67,11 @@ Rendered from `source/promo-small-tile.html` and `source/promo-marquee.html` by 
 Editable inputs kept for regeneration, not themselves submission assets. They link the landing's stylesheets (`../../../landing/css/`), so a token change there carries through on the next render.
 
 - `screenshot-overview.html`, `screenshot-teams.html`, `screenshot-words.html`, `screenshot-moment.html`, `screenshot-library.html`, and `store-stills.css`: the five screenshots.
+- `screenshot-export.html`, `screenshot-element.html`, `screenshot-teams-page.html`, `screenshot-getting-started.html`: the four README images.
 - `promo-small-tile.html`, `promo-marquee.html`: the promotional images.
 - `store-icon.html`: the store icon.
 - `demo-page.html`: the article page `scripts/capture-store-screenshots.mjs` captures the real extension on.
 
-**To regenerate:** `node scripts/generate-promo-assets.mjs`, or `PLAYWRIGHT_CHANNEL=chrome node scripts/generate-promo-assets.mjs` to use an installed Chrome. No build step needed.
+**To regenerate:** `node scripts/generate-promo-assets.mjs` (add names to render only some, e.g. `06 07`), or `PLAYWRIGHT_CHANNEL=chrome node scripts/generate-promo-assets.mjs` to use an installed Chrome. No build step needed.
 
 `privacy.html` was moved out of this folder — the actual, publicly-hosted, bilingual privacy policy now lives at `landing/privacy.html` (see `PRIVACY_POLICY.md`).
