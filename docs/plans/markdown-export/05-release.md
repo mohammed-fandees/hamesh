@@ -13,12 +13,11 @@ Everything 2.3.0 needs except the tag, which waits for the owner.
 - Change: `package.json`, `wxt.config.ts` (2.3.0)
 - Change: `CHANGELOG.md`, `src/domain/release-notes.ts`
 - Change: `README.md` (What's new, Features), `docs/chrome-web-store/STORE_LISTING.md`
-- Change: `docs/plans/markdown-export/examples/` (regenerated from the real renderer)
 
 ## Steps
 
-- [x] 1. Regenerate `examples/obsidian` and `examples/notion` with the shipped renderer
-  - Test: `tests/domain/export/render.integration.test.ts` compares against them
+- [x] 1. Render every layout in both tools from the fixture library
+  - Test: `tests/domain/export/render.integration.test.ts`
 - [x] 2. Version 2.3.0 in both files, CHANGELOG section, release notes in English and Arabic
   - Test: `tests/domain/release-notes.test.ts`; `pnpm release:validate --tag=v2.3.0`
 - [x] 3. README and store listing lines

@@ -174,13 +174,13 @@ renderer. Every one of these is now a rule, and each gets a unit test in Phase B
 
 ## 7. Phases and tests
 
-| Phase | What                                                                    | Tests                                                                                                                                    |
-| ----- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| A     | `capture` field: record section heading and video chapter at write time | Unit: heading lookup on fixture DOMs; YouTube chapter from a fixture player; old notes parse unchanged                                   |
-| B     | Export model + escaping + file names                                    | Unit: ordering per anchor type, grouping, every escaping rule, Arabic titles, clashes                                                    |
-| C     | Obsidian and Notion renderers, CSV, Base, Canvas                        | Snapshot tests against the files in `examples/`; every Mermaid block checked with `mermaid.parse()` in a jsdom test (devDependency only) |
-| D     | UI: export dialog, page/folder/all entry points, clipboard              | Component tests by role; e2e: export a fixture page and unzip it                                                                         |
-| E     | Release 2.3.0: notes, store listing line, screenshots                   | Manual import into a real Obsidian vault and a real Notion workspace                                                                     |
+| Phase | What                                                                    | Tests                                                                                                                                |
+| ----- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| A     | `capture` field: record section heading and video chapter at write time | Unit: heading lookup on fixture DOMs; YouTube chapter from a fixture player; old notes parse unchanged                               |
+| B     | Export model + escaping + file names                                    | Unit: ordering per anchor type, grouping, every escaping rule, Arabic titles, clashes                                                |
+| C     | Obsidian and Notion renderers, CSV, Base, Canvas                        | Render tests for every layout in both tools; every Mermaid block checked with `mermaid.parse()` in a jsdom test (devDependency only) |
+| D     | UI: export dialog, page/folder/all entry points, clipboard              | Component tests by role; e2e: export a fixture page and unzip it                                                                     |
+| E     | Release 2.3.0: notes, store listing line, screenshots                   | Manual import into a real Obsidian vault and a real Notion workspace                                                                 |
 
 ## 8. Risks
 

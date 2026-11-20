@@ -53,6 +53,6 @@ Each phase is its own PR, merged once CI is green. The release tag waits for the
 ## Risks and open questions
 
 - Notion import details shift without notice: renderer sticks to CommonMark + GFM tables, task
-  lists and `mermaid` fences; checked against the examples in Phase E.
+  lists and `mermaid` fences; checked by the render tests in Phase C.
 - GitHub was unreachable from this machine when work started (DNS). Branches stay local until
   it is back; PRs are opened and merged then.
