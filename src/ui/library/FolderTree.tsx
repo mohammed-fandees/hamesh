@@ -3,6 +3,7 @@ import { FOLDER_NAME_MAX, type FolderLike } from '@/domain/folder';
 import type { FolderNode } from '@/domain/folder-grouping';
 import type { Note } from '@/domain/note';
 import { FolderMenu } from '../FolderMenu';
+import { useExportActions } from '../export/ExportActions';
 import { folderNameConflict } from '../folder-name-conflict';
 import { NameField } from '../kit/NameField';
 import { ChevronIcon, FolderIcon, PlusIcon } from '../kit/icons';
@@ -306,7 +307,9 @@ function FolderItem({
   siblings: readonly string[];
 }) {
   const { strings, open, props } = useTree();
+  const exportActions = useExportActions();
   const { folder } = node;
+  const exportable = !!exportActions && props.space === PERSONAL_SPACE && node.totalCount > 0;
   return (
     <li>
       <FolderRow
@@ -322,6 +325,12 @@ function FolderItem({
             deleteQuestion={strings.deleteFolderConfirm(folder.name)}
             renameTaken={siblings.filter((name) => name !== folder.name)}
             childTaken={node.children.map((child) => child.folder.name)}
+            onExport={
+              exportable
+                ? () => exportActions.open({ kind: 'folder', folderId: folder.id })
+                : undefined
+            }
+            exportLabel={strings.exportUi.exportFolder}
             onRename={(name) => props.onRenameFolder(folder.id, name)}
             onDelete={() => props.onDeleteFolder(folder.id)}
             onAddChild={async (name) => {

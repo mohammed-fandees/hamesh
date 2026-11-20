@@ -1,23 +1,14 @@
 # Markdown export for Obsidian and Notion — proposal
 
-Status: **decisions taken 2026-11-20, design in progress.** Nothing here is built yet.
+Status: **decisions taken 2026-11-20; built in phases A–D (see [00-index.md](00-index.md)).**
 
 **Owner's decisions (2026-11-20):**
 
-- Personal export is **free**, and every file ends with an "Exported from Hamesh" line and link.
-  The line is **always there**; the dialog offers no switch (owner, 2026-11-20). A team digest export goes into Teams plans in a
-  later release ([MONETIZATION.md](MONETIZATION.md)).
-- **Capture the section heading and video chapter** with every new note from this release on
-  (`Note.capture`, §4).
-- **Obsidian and Notion ship together** in 2.3.0.
-- Design first: a **design canvas** and an **Excalidraw flow tree** before any code.
-- **Canvas** (pending approval): https://claude.ai/artifact/85WGz7qMJZtJ3zkoFheiNZ —
-  A folder export (Arabic, light), B one page (English, dark), C entry points, D states.
-  Flow tree: [plan.excalidraw](plan.excalidraw) (from [flow.json](flow.json)).
-- The Library lists notes under each website and has no page row, so the page entry point lives in
-  every note's menu ("Copy the page's notes as Markdown", "Export the page's notes…").
-  "Copy" uses the remembered flavor with no dialog. Settings' Backup panel becomes
-  "Backup and export" with a third row.
+- Personal export is **free**; every file ends with an "Exported from Hamesh" line and link,
+  always ([MONETIZATION.md](MONETIZATION.md)). A team digest comes later, in Teams plans.
+- **Capture the section heading and video chapter** with every new note (`Note.capture`, §4).
+- **Obsidian and Notion ship together** in 2.3.0. Canvas, flow tree and later decisions
+  (four layouts, the picker, the live preview): [00-index.md](00-index.md), [04-ui.md](04-ui.md).
 
 Related: [00-index.md](00-index.md) · [FORMAT.md](FORMAT.md) · [MONETIZATION.md](MONETIZATION.md) · [lost-notes](../lost-notes/PROPOSAL.md)
 

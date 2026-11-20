@@ -1,6 +1,7 @@
 import type {
   AnnouncementPreferences,
   AppearanceMode,
+  ExportPreferences,
   FolderDefaultPreferences,
   LibraryPreferences,
   OnboardingPreferences,
@@ -41,6 +42,12 @@ export interface PreferencesRepository {
   setOnboarding(onboarding: OnboardingPreferences): Promise<Preferences>;
   /** Records the reader's answer about sharing usage counts. */
   setUsage(usage: UsagePreferences): Promise<Preferences>;
+  /** The tool chosen for the Markdown export, and layouts chosen per group: a patch of
+   *  layouts is merged into the ones already remembered. */
+  setExport(patch: {
+    flavor?: ExportPreferences['flavor'];
+    layouts?: ExportPreferences['layouts'];
+  }): Promise<Preferences>;
   /** Patches what the reader has said about announcements, leaving the rest. */
   setAnnouncements(patch: Partial<AnnouncementPreferences>): Promise<Preferences>;
   /** Fires on changes from any extension context — popup, other tabs' content
@@ -140,6 +147,19 @@ export function createPreferencesRepository(): PreferencesRepository {
     async setUsage(usage: UsagePreferences): Promise<Preferences> {
       const current = await this.get();
       const next: Preferences = { ...current, usage };
+      await storage.setItem(STORAGE_KEY, next);
+      return next;
+    },
+
+    async setExport(patch) {
+      const current = await this.get();
+      const next: Preferences = {
+        ...current,
+        export: {
+          flavor: patch.flavor ?? current.export.flavor,
+          layouts: { ...current.export.layouts, ...patch.layouts },
+        },
+      };
       await storage.setItem(STORAGE_KEY, next);
       return next;
     },

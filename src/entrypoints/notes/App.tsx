@@ -65,6 +65,8 @@ import type { Note } from '@/domain/note';
 import { countUse } from '@/usage/count';
 import { UsageAsk } from '@/ui/usage/UsageAsk';
 import type { FeatureEvent } from '@/domain/usage';
+import { useExport } from '@/ui/export/useExport';
+import { ExportActionsContext } from '@/ui/export/ExportActions';
 import '@/ui/tokens.css';
 import '@/ui/pages.css';
 import '@/ui/notes-library.css';
@@ -225,6 +227,14 @@ export function App() {
   const { prefs, first } = preferences;
   const lang = prefs?.language ?? initialLang;
   const strings = getStrings(lang);
+  const exporter = useExport({
+    loadNotes: () => repo.getAll(),
+    loadFolders: () => foldersRepo.getAll(),
+    saveChoice: (patch) => prefsRepo.setExport(patch),
+    prefs,
+    strings,
+    lang,
+  });
   const dir = dirForLang(lang);
   const theme = resolveTheme(prefs?.appearance ?? 'match-website', matched);
   const scopeRef = useRef<HTMLDivElement>(null);
@@ -787,40 +797,43 @@ export function App() {
   }
 
   return (
-    <NoteActionsContext.Provider value={noteActions}>
-      <NoteShareSlot.Provider value={shareAction}>
-        <NoteDiscussSlot.Provider value={discussAction}>
-          <div ref={scopeRef} className="hm-scope hm-notes-page" dir={dir} data-hm-theme={theme}>
-            <Sidebar
-              view={view}
-              lang={lang}
-              strings={strings}
-              // Teams keeps the team the reader was on, so leaving for the Library
-              // and coming back does not put them on a different one.
-              onNavigate={(next) =>
-                navigate(next, { page: 'overview', teamId: place.teams.teamId })
-              }
-              whatsNewUnseen={lastSeenVersion !== undefined && hasUnseenReleases(lastSeenVersion)}
-              showTeams={teamsClient !== null}
-              mentionsUnseen={mentionsUnseen}
-            />
-            <PageTopSlot.Provider value={pageTop()}>{content()}</PageTopSlot.Provider>
-            {/* Inside the scope, so the dialog wears Hamesh's tokens even though
-                the browser lifts it to the top layer. */}
-            {import.meta.env.WXT_TEAMS_API_ORIGIN && consent && (
-              <ShareConsent
+    <ExportActionsContext.Provider value={exporter.actions}>
+      <NoteActionsContext.Provider value={noteActions}>
+        <NoteShareSlot.Provider value={shareAction}>
+          <NoteDiscussSlot.Provider value={discussAction}>
+            <div ref={scopeRef} className="hm-scope hm-notes-page" dir={dir} data-hm-theme={theme}>
+              <Sidebar
+                view={view}
                 lang={lang}
-                teamName={consent.teamName}
-                onAnswer={(share, dontAskAgain) => {
-                  if (share && dontAskAgain) void prefsRepo.setSkipShareConsent(true);
-                  consent.answer(share);
-                  setConsent(null);
-                }}
+                strings={strings}
+                // Teams keeps the team the reader was on, so leaving for the Library
+                // and coming back does not put them on a different one.
+                onNavigate={(next) =>
+                  navigate(next, { page: 'overview', teamId: place.teams.teamId })
+                }
+                whatsNewUnseen={lastSeenVersion !== undefined && hasUnseenReleases(lastSeenVersion)}
+                showTeams={teamsClient !== null}
+                mentionsUnseen={mentionsUnseen}
               />
-            )}
-          </div>
-        </NoteDiscussSlot.Provider>
-      </NoteShareSlot.Provider>
-    </NoteActionsContext.Provider>
+              <PageTopSlot.Provider value={pageTop()}>{content()}</PageTopSlot.Provider>
+              {exporter.dialog}
+              {/* Inside the scope, so the dialog wears Hamesh's tokens even though
+                the browser lifts it to the top layer. */}
+              {import.meta.env.WXT_TEAMS_API_ORIGIN && consent && (
+                <ShareConsent
+                  lang={lang}
+                  teamName={consent.teamName}
+                  onAnswer={(share, dontAskAgain) => {
+                    if (share && dontAskAgain) void prefsRepo.setSkipShareConsent(true);
+                    consent.answer(share);
+                    setConsent(null);
+                  }}
+                />
+              )}
+            </div>
+          </NoteDiscussSlot.Provider>
+        </NoteShareSlot.Provider>
+      </NoteActionsContext.Provider>
+    </ExportActionsContext.Provider>
   );
 }

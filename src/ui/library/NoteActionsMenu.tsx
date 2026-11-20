@@ -5,7 +5,17 @@ import { mayMutateNote, type Note } from '@/domain/note';
 import { InlineConfirm } from '../kit/InlineConfirm';
 import { Menu, MenuDivider, MenuItem, MenuLabel } from '../kit/Menu';
 import { NameField } from '../kit/NameField';
-import { PencilIcon, PinIcon, PlusIcon, TrashIcon } from '../kit/icons';
+import {
+  CheckIcon,
+  CopyIcon,
+  ExportIcon,
+  PencilIcon,
+  PinIcon,
+  PlusIcon,
+  TrashIcon,
+} from '../kit/icons';
+import { pageIdentity } from '@/domain/export/model';
+import { useExportActions } from '../export/ExportActions';
 import { NoteEditor } from '../NoteEditor';
 import type { Strings } from '../i18n';
 import type { NoteActions } from './NoteActions';
@@ -15,6 +25,9 @@ import { useShareAction } from './NoteShareSlot';
  *  items, a name to type, the note's words, a question — rather than stacking
  *  popovers, and Escape steps back one of these at a time. */
 type View = 'menu' | 'creatingFolder' | 'editing' | 'confirmingDelete';
+
+/** How long "Copied" stays on the item before the menu closes: long enough to read. */
+const COPIED_MS = 900;
 
 interface NoteActionsMenuProps {
   note: Note;
@@ -35,15 +48,20 @@ interface NoteActionsMenuProps {
  */
 export function NoteActionsMenu({ note, strings, actions, movable = false }: NoteActionsMenuProps) {
   const shareAction = useShareAction();
+  const exportActions = useExportActions();
   const own = mayMutateNote(note);
   const [view, setView] = useState<View>('menu');
+  const [copied, setCopied] = useState(false);
 
   return (
     <Menu
       label={strings.noteActions}
       form={view !== 'menu'}
       layoutKey={view}
-      onClose={() => setView('menu')}
+      onClose={() => {
+        setView('menu');
+        setCopied(false);
+      }}
       className="hm-note-row__menu"
     >
       {(close) => {
@@ -128,6 +146,36 @@ export function NoteActionsMenu({ note, strings, actions, movable = false }: Not
 
                 {/* Filled by the Notes Library only in a build with Teams. */}
                 {shareAction?.(note, close)}
+
+                {own && exportActions && (
+                  <>
+                    <MenuDivider />
+                    <MenuItem
+                      icon={copied ? <CheckIcon /> : <CopyIcon />}
+                      onSelect={() => {
+                        void exportActions.copyPage(pageIdentity(note)).then((ok) => {
+                          if (!ok) {
+                            close();
+                            return;
+                          }
+                          setCopied(true);
+                          window.setTimeout(close, COPIED_MS);
+                        });
+                      }}
+                    >
+                      {copied ? strings.exportUi.copiedPageNotes : strings.exportUi.copyPageNotes}
+                    </MenuItem>
+                    <MenuItem
+                      icon={<ExportIcon />}
+                      onSelect={() => {
+                        close();
+                        exportActions.open({ kind: 'page', pageId: pageIdentity(note) });
+                      }}
+                    >
+                      {strings.exportUi.exportPageNotes}
+                    </MenuItem>
+                  </>
+                )}
 
                 {own && movable && (
                   <>
