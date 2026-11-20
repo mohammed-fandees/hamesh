@@ -216,6 +216,22 @@ describe('HameshApp — contextual text notes', () => {
     expect(anchor.context.prefix).toContain('Performance is');
   });
 
+  it('records the section the note was written under', async () => {
+    document.body.innerHTML =
+      '<article><h1>Guide</h1><h2>Performance</h2><p id="intro">Performance is extremely important in large applications.</p></article>';
+    const repo = makeRepo();
+    renderApp(repo, makePrefsRepo());
+    selectText('extremely important');
+    fireEvent.click(await findAction());
+    fireEvent.change(await screen.findByPlaceholderText('Write a note…'), {
+      target: { value: 'Measure first' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(repo.create).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(repo.create).mock.calls[0][0].capture).toEqual({ section: 'Performance' });
+  });
+
   it('creates nothing and leaves no highlight when the composer is cancelled', async () => {
     const repo = makeRepo();
     renderApp(repo, makePrefsRepo());
