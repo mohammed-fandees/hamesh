@@ -120,20 +120,6 @@ export interface PageContext {
 }
 
 /**
- * What marks a note as belonging to a team rather than to this device.
- *
- * Present only on notes projected from the team cache (see
- * `teams/page-cache.ts`); every note Hamesh stores locally has none, and
- * nothing in `notes-repository.ts` ever writes one. A note carrying this is
- * read-only wherever it is shown on a page: it lives on the server, the server
- * decides who may change it, and the only paths that may try go through the
- * background worker from one of Hamesh's own pages.
- *
- * A nested object rather than a field per property, for the same reason as
- * `pageContext`: everything a shared note carries belongs together and will
- * grow (comment counts, who last edited it) without reshaping `Note` again.
- */
-/**
  * Where on the page a note was written, read once when it was saved: the
  * heading it sat under, or the video chapter playing at that moment. Lets an
  * export group notes around the parts of a page without ever reading the page
@@ -164,6 +150,20 @@ export function parseNoteCapture(value: unknown): NoteCapture | undefined {
   return { ...(section ? { section } : {}), ...(chapter ? { chapter } : {}) };
 }
 
+/**
+ * What marks a note as belonging to a team rather than to this device.
+ *
+ * Present only on notes projected from the team cache (see
+ * `teams/page-cache.ts`); every note Hamesh stores locally has none, and
+ * nothing in `notes-repository.ts` ever writes one. A note carrying this is
+ * read-only wherever it is shown on a page: it lives on the server, the server
+ * decides who may change it, and the only paths that may try go through the
+ * background worker from one of Hamesh's own pages.
+ *
+ * A nested object rather than a field per property, for the same reason as
+ * `pageContext`: everything a shared note carries belongs together and will
+ * grow (comment counts, who last edited it) without reshaping `Note` again.
+ */
 export interface NoteTeam {
   /** The team's id, as the server issued it. */
   id: string;
