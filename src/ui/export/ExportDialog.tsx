@@ -18,6 +18,8 @@ export interface ExportDialogProps {
   flavor: ExportFlavor;
   layouts: Readonly<Record<string, ExportLayout>>;
   now: Date;
+  /** The notes could not be read, so there is nothing to export: say so. */
+  loadFailed?: boolean;
   onFlavorChange: (flavor: ExportFlavor) => void;
   onLayoutChange: (groupKey: string, layout: ExportLayout) => void;
   /** Builds and downloads the export; resolves to the file name. */
@@ -177,8 +179,14 @@ export function ExportDialog(props: ExportDialogProps) {
           {empty ? (
             <div className="hm-export__empty">
               <MarginMark size={28} />
-              <p>{s.emptyFolder}</p>
-              <p className="hm-export__hint">{s.emptyFolderHint}</p>
+              {props.loadFailed ? (
+                <p role="alert">{s.failed}</p>
+              ) : (
+                <>
+                  <p>{s.emptyFolder}</p>
+                  <p className="hm-export__hint">{s.emptyFolderHint}</p>
+                </>
+              )}
             </div>
           ) : (
             <>

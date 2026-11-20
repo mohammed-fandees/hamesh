@@ -76,7 +76,9 @@ export function useExport({
   save = saveWithLink,
   writeClipboard = clipboard,
 }: UseExportArgs): ExportController {
-  const [open, setOpen] = useState<{ model: ExportModel; now: Date } | null>(null);
+  const [open, setOpen] = useState<{ model: ExportModel; now: Date; loadFailed?: boolean } | null>(
+    null,
+  );
   const flavor = prefs?.export.flavor ?? 'obsidian';
   const layouts = useMemo(() => prefs?.export.layouts ?? {}, [prefs]);
 
@@ -103,7 +105,12 @@ export function useExport({
   const actions = useMemo<ExportActions>(
     () => ({
       open: (scope) => {
-        void build(scope).then((model) => setOpen({ model, now: new Date() }));
+        // A library that cannot be read still opens the dialog, to say so instead of doing nothing.
+        build(scope).then(
+          (model) => setOpen({ model, now: new Date() }),
+          () =>
+            setOpen({ model: buildExportModel([], [], scope), now: new Date(), loadFailed: true }),
+        );
       },
       copyPage: async (pageId) => {
         try {
@@ -120,7 +127,7 @@ export function useExport({
 
   let dialog: ReactNode = null;
   if (open) {
-    const { model, now } = open;
+    const { model, now, loadFailed } = open;
     const pageId = model.scope.kind === 'page' ? model.scope.pageId : null;
     dialog = (
       <ExportDialog
@@ -130,6 +137,7 @@ export function useExport({
         flavor={flavor}
         layouts={layouts}
         now={now}
+        loadFailed={loadFailed}
         onFlavorChange={(next) => void saveChoice({ flavor: next })}
         onLayoutChange={(key: string, layout: ExportLayout) =>
           void saveChoice({ layouts: { [key]: layout } })

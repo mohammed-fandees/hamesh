@@ -25,9 +25,10 @@ function Harness(props: {
   save: (blob: Blob, name: string) => void;
   writeClipboard: (text: string) => Promise<void>;
   onActions: (a: ExportActions) => void;
+  loadNotes?: () => Promise<typeof notes>;
 }) {
   const exporter = useExport({
-    loadNotes: async () => notes,
+    loadNotes: props.loadNotes ?? (async () => notes),
     loadFolders: async () => folders,
     saveChoice: vi.fn(),
     prefs: props.prefs,
@@ -40,7 +41,7 @@ function Harness(props: {
   return <>{exporter.dialog}</>;
 }
 
-function setup(prefs: Preferences = DEFAULT_PREFERENCES) {
+function setup(prefs: Preferences = DEFAULT_PREFERENCES, loadNotes?: () => Promise<typeof notes>) {
   const save = vi.fn();
   const writeClipboard = vi.fn().mockResolvedValue(undefined);
   let actions!: ExportActions;
@@ -50,6 +51,7 @@ function setup(prefs: Preferences = DEFAULT_PREFERENCES) {
       save={save}
       writeClipboard={writeClipboard}
       onActions={(a) => (actions = a)}
+      loadNotes={loadNotes}
     />,
   );
   return { save, writeClipboard, actions: () => actions };
@@ -95,6 +97,16 @@ describe('useExport', () => {
     const ok = await actions().copyPage(pageIdentity(notes[0]));
     expect(ok).toBe(true);
     expect(writeClipboard.mock.calls[0][0]).toMatch(/^- \[ \] This is the default api contract/m);
+  });
+
+  it('opens the dialog to say so when the notes cannot be read', async () => {
+    const { save, actions } = setup(DEFAULT_PREFERENCES, () =>
+      Promise.reject(new Error('storage unavailable')),
+    );
+    act(() => actions().open({ kind: 'all' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(strings.exportUi.failed);
+    expect(screen.getByRole('button', { name: strings.exportUi.downloadZip })).toBeDisabled();
+    expect(save).not.toHaveBeenCalled();
   });
 
   it('says a copy failed instead of throwing', async () => {
