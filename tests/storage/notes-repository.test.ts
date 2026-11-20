@@ -119,6 +119,17 @@ describe('NotesRepository', () => {
       expect(notes.map((n) => n.content).sort()).toEqual(['a', 'b']);
     });
 
+    it('reads a stored note without a capture it cannot trust', async () => {
+      await repo.create({ content: 'a', pageKey, originalUrl: 'u', anchor: makeAnchor() });
+      const [key] = [...mockStore.keys()];
+      const [stored] = mockStore.get(key) as Record<string, unknown>[];
+      mockStore.set(key, [{ ...stored, capture: { section: 7 } }]);
+
+      const [note] = await repo.getForPage(pageKey);
+      expect(note.capture).toBeUndefined();
+      expect(note.content).toBe('a');
+    });
+
     it('returns empty array for unknown page', async () => {
       const notes = await repo.getForPage('https://unknown.com');
       expect(notes).toEqual([]);

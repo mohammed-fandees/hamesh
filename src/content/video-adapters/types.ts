@@ -55,4 +55,9 @@ export interface VideoPlayerAdapter {
    *  for its specific heuristic); when genuinely unknown, an adapter should
    *  fail open (return `true`) rather than hide markers incorrectly. */
   areControlsVisible(video: HTMLVideoElement): boolean;
+
+  /** The chapter the player shows right now, for sites that name chapters
+   *  (recorded on a new note as `capture.chapter`). Optional: most players
+   *  have no chapters, and `null` means none is showing. */
+  getChapterTitle?(video: HTMLVideoElement): string | null;
 }

@@ -88,4 +88,11 @@ export const youtubeAdapter: VideoPlayerAdapter = {
     const container = getPlayerContainerEl();
     return !container?.classList.contains('ytp-autohide');
   },
+
+  getChapterTitle(): string | null {
+    // The player's own chapter label, beside the time display; empty or
+    // missing on a video without chapters.
+    const text = document.querySelector('.ytp-chapter-title-content')?.textContent?.trim();
+    return text ? text : null;
+  },
 };
