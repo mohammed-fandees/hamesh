@@ -24,6 +24,7 @@ function Harness(props: {
   prefs: Preferences;
   save: (blob: Blob, name: string) => void;
   writeClipboard: (text: string) => Promise<void>;
+  count: (event: string) => void;
   onActions: (a: ExportActions) => void;
   loadNotes?: () => Promise<typeof notes>;
 }) {
@@ -36,6 +37,7 @@ function Harness(props: {
     lang: 'en',
     save: props.save,
     writeClipboard: props.writeClipboard,
+    count: props.count,
   });
   props.onActions(exporter.actions);
   return <>{exporter.dialog}</>;
@@ -44,17 +46,19 @@ function Harness(props: {
 function setup(prefs: Preferences = DEFAULT_PREFERENCES, loadNotes?: () => Promise<typeof notes>) {
   const save = vi.fn();
   const writeClipboard = vi.fn().mockResolvedValue(undefined);
+  const count = vi.fn();
   let actions!: ExportActions;
   render(
     <Harness
       prefs={prefs}
       save={save}
       writeClipboard={writeClipboard}
+      count={count}
       onActions={(a) => (actions = a)}
       loadNotes={loadNotes}
     />,
   );
-  return { save, writeClipboard, actions: () => actions };
+  return { save, writeClipboard, count, actions: () => actions };
 }
 
 const blobBytes = async (blob: Blob) => new Uint8Array(await blob.arrayBuffer());
@@ -113,6 +117,50 @@ describe('useExport', () => {
     const { writeClipboard, actions } = setup();
     writeClipboard.mockRejectedValueOnce(new Error('denied'));
     expect(await actions().copyPage(pageIdentity(notes[0]))).toBe(false);
+  });
+});
+
+describe('usage counts for an export', () => {
+  const counted = (count: ReturnType<typeof vi.fn>) => count.mock.calls.map(([event]) => event);
+
+  it('counts a finished download: the tool, the scope and each layout drawn', async () => {
+    const prefs = {
+      ...DEFAULT_PREFERENCES,
+      export: { flavor: 'notion' as const, layouts: { 'folder:f-vocab': 'glossary' as const } },
+    };
+    const { save, count, actions } = setup(prefs);
+    act(() => actions().open({ kind: 'folder', folderId: 'f-vocab' }));
+    fireEvent.click(await screen.findByRole('button', { name: strings.exportUi.downloadZip }));
+    await waitFor(() => expect(save).toHaveBeenCalled());
+    expect(counted(count)).toEqual([
+      'export.notion',
+      'export.scope.folder',
+      'export.layout.glossary',
+    ]);
+  });
+
+  it('counts a page copied from a menu as a copy', async () => {
+    const prefs = {
+      ...DEFAULT_PREFERENCES,
+      export: { flavor: 'obsidian' as const, layouts: { 'folder:f-react': 'checklist' as const } },
+    };
+    const { count, actions } = setup(prefs);
+    expect(await actions().copyPage(pageIdentity(notes[0]))).toBe(true);
+    expect(counted(count)).toEqual([
+      'export.obsidian',
+      'export.scope.page',
+      'export.copied',
+      'export.layout.checklist',
+    ]);
+  });
+
+  it('counts nothing when the export did not happen', async () => {
+    const { writeClipboard, count, actions } = setup();
+    writeClipboard.mockRejectedValueOnce(new Error('denied'));
+    await actions().copyPage(pageIdentity(notes[0]));
+    act(() => actions().open({ kind: 'all' }));
+    await screen.findByRole('button', { name: strings.exportUi.downloadZip });
+    expect(count).not.toHaveBeenCalled();
   });
 });
 
