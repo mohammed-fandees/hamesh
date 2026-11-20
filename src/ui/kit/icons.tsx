@@ -352,6 +352,16 @@ export function ExportIcon({ size, className }: IconProps) {
   );
 }
 
+/** Markdown export: the "M" and a down arrow, as the format's own mark draws them. */
+export function MarkdownIcon({ size, className }: IconProps) {
+  return (
+    <Glyph size={size} className={className}>
+      <path d="M1.8 10.4 V3.6 L4.2 6.4 L6.6 3.6 V10.4" />
+      <path d="M10 3.6 V10 M8.2 8.2 L10 10 L11.8 8.2" />
+    </Glyph>
+  );
+}
+
 /** Import: the same tray, arrow coming back down into it. */
 export function ImportIcon({ size, className }: IconProps) {
   return (

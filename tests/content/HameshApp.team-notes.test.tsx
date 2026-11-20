@@ -66,6 +66,7 @@ const prefsRepo = (): PreferencesRepository => ({
   get: vi.fn().mockResolvedValue(DEFAULT_PREFERENCES),
   watch: vi.fn().mockReturnValue(() => {}),
   setLanguage: vi.fn(),
+  setExport: vi.fn(),
   setAppearance: vi.fn(),
   setTextNotes: vi.fn(),
   setLastSeenReleaseVersion: vi.fn(),

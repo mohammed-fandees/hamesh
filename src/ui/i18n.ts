@@ -8,6 +8,54 @@
  */
 export type Lang = 'en' | 'ar';
 
+import type { ExportLayout } from '@/domain/export/layout';
+
+/** The Markdown export's words: its dialog, its menu items and its Settings row. */
+export interface ExportUiStrings {
+  copyPageNotes: string;
+  copiedPageNotes: string;
+  exportPageNotes: string;
+  exportFolder: string;
+  settingsLabel: string;
+  settingsHint: string;
+  settingsButton: string;
+  title: string;
+  close: string;
+  scopeAll: (pages: string, notes: string) => string;
+  scopeFolder: (name: string, pages: string, notes: string) => string;
+  scopePage: (site: string, notes: string) => string;
+  pagesCount: (n: number) => string;
+  notesCount: (n: number) => string;
+  openIn: string;
+  obsidianHint: string;
+  obsidianPageHint: string;
+  notionHint: string;
+  notionPageHint: string;
+  layout: string;
+  layoutIntro: string;
+  layoutFor: (label: string) => string;
+  layoutName: Record<ExportLayout, string>;
+  layoutDescription: Record<ExportLayout, string>;
+  suggested: string;
+  previewIn: (tool: string) => string;
+  preview: string;
+  footer: string;
+  footerPage: string;
+  downloadZip: string;
+  downloadMd: string;
+  copy: string;
+  preparing: string;
+  downloaded: (file: string) => string;
+  doneObsidian: string;
+  doneNotion: string;
+  done: string;
+  copied: string;
+  copyFailed: string;
+  failed: string;
+  emptyFolder: string;
+  emptyFolderHint: string;
+}
+
 export interface Strings {
   note: string;
   writePlaceholder: string;
@@ -161,6 +209,9 @@ export interface Strings {
   retry: string;
   /** Said when a note runs past what one note may hold. */
   noteTooLong: string;
+  backupRowLabel: string;
+  restoreRowLabel: string;
+  exportUi: ExportUiStrings;
 }
 
 const en: Strings = {
@@ -289,7 +340,7 @@ const en: Strings = {
   whatsNewEarlier: 'Earlier releases',
   whatsNewEarlierHint: (count) => (count === 1 ? '1 release' : `${count} releases`),
   whatsNewReleaseDate: (date) => date,
-  settingsBackup: 'Backup',
+  settingsBackup: 'Backup and export',
   backupExport: 'Export',
   backupExportHint: 'Save every note and folder to a file on this device.',
   backupImport: 'Import',
@@ -328,6 +379,65 @@ const en: Strings = {
   working: 'Working…',
   retry: 'Try again',
   noteTooLong: 'That is longer than a note can be. Shorten it a little.',
+  backupRowLabel: 'Backup',
+  restoreRowLabel: 'Restore',
+  exportUi: {
+    copyPageNotes: 'Copy the page’s notes as Markdown',
+    copiedPageNotes: 'Copied',
+    exportPageNotes: 'Export the page’s notes…',
+    exportFolder: 'Export as Markdown…',
+    settingsLabel: 'Obsidian or Notion',
+    settingsHint:
+      'Every note as Markdown pages, with a map of each page and a timeline of each video.',
+    settingsButton: 'Export…',
+    title: 'Export as Markdown',
+    close: 'Close',
+    scopeAll: (pages, notes) => `All notes · ${pages} · ${notes}`,
+    scopeFolder: (name, pages, notes) => `Folder “${name}” · ${pages} · ${notes}`,
+    scopePage: (site, notes) => `${site} · ${notes}`,
+    pagesCount: (n) => (n === 1 ? '1 page' : `${n} pages`),
+    notesCount: (n) => (n === 1 ? '1 note' : `${n} notes`),
+    openIn: 'Open it in',
+    obsidianHint: 'Maps, a canvas and a live table',
+    obsidianPageHint: 'Properties, callouts and a map',
+    notionHint: 'Pages and a database',
+    notionPageHint: 'Pastes cleanly into a page',
+    layout: 'Layout',
+    layoutIntro:
+      'Each folder and site starts on the layout that suits its notes. Change it with the button beside it.',
+    layoutFor: (label) => `Layout for ${label}`,
+    layoutName: {
+      notes: 'Notes',
+      glossary: 'Glossary',
+      timeline: 'Timeline',
+      checklist: 'Checklist',
+    },
+    layoutDescription: {
+      notes: 'The words you wrote on, then your note. For articles and docs.',
+      glossary: 'A table of words and their meaning. For learning a language or terms.',
+      timeline: 'Moments in order, each time a link to that second.',
+      checklist: 'Every note a task to tick. For reviews.',
+    },
+    suggested: 'Suggested',
+    previewIn: (tool) => `How it will look in ${tool}`,
+    preview: 'Preview',
+    footer:
+      'Each file ends with an “Exported from Hamesh” line. Exporting again replaces only the files in Hamesh/.',
+    footerPage: 'Each file ends with an “Exported from Hamesh” line.',
+    downloadZip: 'Download .zip',
+    downloadMd: 'Download .md',
+    copy: 'Copy',
+    preparing: 'Preparing…',
+    downloaded: (file) => `Downloaded ${file}.`,
+    doneObsidian: 'In Obsidian: unzip it inside your vault and open Overview.',
+    doneNotion: 'In Notion: Settings → Import → Markdown, and choose the file as it is.',
+    done: 'Done',
+    copied: 'Copied. Paste it into a page.',
+    copyFailed: 'Couldn’t copy. Download the file instead.',
+    failed: 'Couldn’t prepare the file. Nothing in your notes changed.',
+    emptyFolder: 'There are no notes in this folder yet.',
+    emptyFolderHint: 'Move notes into it, or export all your notes from Settings.',
+  },
 };
 
 const ar: Strings = {
@@ -454,7 +564,7 @@ const ar: Strings = {
   whatsNewEarlier: 'الإصدارات السابقة',
   whatsNewEarlierHint: (count) => (count === 1 ? 'إصدار واحد' : `${count} إصدارات`),
   whatsNewReleaseDate: (date) => date,
-  settingsBackup: 'النسخ الاحتياطي',
+  settingsBackup: 'النسخ الاحتياطي والتصدير',
   backupExport: 'تصدير',
   backupExportHint: 'احفظ كل ملاحظاتك وفولدراتك في ملف على جهازك.',
   backupImport: 'استيراد',
@@ -487,6 +597,65 @@ const ar: Strings = {
   working: 'جارٍ التنفيذ…',
   retry: 'حاول مرة أخرى',
   noteTooLong: 'هذا أطول مما تتسع له ملاحظة. اختصره قليلًا.',
+  backupRowLabel: 'نسخة احتياطية',
+  restoreRowLabel: 'استعادة',
+  exportUi: {
+    copyPageNotes: 'نسخ ملاحظات الصفحة كـ Markdown',
+    copiedPageNotes: 'نُسخت',
+    exportPageNotes: 'تصدير ملاحظات الصفحة…',
+    exportFolder: 'تصدير كـ Markdown…',
+    settingsLabel: 'Obsidian أو Notion',
+    settingsHint: 'كل ملاحظاتك كصفحات Markdown، مع خريطة لكل صفحة وخط زمني لكل فيديو.',
+    settingsButton: 'تصدير…',
+    title: 'تصدير كـ Markdown',
+    close: 'إغلاق',
+    scopeAll: (pages, notes) => `كل الملاحظات · ${pages} · ${notes}`,
+    scopeFolder: (name, pages, notes) => `فولدر «${name}» · ${pages} · ${notes}`,
+    scopePage: (site, notes) => `${site} · ${notes}`,
+    pagesCount: (n) =>
+      n === 1 ? 'صفحة واحدة' : n === 2 ? 'صفحتان' : n <= 10 ? `${n} صفحات` : `${n} صفحة`,
+    notesCount: (n) =>
+      n === 1 ? 'ملاحظة واحدة' : n === 2 ? 'ملاحظتان' : n <= 10 ? `${n} ملاحظات` : `${n} ملاحظة`,
+    openIn: 'افتحه في',
+    obsidianHint: 'خرائط، Canvas، وجدول حي',
+    obsidianPageHint: 'خصائص، اقتباسات، وخريطة',
+    notionHint: 'صفحات وقاعدة بيانات',
+    notionPageHint: 'تُلصق في الصفحة كما هي',
+    layout: 'طريقة العرض',
+    layoutIntro: 'اخترنا لكل فولدر وموقع طريقة تناسب ملاحظاته، ويمكنك تغييرها من الزر بجانبه.',
+    layoutFor: (label) => `طريقة عرض ${label}`,
+    layoutName: {
+      notes: 'ملاحظات',
+      glossary: 'قاموس',
+      timeline: 'خط زمني',
+      checklist: 'قائمة مهام',
+    },
+    layoutDescription: {
+      notes: 'الكلام الذي علّقت عليه، ثم ملاحظتك. للمقالات والشرح.',
+      glossary: 'جدول: الكلمة ومعناها. لتعلّم لغة أو مصطلحات.',
+      timeline: 'لحظات بالترتيب، كل وقت رابط للثانية نفسها.',
+      checklist: 'كل ملاحظة مهمة تعلّم عليها. للمراجعات.',
+    },
+    suggested: 'مقترح',
+    previewIn: (tool) => `هكذا ستبدو في ${tool}`,
+    preview: 'معاينة',
+    footer:
+      'كل ملف ينتهي بسطر «صُدِّرت من هامش». عند التصدير مرة أخرى تُستبدل ملفات \u2066Hamesh/\u2069 فقط.',
+    footerPage: 'كل ملف ينتهي بسطر «صُدِّرت من هامش».',
+    downloadZip: 'تنزيل \u2066.zip\u2069',
+    downloadMd: 'تنزيل \u2066.md\u2069',
+    copy: 'نسخ',
+    preparing: 'جارٍ التجهيز…',
+    downloaded: (file) => `نُزِّل ${file}.`,
+    doneObsidian: 'في Obsidian: فك الضغط داخل الخزنة، وافتح «نظرة عامة».',
+    doneNotion: 'في Notion: الإعدادات ← استيراد ← Markdown، واختر الملف كما هو.',
+    done: 'تم',
+    copied: 'نُسخت. الصقها في صفحة.',
+    copyFailed: 'تعذّر النسخ. نزّل الملف بدلًا منه.',
+    failed: 'تعذّر تجهيز الملف. لم يتغير شيء في ملاحظاتك.',
+    emptyFolder: 'لا توجد ملاحظات في هذا الفولدر بعد.',
+    emptyFolderHint: 'انقل ملاحظات إليه، أو صدّر كل الملاحظات من الإعدادات.',
+  },
 };
 
 export function resolveLang(uiLanguage?: string): Lang {

@@ -40,6 +40,7 @@ function makePrefsRepo(prefs: Preferences = DEFAULT_PREFERENCES): PreferencesRep
     get: vi.fn().mockResolvedValue(prefs),
     watch: vi.fn().mockReturnValue(() => {}),
     setLanguage: vi.fn(),
+    setExport: vi.fn(),
     setAppearance: vi.fn(),
     setTextNotes: vi.fn(),
     setLastSeenReleaseVersion: vi.fn(),

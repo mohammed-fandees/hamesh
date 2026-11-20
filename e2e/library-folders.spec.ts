@@ -250,8 +250,8 @@ test.describe('Notes Library — Folders', () => {
     const workBody = folderNode(library, 'Work').locator(
       'xpath=following-sibling::div[contains(@class, "hm-folder-node__body")]',
     );
-    const expandedHeight = (await workBody.boundingBox())?.height ?? 0;
-    expect(expandedHeight).toBeGreaterThan(10);
+    // The body opens with a transition, so wait for it to finish rather than read it mid-way.
+    await expect.poll(async () => (await workBody.boundingBox())?.height ?? 0).toBeGreaterThan(10);
 
     // Collapsing Work must hide Research too — not just any notes filed
     // directly in Work (a separate <ul> inside the same collapsible body;

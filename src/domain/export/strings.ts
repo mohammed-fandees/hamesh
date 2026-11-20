@@ -61,6 +61,7 @@ export interface ExportStrings {
   folders: string;
   liveTable: string;
   csvHint: (file: string) => string;
+  exportedFrom: string;
   footer: (date: string) => string;
 }
 
@@ -141,6 +142,7 @@ const en: ExportStrings = {
   liveTable: 'Every page as a live table',
   csvHint: (file) =>
     `\`${file}\` holds every note. Import it on its own in Notion to get a database you can sort and filter.`,
+  exportedFrom: 'Exported from',
   footer: (date) => `*Exported from [Hamesh](${HAMESH}) · ${date}*`,
 };
 
@@ -200,6 +202,7 @@ const ar: ExportStrings = {
   liveTable: 'كل الصفحات كجدول حي',
   csvHint: (file) =>
     `الملف \`${file}\` فيه كل الملاحظات. استورده وحده في Notion ليصبح قاعدة بيانات ترتّبها وتفلترها.`,
+  exportedFrom: 'صُدِّرت من',
   footer: (date) => `*صُدِّرت من [هامش](${HAMESH}) · ${date}*`,
 };
 

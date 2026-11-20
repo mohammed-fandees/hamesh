@@ -23,6 +23,7 @@ const SHEETS = {
   'src/ui/teams/pin.css': read('src/ui/teams/pin.css'),
   'src/ui/usage/usage.css': read('src/ui/usage/usage.css'),
   'src/ui/note-menu.css': read('src/ui/note-menu.css'),
+  'src/ui/export/export.css': read('src/ui/export/export.css'),
   'src/entrypoints/popup/App.css': read('src/entrypoints/popup/App.css'),
 };
 const tokens = SHEETS['src/ui/tokens.css'];

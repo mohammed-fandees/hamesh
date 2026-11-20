@@ -3,7 +3,8 @@ import { Failure, failureOf, useWork } from '../hooks/useWork';
 import { SettingRow } from '../kit/SettingRow';
 import { Panel } from '../kit/Section';
 import { StatusLine } from '../kit/Feedback';
-import { ExportIcon, ImportIcon } from '../kit/icons';
+import { ExportIcon, ImportIcon, MarkdownIcon } from '../kit/icons';
+import { useExportActions } from '../export/ExportActions';
 import type { Strings } from '../i18n';
 
 /** What the caller does with a file, kept as plain callbacks so this
@@ -36,6 +37,7 @@ interface BackupSectionProps {
  * see `domain/backup.ts` for the merge rule that makes that true.
  */
 export function BackupSection({ strings, handlers }: BackupSectionProps) {
+  const exportActions = useExportActions();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const work = useWork((error) => failureOf(error, strings.backupErrorFailed));
   /** What the last finished export or import did — said once it is done. */
@@ -88,7 +90,7 @@ export function BackupSection({ strings, handlers }: BackupSectionProps) {
     <Panel title={strings.settingsBackup}>
       <div className="hm-settings__body">
         <SettingRow
-          label={strings.backupExport}
+          label={strings.backupRowLabel}
           icon={<ExportIcon />}
           value={
             <button
@@ -105,7 +107,7 @@ export function BackupSection({ strings, handlers }: BackupSectionProps) {
         />
 
         <SettingRow
-          label={strings.backupImport}
+          label={strings.restoreRowLabel}
           icon={<ImportIcon />}
           value={
             <button
@@ -120,6 +122,23 @@ export function BackupSection({ strings, handlers }: BackupSectionProps) {
           }
           hint={strings.backupImportHint}
         />
+
+        {exportActions && (
+          <SettingRow
+            label={strings.exportUi.settingsLabel}
+            icon={<MarkdownIcon />}
+            value={
+              <button
+                type="button"
+                className="hm-btn hm-btn-ghost hm-btn--accent-text"
+                onClick={() => exportActions.open({ kind: 'all' })}
+              >
+                {strings.exportUi.settingsButton}
+              </button>
+            }
+            hint={strings.exportUi.settingsHint}
+          />
+        )}
       </div>
 
       {failed ? (

@@ -198,4 +198,15 @@ describe('PreferencesRepository', () => {
       expect(next).toEqual(await repo.get());
     });
   });
+
+  it('remembers the export tool, and merges layouts chosen per group', async () => {
+    const repo = createPreferencesRepository();
+    await repo.setExport({ flavor: 'notion', layouts: { 'folder:a': 'glossary' } });
+    const next = await repo.setExport({ layouts: { 'site:x.example': 'checklist' } });
+    expect(next.export).toEqual({
+      flavor: 'notion',
+      layouts: { 'folder:a': 'glossary', 'site:x.example': 'checklist' },
+    });
+    expect((await repo.get()).export).toEqual(next.export);
+  });
 });
