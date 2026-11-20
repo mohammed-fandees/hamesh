@@ -2,7 +2,7 @@
 
 **Phase:** B
 **Depends on:** 01
-**Status:** todo
+**Status:** done
 
 ## Goal
 
@@ -19,17 +19,17 @@ order, sections. Plus the small string helpers that make the output safe.
 
 ## Steps
 
-- [ ] 1. `escapeBlock`, `escapeCell`, `truncateWords`, `yamlString`, `mermaidLabel` (FORMAT rules 2, 3, 10, 13)
+- [x] 1. `escapeBlock`, `escapeCell`, `truncateWords`, `yamlString`, `mermaidLabel` (FORMAT rules 2, 3, 10, 13)
   - Test: `tests/domain/export/text.test.ts`: every rule, Arabic text untouched, `#2` escaped
-- [ ] 2. `safeFileName` and `assignPaths` (rules 17, 18)
+- [x] 2. `safeFileName` and `assignPaths` (rules 17, 18)
   - Test: `tests/domain/export/file-names.test.ts`: forbidden characters, `CON`, dots, 80 cap, stable clash suffix
-- [ ] 3. `pageIdentity`, `cleanTitle`, `orderKey`
+- [x] 3. `pageIdentity`, `cleanTitle`, `orderKey`
   - Test: `tests/domain/export/model.test.ts`: two YouTube videos stay two pages; `(93) … - YouTube` cleaned; order by text position, element y, timestamp
-- [ ] 4. `buildExportModel(notes, folders, scope)`: pages with kind, dates, folders, sections; groups (folders, then each site's unfiled notes) in scope
+- [x] 4. `buildExportModel(notes, folders, scope)`: pages with kind, dates, folders, sections; groups (folders, then each site's unfiled notes) in scope
   - Test: `tests/domain/export/model.test.ts`: page/folder/all scopes, sub-folders included, a page in two folders lists both
-- [ ] 5. `inferLayout` and `groupKeyFor` (FORMAT: Inference)
+- [x] 5. `inferLayout` and `groupKeyFor` (FORMAT: Inference)
   - Test: `tests/domain/export/layout.test.ts`: vocabulary → glossary, videos → timeline, long notes → notes, never checklist, under 3 notes stays notes
-- [ ] 6. `ExportPreferences` in `Preferences` with defaults and a defensive parse (flavor `obsidian`, layouts `{}`)
+- [x] 6. `ExportPreferences` in `Preferences` with defaults and a defensive parse (flavor `obsidian`, layouts `{}`)
   - Test: `tests/domain/preferences.test.ts`: defaults, bad flavor dropped, unknown layout dropped
 
 ## Phase integration test

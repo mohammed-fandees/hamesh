@@ -82,6 +82,7 @@ describe('parsePreferences', () => {
       announcements: { enabled: true, dismissed: [], snoozedUntil: {} },
       library: { mode: 'domain', sort: 'alphabetical' },
       usage: { sharing: 'unasked' },
+      export: { flavor: 'obsidian', layouts: {} },
     });
   });
 
@@ -98,6 +99,7 @@ describe('parsePreferences', () => {
       announcements: { enabled: true, dismissed: [], snoozedUntil: {} },
       library: { mode: 'domain', sort: 'alphabetical' },
       usage: { sharing: 'unasked' },
+      export: { flavor: 'obsidian', layouts: {} },
     });
     expect(parsePreferences({ language: 'en', appearance: 'light' })).toEqual({
       schemaVersion: 1,
@@ -111,6 +113,7 @@ describe('parsePreferences', () => {
       announcements: { enabled: true, dismissed: [], snoozedUntil: {} },
       library: { mode: 'domain', sort: 'alphabetical' },
       usage: { sharing: 'unasked' },
+      export: { flavor: 'obsidian', layouts: {} },
     });
   });
 
@@ -258,5 +261,34 @@ describe('resolveTheme', () => {
   it('follows the surface for "Match website"', () => {
     expect(resolveTheme('match-website', 'dark')).toBe('dark');
     expect(resolveTheme('match-website', 'light')).toBe('light');
+  });
+});
+
+describe('parsePreferences — export', () => {
+  it('starts on Obsidian with no layout chosen', () => {
+    expect(parsePreferences({}).export).toEqual({ flavor: 'obsidian', layouts: {} });
+  });
+
+  it('keeps a chosen tool and the layouts chosen per folder or site', () => {
+    const parsed = parsePreferences({
+      export: {
+        flavor: 'notion',
+        layouts: { 'folder:f1': 'glossary', 'site:react.dev': 'checklist' },
+      },
+    });
+    expect(parsed.export).toEqual({
+      flavor: 'notion',
+      layouts: { 'folder:f1': 'glossary', 'site:react.dev': 'checklist' },
+    });
+  });
+
+  it('drops an unknown tool, an unknown layout and a key that names nothing', () => {
+    const parsed = parsePreferences({
+      export: {
+        flavor: 'evernote',
+        layouts: { 'folder:f1': 'cards', page: 'notes', 'site:': 'notes' },
+      },
+    });
+    expect(parsed.export).toEqual({ flavor: 'obsidian', layouts: {} });
   });
 });

@@ -42,6 +42,7 @@ describe('PreferencesRepository', () => {
       announcements: { enabled: true, dismissed: [], snoozedUntil: {} },
       library: { mode: 'domain', sort: 'alphabetical' },
       usage: { sharing: 'unasked' },
+      export: { flavor: 'obsidian', layouts: {} },
     });
   });
 
@@ -81,6 +82,7 @@ describe('PreferencesRepository', () => {
       announcements: { enabled: true, dismissed: [], snoozedUntil: {} },
       library: { mode: 'domain', sort: 'alphabetical' },
       usage: { sharing: 'unasked' },
+      export: { flavor: 'obsidian', layouts: {} },
     });
 
     await repo.setLanguage('en');
@@ -96,6 +98,7 @@ describe('PreferencesRepository', () => {
       announcements: { enabled: true, dismissed: [], snoozedUntil: {} },
       library: { mode: 'domain', sort: 'alphabetical' },
       usage: { sharing: 'unasked' },
+      export: { flavor: 'obsidian', layouts: {} },
     });
   });
 
@@ -113,6 +116,7 @@ describe('PreferencesRepository', () => {
       announcements: { enabled: true, dismissed: [], snoozedUntil: {} },
       library: { mode: 'domain', sort: 'alphabetical' },
       usage: { sharing: 'unasked' },
+      export: { flavor: 'obsidian', layouts: {} },
     });
   });
 

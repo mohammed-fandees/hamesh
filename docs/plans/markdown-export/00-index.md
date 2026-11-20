@@ -34,8 +34,8 @@ the notes are (notes, a glossary, a video timeline, a checklist).
 | #   | Part                                         | Phase | Status | Depends on |
 | --- | -------------------------------------------- | ----- | ------ | ---------- |
 | 01  | [Capture section and chapter](01-capture.md) | A     | done   | none       |
-| 02  | [Export model and escaping](02-model.md)     | B     | todo   | 01         |
-| 03  | [Layouts and renderers](03-renderers.md)     | C     | todo   | 02         |
+| 02  | [Export model and escaping](02-model.md)     | B     | done   | 01         |
+| 03  | [Layouts and renderers](03-renderers.md)     | C     | done   | 02         |
 | 04  | [Export UI](04-ui.md)                        | D     | todo   | 03         |
 | 05  | [Release prep](05-release.md)                | E     | todo   | 04         |
 
