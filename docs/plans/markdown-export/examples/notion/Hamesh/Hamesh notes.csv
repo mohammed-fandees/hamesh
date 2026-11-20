@@ -1,0 +1,6 @@
+Note,Page,Site,Kind,On,Section or chapter,Quote,Time,Link,Folder,Created,Last edited
+"تعريف Big-O: بيوصف أسوأ نمو للخطوات مع كبر المدخلات","مقدمة في الخوارزميات — المحاضرة 3",youtube.com,video,moment,التعقيد الزمني,,04:12,https://youtu.be/Qx7aL2mP9dE?t=252,Algorithms,2026-11-02,2026-11-02
+"لماذا نتجاهل الثوابت: 3n و 100n نفس الرتبة","مقدمة في الخوارزميات — المحاضرة 3",youtube.com,video,moment,التعقيد الزمني,,09:47,https://youtu.be/Qx7aL2mP9dE?t=587,Algorithms,2026-11-02,2026-11-02
+"A 404 still resolves. Always check response.ok before .json().","Using the Fetch API",developer.mozilla.org,article,words,Making a request,"the promise only rejects when the request itself fails",,https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch,Work / Frontend,2026-10-14,2026-10-14
+"Use this pattern in the search box: abort the previous request on every keystroke.","Using the Fetch API",developer.mozilla.org,article,code block,Canceling a request,,,https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch,Work / Frontend,2026-10-20,2026-11-09
+"Disabled until every field is valid, but nothing says which field is wrong.","Checkout — step 2",uxreview.example,mixed,button,Shipping address,,,https://uxreview.example/checkout/shipping,Work / Reviews,2026-10-30,2026-10-30

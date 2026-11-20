@@ -133,6 +133,37 @@ export interface PageContext {
  * `pageContext`: everything a shared note carries belongs together and will
  * grow (comment counts, who last edited it) without reshaping `Note` again.
  */
+/**
+ * Where on the page a note was written, read once when it was saved: the
+ * heading it sat under, or the video chapter playing at that moment. Lets an
+ * export group notes around the parts of a page without ever reading the page
+ * again. Nested, like `pageContext`, so more of it can be recorded later
+ * without reshaping `Note`. Notes written before it existed have none.
+ */
+export interface NoteCapture {
+  section?: string;
+  chapter?: string;
+}
+
+/** The longest heading or chapter title kept. Longer ones are cut, not refused. */
+export const CAPTURE_TEXT_MAX = 160;
+
+function captureText(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const text = value.replace(/\s+/g, ' ').trim();
+  return text ? text.slice(0, CAPTURE_TEXT_MAX) : undefined;
+}
+
+/** A capture worth keeping, or `undefined`. Stored data and backups are read through this. */
+export function parseNoteCapture(value: unknown): NoteCapture | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const raw = value as Record<string, unknown>;
+  const section = captureText(raw.section);
+  const chapter = captureText(raw.chapter);
+  if (!section && !chapter) return undefined;
+  return { ...(section ? { section } : {}), ...(chapter ? { chapter } : {}) };
+}
+
 export interface NoteTeam {
   /** The team's id, as the server issued it. */
   id: string;
@@ -178,6 +209,8 @@ export interface Note {
    *  outside a normal flow) is treated as unfiled too — see
    *  `buildFolderTree` in `folder-grouping.ts`. */
   folderId?: string;
+  /** Where on the page it was written, when that was known — see `NoteCapture`. */
+  capture?: NoteCapture;
   createdAt: string;
   updatedAt: string;
 }
@@ -194,6 +227,8 @@ export type CreateNoteInput = {
   /** The folder to file the new note into — what the composer's folder
    *  selector was set to. Omitted (or empty) leaves the note unfiled. */
   folderId?: string;
+  /** The heading or chapter the note was written under, read by the content script. */
+  capture?: NoteCapture;
 };
 
 export type UpdateNoteInput = {
@@ -219,9 +254,15 @@ export function createNote(input: CreateNoteInput): Note {
     // Only written when there is one, so an unfiled note is stored exactly
     // as it was before notes could be filed at creation time.
     ...(input.folderId ? { folderId: input.folderId } : {}),
+    ...withCapture(input.capture),
     createdAt: now,
     updatedAt: now,
   };
+}
+
+function withCapture(capture: NoteCapture | undefined): { capture?: NoteCapture } {
+  const parsed = parseNoteCapture(capture);
+  return parsed ? { capture: parsed } : {};
 }
 
 export function updateNoteContent(note: Note, input: UpdateNoteInput): Note {

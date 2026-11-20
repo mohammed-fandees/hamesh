@@ -1,0 +1,18 @@
+{
+  "nodes": [
+    { "id": "page", "type": "file", "file": "Hamesh/Sites/developer.mozilla.org/Using the Fetch API.md", "x": -200, "y": -60, "width": 400, "height": 120, "color": "6" },
+    { "id": "s1", "type": "group", "label": "Making a request", "x": -820, "y": -420, "width": 520, "height": 400 },
+    { "id": "n1", "type": "text", "text": "> the promise only rejects when the request itself fails\n\nA 404 still resolves. Always check `response.ok` before `.json()`.\n\n[[Using the Fetch API#^hm-01jb2a|Open in page note]]", "x": -800, "y": -380, "width": 480, "height": 160 },
+    { "id": "n2", "type": "text", "text": "> a response body is a stream and can be consumed only once\n\nNeed it twice? `response.clone()` before reading.\n\n[[Using the Fetch API#^hm-01jb2c|Open in page note]]", "x": -800, "y": -200, "width": 480, "height": 160 },
+    { "id": "s2", "type": "group", "label": "Setting headers", "x": 300, "y": -420, "width": 520, "height": 220 },
+    { "id": "n3", "type": "text", "text": "> you can pass a Headers object or an object literal\n\nHeaders object normalises names to lower case. Matters when I merge defaults in our client.\n\n[[Using the Fetch API#^hm-01jb3f|Open in page note]]", "x": 320, "y": -380, "width": 480, "height": 160 },
+    { "id": "s3", "type": "group", "label": "Canceling a request", "x": -260, "y": 160, "width": 520, "height": 400 },
+    { "id": "n4", "type": "text", "text": "**On a code block** (`pre`)\n\nUse this pattern in the search box: abort the previous request on every keystroke.\n\n[[Using the Fetch API#^hm-01jb4d|Open in page note]]", "x": -240, "y": 200, "width": 480, "height": 160, "color": "4" },
+    { "id": "n5", "type": "text", "text": "> AbortSignal.timeout() returns a signal that aborts after a set time\n\nCleaner than a setTimeout + abort pair. Check Safari support before using it.\n\n[[Using the Fetch API#^hm-01jb4k|Open in page note]]", "x": -240, "y": 380, "width": 480, "height": 160 }
+  ],
+  "edges": [
+    { "id": "e1", "fromNode": "page", "fromSide": "left", "toNode": "s1", "toSide": "right" },
+    { "id": "e2", "fromNode": "page", "fromSide": "right", "toNode": "s2", "toSide": "left" },
+    { "id": "e3", "fromNode": "page", "fromSide": "bottom", "toNode": "s3", "toSide": "top" }
+  ]
+}

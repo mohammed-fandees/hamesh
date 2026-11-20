@@ -24,6 +24,7 @@ import {
   RESTORE_FLASH_MS,
 } from '@/utils/dom';
 import { onNavigationChange } from '@/content/navigation';
+import { sectionHeadingFor } from '@/content/capture-context';
 import { detectHostTheme, type HostTheme } from '@/content/theme';
 import {
   DEFAULT_FOLDER_DEFAULT_PREFERENCES,
@@ -1289,6 +1290,11 @@ export function HameshApp({
         anchor: composer.anchor,
         pageContext: document.title ? { title: document.title } : undefined,
         folderId: toTeam ? undefined : folderId,
+        capture: {
+          section: sectionHeadingFor(
+            composer.kind === 'text' ? composer.range.startContainer : composer.element,
+          ),
+        },
       });
       if (!note) return;
       if (toTeam && teamNotes) {
@@ -1329,6 +1335,7 @@ export function HameshApp({
     async (content: string) => {
       if (!videoComposer) return;
       const anchor = buildVideoAnchor(videoComposer.video, videoComposer.adapter);
+      const chapter = videoComposer.adapter.getChapterTitle?.(videoComposer.video) ?? undefined;
       setVideoComposer(null);
       if (!anchor) return;
       await mutations.create({
@@ -1341,6 +1348,7 @@ export function HameshApp({
         // page or global default still applies, so a video note lands
         // where every other new note on this page does.
         folderId: defaultFolderId ?? undefined,
+        capture: { chapter },
       });
     },
     [videoComposer, mutations, pageKey, defaultFolderId],

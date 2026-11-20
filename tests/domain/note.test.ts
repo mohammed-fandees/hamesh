@@ -8,6 +8,7 @@ import {
   setNoteFolder,
   validateNoteContent,
   validateNote,
+  parseNoteCapture,
 } from '@/domain/note';
 import type { ElementAnchor } from '@/domain/note';
 
@@ -287,5 +288,34 @@ describe('isSharedNote / mayMutateNote', () => {
   it('says a note without one is this device’s own', () => {
     expect(isSharedNote({})).toBe(false);
     expect(mayMutateNote({})).toBe(true);
+  });
+});
+
+describe('note capture', () => {
+  const base = {
+    content: 'hello',
+    pageKey: 'https://example.com',
+    originalUrl: 'https://example.com',
+    anchor: makeAnchor(),
+  };
+
+  it('keeps the section and chapter it was written under', () => {
+    const note = createNote({ ...base, capture: { section: 'Setting headers', chapter: 'Intro' } });
+    expect(note.capture).toEqual({ section: 'Setting headers', chapter: 'Intro' });
+  });
+
+  it('stores no capture when there is nothing in it', () => {
+    expect('capture' in createNote({ ...base, capture: {} })).toBe(false);
+    expect('capture' in createNote(base)).toBe(false);
+  });
+
+  it('reads a stored capture defensively', () => {
+    expect(parseNoteCapture({ section: '  Caveats  ', chapter: 42 })).toEqual({
+      section: 'Caveats',
+    });
+    expect(parseNoteCapture({ section: '   ' })).toBeUndefined();
+    expect(parseNoteCapture('Caveats')).toBeUndefined();
+    expect(parseNoteCapture(null)).toBeUndefined();
+    expect(parseNoteCapture({ chapter: 'x'.repeat(400) })?.chapter).toHaveLength(160);
   });
 });

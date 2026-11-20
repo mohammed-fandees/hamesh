@@ -1,6 +1,7 @@
 import { browser } from 'wxt/browser';
 import { groupNotesByPageKey } from '@/domain/backup';
 import type { Note, CreateNoteInput, UpdateNoteInput } from '@/domain/note';
+import { parseNoteCapture } from '@/domain/note';
 import {
   createNote,
   updateNoteContent,
@@ -25,12 +26,17 @@ function parseStoredNotes(data: unknown): Note[] {
       if (!item || typeof item !== 'object') return false;
       return typeof (item as Note).id === 'string' && typeof (item as Note).pageKey === 'string';
     })
-    .map((note) => ({
-      ...note,
-      // Backfill for notes written before `workspaceId` existed — same
-      // defensive-parse pattern as every other additive field here.
-      workspaceId: note.workspaceId ?? DEFAULT_WORKSPACE_ID,
-    }));
+    .map((stored) => {
+      const { capture, ...note } = stored;
+      const parsedCapture = parseNoteCapture(capture);
+      return {
+        ...note,
+        // Backfill for notes written before `workspaceId` existed — same
+        // defensive-parse pattern as every other additive field here.
+        workspaceId: note.workspaceId ?? DEFAULT_WORKSPACE_ID,
+        ...(parsedCapture ? { capture: parsedCapture } : {}),
+      };
+    });
 }
 
 export interface NotesRepository {

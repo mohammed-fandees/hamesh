@@ -171,4 +171,28 @@ describe('youtubeAdapter', () => {
       expect(youtubeAdapter.areControlsVisible(stubVideo)).toBe(true);
     });
   });
+
+  describe('getChapterTitle', () => {
+    it('reads the chapter the player is showing', () => {
+      setLocation('https://www.youtube.com/watch?v=abc123');
+      mountYouTubePlayer();
+      document
+        .querySelector('.ytp-chrome-bottom')!
+        .insertAdjacentHTML(
+          'beforeend',
+          '<div class="ytp-chapter-title-content">  Binary search  </div>',
+        );
+      expect(youtubeAdapter.getChapterTitle?.(stubVideo)).toBe('Binary search');
+    });
+
+    it('gives nothing for a video without chapters', () => {
+      setLocation('https://www.youtube.com/watch?v=abc123');
+      mountYouTubePlayer();
+      expect(youtubeAdapter.getChapterTitle?.(stubVideo)).toBeNull();
+      document
+        .querySelector('.ytp-chrome-bottom')!
+        .insertAdjacentHTML('beforeend', '<div class="ytp-chapter-title-content"> </div>');
+      expect(youtubeAdapter.getChapterTitle?.(stubVideo)).toBeNull();
+    });
+  });
 });

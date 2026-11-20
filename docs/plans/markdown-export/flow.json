@@ -1,0 +1,136 @@
+{
+  "title": "Markdown export for Obsidian and Notion (2.3.0)",
+  "nodes": [
+    { "id": "root", "label": "Markdown export · 2.3.0", "kind": "root" },
+
+    {
+      "id": "pA",
+      "label": "Phase A: capture section + chapter",
+      "kind": "phase",
+      "parent": "root"
+    },
+    { "id": "a1", "label": "Note.capture { section?, chapter? }", "kind": "step", "parent": "pA" },
+    { "id": "a1t", "label": "Unit: old notes parse unchanged", "kind": "test", "parent": "a1" },
+    { "id": "a2", "label": "Nearest heading above the anchor", "kind": "step", "parent": "pA" },
+    {
+      "id": "a2t",
+      "label": "Unit: heading lookup on fixture DOMs",
+      "kind": "test",
+      "parent": "a2"
+    },
+    { "id": "a3", "label": "Video chapter from the adapter", "kind": "step", "parent": "pA" },
+    {
+      "id": "a3t",
+      "label": "Unit: YouTube chapter from fixture player",
+      "kind": "test",
+      "parent": "a3"
+    },
+    {
+      "id": "aI",
+      "label": "Integration: composer saves capture",
+      "kind": "integration",
+      "parent": "pA"
+    },
+
+    { "id": "pB", "label": "Phase B: export model", "kind": "phase", "parent": "root" },
+    {
+      "id": "b1",
+      "label": "export-model: pages, sites, sections, order",
+      "kind": "step",
+      "parent": "pB"
+    },
+    { "id": "b1t", "label": "Unit: order per anchor type", "kind": "test", "parent": "b1" },
+    { "id": "b2", "label": "markdown + frontmatter escaping", "kind": "step", "parent": "pB" },
+    {
+      "id": "b2t",
+      "label": "Unit: every escaping rule, Arabic titles",
+      "kind": "test",
+      "parent": "b2"
+    },
+    { "id": "b3", "label": "file-names: sanitize + clashes", "kind": "step", "parent": "pB" },
+    { "id": "b3t", "label": "Unit: reserved names, .., length", "kind": "test", "parent": "b3" },
+
+    { "id": "pC", "label": "Phase C: renderers", "kind": "phase", "parent": "root" },
+    { "id": "c1", "label": "mermaid: timeline, mindmap, pie", "kind": "step", "parent": "pC" },
+    {
+      "id": "c1t",
+      "label": "Unit: mermaid.parse() accepts output",
+      "kind": "test",
+      "parent": "c1"
+    },
+    { "id": "c2", "label": "render-obsidian + canvas + base", "kind": "step", "parent": "pC" },
+    { "id": "c2t", "label": "Snapshot: matches examples/obsidian", "kind": "test", "parent": "c2" },
+    { "id": "c3", "label": "render-notion + csv", "kind": "step", "parent": "pC" },
+    { "id": "c3t", "label": "Snapshot: matches examples/notion", "kind": "test", "parent": "c3" },
+    {
+      "id": "cd",
+      "label": "Zip: fflate (adopt) vs JSZip vs build",
+      "kind": "decision",
+      "parent": "pC"
+    },
+    { "id": "c4", "label": "zip via import('fflate') zipSync", "kind": "step", "parent": "cd" },
+    { "id": "c4t", "label": "Unit: zip round-trips file tree", "kind": "test", "parent": "c4" },
+    {
+      "id": "cI",
+      "label": "Integration: library to zip bytes",
+      "kind": "integration",
+      "parent": "pC"
+    },
+
+    { "id": "pD", "label": "Phase D: UI (canvas A-D)", "kind": "phase", "parent": "root" },
+    { "id": "uA", "label": "A: export dialog, folder and all", "kind": "ui", "parent": "pD" },
+    { "id": "uB", "label": "B: one page, Copy + Download .md", "kind": "ui", "parent": "pD" },
+    {
+      "id": "uC",
+      "label": "C: note menu, folder menu, Settings row",
+      "kind": "ui",
+      "parent": "pD"
+    },
+    { "id": "uD", "label": "D: busy, done, empty, failed", "kind": "ui", "parent": "pD" },
+    {
+      "id": "d1",
+      "label": "Preferences.export { flavor, attribution }",
+      "kind": "step",
+      "parent": "pD"
+    },
+    {
+      "id": "d1t",
+      "label": "Unit: defaults Obsidian + attribution on",
+      "kind": "test",
+      "parent": "d1"
+    },
+    { "id": "d2", "label": "Strings in i18n.ts, ar + en", "kind": "step", "parent": "pD" },
+    {
+      "id": "d2t",
+      "label": "Component: dialog by role, both langs",
+      "kind": "test",
+      "parent": "d2"
+    },
+    {
+      "id": "dI",
+      "label": "E2E: export fixture page, unzip, compare",
+      "kind": "integration",
+      "parent": "pD"
+    },
+
+    { "id": "pE", "label": "Phase E: release 2.3.0", "kind": "phase", "parent": "root" },
+    { "id": "e1", "label": "Import into real Obsidian + Notion", "kind": "step", "parent": "pE" },
+    { "id": "e2", "label": "release-notes, CHANGELOG, store line", "kind": "step", "parent": "pE" },
+    { "id": "e3", "label": "Screenshots RTL/LTR, light/dark", "kind": "step", "parent": "pE" },
+    {
+      "id": "eF",
+      "label": "Full suite: vitest, tsc, eslint, build",
+      "kind": "integration",
+      "parent": "pE"
+    }
+  ],
+  "edges": [
+    ["b1", "a1"],
+    ["c1", "b1"],
+    ["c2", "b2"],
+    ["c3", "b2"],
+    ["uA", "cI"],
+    ["uB", "c2"],
+    ["e1", "dI"]
+  ]
+}
