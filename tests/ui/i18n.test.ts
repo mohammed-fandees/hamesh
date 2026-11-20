@@ -39,3 +39,25 @@ describe('getStrings', () => {
     expect(en.notesOnPage(3)).toBe('notes on this page');
   });
 });
+
+describe('export strings', () => {
+  it('exist in both languages, down to every layout', () => {
+    const en = getStrings('en').exportUi;
+    const ar = getStrings('ar').exportUi;
+    expect(Object.keys(en).sort()).toEqual(Object.keys(ar).sort());
+    expect(Object.keys(en.layoutName).sort()).toEqual(Object.keys(ar.layoutName).sort());
+    expect(Object.keys(en.layoutDescription).sort()).toEqual(
+      Object.keys(ar.layoutDescription).sort(),
+    );
+  });
+
+  it('counts in Arabic the way Arabic counts', () => {
+    const ar = getStrings('ar').exportUi;
+    expect([1, 2, 3, 11].map(ar.notesCount)).toEqual([
+      'ملاحظة واحدة',
+      'ملاحظتان',
+      '3 ملاحظات',
+      '11 ملاحظة',
+    ]);
+  });
+});

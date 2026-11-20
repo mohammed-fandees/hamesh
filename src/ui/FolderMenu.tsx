@@ -4,7 +4,7 @@ import { folderNameConflict } from './folder-name-conflict';
 import { InlineConfirm } from './kit/InlineConfirm';
 import { Menu, MenuDivider, MenuItem } from './kit/Menu';
 import { NameField } from './kit/NameField';
-import { PencilIcon, PlusIcon, TrashIcon } from './kit/icons';
+import { ExportIcon, PencilIcon, PlusIcon, TrashIcon } from './kit/icons';
 import type { Strings } from './i18n';
 
 type View = 'menu' | 'renaming' | 'addingChild' | 'confirmingDelete';
@@ -42,6 +42,9 @@ interface FolderMenuProps {
   renameTaken?: readonly string[];
   /** Names a new folder inside it can't have. */
   childTaken?: readonly string[];
+  /** Offered for a personal folder that holds notes: opens the Markdown export. */
+  onExport?: () => void;
+  exportLabel?: string;
 }
 
 /**
@@ -63,6 +66,8 @@ export function FolderMenu({
   onAddChild,
   renameTaken = [],
   childTaken = [],
+  onExport,
+  exportLabel,
 }: FolderMenuProps) {
   const [view, setView] = useState<View>('menu');
   return (
@@ -123,6 +128,17 @@ export function FolderMenu({
                 <MenuItem icon={<PencilIcon />} onSelect={() => setView('renaming')}>
                   {strings.renameFolder}
                 </MenuItem>
+                {onExport && (
+                  <MenuItem
+                    icon={<ExportIcon />}
+                    onSelect={() => {
+                      close();
+                      onExport();
+                    }}
+                  >
+                    {exportLabel}
+                  </MenuItem>
+                )}
                 <MenuDivider />
                 <MenuItem
                   tone="danger"
