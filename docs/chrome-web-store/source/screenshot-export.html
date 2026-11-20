@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <title>Hamesh — Export as Markdown</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,500;0,600;1,400&family=Noto+Naskh+Arabic:wght@400;600&display=swap"
+    />
+    <link rel="stylesheet" href="../../../landing/css/reset.css" />
+    <link rel="stylesheet" href="../../../landing/css/variables.css" />
+    <link rel="stylesheet" href="../../../landing/css/base.css" />
+    <link rel="stylesheet" href="../../../landing/css/features.css" />
+    <link rel="stylesheet" href="../../../landing/css/feature-demos.css" />
+    <link rel="stylesheet" href="store-stills.css" />
+    <style>
+      /* The export dialog as the extension draws it (src/ui/export), in the landing's tokens. */
+      .stage {
+        grid-template-columns: 270px 1fr;
+        gap: 40px;
+      }
+      .xp {
+        font-family: var(--sans);
+        color: var(--ink);
+      }
+      .xp__head {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        padding: 14px 18px 12px;
+        border-bottom: 1px solid var(--border-soft);
+      }
+      .xp__title {
+        font-size: 0.8rem;
+        font-weight: 600;
+      }
+      .xp__scope {
+        margin-top: 2px;
+        font-size: 0.62rem;
+        color: var(--ink-60);
+      }
+      .xp__close {
+        color: var(--ink-40);
+      }
+      .xp__body {
+        display: grid;
+        grid-template-columns: 238px 1fr;
+      }
+      .xp__controls {
+        display: grid;
+        gap: 9px;
+        align-content: start;
+        padding: 14px 16px 16px 18px;
+        border-right: 1px solid var(--border-soft);
+      }
+      .xp__label {
+        font-size: 0.56rem;
+        font-weight: 500;
+        color: var(--ink-60);
+      }
+      .xp__tools {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 7px;
+      }
+      .xp__tool {
+        padding: 8px 9px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        background: var(--surface);
+      }
+      .xp__tool b {
+        display: block;
+        font-size: 0.66rem;
+        font-weight: 600;
+      }
+      .xp__tool span {
+        display: block;
+        margin-top: 2px;
+        font-size: 0.54rem;
+        line-height: 1.45;
+        color: var(--ink-60);
+      }
+      .xp__tool.is-on {
+        border-color: var(--accent);
+        background: var(--accent-tint);
+      }
+      .xp__hint {
+        font-size: 0.56rem;
+        line-height: 1.55;
+        color: var(--ink-60);
+      }
+      .xp__groups {
+        display: grid;
+        gap: 4px;
+      }
+      .xp__group {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 6px 7px;
+        border-radius: var(--radius-md);
+      }
+      .xp__group.is-on {
+        background: rgb(var(--accent-rgb) / 0.07);
+      }
+      .xp__group b {
+        display: block;
+        font-size: 0.62rem;
+        font-weight: 600;
+      }
+      .xp__group small {
+        font-size: 0.52rem;
+        color: var(--ink-40);
+      }
+      .xp__layout {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px 6px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: var(--surface);
+        font-size: 0.56rem;
+        font-weight: 500;
+        white-space: nowrap;
+      }
+      .xp__layout svg {
+        color: var(--ink-40);
+      }
+      .xp__layout .chev {
+        color: var(--ink-60);
+      }
+      .xp__badge {
+        padding: 1px 5px;
+        border-radius: var(--radius-pill);
+        background: var(--accent-tint);
+        color: var(--accent-strong);
+        font-size: 0.48rem;
+        font-weight: 600;
+      }
+      .xp__preview {
+        padding: 14px 16px 16px;
+        background: var(--paper-dim);
+      }
+      .xp__sheet {
+        margin-top: 7px;
+        padding: 12px 14px 10px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        background: var(--surface);
+      }
+      .xp__sheet h3 {
+        font-size: 0.8rem;
+        font-weight: 600;
+      }
+      .xp__props {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 2px 12px;
+        margin: 8px 0 10px;
+        padding: 6px 9px;
+        border-radius: var(--radius-sm);
+        background: var(--paper);
+        font-size: 0.54rem;
+        color: var(--ink-60);
+      }
+      .xp__props .tag {
+        color: var(--accent);
+      }
+      .xp__sheet h4 {
+        font-size: 0.66rem;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+      .xp__table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.56rem;
+      }
+      .xp__table th {
+        text-align: left;
+        font-weight: 500;
+        padding: 3px 0;
+        border-bottom: 1px solid var(--ink-20);
+      }
+      .xp__table td {
+        padding: 4px 0;
+        border-bottom: 1px solid var(--border-soft);
+      }
+      .xp__table td:last-child,
+      .xp__table th:last-child {
+        text-align: right;
+      }
+      .xp__table [lang='ar'] {
+        font-family: var(--arabic);
+        font-size: 0.6rem;
+      }
+      .xp__footer-line {
+        margin-top: 8px;
+        padding-top: 6px;
+        border-top: 1px solid var(--border-soft);
+        font-family: var(--serif);
+        font-style: italic;
+        font-size: 0.54rem;
+        color: var(--ink-60);
+      }
+      .xp__footer-line b {
+        color: var(--accent);
+        font-weight: 400;
+      }
+      .xp__foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 18px;
+        border-top: 1px solid var(--border-soft);
+        font-size: 0.56rem;
+        color: var(--ink-60);
+      }
+      .xp__foot .ui-actions {
+        flex: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="stage">
+      <div class="copy">
+        <span class="brand"
+          ><svg class="mark" width="18" height="18"><use href="#i-mark" /></svg><b>Hamesh</b
+          ><span>· Export as Markdown</span></span
+        >
+        <h1>Take your notes to Obsidian and Notion.</h1>
+        <p>
+          A page, a folder or everything, as Markdown. Each folder starts on the layout that suits
+          its notes: notes, a glossary, a timeline or a checklist. Change it and watch the preview.
+        </p>
+        <span class="free">Free · the files are yours to keep</span>
+        <span class="url">hamesh.fandees.tech</span>
+      </div>
+
+      <div class="demo" id="demo">
+        <div class="ui-window xp">
+          <div class="xp__head">
+            <div>
+              <p class="xp__title">Export as Markdown</p>
+              <p class="xp__scope">All notes · 3 pages · 9 notes</p>
+            </div>
+            <svg class="xp__close" width="12" height="12"><use href="#i-close" /></svg>
+          </div>
+
+          <div class="xp__body">
+            <div class="xp__controls">
+              <span class="xp__label">Open it in</span>
+              <div class="xp__tools">
+                <div class="xp__tool is-on">
+                  <b>Obsidian</b><span>Maps, a canvas and a live table</span>
+                </div>
+                <div class="xp__tool"><b>Notion</b><span>Pages and a database</span></div>
+              </div>
+              <span class="xp__label">Layout</span>
+              <p class="xp__hint">
+                Each folder and site starts on the layout that suits its notes.
+              </p>
+              <div class="xp__groups">
+                <div class="xp__group is-on">
+                  <div><b>Renaissance · Words</b><small>4 notes</small></div>
+                  <span class="xp__layout"
+                    ><svg width="16" height="10" viewBox="0 0 16 10" fill="currentColor">
+                      <rect x="0" y="1" width="4" height="1.6" rx=".8" />
+                      <rect x="6" y="1" width="10" height="1.6" rx=".8" opacity=".5" />
+                      <rect x="0" y="4.2" width="4" height="1.6" rx=".8" />
+                      <rect x="6" y="4.2" width="8" height="1.6" rx=".8" opacity=".5" />
+                      <rect x="0" y="7.4" width="4" height="1.6" rx=".8" />
+                      <rect x="6" y="7.4" width="9" height="1.6" rx=".8" opacity=".5" /></svg
+                    >Glossary <svg class="chev" width="8" height="8"><use href="#i-chevron" /></svg
+                  ></span>
+                </div>
+                <div class="xp__group">
+                  <div><b>Lectures</b><small>3 notes</small></div>
+                  <span class="xp__layout"
+                    ><svg width="16" height="10" viewBox="0 0 16 10" fill="currentColor">
+                      <rect x="0" y="4.4" width="16" height="1.2" rx=".6" opacity=".5" />
+                      <circle cx="3" cy="5" r="1.8" />
+                      <circle cx="8" cy="5" r="1.8" />
+                      <circle cx="13" cy="5" r="1.8" /></svg
+                    >Timeline <svg class="chev" width="8" height="8"><use href="#i-chevron" /></svg
+                  ></span>
+                </div>
+                <div class="xp__group">
+                  <div><b>maktaba.site</b><small>2 notes</small></div>
+                  <span class="xp__layout"
+                    ><svg width="16" height="10" viewBox="0 0 16 10" fill="currentColor">
+                      <rect x="0" y="1" width="2" height="8" rx="1" />
+                      <rect x="4" y="1" width="12" height="1.6" rx=".8" opacity=".5" />
+                      <rect x="4" y="4.2" width="10" height="1.6" rx=".8" opacity=".5" />
+                      <rect x="4" y="7.4" width="11" height="1.6" rx=".8" opacity=".5" /></svg
+                    >Notes <svg class="chev" width="8" height="8"><use href="#i-chevron" /></svg
+                  ></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="xp__preview">
+              <span class="xp__label">How it will look in Obsidian</span>
+              <div class="xp__sheet">
+                <h3>The Conditions of Renaissance</h3>
+                <div class="xp__props">
+                  <span>site</span><span>maktaba.site</span> <span>layout</span
+                  ><span>glossary</span> <span>tags</span
+                  ><span class="tag">#hamesh #hamesh/glossary</span>
+                </div>
+                <h4>Glossary</h4>
+                <table class="xp__table">
+                  <tr>
+                    <th>Word</th>
+                    <th>Meaning</th>
+                  </tr>
+                  <tr>
+                    <td>renaissance</td>
+                    <td lang="ar" dir="rtl">نهضة</td>
+                  </tr>
+                  <tr>
+                    <td>imitation</td>
+                    <td lang="ar" dir="rtl">تقليد</td>
+                  </tr>
+                  <tr>
+                    <td>dependence</td>
+                    <td lang="ar" dir="rtl">تبعية</td>
+                  </tr>
+                  <tr>
+                    <td>creation</td>
+                    <td lang="ar" dir="rtl">إبداع</td>
+                  </tr>
+                </table>
+                <p class="xp__footer-line">Exported from <b>Hamesh</b> · 20 November 2026</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="xp__foot">
+            <span>Each file ends with an “Exported from Hamesh” line.</span>
+            <div class="ui-actions">
+              <span class="ui-btn">Cancel</span>
+              <span class="ui-btn ui-btn--primary">Download .zip</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      window.place = () => {};
+    </script>
+  </body>
+</html>
