@@ -253,3 +253,48 @@ describe('HameshApp — the pill, the list, and putting a note back', () => {
     expect(screen.getByRole('button', { name: 'أعِدها لمكانها' })).toBeInTheDocument();
   });
 });
+
+describe('HameshApp — a note kept without a place', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
+    const fake = installFakeStorage();
+    fake.store.set('local:hamesh:anchor-health', {
+      n1: {
+        status: 'kept-without-place',
+        misses: 2,
+        lastCheckedAt: '2026-11-01T00:00:00.000Z',
+        pageKey: PAGE,
+      },
+    });
+    document.body.innerHTML = ARTICLE;
+    stubBrowserBits(document.querySelector('#other p'));
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it('opens from the Library without pointing at the x/y guess', async () => {
+    let restore: (id: string) => void = () => {};
+    renderPage({
+      repo: memoryRepo([noteOn('n1', elementAt('#renaissance'), 'the opening chapter')]),
+      healthRepo: createAnchorHealthRepository(),
+      onRestore: (fn) => (restore = fn),
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(50);
+    });
+    act(() => restore('n1'));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(50);
+    });
+
+    expect(screen.getByText('the opening chapter')).toBeInTheDocument();
+    expect(document.querySelector('.hm-restore-highlight')).toBeNull();
+    expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: 'View note' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /couldn't find/ })).not.toBeInTheDocument();
+  });
+});

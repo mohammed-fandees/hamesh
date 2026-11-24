@@ -39,6 +39,7 @@ cards, buttons and the Library's filter pills), as the task allows when no canva
 | 03  | [The page's pill, list and re-attach](03-page-ui.md) | C     | done    | 02         |
 | 04  | [Library and export](04-library-export.md)           | D     | done    | 01         |
 | 05  | [Release prep](05-release.md)                        | E     | pending | 03, 04     |
+| 06  | [Review before release](06-review.md)                | E     | done    | 04         |
 
 Each phase is its own PR, squash-merged once CI is green, in this order. The tag waits for the
 owner.

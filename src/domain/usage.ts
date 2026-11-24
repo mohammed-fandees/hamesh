@@ -38,10 +38,11 @@ export const USAGE_EVENTS = [
   'export.layout.timeline',
   'export.layout.checklist',
   // A note that lost its place on its page was put back (on words or an element), or kept
-  // without a place.
+  // without a place, or the Library was narrowed to the notes that lost theirs.
   'lost.reattached.text',
   'lost.reattached.element',
   'lost.kept',
+  'lost.filtered',
 ] as const;
 
 export type FeatureEvent = (typeof USAGE_EVENTS)[number];

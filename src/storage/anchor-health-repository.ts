@@ -32,15 +32,24 @@ export interface AnchorHealthRepository {
 export function createAnchorHealthRepository(): AnchorHealthRepository {
   const read = async () => parseAnchorHealth(await storage.getItem<unknown>(STORAGE_KEY));
 
+  /** The last change in flight. Changes run one after another, so a visit's verdict and a
+   *  reader's "Put it back" on the same page can't read the same map and drop each other's
+   *  write. Other tabs still write on their own; the next visit corrects what they cross. */
+  let queue: Promise<unknown> = Promise.resolve();
+
   /** Reads, changes, and writes only when `change` returns a new map. */
-  const change = async (
+  const change = (
     next: (map: AnchorHealthMap) => AnchorHealthMap | null,
   ): Promise<AnchorHealthMap> => {
-    const map = await read();
-    const updated = next(map);
-    if (!updated) return map;
-    await storage.setItem(STORAGE_KEY, updated);
-    return updated;
+    const run = queue.then(async () => {
+      const map = await read();
+      const updated = next(map);
+      if (!updated) return map;
+      await storage.setItem(STORAGE_KEY, updated);
+      return updated;
+    });
+    queue = run.catch(() => {});
+    return run;
   };
 
   return {
