@@ -67,6 +67,7 @@ import type { PersonalNotes } from '@/ui/teams/personal-notes';
 import type { Note } from '@/domain/note';
 import { countUse } from '@/usage/count';
 import { UsageAsk } from '@/ui/usage/UsageAsk';
+import { UsageBubble } from '@/ui/usage/UsageBubble';
 import type { FeatureEvent } from '@/domain/usage';
 import { useExport } from '@/ui/export/useExport';
 import { ExportActionsContext } from '@/ui/export/ExportActions';
@@ -824,6 +825,15 @@ export function App() {
                 mentionsUnseen={mentionsUnseen}
               />
               <PageTopSlot.Provider value={pageTop()}>{content()}</PageTopSlot.Provider>
+              {/* Asked of a reader who never answered, each time the Library opens: it is
+                  drawn afresh whenever the reader comes back to the Library. */}
+              {import.meta.env.WXT_TEAMS_API_ORIGIN && view === 'library' && (
+                <UsageBubble
+                  lang={lang}
+                  preferences={preferences}
+                  onOpenSettings={() => navigate('settings')}
+                />
+              )}
               {exporter.dialog}
               {/* Inside the scope, so the dialog wears Hamesh's tokens even though
                 the browser lifts it to the top layer. */}

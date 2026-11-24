@@ -165,3 +165,121 @@
   outline-offset: 2px;
   border-radius: var(--hm-radius-sm);
 }
+
+/* ---- The Library's side bubble that asks ----
+   In the inline-end corner, over nothing the reader needs. It comes in with one soft pulse each
+   time the Library opens and then keeps still: movement that never stops would pull the eye
+   away from the notes being read. */
+.hm-usage-bubble {
+  position: fixed;
+  inset-block-end: var(--hm-space-5);
+  inset-inline-end: var(--hm-space-5);
+  z-index: var(--hm-z-composer);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--hm-space-3);
+}
+.hm-usage-bubble__button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hm-space-2);
+  min-height: 40px;
+  padding: 8px var(--hm-space-4);
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-pill);
+  background: var(--hm-surface);
+  color: var(--hm-ink);
+  box-shadow: var(--hm-shadow-md);
+  font-family: inherit;
+  font-size: var(--hm-text-body-sm);
+  font-weight: 600;
+  cursor: pointer;
+  animation:
+    hm-usage-bubble-in var(--hm-motion-emphasized) both,
+    hm-usage-bubble-pulse 1.6s var(--hm-ease-out) 0.5s 1;
+  transition: background var(--hm-motion-state);
+}
+.hm-usage-bubble__button .hm-mark {
+  color: var(--hm-accent);
+}
+.hm-usage-bubble__button:hover,
+.hm-usage-bubble__button[aria-expanded='true'] {
+  background: var(--hm-surface-hover);
+}
+.hm-usage-bubble__button:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--hm-surface),
+    0 0 0 4px var(--hm-accent);
+}
+@keyframes hm-usage-bubble-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes hm-usage-bubble-pulse {
+  0% {
+    box-shadow:
+      var(--hm-shadow-md),
+      0 0 0 0 var(--hm-accent-tint);
+  }
+  60% {
+    box-shadow:
+      var(--hm-shadow-md),
+      0 0 0 10px var(--hm-accent-tint);
+  }
+  100% {
+    box-shadow:
+      var(--hm-shadow-md),
+      0 0 0 14px transparent;
+  }
+}
+.hm-usage-bubble__card {
+  width: 340px;
+  max-width: calc(100vw - 48px);
+  padding: var(--hm-space-4);
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-lg);
+  background: var(--hm-surface);
+  box-shadow: var(--hm-shadow-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--hm-space-3);
+  animation: hm-usage-bubble-in var(--hm-motion-enter) both;
+}
+.hm-usage-bubble__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--hm-space-2);
+}
+.hm-usage-bubble__title {
+  margin: 0;
+  color: var(--hm-ink);
+  font-size: var(--hm-text-title);
+  line-height: var(--hm-lh-title);
+  font-weight: 600;
+}
+.hm-usage-bubble__body {
+  margin: 0;
+  color: var(--hm-ink);
+  font-size: var(--hm-text-body-sm);
+  line-height: var(--hm-lh-body-sm);
+}
+.hm-usage-bubble__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--hm-space-2);
+}
+@media (prefers-reduced-motion: reduce) {
+  .hm-usage-bubble__button,
+  .hm-usage-bubble__card {
+    animation: none;
+  }
+}

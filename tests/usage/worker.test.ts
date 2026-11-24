@@ -107,3 +107,35 @@ describe('the usage worker', () => {
     expect(ledger().pending).toBeNull();
   });
 });
+
+describe('the usage worker, when sharing is turned on', () => {
+  it('sends that one use at once, as today, and leaves today’s counts for tomorrow', async () => {
+    const { worker, sent, ledger } = setup();
+    await worker.count('library.opened');
+    await worker.enabled();
+    expect(sent).toHaveLength(1);
+    expect(JSON.parse(String(sent[0].init.body))).toEqual({
+      day: '2026-11-17',
+      version: '2.2.0',
+      browser: 'firefox',
+      lang: 'en',
+      counts: { 'usage.enabled': 1 },
+    });
+    expect(ledger().counts).toEqual({ 'library.opened': 1 });
+  });
+
+  it('sends nothing when sharing is not on after all', async () => {
+    const { worker, sent } = setup({ sharing: async () => false });
+    await worker.enabled();
+    expect(sent).toEqual([]);
+  });
+
+  it('shrugs off being offline', async () => {
+    const { worker } = setup({
+      fetch: vi.fn(async () => {
+        throw new TypeError('offline');
+      }) as unknown as typeof fetch,
+    });
+    await expect(worker.enabled()).resolves.toBeUndefined();
+  });
+});

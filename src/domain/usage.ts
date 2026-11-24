@@ -43,6 +43,8 @@ export const USAGE_EVENTS = [
   'lost.reattached.element',
   'lost.kept',
   'lost.filtered',
+  // The reader turned usage sharing on; sent the moment it happens (see the usage worker).
+  'usage.enabled',
 ] as const;
 
 export type FeatureEvent = (typeof USAGE_EVENTS)[number];
