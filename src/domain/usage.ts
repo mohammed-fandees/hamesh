@@ -37,6 +37,11 @@ export const USAGE_EVENTS = [
   'export.layout.glossary',
   'export.layout.timeline',
   'export.layout.checklist',
+  // A note that lost its place on its page was put back (on words or an element), or kept
+  // without a place.
+  'lost.reattached.text',
+  'lost.reattached.element',
+  'lost.kept',
 ] as const;
 
 export type FeatureEvent = (typeof USAGE_EVENTS)[number];

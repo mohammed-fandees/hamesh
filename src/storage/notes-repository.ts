@@ -1,12 +1,13 @@
 import { browser } from 'wxt/browser';
 import { groupNotesByPageKey } from '@/domain/backup';
-import type { Note, CreateNoteInput, UpdateNoteInput } from '@/domain/note';
+import type { Anchor, Note, CreateNoteInput, NoteCapture, UpdateNoteInput } from '@/domain/note';
 import { parseNoteCapture } from '@/domain/note';
 import {
   createNote,
   updateNoteContent,
   setNotePinned,
   setNoteFolder,
+  updateNoteAnchor,
   validateNoteContent,
 } from '@/domain/note';
 import { DEFAULT_WORKSPACE_ID } from '@/domain/workspace';
@@ -47,6 +48,13 @@ export interface NotesRepository {
   getAll(): Promise<Note[]>;
   setPinned(noteId: string, pageKey: string, pinned: boolean): Promise<Note | null>;
   setFolder(noteId: string, pageKey: string, folderId: string | undefined): Promise<Note | null>;
+  /** Puts a note back in a new place on its page (see `updateNoteAnchor`). */
+  setAnchor(
+    noteId: string,
+    pageKey: string,
+    anchor: Anchor,
+    capture?: Pick<NoteCapture, 'section'>,
+  ): Promise<Note | null>;
   /** Writes a whole set of notes across every page they belong to — the
    *  restore half of local backup. Takes the already-merged result rather
    *  than merging here: what to do when a note exists on both sides is a
@@ -100,6 +108,9 @@ export function createNotesRepository(): NotesRepository {
 
     setFolder: (noteId, pageKey, folderId) =>
       list.update(notesAt(pageKey), noteId, (note) => setNoteFolder(note, folderId)),
+
+    setAnchor: (noteId, pageKey, anchor, capture) =>
+      list.update(notesAt(pageKey), noteId, (note) => updateNoteAnchor(note, anchor, capture)),
 
     async saveAll(notes) {
       const byPage = groupNotesByPageKey(notes);

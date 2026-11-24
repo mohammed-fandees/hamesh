@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { mayMutateNote, type CreateNoteInput, type Note } from '@/domain/note';
+import {
+  mayMutateNote,
+  type Anchor,
+  type CreateNoteInput,
+  type Note,
+  type NoteCapture,
+} from '@/domain/note';
 import type { NotesRepository } from '@/storage/notes-repository';
 import { useWork } from './useWork';
 
@@ -30,6 +36,12 @@ export interface NoteMutations {
   update(noteId: string, content: string): Promise<Note | null>;
   togglePin(noteId: string): Promise<Note | null>;
   move(noteId: string, folderId: string | undefined): Promise<Note | null>;
+  /** Puts a note that lost its place somewhere new on its page. */
+  reanchor(
+    noteId: string,
+    anchor: Anchor,
+    capture?: Pick<NoteCapture, 'section'>,
+  ): Promise<Note | null>;
   remove(noteId: string): Promise<boolean>;
   /** Unfiles every note filed in any of `folderIds` — what deleting a folder
    *  does to its notes. Notes are never deleted with a folder. */
@@ -118,6 +130,14 @@ export function useNoteMutations(
     [change, repo],
   );
 
+  const reanchor = useCallback(
+    (noteId: string, anchor: Anchor, capture?: Pick<NoteCapture, 'section'>) =>
+      change(noteKey(noteId), noteId, (note) =>
+        repo.setAnchor(note.id, note.pageKey, anchor, capture),
+      ),
+    [change, repo],
+  );
+
   const remove = useCallback(
     async (noteId: string) => {
       const done = await run(noteKey(noteId), async () => {
@@ -151,6 +171,7 @@ export function useNoteMutations(
       update,
       togglePin,
       move,
+      reanchor,
       remove,
       unfile,
       creating: working(CREATE),
@@ -159,6 +180,6 @@ export function useNoteMutations(
       failed: (noteId: string) =>
         failed(noteKey(noteId)) !== null || failed(pinKey(noteId)) !== null,
     }),
-    [create, update, togglePin, move, remove, unfile, working, failed],
+    [create, update, togglePin, move, reanchor, remove, unfile, working, failed],
   );
 }

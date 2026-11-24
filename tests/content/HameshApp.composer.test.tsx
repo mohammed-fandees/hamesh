@@ -37,6 +37,7 @@ function makeRepo(notes: Note[] = []): NotesRepository {
     delete: vi.fn(),
     setPinned: vi.fn(),
     setFolder: vi.fn(),
+    setAnchor: vi.fn(),
     saveAll: vi.fn(),
     watchPage: vi.fn(() => () => {}),
     watchAll: vi.fn(() => () => {}),

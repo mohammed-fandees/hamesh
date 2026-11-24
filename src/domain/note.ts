@@ -274,6 +274,27 @@ export function updateNoteContent(note: Note, input: UpdateNoteInput): Note {
 }
 
 /**
+ * Puts a note back in a place on its page after the old one was lost. Everything the reader
+ * made — id, words, folder, pin, team, `createdAt` — stays; the anchor and the section it now
+ * sits under are new. Unlike pinning or filing, `updatedAt` moves: the note now points
+ * somewhere else.
+ */
+export function updateNoteAnchor(
+  note: Note,
+  anchor: Anchor,
+  capture: Pick<NoteCapture, 'section'> = {},
+): Note {
+  const { capture: previous, ...rest } = note;
+  const nextCapture = parseNoteCapture({ chapter: previous?.chapter, section: capture.section });
+  return {
+    ...rest,
+    anchor,
+    ...(nextCapture ? { capture: nextCapture } : {}),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+/**
  * Whether a note lives in a team rather than on this device — the one test for
  * "shared", so no surface decides it for itself.
  */
