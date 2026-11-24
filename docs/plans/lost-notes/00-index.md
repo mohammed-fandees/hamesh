@@ -35,7 +35,7 @@ cards, buttons and the Library's filter pills), as the task allows when no canva
 | #   | Part                                                 | Phase | Status  | Depends on |
 | --- | ---------------------------------------------------- | ----- | ------- | ---------- |
 | 01  | [Health model and storage](01-health-model.md)       | A     | done    | none       |
-| 02  | [Detection on the page](02-detection.md)             | B     | pending | 01         |
+| 02  | [Detection on the page](02-detection.md)             | B     | done    | 01         |
 | 03  | [The page's pill, list and re-attach](03-page-ui.md) | C     | pending | 02         |
 | 04  | [Library and export](04-library-export.md)           | D     | pending | 01         |
 | 05  | [Release prep](05-release.md)                        | E     | pending | 03, 04     |

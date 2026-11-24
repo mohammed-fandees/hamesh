@@ -2,6 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { NotesRepository } from '@/storage/notes-repository';
 import type { PreferencesRepository } from '@/storage/preferences-repository';
 import type { FoldersRepository } from '@/storage/folders-repository';
+import type { AnchorHealthRepository } from '@/storage/anchor-health-repository';
+import { isPlaceless } from '@/domain/anchor-health';
+import { anchorOutcomes, elementFound } from '@/content/anchor-outcomes';
+import { useAnchorHealth } from '@/content/useAnchorHealth';
+import type { UsageEvent } from '@/domain/usage';
 import type { Folder } from '@/domain/folder';
 import type { Note, ElementAnchor, TextAnchor, VideoAnchor } from '@/domain/note';
 import { buildElementAnchor } from '@/domain/anchor';
@@ -160,6 +165,11 @@ interface HameshAppProps {
   /** Read for the composer's folder selector, and written to only when the
    *  user creates a folder from it. */
   foldersRepo: FoldersRepository;
+  /** Where this device remembers which notes lost their place on their page. Without it, the
+   *  page neither checks nor says. */
+  healthRepo?: AnchorHealthRepository;
+  /** Counts one use of a feature, with the reader's consent (see `countUse`). Tests pass their own. */
+  count?: (event: UsageEvent) => void;
   /** The language to render before the stored preference (if any) has
    *  loaded — already resolved from the browser's UI language, so this is
    *  exactly today's behavior for users with no saved choice. */
@@ -318,6 +328,7 @@ export function HameshApp({
   repo,
   prefsRepo,
   foldersRepo,
+  healthRepo,
   initialLang,
   registerActivate,
   registerActivateVideo,
@@ -618,6 +629,14 @@ export function HameshApp({
     },
     [resolveAll, resolveAllVideo, resolveAllText, textNotesEnabled],
   );
+
+  // ---- Notes that lost their place ----
+  // Each visit ends with one verdict per note, taken after the page has settled (see
+  // `watchVisit`); two visits that miss a note make it lost.
+  const anchorHealth = useAnchorHealth(healthRepo, pageKey, () =>
+    anchorOutcomes(notesRef.current, textNotesEnabled),
+  );
+  const health = anchorHealth.health;
 
   const loadNotes = useCallback(async () => {
     // pageKey state is seeded by the initializer and updated by the nav handler;
@@ -1415,6 +1434,8 @@ export function HameshApp({
     const byElement = new Map<Element, { own: Note[]; team: Note[] }>();
     for (const r of resolved) {
       if (!r.element) continue;
+      // A note that lost its place is not drawn on a guess at where it used to be.
+      if (isPlaceless(health[r.note.id]) && !elementFound(r.quality)) continue;
       const group = byElement.get(r.element) ?? { own: [], team: [] };
       (r.note.team ? group.team : group.own).push(r.note);
       byElement.set(r.element, group);
@@ -1450,7 +1471,7 @@ export function HameshApp({
       }
     }
     return items;
-  }, [resolved, dir, frame]);
+  }, [resolved, health, dir, frame]);
   // The cluster pin whose list is open, while it is still on the screen.
   const openClusterItem = openCluster
     ? markerItems.find((m) => m.notes.length > 1 && m.notes[0].id === openCluster)

@@ -7,6 +7,7 @@ import type { HameshMessage, ShortcutsResponse } from '@/messaging/types';
 import { createNotesRepository } from '@/storage/notes-repository';
 import { createPreferencesRepository } from '@/storage/preferences-repository';
 import { createFoldersRepository } from '@/storage/folders-repository';
+import { createAnchorHealthRepository } from '@/storage/anchor-health-repository';
 import { generatePageKey } from '@/domain/page-key';
 import { HameshApp } from '@/content/HameshApp';
 import { resolveLang } from '@/ui/i18n';
@@ -24,6 +25,7 @@ export default defineContentScript({
     const repo = createNotesRepository();
     const prefsRepo = createPreferencesRepository();
     const foldersRepo = createFoldersRepository();
+    const healthRepo = createAnchorHealthRepository();
     // Only in a build that has Teams — a build-time constant, so every other
     // build drops this and the module behind it. Even here it reaches nothing
     // but the notes the background worker already cached for this page: no
@@ -68,6 +70,7 @@ export default defineContentScript({
             repo,
             prefsRepo,
             foldersRepo,
+            healthRepo,
             initialLang,
             registerActivate: (fn: () => void) => {
               activate = fn;
