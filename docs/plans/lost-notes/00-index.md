@@ -32,14 +32,15 @@ cards, buttons and the Library's filter pills), as the task allows when no canva
 
 ## Phases and parts
 
-| #   | Part                                                 | Phase | Status  | Depends on |
-| --- | ---------------------------------------------------- | ----- | ------- | ---------- |
-| 01  | [Health model and storage](01-health-model.md)       | A     | done    | none       |
-| 02  | [Detection on the page](02-detection.md)             | B     | done    | 01         |
-| 03  | [The page's pill, list and re-attach](03-page-ui.md) | C     | done    | 02         |
-| 04  | [Library and export](04-library-export.md)           | D     | done    | 01         |
-| 05  | [Release prep](05-release.md)                        | E     | pending | 03, 04     |
-| 06  | [Review before release](06-review.md)                | E     | done    | 04         |
+| #   | Part                                                            | Phase | Status      | Depends on |
+| --- | --------------------------------------------------------------- | ----- | ----------- | ---------- |
+| 01  | [Health model and storage](01-health-model.md)                  | A     | done        | none       |
+| 02  | [Detection on the page](02-detection.md)                        | B     | done        | 01         |
+| 03  | [The page's pill, list and re-attach](03-page-ui.md)            | C     | done        | 02         |
+| 04  | [Library and export](04-library-export.md)                      | D     | done        | 01         |
+| 05  | [Release prep](05-release.md)                                   | E     | pending     | 03, 04     |
+| 06  | [Review before release](06-review.md)                           | E     | done        | 04         |
+| 07  | [The owner's decisions after the review](07-owner-followups.md) | F     | in progress | 06         |
 
 Each phase is its own PR, squash-merged once CI is green, in this order. The tag waits for the
 owner.

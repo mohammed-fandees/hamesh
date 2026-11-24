@@ -181,7 +181,7 @@ describe('HameshApp — the pill, the list, and putting a note back', () => {
     expect(repo.setAnchor).not.toHaveBeenCalled();
   });
 
-  it('keeps a note without a place, and counts only a kept one', async () => {
+  it('keeps a note without a place, where it stays as the page’s own note, and counts it', async () => {
     const repo = memoryRepo([noteOn('n1', elementAt('#renaissance'))]);
     const healthRepo = createAnchorHealthRepository();
     const count = vi.fn();
@@ -194,7 +194,9 @@ describe('HameshApp — the pill, the list, and putting a note back', () => {
 
     expect((await healthRepo.read()).n1.status).toBe('kept-without-place');
     expect(count).toHaveBeenCalledWith('lost.kept');
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    const list = screen.getByRole('dialog', { name: 'Notes without a place' });
+    expect(within(list).getByText('Kept without a place')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '1 note without a place here' })).toBeInTheDocument();
   });
 
   it('says so when keeping could not be saved, and counts nothing', async () => {
@@ -276,7 +278,25 @@ describe('HameshApp — a note kept without a place', () => {
     vi.restoreAllMocks();
   });
 
-  it('opens from the Library without pointing at the x/y guess', async () => {
+  it('says quietly that the page has a note without a place, and shows it whole', async () => {
+    renderPage({
+      repo: memoryRepo([noteOn('n1', elementAt('#renaissance'), 'the opening chapter')]),
+      healthRepo: createAnchorHealthRepository(),
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(50);
+    });
+
+    const pill = screen.getByRole('button', { name: '1 note without a place here' });
+    expect(pill).toHaveAttribute('data-tone', 'quiet');
+    expect(screen.queryByRole('button', { name: 'View note' })).not.toBeInTheDocument();
+    fireEvent.click(pill);
+    const list = screen.getByRole('dialog', { name: 'Notes without a place' });
+    expect(within(list).getByText('the opening chapter')).toBeInTheDocument();
+    expect(within(list).getByRole('button', { name: 'Put it back' })).toBeInTheDocument();
+  });
+
+  it('opens that list from the Library, never the x/y guess', async () => {
     let restore: (id: string) => void = () => {};
     renderPage({
       repo: memoryRepo([noteOn('n1', elementAt('#renaissance'), 'the opening chapter')]),
@@ -288,13 +308,11 @@ describe('HameshApp — a note kept without a place', () => {
     });
     act(() => restore('n1'));
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(50);
+      await vi.advanceTimersByTimeAsync(3_000);
     });
 
-    expect(screen.getByText('the opening chapter')).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Notes without a place' })).toBeInTheDocument();
     expect(document.querySelector('.hm-restore-highlight')).toBeNull();
     expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
-    expect(screen.queryByRole('button', { name: 'View note' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /couldn't find/ })).not.toBeInTheDocument();
   });
 });

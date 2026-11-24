@@ -1026,15 +1026,22 @@ export function HameshApp({
     });
   }, [videoSeekRequest]);
 
-  /** This page's notes that lost their place and still aren't found: a note the page finds
-   *  again leaves the list at once, before the visit's verdict clears it. */
-  const lostNotes = useMemo(() => {
+  /** This page's notes with no place on it that still aren't found, lost and kept apart: a note
+   *  the page finds again leaves the list at once, before the visit's verdict clears it. A note
+   *  kept without a place stays here as the page's own note, said quietly, never as a warning. */
+  const placeless = useMemo(() => {
     const foundNow = new Set<string>();
     for (const r of resolved) if (elementFound(r.quality)) foundNow.add(r.note.id);
     for (const t of textResolved) if (t.range) foundNow.add(t.note.id);
-    return notes.filter(
-      (n) => isLost(health[n.id]) && isCheckedForPlace(n, textNotesEnabled) && !foundNow.has(n.id),
+    const without = notes.filter(
+      (n) =>
+        isPlaceless(health[n.id]) && isCheckedForPlace(n, textNotesEnabled) && !foundNow.has(n.id),
     );
+    return {
+      all: without,
+      lost: without.filter((n) => isLost(health[n.id])),
+      kept: without.filter((n) => !isLost(health[n.id])),
+    };
   }, [notes, resolved, textResolved, health, textNotesEnabled]);
 
   /** Where an element note sits on the page, or null when it has no place there any more: a
@@ -1058,9 +1065,9 @@ export function HameshApp({
   // no fixed delay.
   if (pendingRestoreId && pendingRestoreId !== restoredFor) {
     const pendingNote = notes.find((n) => n.id === pendingRestoreId);
-    if (pendingNote && lostNotes.some((n) => n.id === pendingNote.id)) {
-      // A note that lost its place gets the same wait as any other (the page may still be
-      // loading it), then opens the list of lost notes rather than a viewer pointing nowhere.
+    if (pendingNote && placeless.all.some((n) => n.id === pendingNote.id)) {
+      // A note with no place gets the same wait as any other (the page may still be loading
+      // it), then opens the list it is in rather than a viewer pointing nowhere.
       if (restoreExpired) {
         setRestoredFor(pendingRestoreId);
         setComposer(null);
@@ -2275,11 +2282,12 @@ export function HameshApp({
         />
       )}
 
-      {!reattach && lostNotes.length > 0 && (
+      {!reattach && placeless.all.length > 0 && (
         <div className="hm-lost">
           {lostOpen && (
             <LostNotesList
-              notes={lostNotes}
+              notes={placeless.lost}
+              kept={placeless.kept}
               strings={strings.lostNotes}
               error={lostError}
               onPutBack={startPutBack}
@@ -2288,7 +2296,8 @@ export function HameshApp({
             />
           )}
           <LostNotesPill
-            count={lostNotes.length}
+            lost={placeless.lost.length}
+            kept={placeless.kept.length}
             open={lostOpen}
             strings={strings.lostNotes}
             onToggle={() => {
