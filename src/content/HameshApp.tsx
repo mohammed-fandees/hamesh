@@ -1510,7 +1510,13 @@ export function HameshApp({
       // Seeded first, so the highlight lands on exactly the selected words.
       if (onWords) previousTextRangesRef.current.set(noteId, place.range);
       const section = sectionHeadingFor(onWords ? place.range.startContainer : place.element);
-      const updated = await mutations.reanchor(noteId, anchor, { section });
+      const shared = notesRef.current.find((n) => n.id === noteId)?.team;
+      // A team's note is moved by the server, through the worker; the page redraws it when the
+      // worker's copy of the team's notes changes.
+      const updated =
+        import.meta.env.WXT_TEAMS_API_ORIGIN && shared && teamNotes
+          ? (await teamNotes.reanchor(shared.id, noteId, anchor)).ok
+          : (await mutations.reanchor(noteId, anchor, { section })) !== null;
       if (!updated) {
         previousTextRangesRef.current.delete(noteId);
         setLostError(strings.lostNotes.failed);
@@ -1527,7 +1533,7 @@ export function HameshApp({
         setHighlightElement(place.element);
       }
     },
-    [mutations, count, clearHealth, strings.lostNotes.failed],
+    [mutations, teamNotes, count, clearHealth, strings.lostNotes.failed],
   );
 
   const putBackOnText = useCallback(
@@ -1583,6 +1589,22 @@ export function HameshApp({
       else setLostError(strings.lostNotes.failed);
     },
     [keepHealth, count, strings.lostNotes.failed],
+  );
+
+  /** A team's note is its author's to put back; keeping one without a place is not offered for
+   *  a team's note in this release (see docs/plans/lost-notes/07-owner-followups.md). */
+  const lostActionsFor = useCallback(
+    (note: Note) => {
+      if (!note.team) return { putBack: true, keep: true };
+      const author = note.team.authorId;
+      const mine = author !== null && author === people.me;
+      return {
+        putBack: mine,
+        keep: false,
+        whyNot: strings.lostNotes.onlyAuthor(author ? (people.people[author]?.name ?? null) : null),
+      };
+    },
+    [people, strings.lostNotes],
   );
 
   // Escape backs out of putting a note back on words (on an element, selection mode's own
@@ -2293,6 +2315,7 @@ export function HameshApp({
               onPutBack={startPutBack}
               onKeep={(note) => void handleKeep(note)}
               onClose={() => setLostOpen(false)}
+              actionsFor={lostActionsFor}
             />
           )}
           <LostNotesPill

@@ -1,5 +1,5 @@
 import { browser } from 'wxt/browser';
-import type { Note } from '@/domain/note';
+import type { Anchor, Note } from '@/domain/note';
 import type { Lang } from '@/ui/i18n';
 import { newRequestId } from './operation-names';
 import { readPageNotes, watchPageNotes, watchTeamIndex } from './page-cache';
@@ -46,6 +46,8 @@ export interface TeamNotesSource {
   openInHamesh(teamId: string, noteId: string): Promise<void>;
   /** Deletes a team note on this page, if the server lets this member. */
   remove(teamId: string, noteId: string): Promise<PageResult<null>>;
+  /** Puts a team note that lost its place somewhere new on this page; its author only. */
+  reanchor(teamId: string, noteId: string, anchor: Anchor): Promise<PageResult<null>>;
   /** The teams a new note can go to, with their folders. */
   destinations(): Promise<PageResult<Destination[]>>;
   /** Shares a note this device holds for this page; the local copy then goes. */
@@ -98,6 +100,7 @@ export function createTeamNotesSource(): TeamNotesSource {
       await ask({ op: 'open', teamId, noteId, in: 'hamesh' });
     },
     remove: (teamId, noteId) => ask({ op: 'delete', teamId, noteId }),
+    reanchor: (teamId, noteId, anchor) => ask({ op: 'reanchor', teamId, noteId, anchor }),
     destinations: () => ask({ op: 'destinations' }),
     share: (noteId, teamId, folderId) => ask({ op: 'share', noteId, teamId, folderId }),
   };

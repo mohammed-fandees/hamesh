@@ -28,6 +28,8 @@ export interface PageHandlerDeps {
   openPage: (path: string) => Promise<void>;
   /** Keeps an opened invitation for the Teams page (`./join-pending.ts`). */
   savePendingJoin: (token: string) => Promise<void>;
+  /** The signed-in member's id, or null when nobody is signed in. */
+  currentUserId: () => Promise<string | null>;
 }
 
 /**
@@ -87,6 +89,24 @@ export async function handlePageRequest(
         noteId: request.noteId,
       });
       return gone.ok ? { ok: true, data: null } : gone;
+    }
+    case 'reanchor': {
+      // The note as the worker holds it for this very page, and the version it holds.
+      const cached = (await readPageBucket(pageKey)).find(
+        (n) => n.id === request.noteId && n.teamId === request.teamId,
+      );
+      if (!cached) return notFound();
+      if (cached.anchor.type === 'video') return notFound();
+      // Only the author moves a shared note; the server checks this again.
+      const me = await deps.currentUserId();
+      if (!me || cached.authorId !== me) return { ok: false, error: 'forbidden' };
+      const moved = await deps.service.perform('notes.update', {
+        teamId: request.teamId,
+        noteId: request.noteId,
+        version: cached.version,
+        anchor: request.anchor,
+      });
+      return moved.ok ? { ok: true, data: null } : moved;
     }
     case 'open': {
       const params = new URLSearchParams({

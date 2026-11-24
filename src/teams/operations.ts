@@ -221,6 +221,7 @@ function buildOperations() {
           version: p.version,
           ...(p.content === undefined ? {} : { content: p.content }),
           ...(p.folderId === undefined ? {} : { folderId: p.folderId }),
+          ...(p.anchor === undefined ? {} : { anchor: p.anchor }),
         },
       }),
     }),

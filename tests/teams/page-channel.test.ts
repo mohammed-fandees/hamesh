@@ -69,6 +69,7 @@ function deps(answers: Record<string, unknown> = {}) {
     notes: notes as unknown as NotesRepository,
     openPage,
     savePendingJoin,
+    currentUserId: vi.fn(async (): Promise<string | null> => SARA),
   } satisfies PageHandlerDeps;
   return { all, perform, notes, openPage, savePendingJoin };
 }
@@ -346,5 +347,71 @@ describe('opening an invitation link', () => {
       expect(savePendingJoin).not.toHaveBeenCalled();
       expect(openPage).not.toHaveBeenCalled();
     }
+  });
+});
+
+describe('putting a team note back in its place, from the page', () => {
+  const NEW_PLACE = {
+    type: 'text' as const,
+    version: 1 as const,
+    exact: 'the equation of civilisation',
+    context: { prefix: 'Bennabi wrote of ', suffix: ' in 1949' },
+    textPosition: { start: 17, end: 45 },
+  };
+  const ask = (request: Record<string, unknown>) => ({ type: 'TEAMS_PAGE', request });
+
+  it('takes a well-formed request, and refuses one with no usable place', () => {
+    const ok = { op: 'reanchor', teamId: TEAM, noteId: NOTE, anchor: NEW_PLACE };
+    expect(isTeamsPageMessage(ask(ok))).toBe(true);
+    expect(isTeamsPageMessage(ask({ ...ok, anchor: anchor }))).toBe(true);
+    for (const bad of [
+      { ...ok, anchor: undefined },
+      { ...ok, anchor: { type: 'video', videoId: 'x', platform: 'youtube', timestamp: 1 } },
+      { ...ok, anchor: { ...NEW_PLACE, exact: '' } },
+      { ...ok, anchor: { ...NEW_PLACE, exact: 'x'.repeat(20_000) } },
+      { ...ok, anchor: { signals: {}, fallbackDocumentPosition: { x: 0, y: 0 } } },
+      { ...ok, noteId: 'not-an-id' },
+    ]) {
+      expect(isTeamsPageMessage(ask(bad))).toBe(false);
+    }
+  });
+
+  it('moves the author’s note, quoting the version this device holds', async () => {
+    const { all, perform } = deps();
+    const reply = await handlePageRequest(
+      all,
+      { op: 'reanchor', teamId: TEAM, noteId: NOTE, anchor: NEW_PLACE },
+      PAGE,
+    );
+    expect(reply).toEqual({ ok: true, data: null });
+    expect(perform).toHaveBeenCalledWith('notes.update', {
+      teamId: TEAM,
+      noteId: NOTE,
+      version: 1,
+      anchor: NEW_PLACE,
+    });
+  });
+
+  it('refuses anyone but the author, before asking the server', async () => {
+    const { all, perform } = deps();
+    all.currentUserId.mockResolvedValue('01J0000000000000000000000B');
+    const reply = await handlePageRequest(
+      all,
+      { op: 'reanchor', teamId: TEAM, noteId: NOTE, anchor: NEW_PLACE },
+      PAGE,
+    );
+    expect(reply).toEqual({ ok: false, error: 'forbidden' });
+    expect(perform).not.toHaveBeenCalled();
+  });
+
+  it('refuses a note this device does not hold for that very page', async () => {
+    const { all, perform } = deps();
+    const reply = await handlePageRequest(
+      all,
+      { op: 'reanchor', teamId: TEAM, noteId: NOTE, anchor: NEW_PLACE },
+      ELSEWHERE,
+    );
+    expect(reply).toEqual({ ok: false, error: 'not_found' });
+    expect(perform).not.toHaveBeenCalled();
   });
 });

@@ -1,4 +1,5 @@
 import { MAX_COMMENT_LENGTH } from '@hamesh/teams-contract/mentions';
+import type { Anchor } from '@/domain/note';
 import type { TeamsErrorCode } from './errors';
 
 /**
@@ -19,6 +20,9 @@ import type { TeamsErrorCode } from './errors';
  *   the note itself, so no text from the page is trusted as the note;
  * - `delete`: only a team note the worker has cached for that page — the
  *   server decides whether this member may;
+ * - `reanchor`: puts a team note that lost its place somewhere new on that same
+ *   page; only a note the worker has cached for it, only from its author, and
+ *   the server decides again;
  * - `open`: opens the note's discussion beside the page (Chrome's side panel),
  *   or its page in Hamesh (`in: 'hamesh'`); carries no data.
  * - `join`: only from Hamesh's own join page (`./join-link.ts`), with the
@@ -37,6 +41,7 @@ export type PageRequest =
   | { op: 'share'; noteId: string; teamId: string; folderId: string | null }
   | { op: 'destinations' }
   | { op: 'delete'; teamId: string; noteId: string }
+  | { op: 'reanchor'; teamId: string; noteId: string; anchor: Anchor }
   | { op: 'open'; teamId: string; noteId: string; in?: 'panel' | 'hamesh' }
   | { op: 'join'; token: string };
 
@@ -77,6 +82,45 @@ export type PageResult<T> = { ok: true; data: T } | { ok: false; error: TeamsErr
 
 const isId = (v: unknown): v is string => typeof v === 'string' && ULID.test(v);
 
+/** The most an anchor may weigh, written out: the contract bounds each field, and this bounds
+ *  the whole before the worker spends anything on it. */
+const MAX_ANCHOR_JSON = 16_000;
+
+/** A text or element anchor in its documented shape. The contract checks every field again
+ *  before anything is sent; this keeps the worker from even reading a note for junk. */
+function isPlaceAnchor(value: unknown): value is Anchor {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  let size: number;
+  try {
+    size = JSON.stringify(value).length;
+  } catch {
+    return false;
+  }
+  if (size > MAX_ANCHOR_JSON) return false;
+  const a = value as Record<string, unknown>;
+  if (a.type === 'text') {
+    return (
+      a.version === 1 &&
+      typeof a.exact === 'string' &&
+      a.exact.length > 0 &&
+      !!a.context &&
+      typeof a.context === 'object' &&
+      !!a.textPosition &&
+      typeof a.textPosition === 'object'
+    );
+  }
+  if (a.type !== undefined && a.type !== 'element') return false;
+  const signals = a.signals as Record<string, unknown> | undefined;
+  return (
+    !!signals &&
+    typeof signals === 'object' &&
+    typeof signals.tagName === 'string' &&
+    signals.tagName.length > 0 &&
+    !!a.fallbackDocumentPosition &&
+    typeof a.fallbackDocumentPosition === 'object'
+  );
+}
+
 /** Whether `message` is a well-formed page request — nothing else is answered. */
 export function isTeamsPageMessage(message: unknown): message is TeamsPageMessage {
   if (!message || typeof message !== 'object') return false;
@@ -87,6 +131,8 @@ export function isTeamsPageMessage(message: unknown): message is TeamsPageMessag
     case 'thread':
     case 'delete':
       return isId(r.teamId) && isId(r.noteId);
+    case 'reanchor':
+      return isId(r.teamId) && isId(r.noteId) && isPlaceAnchor(r.anchor);
     case 'open':
       return (
         isId(r.teamId) &&

@@ -50,17 +50,30 @@ What the owner decided on 2026-11-24, after reading the review (06):
 
 ### Team notes
 
-- [ ] 7. Team notes are checked like personal ones; the list shows each one's author, and only
-      the author sees its actions
-  - Test: `tests/content/HameshApp.lost-notes.test.tsx`
-- [ ] 8. Contract: `anchor` in `UpdateNoteFields`, and a `placement` flag a team note carries
-      when its author kept it without a place
-  - Test: `packages/teams-contract` tests
-- [ ] 9. A `notes.update` from the page may carry an anchor or the kept flag: validated by hand
-      in the page channel, author only, allowed and refused paths
-  - Test: `tests/teams/page-channel.test.ts`, `tests/teams/page-handler.test.ts`
-- [ ] 10. Server side in `hamesh-api` (its own PR, pinned to the merged contract): accept them,
-      author only, with a migration and its rollback
+- [x] 7. Team notes are checked like personal ones on every member's device; the list shows each
+      one to everyone, and only its author gets Put it back (everyone else reads "Only Sara can
+      put it back")
+  - Test: `tests/content/anchor-outcomes.test.ts`, `tests/content/HameshApp.lost-team-notes.test.tsx`
+- [x] 8. Contract: `anchor` in `UpdateNoteFields` (a request field, so clients already in the
+      store are untouched), sent by `notes.update`
+  - Test: `tests/teams/operations.test.ts`
+- [x] 9. Page channel `reanchor`: validated by hand (shape and a 16 kB bound), only a note cached
+      for that very page, only from its author, then the server decides again
+  - Test: `tests/teams/page-channel.test.ts` (allowed, not the author, another page, bad anchor)
+- [ ] 10. Server side in `hamesh-api`, its own PR pinned to the merged contract: `PATCH` accepts
+      `anchor` from the note's author only, and keeps it as it keeps a new note's
+- [ ] 11. Keeping a team note without a place, for every member: needs the owner's call (see
+      Notes)
+
+## Notes
+
+- **The client parses a team note strictly** (`TeamNote` is a `strictObject`), and so does every
+  2.3.0 copy in the store. A new field in the server's answer, such as a "kept without a place"
+  flag on a team note, would make every older copy refuse every team note it pulls. So the
+  shared "kept" state cannot ride on the note itself yet. Until the owner decides, a team note's
+  author can put it back, and Keep without a place is offered for personal notes only.
+- Until `hamesh-api` accepts `anchor` (step 10), the server refuses the edit and the author sees
+  "Couldn't save. Try again."; nothing is lost.
 
 ## Done when
 
