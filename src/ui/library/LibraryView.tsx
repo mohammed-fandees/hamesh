@@ -29,6 +29,9 @@ import { DeviceIcon } from '../kit/icons';
 import { TeamSpace, type TeamLibraryActions } from '../teams/TeamSpace';
 import { PinnedSection } from './PinnedSection';
 import { WebsiteGroup } from './WebsiteGroup';
+import { LostNotesContext } from './LostNotes';
+
+const NO_LOST: ReadonlySet<string> = new Set();
 
 type LibraryMode = 'domain' | 'folder';
 
@@ -61,6 +64,8 @@ interface LibraryViewProps {
   /** How the reader last left the list, and how to remember a change. */
   listView?: LibraryPreferences;
   onListViewChange?: (patch: Partial<LibraryPreferences>) => void;
+  /** Notes that lost their place on their page: marked on their rows, and a filter of their own. */
+  lostIds?: ReadonlySet<string>;
 }
 
 /**
@@ -91,8 +96,10 @@ export function LibraryView({
   addShortcut = 'Alt+H',
   listView,
   onListViewChange,
+  lostIds = NO_LOST,
 }: LibraryViewProps) {
   const [query, setQuery] = useState('');
+  const [lostOnly, setLostOnly] = useState(false);
   // Held here as well, so a page with nowhere to remember them still works, and a
   // click shows before storage has answered.
   const [ownSort, setOwnSort] = useState<GroupSortMode>('alphabetical');
@@ -129,9 +136,16 @@ export function LibraryView({
   }, []);
 
   const searching = query.trim() !== '';
-  const visible = useMemo(
+  const owned = useMemo(
     () => [...(notes ?? []), ...teamNotes].filter((note) => matchesOwner(note, owner)),
     [notes, teamNotes, owner],
+  );
+  const lostCount = useMemo(() => owned.filter((n) => lostIds.has(n.id)).length, [owned, lostIds]);
+  // The filter goes away with the last lost note, rather than leaving an empty list behind it.
+  if (lostOnly && lostCount === 0) setLostOnly(false);
+  const visible = useMemo(
+    () => (lostOnly ? owned.filter((n) => lostIds.has(n.id)) : owned),
+    [owned, lostOnly, lostIds],
   );
   const found = useMemo(() => filterNotesByQuery(visible, query), [visible, query]);
   const groups = useMemo(
@@ -271,7 +285,7 @@ export function LibraryView({
           <li key={group.domain}>
             <WebsiteGroup
               group={group}
-              expanded={searching || expanded.has(group.domain)}
+              expanded={searching || lostOnly || expanded.has(group.domain)}
               onToggle={() =>
                 setExpanded((prev) => {
                   const next = new Set(prev);
@@ -324,10 +338,21 @@ export function LibraryView({
         </div>
       )}
 
-      {(showTeamsFilter || (anyVisible && !searching)) && (
+      {(showTeamsFilter || lostCount > 0 || (anyVisible && !searching)) && (
         <div className="hm-library-toolbar">
           {showTeamsFilter && (
             <NoteFilter lang={lang} teams={teams} value={owner} onChange={onOwnerChange} />
+          )}
+          {lostCount > 0 && (
+            <button
+              type="button"
+              className="hm-lost-filter"
+              aria-pressed={lostOnly}
+              onClick={() => setLostOnly((on) => !on)}
+            >
+              <span className="hm-dot" aria-hidden="true" />
+              {strings.lostNotes.filter(lostCount)}
+            </button>
           )}
           {anyVisible && !searching && (
             <div className="hm-library-toolbar__view">
@@ -358,12 +383,16 @@ export function LibraryView({
         </div>
       )}
 
-      {!searching && anyVisible && (
+      {/* Like a search, the lost-notes filter is a short list to act on: its cards open, and
+          Continue and Pinned step aside. */}
+      {!searching && !lostOnly && anyVisible && (
         <ContinueSection websites={continueSites} strings={strings} lang={lang} />
       )}
-      {!searching && anyVisible && <PinnedSection notes={pinned} strings={strings} lang={lang} />}
+      {!searching && !lostOnly && anyVisible && (
+        <PinnedSection notes={pinned} strings={strings} lang={lang} />
+      )}
 
-      {body()}
+      <LostNotesContext.Provider value={lostIds}>{body()}</LostNotesContext.Provider>
     </Page>
   );
 }

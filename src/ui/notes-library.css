@@ -171,6 +171,43 @@
   margin-inline-start: auto;
 }
 
+/* Notes that lost their place: a filter pill beside the others, inverting when on as they do. */
+.hm-lost-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hm-space-2);
+  padding: 5px 14px;
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-pill);
+  background: var(--hm-surface);
+  color: var(--hm-ink-60);
+  font-family: inherit;
+  font-size: var(--hm-text-body-sm);
+  cursor: pointer;
+  transition:
+    background var(--hm-motion-state),
+    color var(--hm-motion-state),
+    border-color var(--hm-motion-state);
+}
+.hm-lost-filter .hm-dot {
+  color: var(--hm-warning);
+}
+.hm-lost-filter:hover {
+  background: var(--hm-surface-hover);
+  color: var(--hm-ink);
+}
+.hm-lost-filter[aria-pressed='true'] {
+  border-color: var(--hm-ink);
+  background: var(--hm-ink);
+  color: var(--hm-paper);
+}
+.hm-lost-filter:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--hm-surface),
+    0 0 0 4px var(--hm-accent);
+}
+
 /* Continue and Pinned: a small-caps name over what they hold. */
 .hm-library-section {
   margin-bottom: var(--hm-space-5);
@@ -406,6 +443,16 @@
 }
 .hm-note-row__pin {
   color: var(--hm-accent-strong);
+}
+.hm-note-row__lost {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--hm-warning);
+  font-size: var(--hm-text-label);
+  line-height: var(--hm-lh-label);
+  font-weight: 500;
 }
 .hm-note-row .hm-attached {
   margin: 2px 0;

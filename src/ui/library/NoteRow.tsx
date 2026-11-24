@@ -12,6 +12,7 @@ import type { Lang, Strings } from '../i18n';
 import { useNoteActions } from './NoteActions';
 import { NoteActionsMenu } from './NoteActionsMenu';
 import { useDiscussAction, useShareAction } from './NoteShareSlot';
+import { useIsLost } from './LostNotes';
 
 interface NoteRowProps {
   note: Note;
@@ -49,6 +50,7 @@ export function NoteRow({ note, strings, lang, showDomain, movable }: NoteRowPro
   const actions = useNoteActions();
   const share = useShareAction();
   const discuss = useDiscussAction();
+  const lost = useIsLost(note.id);
   const domain = extractDomain(note.originalUrl);
 
   // Whether the collapsed preview is actually cutting text off — measured,
@@ -105,6 +107,12 @@ export function NoteRow({ note, strings, lang, showDomain, movable }: NoteRowPro
             <span className="hm-team-chip">
               <span className="hm-team-chip__dot" aria-hidden="true" />
               <bdi>{note.team.name}</bdi>
+            </span>
+          )}
+          {lost && (
+            <span className="hm-note-row__lost">
+              <span className="hm-dot" aria-hidden="true" />
+              {strings.lostNotes.mark}
             </span>
           )}
         </span>

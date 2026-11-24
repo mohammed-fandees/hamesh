@@ -17,6 +17,8 @@ interface ExportSources {
   /** Every note on this device, read fresh: an export is the whole truth at that moment. */
   loadNotes: () => Promise<Note[]>;
   loadFolders: () => Promise<Folder[]>;
+  /** Notes that have no place on their page any more (lost, or kept without one). */
+  loadPlaceless?: () => Promise<ReadonlySet<string>>;
   saveChoice: (patch: Partial<ExportPreferences>) => Promise<unknown>;
 }
 
@@ -52,6 +54,13 @@ function saveWithLink(blob: Blob, fileName: string): void {
 
 const clipboard = (text: string) => navigator.clipboard.writeText(text);
 
+const NO_PLACELESS: ReadonlySet<string> = new Set();
+
+interface Built {
+  model: ExportModel;
+  placeless: ReadonlySet<string>;
+}
+
 /** `hamesh-2026-11-20.zip`, `hamesh-bennabi-vocab-2026-11-20.zip`: sorted sensibly and obvious later. */
 export function zipName(model: ExportModel, now: Date): string {
   const day = now.toISOString().slice(0, 10);
@@ -74,6 +83,7 @@ export function zipName(model: ExportModel, now: Date): string {
 export function useExport({
   loadNotes,
   loadFolders,
+  loadPlaceless,
   saveChoice,
   prefs,
   strings,
@@ -82,29 +92,35 @@ export function useExport({
   writeClipboard = clipboard,
   count = countUse,
 }: UseExportArgs): ExportController {
-  const [open, setOpen] = useState<{ model: ExportModel; now: Date; loadFailed?: boolean } | null>(
-    null,
-  );
+  const [open, setOpen] = useState<(Built & { now: Date; loadFailed?: boolean }) | null>(null);
   const flavor = prefs?.export.flavor ?? 'obsidian';
   const layouts = useMemo(() => prefs?.export.layouts ?? {}, [prefs]);
 
   // The sources change identity with every render of the page; the menus that hold `actions`
   // should not re-render because of it.
-  const sources = useRef({ loadNotes, loadFolders });
+  const sources = useRef({ loadNotes, loadFolders, loadPlaceless });
   useEffect(() => {
-    sources.current = { loadNotes, loadFolders };
+    sources.current = { loadNotes, loadFolders, loadPlaceless };
   });
 
-  const build = useCallback(async (scope: ExportScope) => {
-    const [notes, folders] = await Promise.all([
+  const build = useCallback(async (scope: ExportScope): Promise<Built> => {
+    const [notes, folders, placeless] = await Promise.all([
       sources.current.loadNotes(),
       sources.current.loadFolders(),
+      // What the page has seen of a note's place only adds a line; it never stops an export.
+      sources.current.loadPlaceless?.().catch(() => NO_PLACELESS) ?? NO_PLACELESS,
     ]);
-    return buildExportModel(notes, folders, scope);
+    return { model: buildExportModel(notes, folders, scope), placeless };
   }, []);
 
   const options = useCallback(
-    (now: Date): RenderOptions => ({ flavor, lang, layouts, now }),
+    (now: Date, placeless: ReadonlySet<string>): RenderOptions => ({
+      flavor,
+      lang,
+      layouts,
+      now,
+      placeless,
+    }),
     [flavor, lang, layouts],
   );
 
@@ -121,15 +137,22 @@ export function useExport({
       open: (scope) => {
         // A library that cannot be read still opens the dialog, to say so instead of doing nothing.
         build(scope).then(
-          (model) => setOpen({ model, now: new Date() }),
+          (built) => setOpen({ ...built, now: new Date() }),
           () =>
-            setOpen({ model: buildExportModel([], [], scope), now: new Date(), loadFailed: true }),
+            setOpen({
+              model: buildExportModel([], [], scope),
+              placeless: NO_PLACELESS,
+              now: new Date(),
+              loadFailed: true,
+            }),
         );
       },
       copyPage: async (pageId) => {
         try {
-          const model = await build({ kind: 'page', pageId });
-          await writeClipboard(renderSinglePage(model, pageId, options(new Date())).text);
+          const { model, placeless } = await build({ kind: 'page', pageId });
+          await writeClipboard(
+            renderSinglePage(model, pageId, options(new Date(), placeless)).text,
+          );
           counted(model, 'copy');
           return true;
         } catch {
@@ -142,7 +165,7 @@ export function useExport({
 
   let dialog: ReactNode = null;
   if (open) {
-    const { model, now, loadFailed } = open;
+    const { model, placeless, now, loadFailed } = open;
     const pageId = model.scope.kind === 'page' ? model.scope.pageId : null;
     dialog = (
       <ExportDialog
@@ -159,14 +182,14 @@ export function useExport({
         }
         onDownload={async () => {
           if (pageId) {
-            const file = renderSinglePage(model, pageId, options(now));
+            const file = renderSinglePage(model, pageId, options(now, placeless));
             save(new Blob([file.text], { type: 'text/markdown;charset=utf-8' }), file.path);
             counted(model, 'download');
             return file.path;
           }
           const { toZip } = await import('@/domain/export/archive');
           const name = zipName(model, now);
-          const bytes = toZip(renderExport(model, options(now)));
+          const bytes = toZip(renderExport(model, options(now, placeless)));
           save(new Blob([bytes as BlobPart], { type: 'application/zip' }), name);
           counted(model, 'download');
           return name;
@@ -174,7 +197,7 @@ export function useExport({
         onCopy={
           pageId
             ? async () => {
-                await writeClipboard(renderSinglePage(model, pageId, options(now)).text);
+                await writeClipboard(renderSinglePage(model, pageId, options(now, placeless)).text);
                 counted(model, 'copy');
               }
             : undefined

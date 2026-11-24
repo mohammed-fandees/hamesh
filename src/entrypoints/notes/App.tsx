@@ -16,6 +16,9 @@ import { addNoteShortcut, useShortcuts } from '@/ui/hooks/useShortcuts';
 import { useToolbarPin } from '@/ui/hooks/useToolbarPin';
 import { usePageBackground } from '@/ui/hooks/usePageBackground';
 import { createNotesRepository } from '@/storage/notes-repository';
+import { createAnchorHealthRepository } from '@/storage/anchor-health-repository';
+import { healthIds, isLost, isPlaceless } from '@/domain/anchor-health';
+import { useAnchorHealthMap } from '@/ui/hooks/useAnchorHealthMap';
 import { createPreferencesRepository } from '@/storage/preferences-repository';
 import { createFoldersRepository } from '@/storage/folders-repository';
 import { flattenFolderTree } from '@/domain/folder-grouping';
@@ -174,6 +177,7 @@ const VIEW_EVENTS: Partial<Record<string, FeatureEvent>> = {
 const repo = createNotesRepository();
 const prefsRepo = createPreferencesRepository();
 const foldersRepo = createFoldersRepository();
+const healthRepo = createAnchorHealthRepository();
 
 export function App() {
   const [place, setPlace] = useState<Place>(initialPlace);
@@ -230,6 +234,7 @@ export function App() {
   const exporter = useExport({
     loadNotes: () => repo.getAll(),
     loadFolders: () => foldersRepo.getAll(),
+    loadPlaceless: async () => healthIds(await healthRepo.read(), isPlaceless),
     saveChoice: (patch) => prefsRepo.setExport(patch),
     prefs,
     strings,
@@ -279,6 +284,8 @@ export function App() {
     ),
   );
   const { folders, create: createFolder } = useFolders(foldersRepo);
+  const health = useAnchorHealthMap(healthRepo, notes);
+  const lostIds = useMemo(() => healthIds(health, isLost), [health]);
 
   /** Every team note this device holds, and the teams they came from. Always
    *  empty in a build without Teams, and while nobody is signed in. */
@@ -737,6 +744,7 @@ export function App() {
         addShortcut={addShortcut}
         listView={prefs?.library}
         onListViewChange={preferences.setLibrary}
+        lostIds={lostIds}
       />
     );
   }

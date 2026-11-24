@@ -37,7 +37,7 @@ cards, buttons and the Library's filter pills), as the task allows when no canva
 | 01  | [Health model and storage](01-health-model.md)       | A     | done    | none       |
 | 02  | [Detection on the page](02-detection.md)             | B     | done    | 01         |
 | 03  | [The page's pill, list and re-attach](03-page-ui.md) | C     | done    | 02         |
-| 04  | [Library and export](04-library-export.md)           | D     | pending | 01         |
+| 04  | [Library and export](04-library-export.md)           | D     | done    | 01         |
 | 05  | [Release prep](05-release.md)                        | E     | pending | 03, 04     |
 
 Each phase is its own PR, squash-merged once CI is green, in this order. The tag waits for the
