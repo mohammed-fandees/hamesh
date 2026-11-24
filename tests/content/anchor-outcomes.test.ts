@@ -59,17 +59,27 @@ describe('anchorOutcomes', () => {
     expect(outcomes.get('gone')).toBe('missed');
   });
 
-  it('does not check words while text notes are off, nor videos, nor team notes', () => {
+  it('does not check words while text notes are off, nor videos', () => {
     const outcomes = anchorOutcomes(
       [
         note('words', words('the colonisability')),
         note('video', { type: 'video', platform: 'youtube', videoId: 'abc', timestamp: 3 }),
-        note('team', element('#gone'), {
-          team: { id: 't', name: 'Readers', version: 1, authorId: null, folderId: null },
-        }),
       ],
       false,
     );
     expect(outcomes.size).toBe(0);
+  });
+
+  it('checks a team note like any other, so every member sees it lost its place', () => {
+    document.elementFromPoint = () => null;
+    const outcomes = anchorOutcomes(
+      [
+        note('team', element('#gone'), {
+          team: { id: 't', name: 'Readers', version: 1, authorId: null, folderId: null },
+        }),
+      ],
+      true,
+    );
+    expect(outcomes).toEqual(new Map([['team', 'missed']]));
   });
 });

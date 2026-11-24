@@ -67,6 +67,8 @@ export interface LostNotesStrings {
   keptTitle: string;
   keptIntro: string;
   keptLabel: string;
+  /** Under a team's note, for anyone but its author. */
+  onlyAuthor: (name: string | null) => string;
   close: string;
   /** Before what an element note was on: "On". */
   onElement: string;
@@ -473,6 +475,8 @@ const en: Strings = {
     keptTitle: 'Notes without a place',
     keptIntro: 'Kept with this page, not on any part of it.',
     keptLabel: 'Kept without a place',
+    onlyAuthor: (name) =>
+      name ? `Only ${name} can put it back` : 'Only the one who shared it can put it back',
     close: 'Close',
     onElement: 'On',
     putBack: 'Put it back',
@@ -725,6 +729,8 @@ const ar: Strings = {
     keptTitle: 'ملاحظات بلا مكان',
     keptIntro: 'محفوظة مع هذه الصفحة، لا على جزء منها.',
     keptLabel: 'محفوظة بلا مكان',
+    onlyAuthor: (name) =>
+      name ? `${name} وحده يمكنه إعادتها لمكانها` : 'من شاركها وحده يمكنه إعادتها لمكانها',
     close: 'إغلاق',
     onElement: 'على',
     putBack: 'أعِدها لمكانها',

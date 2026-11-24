@@ -115,17 +115,28 @@ export const UpdateNoteFields = z.strictObject({
   version: z.number().int().min(1),
   content: NoteContent.optional(),
   folderId: Ulid.nullable().optional(),
+  /** A new place on the same page, after the old one was lost. Only the note's author may move
+   *  it: the server refuses anyone else. */
+  anchor: Anchor.optional(),
 });
 
 /** An edit must change something. */
-export const changesSomething = (b: { content?: unknown; folderId?: unknown }): boolean =>
-  b.content !== undefined || b.folderId !== undefined;
+export const changesSomething = (b: {
+  content?: unknown;
+  folderId?: unknown;
+  anchor?: unknown;
+}): boolean => b.content !== undefined || b.folderId !== undefined || b.anchor !== undefined;
 
 /** PATCH /v1/teams/:teamId/notes/:noteId — `version` is the one the client last saw. */
 export const UpdateNoteRequest = UpdateNoteFields.refine(changesSomething, 'nothing to change');
 export type UpdateNoteRequest = z.infer<typeof UpdateNoteRequest>;
 
-export const TeamNote = z.strictObject({
+/**
+ * A team note as the server serves it. Not strict, unlike the requests: a field a newer server
+ * adds is dropped rather than refused, so a copy of the extension already installed keeps
+ * reading every team note when the server learns something new about one.
+ */
+export const TeamNote = z.object({
   id: z.string(),
   folderId: z.string().nullable(),
   authorId: z.string().nullable(),

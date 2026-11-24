@@ -29,9 +29,22 @@ interface LostNotesListProps {
   onPutBack: (note: Note) => void;
   onKeep: (note: Note) => void;
   onClose: () => void;
+  /** What this reader may do with a note. A team's note is its author's to put back; everyone
+   *  else is told whose it is. Every action is allowed when absent. */
+  actionsFor?: (note: Note) => NoteActions;
+}
+
+/** What may be done with one note in the list, and, when nothing, why. */
+export interface NoteActions {
+  putBack: boolean;
+  keep: boolean;
+  /** Said in place of the actions when there are none. */
+  whyNot?: string;
 }
 
 const NONE: readonly Note[] = [];
+const ALL: NoteActions = { putBack: true, keep: true };
+const allActions = () => ALL;
 
 /**
  * The notes on this page with no place on it: what each was on (its words, or the element), its
@@ -47,6 +60,7 @@ export function LostNotesList({
   onPutBack,
   onKeep,
   onClose,
+  actionsFor = allActions,
 }: LostNotesListProps) {
   const firstRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -54,9 +68,11 @@ export function LostNotesList({
   }, []);
   const onlyKept = notes.length === 0;
   const items = [
-    ...notes.map((note) => ({ note, isKept: false })),
-    ...kept.map((note) => ({ note, isKept: true })),
+    ...notes.map((note) => ({ note, isKept: false, can: actionsFor(note) })),
+    ...kept.map((note) => ({ note, isKept: true, can: actionsFor(note) })),
   ];
+  // Focus goes to the first action there is: a list of others' notes may have none.
+  const firstActionAt = items.findIndex(({ can }) => can.putBack);
 
   return (
     <div
@@ -78,7 +94,7 @@ export function LostNotesList({
       </div>
       <p className="hm-lost-list__intro">{onlyKept ? strings.keptIntro : strings.intro}</p>
       <ul className="hm-lost-list__items">
-        {items.map(({ note, isKept }, i) => (
+        {items.map(({ note, isKept, can }, i) => (
           <li key={note.id} className="hm-lost-list__item" aria-label={firstLineOf(note.content)}>
             {note.anchor.type === 'text' ? (
               <AttachedText label="" text={note.anchor.exact} compact />
@@ -97,28 +113,35 @@ export function LostNotesList({
               </p>
             )}
             <div className="hm-lost-list__actions">
-              <button
-                ref={i === 0 ? firstRef : undefined}
-                type="button"
-                className={
-                  isKept
-                    ? 'hm-btn hm-btn-ghost hm-btn--compact'
-                    : 'hm-btn hm-btn-primary hm-btn--compact'
-                }
-                onClick={() => onPutBack(note)}
-              >
-                {strings.putBack}
-              </button>
+              {can.putBack && (
+                <button
+                  ref={i === firstActionAt ? firstRef : undefined}
+                  type="button"
+                  className={
+                    isKept
+                      ? 'hm-btn hm-btn-ghost hm-btn--compact'
+                      : 'hm-btn hm-btn-primary hm-btn--compact'
+                  }
+                  onClick={() => onPutBack(note)}
+                >
+                  {strings.putBack}
+                </button>
+              )}
               {isKept ? (
                 <span className="hm-lost-list__kept">{strings.keptLabel}</span>
               ) : (
-                <button
-                  type="button"
-                  className="hm-btn hm-btn-ghost hm-btn--compact"
-                  onClick={() => onKeep(note)}
-                >
-                  {strings.keep}
-                </button>
+                can.keep && (
+                  <button
+                    type="button"
+                    className="hm-btn hm-btn-ghost hm-btn--compact"
+                    onClick={() => onKeep(note)}
+                  >
+                    {strings.keep}
+                  </button>
+                )
+              )}
+              {!can.putBack && can.whyNot && (
+                <span className="hm-lost-list__kept">{can.whyNot}</span>
               )}
             </div>
           </li>

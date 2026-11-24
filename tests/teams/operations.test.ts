@@ -149,6 +149,45 @@ describe('the operation table', () => {
     ).toBe(true);
   });
 
+  it('reads a team note that carries a field it does not know, and drops the field', () => {
+    const changes = operations()['notes.changes'];
+    const note = {
+      id: NOTE,
+      folderId: null,
+      authorId: null,
+      originalUrl: 'https://maktaba.site/bennabi',
+      pageTitle: null,
+      content: 'shared',
+      anchor: ANCHOR,
+      version: 1,
+      createdAt: 1,
+      updatedAt: 1,
+    };
+    const parsed = changes.result.safeParse({
+      notes: [{ ...note, keptWithoutPlace: true }],
+      folders: [],
+      cursor: 'c1',
+      hasMore: false,
+    });
+    expect(parsed.success).toBe(true);
+    expect(parsed.data?.notes[0]).toEqual(note);
+  });
+
+  it('moves a note to a new place on its page, and sends exactly that', () => {
+    const update = operations()['notes.update'];
+    const params = { teamId: TEAM, noteId: NOTE, version: 3, anchor: ANCHOR };
+    expect(update.params.safeParse(params).success, 'a new place is a change').toBe(true);
+    expect(update.request(update.params.parse(params))).toEqual({
+      method: 'PATCH',
+      path: `/v1/teams/${TEAM}/notes/${NOTE}`,
+      body: { version: 3, anchor: ANCHOR },
+    });
+    expect(
+      update.params.safeParse({ ...params, anchor: { signals: {} } }).success,
+      'an anchor outside the contract',
+    ).toBe(false);
+  });
+
   it('refuses a note whose page is not a web page, or whose anchor is not one', () => {
     const share = operations()['notes.share'];
     const base = {

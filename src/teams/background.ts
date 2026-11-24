@@ -14,6 +14,7 @@ import {
 } from './messages';
 import { codeOf } from './errors';
 import { savePendingJoin } from './join-pending';
+import { readPeople } from './people-cache';
 import type { TeamsService } from './service';
 import { countInBackground } from '@/usage/background';
 
@@ -115,6 +116,7 @@ export function registerTeams(): void {
               });
             },
             savePendingJoin: (token) => savePendingJoin(token, Date.now()),
+            currentUserId: async () => (await readPeople()).me,
           },
           message.request,
           pageUrl,

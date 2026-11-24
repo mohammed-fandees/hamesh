@@ -117,6 +117,7 @@ function source(notes: Note[], people: PeopleDirectory['people'] = {}) {
     openDiscussion: vi.fn(async () => {}),
     openInHamesh: vi.fn(async () => {}),
     remove: vi.fn(async () => ({ ok: true as const, data: null })),
+    reanchor: vi.fn(async () => ({ ok: true as const, data: null })),
     destinations: vi.fn(async () => ({ ok: true as const, data: [] })),
     share: vi.fn(async () => ({ ok: true as const, data: null })),
   };

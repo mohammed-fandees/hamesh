@@ -3,10 +3,10 @@ import { resolveAnchor, ResolutionQuality } from '@/domain/anchor-resolution';
 import type { Note } from '@/domain/note';
 import { resolveTextAnchors } from '@/domain/text-anchor-resolution';
 
-/** Notes the lost-place check looks at: this device's notes on words or an element. A video that
- *  isn't loaded is not a changed page, and a team's note can't be put back from a page. */
+/** Notes the lost-place check looks at: notes on words or an element, this device's and its
+ *  teams' alike, so every member sees that a shared note lost its place. A video that isn't
+ *  loaded is not a changed page. */
 export function isCheckedForPlace(note: Note, textEnabled: boolean): boolean {
-  if (note.team) return false;
   if (note.anchor.type === 'video') return false;
   if (note.anchor.type === 'text') return textEnabled;
   return true;
