@@ -62,13 +62,17 @@ What the owner decided on 2026-11-24, after reading the review (06):
   - Test: `tests/teams/page-channel.test.ts` (allowed, not the author, another page, bad anchor)
 - [ ] 10. Server side in `hamesh-api`, its own PR pinned to the merged contract: `PATCH` accepts
       `anchor` from the note's author only, and keeps it as it keeps a new note's
-- [ ] 11. Keeping a team note without a place, for every member: needs the owner's call (see
-      Notes)
+- [x] 11. Keeping a team note without a place, for every member: the owner chose option A. In
+      2.3.1 a team note in the server's answer is read leniently (`TeamNote` is no longer strict),
+      so a field the server adds later is dropped by copies that don't know it. The shared
+      "kept" flag, and Keep for team notes, come once most readers run 2.3.1
+  - Test: `tests/teams/operations.test.ts` (a team note with an unknown field is read, the field
+    dropped)
 
 ## Notes
 
-- **The client parses a team note strictly** (`TeamNote` is a `strictObject`), and so does every
-  2.3.0 copy in the store. A new field in the server's answer, such as a "kept without a place"
+- **Before 2.3.1 the client parsed a team note strictly** (`TeamNote` was a `strictObject`), and
+  every 2.3.0 copy in the store still does. A new field in the server's answer, such as a "kept without a place"
   flag on a team note, would make every older copy refuse every team note it pulls. So the
   shared "kept" state cannot ride on the note itself yet. Until the owner decides, a team note's
   author can put it back, and Keep without a place is offered for personal notes only.

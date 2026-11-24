@@ -131,7 +131,12 @@ export const changesSomething = (b: {
 export const UpdateNoteRequest = UpdateNoteFields.refine(changesSomething, 'nothing to change');
 export type UpdateNoteRequest = z.infer<typeof UpdateNoteRequest>;
 
-export const TeamNote = z.strictObject({
+/**
+ * A team note as the server serves it. Not strict, unlike the requests: a field a newer server
+ * adds is dropped rather than refused, so a copy of the extension already installed keeps
+ * reading every team note when the server learns something new about one.
+ */
+export const TeamNote = z.object({
   id: z.string(),
   folderId: z.string().nullable(),
   authorId: z.string().nullable(),
