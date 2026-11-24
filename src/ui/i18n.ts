@@ -60,8 +60,13 @@ export interface ExportUiStrings {
  *  Library's filter and mark. */
 export interface LostNotesStrings {
   pill: (n: number) => string;
+  /** The quiet pill, when the only notes without a place are ones the reader kept. */
+  keptPill: (n: number) => string;
   title: string;
   intro: string;
+  keptTitle: string;
+  keptIntro: string;
+  keptLabel: string;
   close: string;
   /** Before what an element note was on: "On". */
   onElement: string;
@@ -462,8 +467,12 @@ const en: Strings = {
   lostNotes: {
     pill: (n) =>
       n === 1 ? "1 note couldn't find its place" : `${n} notes couldn't find their place`,
+    keptPill: (n) => (n === 1 ? '1 note without a place here' : `${n} notes without a place here`),
     title: 'Notes that lost their place',
     intro: 'The page changed since you wrote these.',
+    keptTitle: 'Notes without a place',
+    keptIntro: 'Kept with this page, not on any part of it.',
+    keptLabel: 'Kept without a place',
     close: 'Close',
     onElement: 'On',
     putBack: 'Put it back',
@@ -703,8 +712,19 @@ const ar: Strings = {
           : n <= 10
             ? `${n} ملاحظات لم تجد مكانها`
             : `${n} ملاحظة لم تجد مكانها`,
+    keptPill: (n) =>
+      n === 1
+        ? 'ملاحظة بلا مكان في هذه الصفحة'
+        : n === 2
+          ? 'ملاحظتان بلا مكان في هذه الصفحة'
+          : n <= 10
+            ? `${n} ملاحظات بلا مكان في هذه الصفحة`
+            : `${n} ملاحظة بلا مكان في هذه الصفحة`,
     title: 'ملاحظات فقدت مكانها',
     intro: 'تغيّرت الصفحة منذ كتبتها.',
+    keptTitle: 'ملاحظات بلا مكان',
+    keptIntro: 'محفوظة مع هذه الصفحة، لا على جزء منها.',
+    keptLabel: 'محفوظة بلا مكان',
     close: 'إغلاق',
     onElement: 'على',
     putBack: 'أعِدها لمكانها',

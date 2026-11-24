@@ -1444,6 +1444,14 @@ select.hm-input {
 .hm-lost-pill .hm-dot {
   color: var(--hm-warning);
 }
+/* Only notes the reader kept without a place: the page's own notes, not a warning. */
+.hm-lost-pill[data-tone='quiet'] {
+  color: var(--hm-ink-60);
+  font-weight: 400;
+}
+.hm-lost-pill[data-tone='quiet'] .hm-dot {
+  color: var(--hm-ink-40);
+}
 .hm-lost-pill:hover,
 .hm-lost-pill[aria-expanded='true'] {
   background: var(--hm-surface-hover);
@@ -1510,6 +1518,19 @@ select.hm-input {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.hm-lost-list__note--whole {
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+}
+.hm-lost-list__kept {
+  align-self: center;
+  color: var(--hm-ink-40);
+  font-size: var(--hm-text-label);
+  line-height: var(--hm-lh-label);
 }
 .hm-lost-list__actions {
   display: flex;

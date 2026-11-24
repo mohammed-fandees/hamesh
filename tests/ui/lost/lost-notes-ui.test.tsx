@@ -60,7 +60,7 @@ describe('lost-notes strings', () => {
 describe('LostNotesPill', () => {
   it('says how many and opens the list', () => {
     const onToggle = vi.fn();
-    render(<LostNotesPill count={2} open={false} strings={en} onToggle={onToggle} />);
+    render(<LostNotesPill lost={2} kept={1} open={false} strings={en} onToggle={onToggle} />);
     const pill = screen.getByRole('button', { name: "2 notes couldn't find their place" });
     expect(pill).toHaveAttribute('aria-expanded', 'false');
     fireEvent.click(pill);
@@ -69,9 +69,26 @@ describe('LostNotesPill', () => {
 
   it('is not drawn when no note is lost', () => {
     const { container } = render(
-      <LostNotesPill count={0} open={false} strings={en} onToggle={() => {}} />,
+      <LostNotesPill lost={0} kept={0} open={false} strings={en} onToggle={() => {}} />,
     );
     expect(container).toBeEmptyDOMElement();
+  });
+});
+
+describe('LostNotesPill — notes kept without a place', () => {
+  it('says so quietly when no note is lost', () => {
+    render(<LostNotesPill lost={0} kept={2} open={false} strings={en} onToggle={() => {}} />);
+    const pill = screen.getByRole('button', { name: '2 notes without a place here' });
+    expect(pill).toHaveAttribute('data-tone', 'quiet');
+  });
+
+  it('counts kept notes the way Arabic counts', () => {
+    expect([1, 2, 3, 11].map(ar.keptPill)).toEqual([
+      'ملاحظة بلا مكان في هذه الصفحة',
+      'ملاحظتان بلا مكان في هذه الصفحة',
+      '3 ملاحظات بلا مكان في هذه الصفحة',
+      '11 ملاحظة بلا مكان في هذه الصفحة',
+    ]);
   });
 });
 
@@ -156,5 +173,31 @@ describe('ReattachBar', () => {
     expect(screen.getByRole('status')).toHaveTextContent('حدّد الكلمات التي تخصها هذه الملاحظة');
     fireEvent.click(screen.getByRole('button', { name: 'إلغاء' }));
     expect(onCancel).toHaveBeenCalled();
+  });
+});
+
+describe('LostNotesList — notes kept without a place', () => {
+  it('shows a kept note whole, with Put it back and no Keep', () => {
+    const onPutBack = vi.fn();
+    const kept = note('k', words, 'first line\nand the rest of the thought');
+    render(
+      <LostNotesList
+        notes={[]}
+        kept={[kept]}
+        strings={en}
+        error={null}
+        onPutBack={onPutBack}
+        onKeep={() => {}}
+        onClose={() => {}}
+      />,
+    );
+    const dialog = screen.getByRole('dialog', { name: 'Notes without a place' });
+    expect(within(dialog).getByText(/and the rest of the thought/)).toBeInTheDocument();
+    expect(within(dialog).getByText('Kept without a place')).toBeInTheDocument();
+    expect(
+      within(dialog).queryByRole('button', { name: 'Keep without a place' }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Put it back' }));
+    expect(onPutBack).toHaveBeenCalledWith(kept);
   });
 });
