@@ -37,6 +37,29 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    version: '2.3.1',
+    date: '2026-11-24',
+    title: { en: 'Notes that lost their place', ar: 'ملاحظات فقدت مكانها' },
+    items: [
+      {
+        en: 'When a page changes and a note can no longer find its words or the part of the page it was on, Hamesh tells you, quietly, in the corner of the page. It waits for the page to finish loading and only says so after two visits, so a page that loaded badly once never raises it.',
+        ar: 'حين تتغير صفحة ولا تجد ملاحظة كلماتها أو الجزء الذي كانت عليه، يخبرك هامش بهدوء في ركن الصفحة. ينتظر حتى تكتمل الصفحة، ولا يقول ذلك إلا بعد زيارتين، فالصفحة التي لم تُحمَّل جيدًا مرة واحدة لا تُنبّه أبدًا.',
+      },
+      {
+        en: 'Put it back: select the new words, or click the part of the page it belongs to. The note keeps its words, folder and pin. Or keep it without a place: it stays with the page, in its corner, and in your Library.',
+        ar: 'أعِدها لمكانها: حدّد الكلمات الجديدة، أو اضغط على الجزء الذي تخصه. تحتفظ الملاحظة بكلامها وفولدرها وتثبيتها. أو أبقِها بلا مكان: تبقى مع الصفحة في ركنها، وفي مكتبتك.',
+      },
+      {
+        en: 'On a team’s note, everyone sees when it lost its place, and the one who shared it can put it back.',
+        ar: 'وفي ملاحظة الفريق، يرى الجميع أنها فقدت مكانها، ومن شاركها يمكنه إعادتها لمكانها.',
+      },
+      {
+        en: 'In the Library, “Lost their place” shows only those notes. Exported notes say when they’re no longer found on their page.',
+        ar: 'في المكتبة، يعرض «فقدت مكانها» تلك الملاحظات وحدها. والملاحظات المصدّرة تقول إن لم تعد موجودة في صفحتها.',
+      },
+    ],
+  },
+  {
     version: '2.3.0',
     date: '2026-11-20',
     title: { en: 'Take your notes to Obsidian and Notion', ar: 'خذ ملاحظاتك إلى Obsidian وNotion' },
