@@ -75,4 +75,36 @@ describe('usage counts in the background', () => {
     await settle();
     expect(store.has(LEDGER)).toBe(false);
   });
+
+  it('says the moment sharing is turned on, once', async () => {
+    const posted = vi.fn(async (_url: string, _init: RequestInit) => new Response(null));
+    vi.stubGlobal('fetch', posted);
+    try {
+      const turnedOn = { usage: { sharing: 'on' } };
+      fire(
+        'changed',
+        {
+          'hamesh:preferences': { oldValue: { usage: { sharing: 'unasked' } }, newValue: turnedOn },
+        },
+        'local',
+      );
+      await settle();
+      const enabled = posted.mock.calls.filter(([, init]) =>
+        String(init.body).includes('usage.enabled'),
+      );
+      expect(enabled).toHaveLength(1);
+
+      fire(
+        'changed',
+        { 'hamesh:preferences': { oldValue: turnedOn, newValue: { ...turnedOn, language: 'en' } } },
+        'local',
+      );
+      await settle();
+      expect(
+        posted.mock.calls.filter(([, init]) => String(init.body).includes('usage.enabled')),
+      ).toHaveLength(1);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
 });

@@ -31,18 +31,22 @@ What the owner decided on 2026-11-24, after reading the review (06):
 
 ### Usage-sharing bubble
 
-- [ ] 3. `usage.ask` preference (`dismissed`), nested in `UsagePreferences`; a reader who said
-      "No thanks" before counts as dismissed, as the card promised
-  - Test: `tests/domain/preferences.test.ts`
-- [ ] 4. A bubble at the Library's inline-end corner: an entrance and one soft pulse each time
-      the Library opens, then still (none under reduced motion); it opens a card with what is
-      shared, Share and Don't show again
+- [x] 3. Who is asked: a reader who never answered (`usage.sharing` is `unasked`). "Don't show
+      this again" writes the same `off` as "No thanks", which already promises Hamesh won't ask
+      again, so no new preference was needed
   - Test: `tests/ui/usage/UsageBubble.test.tsx`
-- [ ] 5. Turning sharing on counts `usage.enabled` and sends that day's report at once, still
-      once a day at most
-  - Test: `tests/usage/worker.test.ts`
-- [ ] 6. Strings in both languages; screenshots RTL/LTR, light/dark
-  - Test: `tests/teams/strings` key parity; scratch spec, deleted
+- [x] 4. A bubble at the Library's inline-end corner: an entrance and one soft pulse each time
+      the Library opens, then still (none under reduced motion); it opens a card with what is
+      shared, Share, Don't show this again, and Hide for now
+  - Test: `tests/ui/usage/UsageBubble.test.tsx`
+- [x] 5. Turning sharing on, from anywhere, sends `usage.enabled` at once as today's first report;
+      the rest of today goes tomorrow, so no day sends twice. The server already accepts a
+      report for today and adds it to the totals, so it needs no change
+  - Test: `tests/usage/worker.test.ts`, `tests/usage/background.test.ts`
+- [x] 6. Strings in both languages; screenshots RTL/LTR, light/dark on a Teams build; store-build
+      leak check
+  - Test: scratch spec, deleted. Store build: `storage, activeTab, favicon, alarms`, no side panel,
+    no bubble class or string
 
 ### Team notes
 

@@ -90,9 +90,13 @@ export function registerUsage(apiOrigin: string): void {
         const made = foldersCreated(change.oldValue, change.newValue, now);
         for (let i = 0; i < made; i++) void worker.count('folder.created');
       } else if (key === PREFERENCES_KEY) {
-        const after = (change.newValue as { usage?: { sharing?: unknown } } | undefined)?.usage;
+        type Stored = { usage?: { sharing?: unknown } } | undefined;
+        const before = (change.oldValue as Stored)?.usage;
+        const after = (change.newValue as Stored)?.usage;
         // Turned off, from anywhere: what was kept here goes at once.
         if (after?.sharing !== 'on') void worker.forget();
+        // Turned on, from anywhere: said at once.
+        else if (before?.sharing !== 'on') void worker.enabled();
       }
     }
   });

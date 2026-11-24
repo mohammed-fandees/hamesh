@@ -1,9 +1,11 @@
 import {
   countInto,
   rollOver,
+  utcDay,
   type UsageContext,
   type UsageEvent,
   type UsageLedger,
+  type UsageReport,
 } from '@/domain/usage';
 
 export interface UsageWorkerDeps {
@@ -39,8 +41,8 @@ export function createUsageWorker(deps: UsageWorkerDeps) {
     return run;
   }
 
-  async function send(ledger: UsageLedger): Promise<UsageLedger> {
-    if (!ledger.pending) return ledger;
+  /** Posts one report; false when it could not leave (offline). */
+  async function post(report: UsageReport): Promise<boolean> {
     try {
       // Plain text needs no preflight, and the answer is not needed: a report
       // the server turns down is not one to send again. Nothing that could
@@ -52,13 +54,18 @@ export function createUsageWorker(deps: UsageWorkerDeps) {
         cache: 'no-store',
         referrerPolicy: 'no-referrer',
         headers: { 'content-type': 'text/plain' },
-        body: JSON.stringify(ledger.pending),
+        body: JSON.stringify(report),
       });
-      return { ...ledger, pending: null };
+      return true;
     } catch {
-      // Offline: it waits for the next try, and is dropped if it waits too long.
-      return ledger;
+      return false;
     }
+  }
+
+  async function send(ledger: UsageLedger): Promise<UsageLedger> {
+    if (!ledger.pending) return ledger;
+    // Offline: it waits for the next try, and is dropped if it waits too long.
+    return (await post(ledger.pending)) ? { ...ledger, pending: null } : ledger;
   }
 
   return {
@@ -84,6 +91,18 @@ export function createUsageWorker(deps: UsageWorkerDeps) {
         const after = await send(rollOver(before, now, await deps.context()));
         // A worker wakes often; most wakes change nothing and write nothing.
         if (JSON.stringify(after) !== JSON.stringify(before)) await deps.write(after);
+      });
+    },
+
+    /**
+     * The reader just turned sharing on: that one use goes at once, as today's first report, so
+     * it is known the same day. The rest of today still goes tomorrow, so no day sends twice.
+     */
+    enabled(): Promise<void> {
+      return serially(async () => {
+        if (!(await deps.sharing())) return;
+        const now = deps.now();
+        await post({ day: utcDay(now), ...(await deps.context()), counts: { 'usage.enabled': 1 } });
       });
     },
 

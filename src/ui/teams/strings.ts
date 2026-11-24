@@ -141,6 +141,10 @@ export interface TeamsStrings extends SharedStrings {
   usageAskNo: string;
   usageAskLater: string;
   usageOptional: string;
+  /** The Library's side bubble that asks: its own name, and its two ways out. */
+  usageBubble: string;
+  usageBubbleHide: string;
+  usageNeverShow: string;
   usageThanks: string;
   usageDeclined: string;
   /** The line after an answer, around a link to Settings. */
@@ -477,6 +481,9 @@ const en: TeamsOwnStrings = {
   usageAskNo: 'No thanks',
   usageAskLater: 'You can change this any time in Settings.',
   usageOptional: 'Optional',
+  usageBubble: 'Help improve Hamesh',
+  usageBubbleHide: 'Hide for now',
+  usageNeverShow: 'Don’t show this again',
   usageThanks: 'Thank you. Hamesh will share usage counts once a day.',
   usageDeclined: 'Nothing is shared. Hamesh won’t ask again.',
   usageAfterYes: {
@@ -855,6 +862,9 @@ const ar: TeamsOwnStrings = {
   usageAskNo: 'لا، شكرًا',
   usageAskLater: 'يمكنك تغيير ذلك في أي وقت من الإعدادات.',
   usageOptional: 'اختياري',
+  usageBubble: 'ساعد في تحسين هامش',
+  usageBubbleHide: 'إخفاء الآن',
+  usageNeverShow: 'لا تُظهر هذا مرة أخرى',
   usageThanks: 'شكرًا لك. سيشارك هامش أعداد الاستخدام مرة في اليوم.',
   usageDeclined: 'لن يُرسل شيء. ولن يسألك هامش مرة أخرى.',
   usageAfterYes: { before: 'يمكنك تغيير ذلك في أي وقت من ', link: 'الإعدادات', after: '.' },
