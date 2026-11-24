@@ -1037,6 +1037,14 @@ export function HameshApp({
     );
   }, [notes, resolved, textResolved, health, textNotesEnabled]);
 
+  /** Where an element note sits on the page, or null when it has no place there any more: a
+   *  note lost or kept without a place is never shown on the x/y fallback's guess. */
+  const placedElement = useCallback(
+    (r: Resolved): Element | null =>
+      isPlaceless(health[r.note.id]) && !elementFound(r.quality) ? null : r.element,
+    [health],
+  );
+
   // Adjusts state as soon as the pending restore target appears resolved
   // — React's documented pattern for reacting to a dependency change
   // during render rather than in an Effect (see "You Might Not Need an
@@ -1100,9 +1108,10 @@ export function HameshApp({
         setComposer(null);
         setError(null);
         setViewerId(pendingRestoreId);
-        if (target.element) {
+        const element = placedElement(target);
+        if (element) {
           setHighlightId(pendingRestoreId);
-          setHighlightElement(target.element);
+          setHighlightElement(element);
         }
       }
     }
@@ -1591,12 +1600,11 @@ export function HameshApp({
     // share one pin between them when there are several.
     const byElement = new Map<Element, { own: Note[]; team: Note[] }>();
     for (const r of resolved) {
-      if (!r.element) continue;
-      // A note that lost its place is not drawn on a guess at where it used to be.
-      if (isPlaceless(health[r.note.id]) && !elementFound(r.quality)) continue;
-      const group = byElement.get(r.element) ?? { own: [], team: [] };
+      const element = placedElement(r);
+      if (!element) continue;
+      const group = byElement.get(element) ?? { own: [], team: [] };
       (r.note.team ? group.team : group.own).push(r.note);
-      byElement.set(r.element, group);
+      byElement.set(element, group);
     }
     const items: MarkerItem[] = [];
     for (const [element, group] of byElement) {
@@ -1629,7 +1637,7 @@ export function HameshApp({
       }
     }
     return items;
-  }, [resolved, health, dir, frame]);
+  }, [resolved, placedElement, dir, frame]);
   // The cluster pin whose list is open, while it is still on the screen.
   const openClusterItem = openCluster
     ? markerItems.find((m) => m.notes.length > 1 && m.notes[0].id === openCluster)
@@ -2048,7 +2056,7 @@ export function HameshApp({
   // rail, the video — or the middle of the view, when there is nothing on the
   // page to attach to.
   const viewerRange = viewerTextResolved?.range ?? null;
-  const viewerElement = viewerResolved?.element ?? null;
+  const viewerElement = viewerResolved ? placedElement(viewerResolved) : null;
   const viewerVideo = viewerIsVideo
     ? (viewerVideoResolved?.video ?? videoMatch?.video ?? null)
     : null;
@@ -2390,7 +2398,7 @@ export function HameshApp({
                   ? viewerVideoResolved?.quality === ResolutionQuality.Exact
                   : viewerIsText
                     ? !!viewerTextResolved?.range
-                    : !!viewerResolved?.element
+                    : !!viewerElement
               }
               unavailableLabel={
                 viewerIsText ? strings.textAnchorUnavailable : strings.anchorUnavailable
@@ -2409,7 +2417,7 @@ export function HameshApp({
                 ? viewerVideoResolved?.quality === ResolutionQuality.Exact
                 : viewerIsText
                   ? !!viewerTextResolved?.range
-                  : !!viewerResolved?.element
+                  : !!viewerElement
             }
             unavailableLabel={viewerIsText ? strings.textAnchorUnavailable : undefined}
             attachedText={viewerNote.anchor.type === 'text' ? viewerNote.anchor.exact : undefined}

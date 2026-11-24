@@ -24,7 +24,7 @@ const note = (id: string, site: string): Note => ({
 
 const NOTES = [note('a', 'maktaba.site'), note('b', 'maktaba.site'), note('c', 'lectures.edu')];
 
-function view(lostIds: ReadonlySet<string>, lang: Lang = 'en') {
+function view(lostIds: ReadonlySet<string>, lang: Lang = 'en', count = vi.fn()) {
   return (
     <LibraryView
       strings={getStrings(lang)}
@@ -43,6 +43,7 @@ function view(lostIds: ReadonlySet<string>, lang: Lang = 'en') {
       onOpenGuide={vi.fn()}
       listView={{ sort: 'alphabetical', mode: 'folder' }}
       lostIds={lostIds}
+      count={count}
     />
   );
 }
@@ -106,5 +107,16 @@ describe('the lost-notes filter by site', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Lost their place · 1' }));
     expect(screen.queryByText('Continue')).not.toBeInTheDocument();
     expect(rows()).toEqual(['c']);
+  });
+});
+
+describe('counting the lost-notes filter', () => {
+  it('counts turning it on, not turning it off', () => {
+    const count = vi.fn();
+    render(view(new Set(['a']), 'en', count));
+    const filter = screen.getByRole('button', { name: 'Lost their place · 1' });
+    fireEvent.click(filter);
+    fireEvent.click(filter);
+    expect(count.mock.calls).toEqual([['lost.filtered']]);
   });
 });

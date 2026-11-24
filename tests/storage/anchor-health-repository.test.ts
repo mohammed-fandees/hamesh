@@ -79,3 +79,25 @@ describe('AnchorHealthRepository', () => {
     expect(seen[0].a.status).toBe('suspect');
   });
 });
+
+describe('AnchorHealthRepository — writes that overlap', () => {
+  it('keeps both of two changes started together', async () => {
+    installFakeStorage();
+    const repo = createAnchorHealthRepository();
+    await Promise.all([
+      repo.recordVisit(PAGE, new Map([['a', 'missed']]), T1),
+      repo.keepWithoutPlace('b', PAGE, T1),
+    ]);
+    const map = await repo.read();
+    expect(map.a?.status).toBe('suspect');
+    expect(map.b?.status).toBe('kept-without-place');
+  });
+
+  it('goes on after a change that failed', async () => {
+    const fake = installFakeStorage();
+    const repo = createAnchorHealthRepository();
+    fake.api.setItem.mockRejectedValueOnce(new Error('quota'));
+    await expect(repo.keepWithoutPlace('a', PAGE, T1)).rejects.toThrow('quota');
+    expect((await repo.keepWithoutPlace('a', PAGE, T1)).a.status).toBe('kept-without-place');
+  });
+});

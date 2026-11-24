@@ -17,10 +17,16 @@ import { launchExtension, type ExtensionProfile } from './support/profile';
 const BEFORE = 'The conditions of renaissance are man, soil and time.';
 const AFTER = 'Civilisation, he wrote, is an equation with three terms.';
 
-type Version = 'before' | 'after' | 'late';
+type Version = 'before' | 'after' | 'late' | 'gone';
 
-/** The page as it stands today; `late` adds the words two seconds after load. */
+/** The page as it stands today; `late` adds the words two seconds after load, and `gone` has
+ *  lost the paragraph altogether, element and all. */
 function html(version: Version): string {
+  if (version === 'gone') {
+    return `<!doctype html><html><head><meta charset="utf-8"><title>Bennabi</title></head><body>
+      <article data-testid="article"><p data-testid="intro">An essay on Bennabi.</p>
+      <aside data-testid="aside">Margins: man, soil and time.</aside></article></body></html>`;
+  }
   const words = version === 'after' ? AFTER : BEFORE;
   const body =
     version === 'late'
@@ -97,6 +103,14 @@ async function writeNote(page: Page, testId: string, words: string, content: str
   await page.locator('.hm-card textarea').fill(content);
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.locator('.hm-card textarea')).toHaveCount(0);
+}
+
+/** Selection mode, then a click in the middle of `testId`, as a reader picks an element. */
+async function clickElement(page: Page, testId: string): Promise<void> {
+  await expect(page.locator('.hm-capture')).toBeVisible();
+  const box = (await page.getByTestId(testId).boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
 }
 
 async function health(context: BrowserContext): Promise<Record<string, { status: string }>> {
@@ -187,5 +201,31 @@ test.describe('Hamesh notes that lost their place', () => {
       await page.close();
     }
     expect(await health(context)).toEqual({});
+  });
+
+  test('an element note is put back on the part of the page the reader clicks', async () => {
+    test.setTimeout(90_000);
+    const writing = await openPage(context, server.url);
+    await writing.evaluate(() => window.dispatchEvent(new CustomEvent('hamesh:activate')));
+    await clickElement(writing, 'para');
+    await writing.locator('.hm-card textarea').fill('The equation, as a whole paragraph.');
+    await writing.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(writing.locator('.hm-marker')).toHaveCount(1);
+    await writing.close();
+
+    server.serve('gone');
+    (await visit(context, server.url)).close();
+    const page = await visit(context, server.url);
+    await expect(page.locator('.hm-marker')).toHaveCount(0);
+    await page.getByRole('button', { name: "1 note couldn't find its place" }).click();
+    await page.getByRole('button', { name: 'Put it back' }).click();
+    await expect(page.getByRole('status')).toContainText('Click the part of the page');
+    await clickElement(page, 'aside');
+
+    await expect(page.locator('.hm-marker')).toHaveCount(1);
+    await expect(page.locator('.hm-lost-pill')).toHaveCount(0);
+    await expect.poll(async () => Object.keys(await health(context)).length).toBe(0);
+    await page.reload();
+    await expect(page.locator('.hm-marker')).toHaveCount(1);
   });
 });

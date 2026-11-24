@@ -1489,7 +1489,7 @@ select.hm-input {
   border-block-start: 1px solid var(--hm-border);
 }
 .hm-lost-list__item .hm-attached {
-  margin-bottom: var(--hm-space-1);
+  margin-block-end: var(--hm-space-1);
 }
 .hm-lost-list__on {
   margin: 0 0 var(--hm-space-1);

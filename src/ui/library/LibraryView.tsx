@@ -30,6 +30,8 @@ import { TeamSpace, type TeamLibraryActions } from '../teams/TeamSpace';
 import { PinnedSection } from './PinnedSection';
 import { WebsiteGroup } from './WebsiteGroup';
 import { LostNotesContext } from './LostNotes';
+import { countUse } from '@/usage/count';
+import type { UsageEvent } from '@/domain/usage';
 
 const NO_LOST: ReadonlySet<string> = new Set();
 
@@ -66,6 +68,8 @@ interface LibraryViewProps {
   onListViewChange?: (patch: Partial<LibraryPreferences>) => void;
   /** Notes that lost their place on their page: marked on their rows, and a filter of their own. */
   lostIds?: ReadonlySet<string>;
+  /** Counts one use of a feature, with the reader's consent. Tests pass their own. */
+  count?: (event: UsageEvent) => void;
 }
 
 /**
@@ -97,6 +101,7 @@ export function LibraryView({
   listView,
   onListViewChange,
   lostIds = NO_LOST,
+  count = countUse,
 }: LibraryViewProps) {
   const [query, setQuery] = useState('');
   const [lostOnly, setLostOnly] = useState(false);
@@ -348,7 +353,10 @@ export function LibraryView({
               type="button"
               className="hm-lost-filter"
               aria-pressed={lostOnly}
-              onClick={() => setLostOnly((on) => !on)}
+              onClick={() => {
+                if (!lostOnly) count('lost.filtered');
+                setLostOnly(!lostOnly);
+              }}
             >
               <span className="hm-dot" aria-hidden="true" />
               {strings.lostNotes.filter(lostCount)}
