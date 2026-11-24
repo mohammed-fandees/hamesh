@@ -6,6 +6,7 @@ import {
   updateNoteContent,
   setNotePinned,
   setNoteFolder,
+  updateNoteAnchor,
   validateNoteContent,
   validateNote,
   parseNoteCapture,
@@ -317,5 +318,56 @@ describe('note capture', () => {
     expect(parseNoteCapture('Caveats')).toBeUndefined();
     expect(parseNoteCapture(null)).toBeUndefined();
     expect(parseNoteCapture({ chapter: 'x'.repeat(400) })?.chapter).toHaveLength(160);
+  });
+});
+
+describe('updateNoteAnchor', () => {
+  const textAnchor = {
+    type: 'text' as const,
+    version: 1 as const,
+    exact: 'the conditions of renaissance',
+    context: { prefix: 'Bennabi wrote of ', suffix: ' in 1949' },
+    textPosition: { start: 17, end: 46 },
+  };
+
+  it('keeps everything the reader made and moves only the place', () => {
+    const before = {
+      ...createNote({
+        content: 'man, soil and time',
+        pageKey: 'https://maktaba.site/bennabi',
+        originalUrl: 'https://maktaba.site/bennabi',
+        anchor: makeAnchor({ primarySelector: '#gone' }),
+        folderId: 'reading',
+        capture: { section: 'Old heading', chapter: 'Part one' },
+      }),
+      pinned: true,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+
+    const after = updateNoteAnchor(before, textAnchor, { section: 'The idea' });
+
+    expect(after).toMatchObject({
+      id: before.id,
+      content: 'man, soil and time',
+      folderId: 'reading',
+      pinned: true,
+      pageKey: before.pageKey,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      anchor: textAnchor,
+      capture: { section: 'The idea', chapter: 'Part one' },
+    });
+    expect(after.updatedAt).not.toBe(before.updatedAt);
+  });
+
+  it('drops a section the new place does not have', () => {
+    const before = createNote({
+      content: 'x',
+      pageKey: 'p',
+      originalUrl: 'p',
+      anchor: makeAnchor(),
+      capture: { section: 'Old heading' },
+    });
+    expect('capture' in updateNoteAnchor(before, makeAnchor())).toBe(false);
   });
 });

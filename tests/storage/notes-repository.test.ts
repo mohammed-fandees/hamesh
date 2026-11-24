@@ -259,6 +259,40 @@ describe('NotesRepository', () => {
     });
   });
 
+  describe('setAnchor', () => {
+    it('puts a note in a new place and keeps it filed and pinned', async () => {
+      const created = await repo.create({
+        content: 'x',
+        pageKey,
+        originalUrl: 'u',
+        anchor: makeAnchor({ primarySelector: '#old' }),
+        folderId: 'folder-1',
+      });
+      await repo.setPinned(created.id, pageKey, true);
+
+      const updated = await repo.setAnchor(
+        created.id,
+        pageKey,
+        makeAnchor({ primarySelector: '#new' }),
+        { section: 'Conditions of renaissance' },
+      );
+      expect(updated?.anchor).toMatchObject({ primarySelector: '#new' });
+
+      const [stored] = await repo.getForPage(pageKey);
+      expect(stored).toMatchObject({
+        id: created.id,
+        folderId: 'folder-1',
+        pinned: true,
+        capture: { section: 'Conditions of renaissance' },
+      });
+      expect(stored.anchor).toMatchObject({ primarySelector: '#new' });
+    });
+
+    it('returns null for an unknown note id', async () => {
+      expect(await repo.setAnchor('nonexistent', pageKey, makeAnchor())).toBeNull();
+    });
+  });
+
   describe('setFolder', () => {
     it('files a note into a folder and persists it', async () => {
       const created = await repo.create({
