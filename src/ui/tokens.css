@@ -1409,6 +1409,157 @@ select.hm-input {
   font-size: var(--hm-text-body);
 }
 
+/* ---- Notes that lost their place ----
+   A pill in the page's inline-end corner, the list it opens above it, and the bar shown while a
+   note is put back. All three sit over a host page, so every fill is opaque in both themes. */
+.hm-lost {
+  position: fixed;
+  inset-block-end: var(--hm-space-4);
+  inset-inline-end: var(--hm-space-4);
+  z-index: var(--hm-z-composer);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--hm-space-2);
+  pointer-events: auto;
+}
+.hm-lost-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hm-space-2);
+  min-height: var(--hm-hit-min);
+  padding: 6px 12px;
+  border: 1px solid var(--hm-border);
+  border-radius: var(--hm-radius-pill);
+  background: var(--hm-surface);
+  color: var(--hm-ink);
+  box-shadow: var(--hm-shadow-md);
+  font-family: var(--hm-sans);
+  font-size: var(--hm-text-body-sm);
+  font-weight: 500;
+  cursor: pointer;
+  animation: hm-video-preview-in var(--hm-motion-pop);
+  transition: background var(--hm-motion-state);
+}
+.hm-lost-pill .hm-dot {
+  color: var(--hm-warning);
+}
+.hm-lost-pill:hover,
+.hm-lost-pill[aria-expanded='true'] {
+  background: var(--hm-surface-hover);
+}
+.hm-lost-pill:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--hm-surface),
+    0 0 0 4px var(--hm-accent);
+}
+.hm-lost-list {
+  width: 320px;
+  padding: var(--hm-space-3);
+}
+.hm-lost-list__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--hm-space-2);
+}
+.hm-lost-list__title {
+  margin: 0;
+  color: var(--hm-ink);
+  font-size: var(--hm-text-title);
+  line-height: var(--hm-lh-title);
+  font-weight: 600;
+}
+.hm-lost-list__intro {
+  margin: var(--hm-space-1) 0 var(--hm-space-3);
+  color: var(--hm-ink-60);
+  font-size: var(--hm-text-body-sm);
+  line-height: var(--hm-lh-body-sm);
+}
+.hm-lost-list__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.hm-lost-list__item {
+  padding: var(--hm-space-3) 0;
+  border-block-start: 1px solid var(--hm-border);
+}
+.hm-lost-list__item .hm-attached {
+  margin-bottom: var(--hm-space-1);
+}
+.hm-lost-list__on {
+  margin: 0 0 var(--hm-space-1);
+  padding-inline-start: var(--hm-space-2);
+  border-inline-start: 2px solid var(--hm-border);
+  color: var(--hm-ink-60);
+  font-size: var(--hm-text-body-sm);
+  line-height: var(--hm-lh-body-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hm-lost-list__note {
+  margin: 0 0 var(--hm-space-2);
+  color: var(--hm-ink);
+  font-size: var(--hm-text-body);
+  line-height: var(--hm-lh-body);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hm-lost-list__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--hm-space-2);
+}
+.hm-reattach-bar {
+  position: fixed;
+  inset-block-start: var(--hm-space-4);
+  inset-inline-start: 50%;
+  transform: translateX(-50%);
+  z-index: var(--hm-z-toast);
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hm-space-2);
+  max-width: calc(100vw - 32px);
+  padding-block: 6px;
+  padding-inline: 12px 6px;
+  border-radius: var(--hm-radius-pill);
+  background: var(--hm-ink);
+  color: var(--hm-paper);
+  box-shadow: var(--hm-shadow-md);
+  font-size: var(--hm-text-body-sm);
+  font-weight: 500;
+}
+.hm-scope[dir='rtl'] .hm-reattach-bar {
+  transform: translateX(50%);
+}
+.hm-reattach-bar .hm-mark {
+  flex: none;
+  color: var(--hm-accent);
+}
+.hm-reattach-bar__cancel {
+  flex: none;
+  padding: 5px 10px;
+  border: 1px solid currentColor;
+  border-radius: var(--hm-radius-pill);
+  background: transparent;
+  color: inherit;
+  font-family: var(--hm-sans);
+  font-size: var(--hm-text-label);
+  font-weight: 500;
+  cursor: pointer;
+}
+.hm-reattach-bar__cancel:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--hm-accent);
+}
+
 /* ---- Hit areas ----
    A pointer control keeps its small glyph and gains an invisible ::after out
    to --hm-hit-min, so it is easy to land on without looking bigger than the
