@@ -113,6 +113,7 @@ export function renderPage({
   lang = 'en',
   count = vi.fn(),
   onRestore,
+  onActivateText,
 }: {
   repo: NotesRepository;
   healthRepo: AnchorHealthRepository;
@@ -120,6 +121,7 @@ export function renderPage({
   lang?: 'en' | 'ar';
   count?: (event: UsageEvent) => void;
   onRestore?: (fn: (noteId: string) => void) => void;
+  onActivateText?: (fn: () => void) => void;
 }) {
   return render(
     <HameshApp
@@ -131,7 +133,7 @@ export function renderPage({
       count={count}
       registerActivate={() => {}}
       registerActivateVideo={() => {}}
-      registerActivateText={() => {}}
+      registerActivateText={onActivateText ?? (() => {})}
       registerRestoreNote={onRestore ?? (() => {})}
     />,
   );

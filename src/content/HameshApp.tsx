@@ -3,12 +3,16 @@ import type { NotesRepository } from '@/storage/notes-repository';
 import type { PreferencesRepository } from '@/storage/preferences-repository';
 import type { FoldersRepository } from '@/storage/folders-repository';
 import type { AnchorHealthRepository } from '@/storage/anchor-health-repository';
-import { isPlaceless } from '@/domain/anchor-health';
-import { anchorOutcomes, elementFound } from '@/content/anchor-outcomes';
+import { isLost, isPlaceless } from '@/domain/anchor-health';
+import { anchorOutcomes, elementFound, isCheckedForPlace } from '@/content/anchor-outcomes';
 import { useAnchorHealth } from '@/content/useAnchorHealth';
 import type { UsageEvent } from '@/domain/usage';
+import { countUse } from '@/usage/count';
+import { LostNotesPill } from '@/ui/lost/LostNotesPill';
+import { LostNotesList } from '@/ui/lost/LostNotesList';
+import { ReattachBar } from '@/ui/lost/ReattachBar';
 import type { Folder } from '@/domain/folder';
-import type { Note, ElementAnchor, TextAnchor, VideoAnchor } from '@/domain/note';
+import type { Anchor, Note, ElementAnchor, TextAnchor, VideoAnchor } from '@/domain/note';
 import { buildElementAnchor } from '@/domain/anchor';
 import { buildVideoAnchor } from '@/domain/video-anchor';
 import { buildTextAnchor } from '@/domain/text-anchor';
@@ -216,7 +220,11 @@ function isOnHameshUi(e: Event): boolean {
         n.classList?.contains('hm-select__panel') ||
         // The consent asked before a note goes to a team: answering it is
         // not a click on the page.
-        n.classList?.contains('hm-consent')),
+        n.classList?.contains('hm-consent') ||
+        // Notes that lost their place: the pill, its list, and the bar shown
+        // while one is put back.
+        n.classList?.contains('hm-lost') ||
+        n.classList?.contains('hm-reattach-bar')),
   );
 }
 
@@ -329,6 +337,7 @@ export function HameshApp({
   prefsRepo,
   foldersRepo,
   healthRepo,
+  count = countUse,
   initialLang,
   registerActivate,
   registerActivateVideo,
@@ -637,6 +646,22 @@ export function HameshApp({
     anchorOutcomes(notesRef.current, textNotesEnabled),
   );
   const health = anchorHealth.health;
+  const { keep: keepHealth, clear: clearHealth } = anchorHealth;
+  const [lostOpen, setLostOpen] = useState(false);
+  /** Said in the list when putting a note back or keeping it could not be saved. */
+  const [lostError, setLostError] = useState<string | null>(null);
+  /** The note being put back, and whether on words or on an element. */
+  const [reattach, setReattach] = useState<{ noteId: string; kind: 'element' | 'text' } | null>(
+    null,
+  );
+  const reattachingText = reattach?.kind === 'text';
+  /** Read by handlers declared before the put-back flow they hand off to. */
+  const reattachRef = useRef(reattach);
+  useEffect(() => {
+    reattachRef.current = reattach;
+  }, [reattach]);
+  const putBackOnTextRef = useRef<(capture: TextSelectionCapture) => void>(() => {});
+  const putBackOnElementRef = useRef<(element: Element) => void>(() => {});
 
   const loadNotes = useCallback(async () => {
     // pageKey state is seeded by the initializer and updated by the nav handler;
@@ -741,6 +766,8 @@ export function HameshApp({
           setViewerId(null);
           setVideoComposer(null);
           setVideoOpenClusterKey(null);
+          setReattach(null);
+          setLostOpen(false);
           // The previous page's team notes belong to the previous page. The
           // effect keyed on `pageKey` refills this with the new one's.
           teamNotesRef.current = [];
@@ -839,6 +866,7 @@ export function HameshApp({
   const stopSelecting = useCallback(() => {
     setSelecting(false);
     setHover(null);
+    setReattach(null);
   }, []);
 
   // Alt+H always opens element selection — the same thing it did before
@@ -853,6 +881,7 @@ export function HameshApp({
     setViewerId(null);
     setComposer(null);
     setVideoComposer(null);
+    setReattach(null);
     setSelecting(true);
   }, []);
 
@@ -866,6 +895,7 @@ export function HameshApp({
     setViewerId(null);
     setComposer(null);
     setSelecting(false);
+    setReattach(null);
     setVideoComposer(videoMatch);
   }, [videoMatch]);
 
@@ -924,6 +954,10 @@ export function HameshApp({
     if (!textNotes.enabled) return;
     const capture = captureTextSelection(hameshHost());
     if (!capture) return;
+    if (reattachRef.current?.kind === 'text') {
+      putBackOnTextRef.current(capture);
+      return;
+    }
     startTextNote(capture);
   }, [textNotes.enabled, hameshHost, startTextNote]);
 
@@ -992,6 +1026,17 @@ export function HameshApp({
     });
   }, [videoSeekRequest]);
 
+  /** This page's notes that lost their place and still aren't found: a note the page finds
+   *  again leaves the list at once, before the visit's verdict clears it. */
+  const lostNotes = useMemo(() => {
+    const foundNow = new Set<string>();
+    for (const r of resolved) if (elementFound(r.quality)) foundNow.add(r.note.id);
+    for (const t of textResolved) if (t.range) foundNow.add(t.note.id);
+    return notes.filter(
+      (n) => isLost(health[n.id]) && isCheckedForPlace(n, textNotesEnabled) && !foundNow.has(n.id),
+    );
+  }, [notes, resolved, textResolved, health, textNotesEnabled]);
+
   // Adjusts state as soon as the pending restore target appears resolved
   // — React's documented pattern for reacting to a dependency change
   // during render rather than in an Effect (see "You Might Not Need an
@@ -1005,7 +1050,18 @@ export function HameshApp({
   // no fixed delay.
   if (pendingRestoreId && pendingRestoreId !== restoredFor) {
     const pendingNote = notes.find((n) => n.id === pendingRestoreId);
-    if (pendingNote?.anchor.type === 'video') {
+    if (pendingNote && lostNotes.some((n) => n.id === pendingNote.id)) {
+      // A note that lost its place gets the same wait as any other (the page may still be
+      // loading it), then opens the list of lost notes rather than a viewer pointing nowhere.
+      if (restoreExpired) {
+        setRestoredFor(pendingRestoreId);
+        setComposer(null);
+        setViewerId(null);
+        setLostOpen(true);
+      }
+    } else if (healthRepo && !anchorHealth.loaded && pendingNote?.anchor.type !== 'video') {
+      // Until the health store is read, a lost note can't be told from one that just moved.
+    } else if (pendingNote?.anchor.type === 'video') {
       const videoAnchor = pendingNote.anchor;
       const target = videoResolved.find((r) => r.note.id === pendingRestoreId);
       if (target?.quality === ResolutionQuality.Exact) {
@@ -1077,7 +1133,8 @@ export function HameshApp({
   // "interfering with normal selection" this must not do. `selectionchange`
   // is used only to take the chip *away* again.
   useEffect(() => {
-    if (!textNotes.enabled || !textNotes.selectionAction) return;
+    // Putting a note back on words needs the chip even when the reader turned it off.
+    if (!textNotes.enabled || (!textNotes.selectionAction && !reattachingText)) return;
 
     const host = hameshHost();
     let raf = 0;
@@ -1162,7 +1219,7 @@ export function HameshApp({
       document.removeEventListener('keydown', onKeyDown, true);
       document.removeEventListener('selectionchange', onSelectionChange);
     };
-  }, [textNotes.enabled, textNotes.selectionAction, hameshHost]);
+  }, [textNotes.enabled, textNotes.selectionAction, reattachingText, hameshHost]);
 
   // ---- Painting the highlights ----
   // Rebuilt from the current resolution each time rather than diffed, so a
@@ -1233,6 +1290,10 @@ export function HameshApp({
       if (!el) return;
       setSelecting(false);
       setHover(null);
+      if (reattachRef.current?.kind === 'element') {
+        putBackOnElementRef.current(el);
+        return;
+      }
       setError(null);
       setComposer({ kind: 'element', element: el, anchor: buildElementAnchor(el) });
     },
@@ -1423,6 +1484,103 @@ export function HameshApp({
     },
     [mutations],
   );
+
+  // ---- Notes that lost their place: put back, or kept without one ----
+  const putBack = useCallback(
+    async (noteId: string, anchor: Anchor, place: { element: Element } | { range: Range }) => {
+      const onWords = 'range' in place;
+      setReattach(null);
+      setLostError(null);
+      // Seeded first, so the highlight lands on exactly the selected words.
+      if (onWords) previousTextRangesRef.current.set(noteId, place.range);
+      const section = sectionHeadingFor(onWords ? place.range.startContainer : place.element);
+      const updated = await mutations.reanchor(noteId, anchor, { section });
+      if (!updated) {
+        previousTextRangesRef.current.delete(noteId);
+        setLostError(strings.lostNotes.failed);
+        setLostOpen(true);
+        return;
+      }
+      count(onWords ? 'lost.reattached.text' : 'lost.reattached.element');
+      void clearHealth(noteId);
+      if (onWords) {
+        setFlashTextId(noteId);
+        setScrollToTextId(noteId);
+      } else {
+        setHighlightId(noteId);
+        setHighlightElement(place.element);
+      }
+    },
+    [mutations, count, clearHealth, strings.lostNotes.failed],
+  );
+
+  const putBackOnText = useCallback(
+    (capture: TextSelectionCapture) => {
+      const target = reattachRef.current;
+      if (target?.kind !== 'text') return;
+      const built = buildTextAnchor(capture.range);
+      if (!built) return;
+      setPendingSelection(null);
+      window.getSelection?.()?.removeAllRanges();
+      void putBack(target.noteId, built.anchor, { range: built.range });
+    },
+    [putBack],
+  );
+
+  const putBackOnElement = useCallback(
+    (element: Element) => {
+      const target = reattachRef.current;
+      if (target?.kind !== 'element') return;
+      void putBack(target.noteId, buildElementAnchor(element), { element });
+    },
+    [putBack],
+  );
+
+  useEffect(() => {
+    putBackOnTextRef.current = putBackOnText;
+    putBackOnElementRef.current = putBackOnElement;
+  }, [putBackOnText, putBackOnElement]);
+
+  const startPutBack = useCallback((note: Note) => {
+    const kind = note.anchor.type === 'text' ? 'text' : 'element';
+    setLostOpen(false);
+    setLostError(null);
+    setViewerId(null);
+    setComposer(null);
+    setVideoComposer(null);
+    setPendingSelection(null);
+    setReattach({ noteId: note.id, kind });
+    setSelecting(kind === 'element');
+  }, []);
+
+  const cancelPutBack = useCallback(() => {
+    setReattach(null);
+    setSelecting(false);
+    setHover(null);
+    setPendingSelection(null);
+  }, []);
+
+  const handleKeep = useCallback(
+    async (note: Note) => {
+      setLostError(null);
+      if (await keepHealth(note.id, note.pageKey)) count('lost.kept');
+      else setLostError(strings.lostNotes.failed);
+    },
+    [keepHealth, count, strings.lostNotes.failed],
+  );
+
+  // Escape backs out of putting a note back on words (on an element, selection mode's own
+  // Escape does it).
+  useEffect(() => {
+    if (!reattachingText) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      cancelPutBack();
+    };
+    document.addEventListener('keydown', onKey, true);
+    return () => document.removeEventListener('keydown', onKey, true);
+  }, [reattachingText, cancelPutBack]);
 
   // ---- Derived: marker placements ----
   const markerItems = useMemo(() => {
@@ -1657,6 +1815,7 @@ export function HameshApp({
         setViewerId(null);
         setVideoOpenClusterKey(null);
         setOpenCluster(null);
+        setLostOpen(false);
       }
     };
 
@@ -1945,7 +2104,10 @@ export function HameshApp({
             />
           )}
           {hover && (
-            <SelectionHint text={strings.hint} style={{ top: hover.y + 18, left: hover.x + 14 }} />
+            <SelectionHint
+              text={reattach ? strings.lostNotes.putHere : strings.hint}
+              style={{ top: hover.y + 18, left: hover.x + 14 }}
+            />
           )}
         </div>
       )}
@@ -2078,15 +2240,55 @@ export function HameshApp({
         />
       )}
 
-      {textNotes.enabled && textNotes.selectionAction && selectionActionStyle && (
-        <TextSelectionAction
-          label={strings.textNoteAction}
-          flip={dir === 'rtl'}
-          style={selectionActionStyle}
-          onActivate={() => {
-            if (pendingSelection) startTextNote(pendingSelection);
-          }}
+      {textNotes.enabled &&
+        (textNotes.selectionAction || reattachingText) &&
+        selectionActionStyle && (
+          <TextSelectionAction
+            label={reattachingText ? strings.lostNotes.putHere : strings.textNoteAction}
+            flip={dir === 'rtl'}
+            style={selectionActionStyle}
+            onActivate={() => {
+              if (!pendingSelection) return;
+              if (reattachingText) putBackOnText(pendingSelection);
+              else startTextNote(pendingSelection);
+            }}
+          />
+        )}
+
+      {reattach && (
+        <ReattachBar
+          text={
+            reattach.kind === 'text'
+              ? strings.lostNotes.reattachText
+              : strings.lostNotes.reattachElement
+          }
+          cancelLabel={strings.lostNotes.cancel}
+          onCancel={cancelPutBack}
         />
+      )}
+
+      {!reattach && lostNotes.length > 0 && (
+        <div className="hm-lost">
+          {lostOpen && (
+            <LostNotesList
+              notes={lostNotes}
+              strings={strings.lostNotes}
+              error={lostError}
+              onPutBack={startPutBack}
+              onKeep={(note) => void handleKeep(note)}
+              onClose={() => setLostOpen(false)}
+            />
+          )}
+          <LostNotesPill
+            count={lostNotes.length}
+            open={lostOpen}
+            strings={strings.lostNotes}
+            onToggle={() => {
+              setLostError(null);
+              setLostOpen((open) => !open);
+            }}
+          />
+        </div>
       )}
 
       {hoveredTextNote?.range && (

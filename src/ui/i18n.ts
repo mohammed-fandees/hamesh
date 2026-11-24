@@ -56,6 +56,26 @@ export interface ExportUiStrings {
   emptyFolderHint: string;
 }
 
+/** Notes that lost their place on their page: the page's pill, list and re-attach, and the
+ *  Library's filter and mark. */
+export interface LostNotesStrings {
+  pill: (n: number) => string;
+  title: string;
+  intro: string;
+  close: string;
+  /** Before what an element note was on: "On". */
+  onElement: string;
+  putBack: string;
+  keep: string;
+  reattachElement: string;
+  reattachText: string;
+  putHere: string;
+  cancel: string;
+  failed: string;
+  filter: (n: number) => string;
+  mark: string;
+}
+
 export interface Strings {
   note: string;
   writePlaceholder: string;
@@ -212,6 +232,7 @@ export interface Strings {
   backupRowLabel: string;
   restoreRowLabel: string;
   exportUi: ExportUiStrings;
+  lostNotes: LostNotesStrings;
 }
 
 const en: Strings = {
@@ -438,6 +459,23 @@ const en: Strings = {
     emptyFolder: 'There are no notes in this folder yet.',
     emptyFolderHint: 'Move notes into it, or export all your notes from Settings.',
   },
+  lostNotes: {
+    pill: (n) =>
+      n === 1 ? "1 note couldn't find its place" : `${n} notes couldn't find their place`,
+    title: 'Notes that lost their place',
+    intro: 'The page changed since you wrote these.',
+    close: 'Close',
+    onElement: 'On',
+    putBack: 'Put it back',
+    keep: 'Keep without a place',
+    reattachElement: 'Click the part of the page this note belongs to',
+    reattachText: 'Select the words this note belongs to',
+    putHere: 'Put the note here',
+    cancel: 'Cancel',
+    failed: "Couldn't save. Try again.",
+    filter: (n) => `Lost their place · ${n}`,
+    mark: 'Lost its place',
+  },
 };
 
 const ar: Strings = {
@@ -655,6 +693,29 @@ const ar: Strings = {
     failed: 'تعذّر تجهيز الملف. لم يتغير شيء في ملاحظاتك.',
     emptyFolder: 'لا توجد ملاحظات في هذا الفولدر بعد.',
     emptyFolderHint: 'انقل ملاحظات إليه، أو صدّر كل الملاحظات من الإعدادات.',
+  },
+  lostNotes: {
+    pill: (n) =>
+      n === 1
+        ? 'ملاحظة لم تجد مكانها'
+        : n === 2
+          ? 'ملاحظتان لم تجدا مكانهما'
+          : n <= 10
+            ? `${n} ملاحظات لم تجد مكانها`
+            : `${n} ملاحظة لم تجد مكانها`,
+    title: 'ملاحظات فقدت مكانها',
+    intro: 'تغيّرت الصفحة منذ كتبتها.',
+    close: 'إغلاق',
+    onElement: 'على',
+    putBack: 'أعِدها لمكانها',
+    keep: 'أبقِها بلا مكان',
+    reattachElement: 'اضغط على الجزء الذي تخصه هذه الملاحظة',
+    reattachText: 'حدّد الكلمات التي تخصها هذه الملاحظة',
+    putHere: 'ضع الملاحظة هنا',
+    cancel: 'إلغاء',
+    failed: 'تعذّر الحفظ. جرّب مرة أخرى.',
+    filter: (n) => `فقدت مكانها · ${n}`,
+    mark: 'فقدت مكانها',
   },
 };
 
