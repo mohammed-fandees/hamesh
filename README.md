@@ -39,6 +39,8 @@ where you left them.
 
 ## What's new
 
+- **Notes that lost their place** (2.3.1). When a page changes and a note can't find its words or
+  element, Hamesh says so in the page's corner, and you put it back with a selection or a click.
 - **Take your notes to Obsidian and Notion** (2.3). Export a page, a folder or everything as
   Markdown, laid out for what your notes are: notes, a glossary, a timeline or a checklist, with a
   map of each page and a timeline of each video.

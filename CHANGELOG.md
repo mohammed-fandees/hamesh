@@ -6,6 +6,52 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.3.1] — 2026-11-24
+
+### Added
+
+- **Notes that lost their place.** A note whose words or element are gone from its page is no
+  longer silent about it. Each visit ends with one verdict per note, taken only after the page
+  settled (a check whenever it has been quiet for 3 s; the verdict after 10 s and a quiet check,
+  or at 30 s on a page that never stops moving). A note is lost only after two visits miss it, and
+  any visit that finds it clears it. Kept per device in `hamesh:anchor-health`, apart from the
+  note: never in a backup, never moving `updatedAt`.
+- **On the page**: a pill in the inline-end corner opens the list of lost notes, each with **Put
+  it back** (select new words, or click an element; the note keeps its id, words, folder, pin and
+  `createdAt`) and **Keep without a place**. Opening a lost note from the Library opens this list.
+- **A note kept without a place stays on its page**: when nothing is lost, the corner pill says
+  quietly that the page has notes without a place, and its list shows them whole, with Put it
+  back.
+- **Team notes too**: every member sees that a team's note lost its place; only its author can
+  put it back. That goes through the worker's page channel (a new `reanchor` op, validated by
+  hand, author only) as a `notes.update` carrying the new `anchor`, which the contract now allows.
+  It needs `hamesh-api` to accept `anchor` on that `PATCH`; until it does, the author is told it
+  couldn't be saved. Keeping a team note without a place is not offered yet (see Changed).
+- **In the Library**: a "Lost their place" filter and a mark on each lost note's row.
+- **In the Markdown export**: a lost or kept note says "No longer found on the page" under its
+  quote or element (rule 17 in the export's FORMAT.md).
+- Counted for readers who share usage counts: `lost.reattached.text`, `lost.reattached.element`,
+  `lost.kept`, and the Library filter turned on, `lost.filtered`.
+- **Asking for usage counts from the Library.** A reader who never answered finds a side bubble
+  in the Library's corner each time it opens (one soft pulse, then still); it opens into the same
+  question, with Share and "Don't show this again" (the same answer as No thanks). Turning sharing
+  on sends `usage.enabled` at once as that day's first report, so it is known the same day; no day
+  still sends more than one report. Not in What's New: it is for us, not the reader.
+
+### Changed
+
+- An element note that lost its place is no longer drawn on whatever sits at its old x/y.
+- **A team note from the server is read leniently.** `TeamNote` was a `strictObject`, so any
+  field the server added would make the extension refuse every team note it pulls. Unknown fields
+  are now dropped (requests stay strict). Once most readers run 2.3.1, the server can add a
+  shared "kept without a place" flag, and Keep can be offered for team notes.
+
+### Notes
+
+- Video notes are never checked: an unloaded video is not a changed page. No new permission.
+- Released as a patch at the owner's request, though it adds a feature (engineering rules §11
+  would make it 2.4.0).
+
 ## [2.3.0] — 2026-11-20
 
 ### Added

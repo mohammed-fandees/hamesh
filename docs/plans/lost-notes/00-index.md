@@ -2,7 +2,7 @@
 
 **Goal:** a note whose words or element are gone from its page is said to be lost, honestly and
 only after the page had a fair chance, and the reader can put it back or keep it without a place.
-**Status:** in progress
+**Status:** release prepared; waiting for hamesh-api (part 07, step 10) and the owner's word to tag v2.3.1
 **Canvas:** none approved. Built from the existing tokens and components (the page's hint pill,
 cards, buttons and the Library's filter pills), as the task allows when no canvas exists.
 **Background:** [PROPOSAL.md](PROPOSAL.md)
@@ -38,7 +38,7 @@ cards, buttons and the Library's filter pills), as the task allows when no canva
 | 02  | [Detection on the page](02-detection.md)                        | B     | done        | 01         |
 | 03  | [The page's pill, list and re-attach](03-page-ui.md)            | C     | done        | 02         |
 | 04  | [Library and export](04-library-export.md)                      | D     | done        | 01         |
-| 05  | [Release prep](05-release.md)                                   | E     | pending     | 03, 04     |
+| 05  | [Release prep](05-release.md)                                   | E     | done        | 03, 04     |
 | 06  | [Review before release](06-review.md)                           | E     | done        | 04         |
 | 07  | [The owner's decisions after the review](07-owner-followups.md) | F     | in progress | 06         |
 
