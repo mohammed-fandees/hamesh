@@ -40,6 +40,10 @@ without it. Tests in `tests/domain/export/` hold each one.
 15. **Headings**: one `#` per file (the title), `##` for sections, `###` for a video moment.
 16. **Footer, always**: a rule, then `*Exported from [Hamesh](https://hamesh.fandees.tech) · <date>*`
     in Hamesh's language.
+17. **No place claimed that is gone**: a note whose words or element are no longer on its page
+    (lost, or kept without a place) gets `*⚠ No longer found on the page*` right under its quote
+    or element, in every layout; the glossary puts it in the context cell instead of the words
+    around it. Video notes never get it. See [lost-notes](../lost-notes/00-index.md).
 
 ## Names
 

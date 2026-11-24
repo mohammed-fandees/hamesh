@@ -62,6 +62,8 @@ export interface ExportStrings {
   liveTable: string;
   csvHint: (file: string) => string;
   exportedFrom: string;
+  /** Under a note whose words or element are no longer on its page. */
+  noPlace: string;
   footer: (date: string) => string;
 }
 
@@ -143,6 +145,7 @@ const en: ExportStrings = {
   csvHint: (file) =>
     `\`${file}\` holds every note. Import it on its own in Notion to get a database you can sort and filter.`,
   exportedFrom: 'Exported from',
+  noPlace: 'No longer found on the page',
   footer: (date) => `*Exported from [Hamesh](${HAMESH}) · ${date}*`,
 };
 
@@ -203,6 +206,7 @@ const ar: ExportStrings = {
   csvHint: (file) =>
     `الملف \`${file}\` فيه كل الملاحظات. استورده وحده في Notion ليصبح قاعدة بيانات ترتّبها وتفلترها.`,
   exportedFrom: 'صُدِّرت من',
+  noPlace: 'لم تعد موجودة في الصفحة',
   footer: (date) => `*صُدِّرت من [هامش](${HAMESH}) · ${date}*`,
 };
 

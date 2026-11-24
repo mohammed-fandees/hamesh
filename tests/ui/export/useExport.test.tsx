@@ -27,10 +27,12 @@ function Harness(props: {
   count: (event: string) => void;
   onActions: (a: ExportActions) => void;
   loadNotes?: () => Promise<typeof notes>;
+  loadPlaceless?: () => Promise<ReadonlySet<string>>;
 }) {
   const exporter = useExport({
     loadNotes: props.loadNotes ?? (async () => notes),
     loadFolders: async () => folders,
+    loadPlaceless: props.loadPlaceless,
     saveChoice: vi.fn(),
     prefs: props.prefs,
     strings,
@@ -179,5 +181,37 @@ describe('zipName', () => {
     expect(zipName(buildExportModel(notes, folders, { kind: 'all' }), now)).toBe(
       'hamesh-2026-11-20.zip',
     );
+  });
+});
+
+describe('useExport — notes that lost their place', () => {
+  const onWords = notes.find((n) => n.anchor.type === 'text')!;
+
+  function copyWith(loadPlaceless: () => Promise<ReadonlySet<string>>) {
+    const writeClipboard = vi.fn().mockResolvedValue(undefined);
+    let actions!: ExportActions;
+    render(
+      <Harness
+        prefs={DEFAULT_PREFERENCES}
+        save={vi.fn()}
+        writeClipboard={writeClipboard}
+        count={vi.fn()}
+        onActions={(a) => (actions = a)}
+        loadPlaceless={loadPlaceless}
+      />,
+    );
+    return { writeClipboard, copy: () => actions.copyPage(pageIdentity(onWords)) };
+  }
+
+  it('says under a placeless note that it is no longer on the page', async () => {
+    const { writeClipboard, copy } = copyWith(async () => new Set([onWords.id]));
+    expect(await copy()).toBe(true);
+    expect(writeClipboard.mock.calls[0][0]).toContain('No longer found on the page');
+  });
+
+  it('still exports when that cannot be read, just without the line', async () => {
+    const { writeClipboard, copy } = copyWith(() => Promise.reject(new Error('gone')));
+    expect(await copy()).toBe(true);
+    expect(writeClipboard.mock.calls[0][0]).not.toContain('No longer found on the page');
   });
 });

@@ -31,6 +31,9 @@ export interface RenderOptions {
   /** Chosen layouts by group key; a group without one uses its suggestion. */
   layouts: Readonly<Record<string, ExportLayout>>;
   now: Date;
+  /** Notes that no longer have a place on their page (lost, or kept without one): each says so
+   *  under what it was on, so nothing exported claims a place it no longer has. */
+  placeless?: ReadonlySet<string>;
 }
 
 export interface RenderedFile {
@@ -158,6 +161,11 @@ function frontmatter(entries: [string, string | number | string[] | undefined][]
 
 const footer = (ctx: Ctx) => `---\n\n${ctx.s.footer(ctx.s.date(ctx.opts.now.toISOString()))}`;
 
+/** The line under a note's quote or element when it has no place on its page any more. */
+function placelessLine(ctx: Ctx, note: Note): string[] {
+  return ctx.opts.placeless?.has(note.id) ? [`*⚠ ${ctx.s.noPlace}*`, ''] : [];
+}
+
 function quote(ctx: Ctx, label: string, text: string): string {
   const body = text
     .split(/\r?\n/)
@@ -273,6 +281,7 @@ function noteBody(ctx: Ctx, page: ExportPage, note: Note): string[] {
   else if (a.type === 'video')
     out.push(`### [▶ ${formatVideoTimestamp(a.timestamp)}](${videoHref(note, page)})`, '');
   else out.push(elementBlock(ctx, note), '');
+  out.push(...placelessLine(ctx, note));
   out.push(withBlockId(ctx, noteText(note), note), '');
   return out;
 }
@@ -360,6 +369,7 @@ function renderTimelineLayout(ctx: Ctx, page: ExportPage): string[] {
         out.push(`### ${s.date(n.createdAt)}`, '');
         if (n.anchor.type === 'text') out.push(quote(ctx, s.onThePage, n.anchor.exact), '');
         else out.push(elementBlock(ctx, n), '');
+        out.push(...placelessLine(ctx, n));
         out.push(withBlockId(ctx, noteText(n), n), '');
       }
     }
@@ -387,7 +397,7 @@ function renderGlossaryLayout(ctx: Ctx, page: ExportPage): string[] {
     const rows = terms.map((n) => [
       escapeCell(n.anchor.type === 'text' ? n.anchor.exact : ''),
       escapeCell(n.content),
-      escapeCell(contextOf(n)),
+      escapeCell(ctx.opts.placeless?.has(n.id) ? `⚠ ${s.noPlace}` : contextOf(n)),
     ]);
     out.push(`## ${s.glossary}`, '', table([s.colWord, s.colMeaning, s.colContext], rows), '');
   }
@@ -415,6 +425,7 @@ function taskItem(ctx: Ctx, n: Note, page: ExportPage, pageLink: string | undefi
   else if (a.type === 'video')
     lines.push(`  [▶ ${formatVideoTimestamp(a.timestamp)}](${videoHref(n, page)})`);
   else lines.push(`  ${onLabel(ctx, n)}`);
+  if (a.type !== 'video' && ctx.opts.placeless?.has(n.id)) lines.push(`  *⚠ ${ctx.s.noPlace}*`);
   return lines;
 }
 
