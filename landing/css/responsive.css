@@ -5,20 +5,22 @@
  * the pinned scroll story becomes an ordinary stack of scenes, the parallax
  * stops, and the 3D is flattened to a hint. */
 
-@media (max-width: 900px) {
-  /* One column, copy above its own demo — the sections already alternate
-     sides on desktop, so there is nothing to interleave here. */
-  .feature__inner {
-    grid-template-columns: 1fr;
-    gap: 26px;
+@media (max-width: 860px) {
+  .feature__inner,
+  .split,
+  .steps-strip,
+  .tiers,
+  .hero-tabs {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 32px;
+  }
+
+  .hero-tabs {
+    gap: 12px;
   }
 
   .feature--flip .feature__copy {
     order: 0;
-  }
-
-  .feature__copy {
-    max-width: none;
   }
 
   .feature__stage {
@@ -35,32 +37,35 @@
     display: none;
   }
 
-  .split {
-    grid-template-columns: 1fr;
-  }
-
-  .site-nav {
-    gap: 16px;
-  }
-}
-
-@media (max-width: 640px) {
-  /* Narrower than the viewport by enough to absorb the ambient scale: a
-     decorative wash must never be the reason a phone scrolls sideways. */
-  .hero__glow {
-    width: min(920px, 74vw);
-  }
-
-  /* The three nav links cost more than they give on a phone: they crowd the
-     lockup, wrap onto a second line, and push the language toggle out of
-     reach. Everything they point at is a short scroll away. */
   .site-nav {
     display: none;
   }
+}
 
-  /* With the nav gone, the toggle takes over holding the end of the row. */
-  .lang-toggle {
-    margin-inline-start: auto;
+@media (max-width: 480px) {
+  .site-header__inner {
+    gap: 8px;
+  }
+
+  .lockup__sep,
+  .lockup__en {
+    display: none;
+  }
+}
+
+/* The narrowest phones: the header's three controls need the room. */
+@media (max-width: 360px) {
+  .site-header__inner {
+    padding-inline: 12px;
+  }
+
+  .nav-cta {
+    padding: 0 8px;
+    font-size: 0.76rem;
+  }
+
+  .tile {
+    padding: 18px;
   }
 }
 
@@ -86,13 +91,36 @@
     font-size: 0.7rem;
   }
 
-  .hero__cta {
-    width: 100%;
+  .hero {
+    padding-block: 56px 48px;
   }
 
   .hero__cta .btn {
     flex: 1 1 auto;
-    justify-content: center;
+  }
+
+  /* On a phone the composer takes the window's width, and the window is tall
+     enough to hold it under the words it belongs to. */
+  .hero .ui-window {
+    min-height: 480px;
+  }
+
+  .hero .ui-page {
+    padding: 20px 18px 24px;
+    font-size: 0.92rem;
+  }
+
+  .hero .ui-card,
+  .hero .ui-quick {
+    width: min(300px, calc(100% - 24px));
+  }
+
+  .hero .ui-page--video {
+    padding: 12px;
+  }
+
+  .hero .ui-video {
+    height: 430px;
   }
 }
 
@@ -117,10 +145,6 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
-  }
-
-  .hero__glow {
-    opacity: 0.35;
   }
 
   /* Unpinned and stacked, exactly like the small-screen layout. */
@@ -180,9 +204,5 @@
 
   .ui-page--margin {
     padding-inline-start: 40px;
-  }
-
-  .teams-intro__quote {
-    padding: 14px 18px;
   }
 }

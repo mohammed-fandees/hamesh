@@ -17,23 +17,32 @@ body {
 
 h1,
 h2,
-h3 {
-  line-height: 1.15;
-  letter-spacing: -0.02em;
-  font-weight: 600;
+h3,
+h4 {
+  line-height: 1.18;
+  letter-spacing: -0.01em;
+  font-weight: 700;
   text-wrap: balance;
 }
 
+/* Arabic is a joined script: tracking pulls its letters apart. */
+:root[lang='ar'] :is(h1, h2, h3, h4) {
+  letter-spacing: 0;
+}
+
 h1 {
-  font-size: clamp(2.4rem, 5.6vw, 4rem);
+  font-size: clamp(2.4rem, 5.6vw, 4.2rem);
+  line-height: 1.12;
+  letter-spacing: -0.015em;
 }
 
 h2 {
-  font-size: clamp(1.8rem, 3.6vw, 2.6rem);
+  font-size: clamp(1.9rem, 3.4vw, 2.7rem);
 }
 
 h3 {
-  font-size: clamp(1.15rem, 2vw, 1.4rem);
+  font-size: 1.9rem;
+  line-height: 1.25;
 }
 
 p {
@@ -41,34 +50,27 @@ p {
 }
 
 .lede {
-  font-size: clamp(1.02rem, 1.5vw, 1.16rem);
+  font-size: 1.06rem;
+  line-height: 1.85;
   color: var(--ink-60);
-  max-width: 54ch;
+  max-width: 56ch;
 }
 
 .kicker {
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   font-weight: 600;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
   color: var(--accent);
-}
-
-:root[lang='ar'] .kicker {
-  letter-spacing: 0;
 }
 
 /* ---- The mark ------------------------------------------------------- */
 
-/* One glyph, never redrawn per size. It flips in RTL so it always points
-   into the text it belongs to — the same rule the extension follows. */
+/* One glyph, never redrawn per size, and never mirrored: the stem stands on
+   the left and the branch reaches right in Arabic and English alike, as in
+   the extension's icon, wherever the mark appears on this page. */
 .mark {
   flex: none;
   color: var(--accent);
-}
-
-:root[dir='rtl'] .mark {
-  transform: scaleX(-1);
 }
 
 /* ---- Buttons -------------------------------------------------------- */
@@ -76,17 +78,18 @@ p {
 .btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 12px 22px;
-  border-radius: var(--radius-md);
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: var(--radius-lg);
   font-size: 0.95rem;
-  font-weight: 500;
+  font-weight: 600;
   border: 1px solid transparent;
   transition:
     transform var(--motion-enter),
     background-color var(--motion-state),
     border-color var(--motion-state);
-  will-change: transform;
 }
 
 .btn:hover {
@@ -99,17 +102,11 @@ p {
 
 .btn--primary {
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 .btn--primary:hover {
   background: var(--accent-strong);
-}
-
-@media (prefers-color-scheme: dark) {
-  .btn--primary {
-    color: #16140f;
-  }
 }
 
 .btn--ghost {
@@ -129,48 +126,47 @@ p {
   position: sticky;
   top: 0;
   z-index: 40;
-  background: color-mix(in srgb, var(--paper) 88%, transparent);
-  backdrop-filter: saturate(140%) blur(10px);
+  background: var(--paper);
   border-bottom: 1px solid var(--border-soft);
 }
 
 .site-header__inner {
   display: flex;
   align-items: center;
-  gap: 20px;
-  height: 62px;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 64px;
 }
 
 .lockup {
   display: inline-flex;
   align-items: center;
-  gap: 9px;
-  font-weight: 600;
+  gap: 10px;
+  font-weight: 700;
 }
 
 .lockup__ar {
   font-family: var(--arabic);
-  font-size: 1.06rem;
+  font-size: 1.1rem;
 }
 
 .lockup__sep {
   width: 1px;
-  height: 15px;
+  height: 16px;
   background: var(--border);
 }
 
 .lockup__en {
   font-family: var(--serif);
   font-style: italic;
-  font-size: 0.95rem;
+  font-weight: 400;
   color: var(--ink-60);
 }
 
 .site-nav {
   display: flex;
-  gap: 22px;
-  margin-inline-start: auto;
-  font-size: 0.9rem;
+  gap: 24px;
+  font-size: 0.88rem;
   color: var(--ink-60);
 }
 
@@ -178,27 +174,82 @@ p {
   color: var(--ink);
 }
 
-.lang-toggle {
-  width: 38px;
-  height: 30px;
+.site-header__tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--ink-60);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ink);
   transition:
     background var(--motion-state),
     border-color var(--motion-state);
 }
 
-.lang-toggle:hover {
+.icon-btn:hover {
   border-color: var(--ink-40);
   background: var(--layer-hover);
-  color: var(--ink);
 }
 
-.lang-toggle:active {
+.icon-btn:active {
   background: var(--layer-pressed);
+}
+
+/* The icon shows the theme in effect: a moon on paper, a sun in the dark. */
+.icon-btn__sun {
+  display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .icon-btn__sun {
+    display: block;
+  }
+
+  :root:not([data-theme='light']) .icon-btn__moon {
+    display: none;
+  }
+}
+
+:root[data-theme='dark'] .icon-btn__sun {
+  display: block;
+}
+
+:root[data-theme='dark'] .icon-btn__moon {
+  display: none;
+}
+
+/* The header's own call to action waits until the hero's has scrolled away.
+   Hidden, it is out of the tab order too. */
+.nav-cta {
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: 0.84rem;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--motion-exit),
+    visibility var(--motion-exit),
+    background-color var(--motion-state);
+}
+
+.nav-cta.is-shown {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity var(--motion-enter),
+    visibility var(--motion-enter),
+    background-color var(--motion-state);
 }
 
 .visually-hidden,
@@ -232,16 +283,21 @@ p {
 
 .site-footer {
   border-top: 1px solid var(--border-soft);
-  padding: 40px 0;
-  color: var(--ink-40);
-  font-size: 0.85rem;
+  padding: 28px 0;
+  color: var(--ink-60);
+  font-size: 0.82rem;
 }
 
 .site-footer__inner {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px 26px;
-  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.site-footer__links {
+  display: flex;
+  gap: 18px;
 }
 
 .site-footer a:hover {
@@ -254,17 +310,4 @@ p {
   width: 0;
   height: 0;
   overflow: hidden;
-}
-
-/* A section's call to action, and the line that follows it. */
-.section__cta {
-  margin-top: 20px;
-}
-
-.section__cta--wide {
-  margin-block: 22px;
-}
-
-.section__after {
-  color: var(--ink-60);
 }

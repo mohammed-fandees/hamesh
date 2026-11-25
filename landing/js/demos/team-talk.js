@@ -16,6 +16,7 @@ import { gsap } from '../lib/gsap.js';
 import { qs, rectIn } from '../lib/dom.js';
 import { createDemoCursor } from '../animations/cursor.js';
 import { prefersReducedMotion } from '../lib/motion.js';
+import { typeInto, fullText } from '../lib/typing.js';
 
 export function createTeamTalkDemo(root) {
   const paragraph = qs('[data-el="paragraph"]', root);
@@ -30,18 +31,19 @@ export function createTeamTalkDemo(root) {
   const placeholder = qs('[data-el="reply-placeholder"]', root);
   const fieldText = qs('[data-el="field-text"]', root);
   const caret = qs('[data-el="caret"]', root);
-  const reveal = qs('[data-el="reveal"]', root);
   const send = qs('[data-el="send"]', root);
   const side = qs('[data-el="side"]', root);
 
   if (!paragraph || !pin || !popup || !field || !side) return null;
 
   const rtl = document.documentElement.dir === 'rtl';
+  const text = fullText(fieldText);
+  fieldText.textContent = text;
   const flip = rtl ? -1 : 1;
 
   const paraBox = rectIn(root, paragraph);
   const windowBox = rectIn(root, qs('.ui-window', root));
-  const rootWidth = root.getBoundingClientRect().width;
+  const rootWidth = root.offsetWidth;
 
   /* A rebuild (a resize, a change of language) starts from the stylesheet's
      places, not from where the last build parked things. */
@@ -55,8 +57,7 @@ export function createTeamTalkDemo(root) {
     gsap.set(count3, { opacity: 0 });
     gsap.set(placeholder, { opacity: 1 });
     gsap.set(fieldText, { opacity: 0 });
-    gsap.set(reveal, { scaleX: 1 });
-    gsap.set(caret, { opacity: 0, x: 0 });
+    gsap.set(caret, { opacity: 0 });
     field.classList.remove('is-focus');
     send?.classList.remove('is-ready');
     [pin, openSide, send].forEach((el) => el?.classList.remove('is-hover'));
@@ -107,8 +108,6 @@ export function createTeamTalkDemo(root) {
     y: popupPlace.y + (box.centerY - popupBox.y),
   });
   const [fieldBox, sendBox, sideBox] = controls;
-  const typed = fieldText ? rectIn(root, fieldText).width : 120;
-  const textWidth = Math.min(typed, fieldBox.width - 22);
   const rest = { x: pinPlace.x - 60 * flip, y: paraBox.y + paraBox.height + 120 };
 
   cursor?.placeAt(rest);
@@ -138,11 +137,13 @@ export function createTeamTalkDemo(root) {
   tl.call(() => field.classList.add('is-focus'), null, '<+0.05')
     .to(placeholder, { opacity: 0, duration: 0.12 }, '<')
     .set(fieldText, { opacity: 1 }, '<')
-    .to(caret, { opacity: 1, duration: 0.1 }, '>')
-    .to(reveal, { scaleX: 0, duration: 1.4, ease: 'steps(24)' }, '>')
-    .to(caret, { x: textWidth * flip, duration: 1.4, ease: 'steps(24)' }, '<')
-    .call(() => send?.classList.add('is-ready'), null, '<+0.3')
-    .to(caret, { opacity: 0, duration: 0.14 }, '>-0.05');
+    .to(caret, { opacity: 1, duration: 0.1 }, '>');
+  const typing = typeInto(tl, fieldText, text, { caret });
+  tl.call(() => send?.classList.add('is-ready'), null, '>').to(
+    caret,
+    { opacity: 0, duration: 0.14 },
+    '>+0.4',
+  );
 
   /* 3 — sent: it joins the conversation, and the oldest line steps back. */
   cursor?.moveTo(tl, inPopup(sendBox), { at: '>', bend: 1 });
@@ -165,8 +166,7 @@ export function createTeamTalkDemo(root) {
       null,
       '<',
     )
-    .set(reveal, { scaleX: 1 }, '<')
-    .set(caret, { x: 0 }, '<')
+    .set(typing.state, { t: 0 }, '<')
     .to(placeholder, { opacity: 1, duration: 0.2 }, '<+0.1')
     .to({}, { duration: 0.8 });
 

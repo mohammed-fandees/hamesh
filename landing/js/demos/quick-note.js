@@ -15,30 +15,32 @@
 import { gsap } from '../lib/gsap.js';
 import { qs, rectIn } from '../lib/dom.js';
 import { prefersReducedMotion } from '../lib/motion.js';
+import { typeInto, fullText } from '../lib/typing.js';
 
 /** Where along the timeline the note lands, as a fraction of its width. */
 const NOTE_AT = 0.46;
 
 export function createQuickNoteDemo(root) {
   const bar = qs('[data-el="bar"]', root);
-  const played = qs('[data-el="played"]', root);
   const marker = qs('[data-el="marker"]', root);
   const time = qs('[data-el="time"]', root);
   const hint = qs('[data-el="hint"]', root);
   const quick = qs('[data-el="quick"]', root);
-  const reveal = qs('[data-el="reveal"]', root);
   const caret = qs('[data-el="caret"]', root);
   const fieldText = qs('[data-el="field-text"]', root);
   const stamp = qs('[data-el="stamp"]', root);
 
   if (!bar || !quick) return null;
 
-  const rtl = document.documentElement.dir === 'rtl';
-  const flip = rtl ? -1 : 1;
+  const text = fullText(fieldText);
+  fieldText.textContent = text;
+
+  /* A rebuild measures at full size, not at the scale the last one left. */
+  gsap.set([quick, hint, marker], { clearProps: 'transform' });
 
   const barBox = rectIn(root, bar);
   const quickBox = rectIn(root, quick);
-  const rootWidth = root.getBoundingClientRect().width;
+  const rootWidth = root.offsetWidth;
 
   /* Two different frames of reference: the marker lives inside the bar, while
      the editor and the hint are placed against the demo. Mixing them put the
@@ -62,27 +64,27 @@ export function createQuickNoteDemo(root) {
   gsap.set(quick, { x: places.quick.x, y: places.quick.y, scale: 0.96 });
   gsap.set(hint, { x: places.hint.x, y: places.hint.y, scale: 0.96 });
   gsap.set(marker, { x: markerInBar, opacity: 0, scale: 0.4 });
-  gsap.set(played, { scaleX: 0.08 });
-  gsap.set(reveal, { scaleX: 1 });
-  gsap.set(caret, { opacity: 0, x: 0 });
+  /* One number is the playhead: the stylesheet draws the fill and the knob
+     from it. */
+  gsap.set(bar, { '--played': 0.08 });
+  gsap.set(caret, { opacity: 0 });
 
   if (prefersReducedMotion()) {
-    gsap.set(played, { scaleX: NOTE_AT });
+    gsap.set(bar, { '--played': NOTE_AT });
     gsap.set(marker, { opacity: 1, scale: 1 });
     gsap.set(quick, { opacity: 1, scale: 1 });
-    gsap.set(reveal, { scaleX: 0 });
     if (time) time.textContent = '1:12';
     return gsap.timeline({ paused: true });
   }
 
-  const textWidth = fieldText ? rectIn(root, fieldText).width : 120;
+  if (time) time.textContent = '0:08';
 
   const tl = gsap.timeline({ repeat: -1, repeatDelay: 0.6, paused: true });
 
   /* 1 — it is playing. The progress bar is the clock everything else runs
      against, and the readout counts with it rather than beside it. */
   const clock = { t: 8 };
-  tl.to(played, { scaleX: NOTE_AT, duration: 2.6, ease: 'none' }, 0).to(
+  tl.to(bar, { '--played': NOTE_AT, duration: 2.6, ease: 'none' }, 0).to(
     clock,
     {
       t: 72,
@@ -111,22 +113,20 @@ export function createQuickNoteDemo(root) {
   if (stamp) tl.call(() => (stamp.textContent = '1:12'), null, '<');
 
   /* 4 — typing, then Enter. No Save button to find: this note files itself. */
-  tl.to(reveal, { scaleX: 0, duration: 1.15, ease: 'steps(19)' }, '>')
-    .to(caret, { x: textWidth * flip, duration: 1.15, ease: 'steps(19)' }, '<')
-    .to(caret, { opacity: 0, duration: 0.16 }, '>-0.05')
-    .to(quick, { opacity: 0, scale: 0.94, y: places.quick.y + 10, duration: 0.28 }, '>+0.25')
+  const typing = typeInto(tl, fieldText, text, { caret });
+  tl.to(caret, { opacity: 0, duration: 0.16 }, '>+0.35')
+    .to(quick, { opacity: 0, scale: 0.94, y: places.quick.y + 10, duration: 0.28 }, '>')
     /* 5 — and the moment is marked. */
     .to(marker, { opacity: 1, scale: 1, duration: 0.34, ease: 'back.out(2.2)' }, '<+0.1')
     .to({}, { duration: 1.4 });
 
   /* 6 — the seam: playback resumes past the mark, which stays where it was
      put, then the whole bar resets while the marker is fading. */
-  tl.to(played, { scaleX: 0.86, duration: 1.2, ease: 'none' }, '>')
+  tl.to(bar, { '--played': 0.86, duration: 1.2, ease: 'none' }, '>')
     .to(marker, { opacity: 0, duration: 0.5 }, '>-0.35')
-    .set(played, { scaleX: 0.08 })
+    .set(bar, { '--played': 0.08 })
     .set(marker, { scale: 0.4 })
-    .set(reveal, { scaleX: 1 })
-    .set(caret, { x: 0 })
+    .set(typing.state, { t: 0 })
     .set(quick, { y: places.quick.y })
     .set(hint, { y: places.hint.y })
     .call(() => {

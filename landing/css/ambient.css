@@ -1,0 +1,26 @@
+/* The page itself: the warm edges of a sheet of paper, and its grain.
+ *
+ * Two fixed layers that never take the pointer and are never read aloud.
+ * The edges sit behind everything; the grain sits over everything, too faint
+ * to touch the contrast of a word, so cream reads as paper and not as a flat
+ * colour. */
+
+.page-edge {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(ellipse 75% 70% at 50% 45%, transparent 60%, var(--page-edge));
+}
+
+/* A tile of noise drawn once, in the ink's own brown, its alpha the grain.
+   No blend mode: plain compositing costs nothing while the page scrolls. */
+.paper-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  pointer-events: none;
+  background-image: var(--grain);
+  background-size: 180px 180px;
+  opacity: var(--grain-strength);
+}

@@ -1,48 +1,23 @@
-/* The hero. One screen: what it is, how to get it, and the thing itself
-   already working. Nothing here should require a scroll to reach. */
+/* The hero. What it is, how to get it, and the three things it does, one
+ * after another in the same window. */
 
 .hero {
   position: relative;
-  padding-top: clamp(44px, 7vh, 84px);
-  /* Room for the composer, which opens below the words it is attached to and
-     therefore reaches past the window it belongs to. The section deliberately
-     does not clip: `overflow: hidden` here was cutting the note card in half
-     the moment it crossed the hero's edge. */
-  padding-bottom: clamp(96px, 14vh, 168px);
-}
-
-/* A single soft clay wash behind the scene. It is one element, animated on
-   transform only, rather than a field of decorative blobs. */
-.hero__glow {
-  position: absolute;
-  /* The wash is the only thing that needed clipping; it is contained here
-     rather than by hiding the section's overflow. */
-  contain: paint;
-  top: -18%;
-  left: 50%;
-  width: min(920px, 100vw);
-  aspect-ratio: 1;
-  translate: -50% 0;
-  background: radial-gradient(circle, var(--accent-glow) 0%, transparent 62%);
-  opacity: 0.55;
-  pointer-events: none;
-  will-change: transform;
+  padding-block: 88px 72px;
+  background: radial-gradient(60% 50% at 50% 30%, var(--accent-glow), transparent 70%);
 }
 
 .hero__inner {
-  position: relative;
   text-align: center;
-  display: grid;
-  justify-items: center;
-  gap: 18px;
 }
 
 .hero h1 {
-  max-width: 16ch;
+  max-width: 18ch;
+  margin: 14px auto 0;
 }
 
 .hero .lede {
-  max-width: 52ch;
+  margin: 16px auto 0;
 }
 
 .hero__cta {
@@ -50,10 +25,11 @@
   flex-wrap: wrap;
   gap: 12px;
   justify-content: center;
-  margin-top: 8px;
+  margin-top: 28px;
 }
 
 .hero__note {
+  margin-top: 18px;
   font-size: 0.82rem;
   color: var(--ink-40);
 }
@@ -77,28 +53,465 @@
   .reveal-line {
     overflow: hidden;
     padding-block: 0.35em;
-    margin-block: -0.35em;
   }
 }
 
 .hero__scene {
-  margin-top: clamp(30px, 5vh, 58px);
-  width: 100%;
-  display: grid;
-  justify-items: center;
+  max-width: 860px;
+  margin: 56px auto 0;
+  text-align: start;
   transform-style: preserve-3d;
-  /* Same containment as the feature stages: the composer may hang below the
-     window, but nothing may reach past the page's edge. */
-  overflow-x: clip;
-  overflow-y: visible;
-  /* Room for what is meant to sit just outside the window — a mark in the
-     margin, a card's shadow — while still containing anything that tries to
-     run away with the page width. */
-  overflow-clip-margin: 24px;
 }
 
-/* Wider than the showcase's scenes: this one is not sharing a row with a
-   column of copy, and it is the first thing anyone sees working. */
+/* The three scenes share one cell, so the window never changes size between
+   them and the page below never moves. */
+.hero__panes {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.hero__pane {
+  grid-area: 1 / 1;
+  min-width: 0;
+  visibility: hidden;
+}
+
+.hero__pane.is-active {
+  visibility: visible;
+}
+
 .hero .demo {
-  width: min(100%, 720px);
+  width: 100%;
+  height: 100%;
+}
+
+.hero .ui-window {
+  height: 100%;
+  min-height: 420px;
+}
+
+.hero .ui-page {
+  padding: 28px 36px 36px;
+  font-size: 1.02rem;
+}
+
+.hero .ui-page__title {
+  font-family: var(--arabic);
+  font-size: 1.05rem;
+}
+
+:root[lang='en'] .hero .ui-page__title {
+  font-family: var(--serif);
+}
+
+.hero .ui-card {
+  width: 300px;
+}
+
+.hero .ui-page--video {
+  padding: 20px;
+}
+
+.hero .ui-video {
+  height: 338px;
+  margin: 0;
+  aspect-ratio: auto;
+}
+
+.hero .ui-video__played {
+  background: var(--accent);
+}
+
+/* A rail as wide as the bar, slid along it, carries the knob. */
+.ui-video__rail {
+  position: absolute;
+  inset: 0;
+  transform: translateX(calc(var(--played, 0.1) * 100%));
+}
+
+.ui-video__knob {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+/* The equation stands as a thing of its own, the size of itself. */
+.hero .ui-code {
+  display: inline-block;
+  margin: 6px 0 10px;
+  padding: 14px 22px;
+  font-size: 1.15rem;
+}
+
+.hero .ui-code code {
+  font-family: var(--serif);
+}
+
+.ui-video__title {
+  position: absolute;
+  top: 16px;
+  inset-inline-start: 20px;
+  inset-inline-end: 20px;
+  direction: rtl;
+  font-family: var(--arabic);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--video-title);
+}
+
+:root[lang='en'] .ui-video__title {
+  direction: ltr;
+  font-family: var(--sans);
+}
+
+.hero .ui-quick {
+  width: 280px;
+}
+
+.ui-quick__hint {
+  margin-top: 8px;
+  font-size: 0.68rem;
+  color: var(--ink-40);
+}
+
+/* ---- The tabs under the window --------------------------------------- */
+
+.hero-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.hero-tab {
+  position: relative;
+  padding: 14px 4px 0;
+  border-top: 2px solid var(--ink-20);
+  text-align: start;
+  color: var(--ink-40);
+  transition: color var(--motion-state);
+}
+
+.hero-tab:hover {
+  color: var(--ink-60);
+}
+
+.hero-tab b {
+  display: block;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.hero-tab span {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.78rem;
+}
+
+.hero-tab[aria-selected='true'] {
+  color: var(--ink);
+}
+
+.hero-tab__bar {
+  position: absolute;
+  top: -2px;
+  inset-inline: 0;
+  height: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+:root[dir='rtl'] .hero-tab__bar {
+  transform-origin: right;
+}
+
+/* ---- One screen on a desktop ------------------------------------------ */
+
+/* Everything down to the tabs fits the viewport. Spacing and type give way
+   with the height, and js/animations/hero-fit.js scales the window into what
+   is left. */
+@media (min-width: 861px) {
+  .hero {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: min(calc(100svh - 65px), 960px);
+    padding-block: min(48px, 3vh) min(32px, 2vh);
+  }
+
+  .hero__inner {
+    margin-block: 0;
+  }
+
+  .hero h1 {
+    max-width: none;
+    margin-top: min(14px, 1vh);
+    font-size: min(5.6vw, 7vh, 4.2rem);
+  }
+
+  .hero .lede {
+    max-width: 76ch;
+    margin-top: min(16px, 1.4vh);
+    font-size: clamp(0.92rem, 1.9vh, 1.06rem);
+    line-height: 1.7;
+  }
+
+  .hero__cta {
+    margin-top: min(28px, 2.2vh);
+  }
+
+  .hero__note {
+    margin-top: min(18px, 1.4vh);
+  }
+
+  .hero__scene {
+    width: 100%;
+    margin-top: min(40px, 2.6vh);
+  }
+
+  .hero__stage {
+    height: calc(420px * var(--hero-scale, 1));
+  }
+
+  /* Laid out wider and scaled down, so the window still spans the tabs. */
+  .hero__panes {
+    width: calc(100% / var(--hero-scale, 1));
+    margin-inline-start: calc((100% - 100% / var(--hero-scale, 1)) / 2);
+    transform: scale(var(--hero-scale, 1));
+    transform-origin: top center;
+  }
+
+  .hero .ui-window {
+    height: 420px;
+    min-height: 0;
+  }
+
+  .hero-tabs {
+    margin-top: min(22px, 1.6vh);
+  }
+
+  .hero-tab {
+    padding-top: min(14px, 1.2vh);
+  }
+}
+
+/* ---- The demo behind the words (desktop) ------------------------------ */
+
+/* The words stand on the page and the product works quietly behind them.
+   The window is faded most where the words are, so the copy keeps its full
+   contrast, and it never takes the pointer: only the tabs do. A phone keeps
+   the window under the words, where there is room to read it. */
+@media (min-width: 861px) {
+  /* The glow moves off the page and behind the window, so the product looks
+     lit from behind rather than washed over. */
+  .hero--behind {
+    overflow: hidden;
+    padding-block: min(56px, 5vh) min(120px, 13vh);
+    background: none;
+  }
+
+  .hero--behind .hero__inner > :not(.hero__scene) {
+    position: relative;
+    z-index: 2;
+  }
+
+  .hero--behind .hero__scene {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    max-width: none;
+    width: auto;
+    margin: 0;
+    pointer-events: none;
+  }
+
+  .hero--behind .hero__scene::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: min(1500px, 115vw);
+    height: min(860px, 100vh);
+    translate: -50% -46%;
+    background: radial-gradient(closest-side, var(--accent-glow), transparent);
+    filter: blur(24px);
+  }
+
+  /* The window runs the full height of the hero, from under the header to
+     just above the tabs, and wider than the words, so it reads as the page
+     the hero sits on rather than a picture placed in it. */
+  .hero--behind .hero__stage {
+    position: absolute;
+    top: min(20px, 2vh);
+    bottom: min(112px, 12.5vh);
+    height: auto;
+    left: 50%;
+    width: min(1320px, 96vw);
+    translate: -50% 0;
+    /* Paper is light enough that the window needs more presence to read
+       as a page; the dark theme sets its own, lower. */
+    opacity: 0.8;
+    --behind-core: 0.32;
+    -webkit-mask-image: radial-gradient(
+      ellipse 46% 50% at 50% 46%,
+      rgb(0 0 0 / var(--behind-core)),
+      #000 85%
+    );
+    mask-image: radial-gradient(
+      ellipse 46% 50% at 50% 46%,
+      rgb(0 0 0 / var(--behind-core)),
+      #000 85%
+    );
+  }
+
+  .hero--behind .hero__panes,
+  .hero--behind .hero__pane {
+    height: 100%;
+  }
+
+  .hero--behind .hero__panes {
+    width: 100%;
+    margin: 0;
+    transform: none;
+  }
+
+  .hero--behind .ui-window {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  /* Set at reading size for a page this large, and continued past the
+     passage in quiet lines of text, so no part of the window stands empty. */
+  .hero--behind .ui-page {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    padding: clamp(28px, 5vh, 56px) clamp(40px, 5vw, 84px);
+    font-size: clamp(1.1rem, 2.3vh, 1.4rem);
+  }
+
+  .hero--behind .ui-page__title {
+    font-size: 1.15em;
+  }
+
+  .hero--behind .ui-page:not(.ui-page--video)::after {
+    content: '';
+    display: block;
+    height: 100%;
+    margin-top: 1.4em;
+    --ghost-line: var(--ink-20);
+    --ghost-picture: var(--ink-20);
+    background:
+      linear-gradient(var(--ghost-line), var(--ghost-line)) right 0% top 0em / 100% 0.45em no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) right 0% top 2em / 93% 0.45em no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) right 0% top 4em / 61% 0.45em no-repeat,
+      linear-gradient(var(--ghost-picture), var(--ghost-picture)) right 0% top 6.8em / 34% 8.6em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) right 100% top 7.2em / 62% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) right 84.444% top 9.2em / 55% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) right 95% top 11.2em / 60% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) right 60.317% top 13.2em / 37% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) right 0% top 17em / 100% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) right 0% top 19em / 86% 0.45em no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) right 0% top 21em / 97% 0.45em no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) right 0% top 23em / 44% 0.45em no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) right 0% top 26.4em / 100% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) right 0% top 28.4em / 90% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) right 0% top 30.4em / 71% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) right 0% top 33.8em / 100% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) right 0% top 35.8em / 95% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) right 0% top 37.8em / 53% 0.45em
+        no-repeat;
+    opacity: 0.35;
+  }
+
+  :root[dir='ltr'] .hero--behind .ui-page:not(.ui-page--video)::after {
+    background:
+      linear-gradient(var(--ghost-line), var(--ghost-line)) left 0% top 0em / 100% 0.45em no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) left 0% top 2em / 93% 0.45em no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) left 0% top 4em / 61% 0.45em no-repeat,
+      linear-gradient(var(--ghost-picture), var(--ghost-picture)) left 0% top 6.8em / 34% 8.6em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) left 100% top 7.2em / 62% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) left 84.444% top 9.2em / 55% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) left 95% top 11.2em / 60% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) left 60.317% top 13.2em / 37% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) left 0% top 17em / 100% 0.45em no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) left 0% top 19em / 86% 0.45em no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) left 0% top 21em / 97% 0.45em no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) left 0% top 23em / 44% 0.45em no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) left 0% top 26.4em / 100% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) left 0% top 28.4em / 90% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) left 0% top 30.4em / 71% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) left 0% top 33.8em / 100% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) left 0% top 35.8em / 95% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) left 0% top 37.8em / 53% 0.45em
+        no-repeat;
+  }
+
+  .hero--behind .ui-page--video {
+    display: flex;
+    padding: clamp(16px, 2.5vh, 28px);
+  }
+
+  .hero--behind .ui-video {
+    flex: 1;
+    height: auto;
+  }
+
+  .hero--behind .ui-card {
+    width: 340px;
+  }
+
+  .hero--behind .hero-tabs {
+    position: absolute;
+    bottom: min(32px, 3.5vh);
+    left: 50%;
+    z-index: 3;
+    width: min(860px, calc(100% - 2 * var(--gutter)));
+    margin: 0;
+    translate: -50% 0;
+    pointer-events: auto;
+  }
+}
+
+@media (min-width: 861px) and (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .hero--behind .hero__stage {
+    opacity: 0.3;
+    --behind-core: 0.18;
+  }
+}
+
+@media (min-width: 861px) {
+  :root[data-theme='dark'] .hero--behind .hero__stage {
+    opacity: 0.3;
+    --behind-core: 0.18;
+  }
 }

@@ -17,6 +17,7 @@ import { gsap } from '../lib/gsap.js';
 import { qs, rectIn } from '../lib/dom.js';
 import { createDemoCursor } from '../animations/cursor.js';
 import { prefersReducedMotion } from '../lib/motion.js';
+import { typeInto, fullText } from '../lib/typing.js';
 
 export function createTeamWriteDemo(root) {
   const target = qs('[data-el="target"]', root);
@@ -25,7 +26,6 @@ export function createTeamWriteDemo(root) {
   const card = qs('[data-el="card"]', root);
   const fieldText = qs('[data-el="field-text"]', root);
   const caret = qs('[data-el="caret"]', root);
-  const reveal = qs('[data-el="reveal"]', root);
   const destMe = qs('[data-el="dest-me"]', root);
   const destTeam = qs('[data-el="dest-team"]', root);
   const save = qs('[data-el="save"]', root);
@@ -36,6 +36,8 @@ export function createTeamWriteDemo(root) {
   if (!target || !card || !destTeam || !myPin) return null;
 
   const rtl = document.documentElement.dir === 'rtl';
+  const text = fullText(fieldText);
+  fieldText.textContent = text;
   const flip = rtl ? -1 : 1;
 
   /* A rebuild (a resize, a change of language) starts from the stylesheet's
@@ -50,7 +52,7 @@ export function createTeamWriteDemo(root) {
   const destBox = rectIn(root, destTeam);
   const saveBox = rectIn(root, save);
   const windowBox = rectIn(root, qs('.ui-window', root));
-  const rootWidth = root.getBoundingClientRect().width;
+  const rootWidth = root.offsetWidth;
 
   /* A face in the margin of what it marks, kept inside the window it
      annotates — the same rule as every mark on this page. */
@@ -83,8 +85,7 @@ export function createTeamWriteDemo(root) {
   gsap.set(otherPin, { x: places.otherPin.x, y: places.otherPin.y, scale: 1, opacity: 1 });
   gsap.set(hint, { x: places.hint.x, y: places.hint.y, scale: 0.96, opacity: 0 });
   gsap.set(frame, { opacity: 0 });
-  gsap.set(reveal, { scaleX: 1 });
-  gsap.set(caret, { opacity: 0, x: 0 });
+  gsap.set(caret, { opacity: 0 });
 
   const chooseMe = () => {
     destMe?.classList.add('is-on');
@@ -104,7 +105,6 @@ export function createTeamWriteDemo(root) {
   }
 
   const cursor = createDemoCursor(root);
-  const textWidth = fieldText ? Math.min(rectIn(root, fieldText).width, cardBox.width - 30) : 120;
   const rest = { x: targetBox.centerX - 50 * flip, y: windowBox.y + windowBox.height + 24 };
   /* Where something in the card will be once it stands at its place. */
   const inCard = (box) => ({
@@ -137,11 +137,13 @@ export function createTeamWriteDemo(root) {
   cursor?.press(tl, {});
 
   /* 3 — the composer, and a line written into it. */
-  tl.to(card, { opacity: 1, scale: 1, duration: 0.32, ease: 'power3.out' }, '>-0.08')
-    .to(caret, { opacity: 1, duration: 0.12 }, '>')
-    .to(reveal, { scaleX: 0, duration: 1.3, ease: 'steps(22)' }, '>')
-    .to(caret, { x: textWidth * flip, duration: 1.3, ease: 'steps(22)' }, '<')
-    .to(caret, { opacity: 0, duration: 0.16 }, '>-0.06');
+  tl.to(card, { opacity: 1, scale: 1, duration: 0.32, ease: 'power3.out' }, '>-0.08').to(
+    caret,
+    { opacity: 1, duration: 0.12 },
+    '>',
+  );
+  const typing = typeInto(tl, fieldText, text, { caret });
+  tl.to(caret, { opacity: 0, duration: 0.16 }, '>+0.4');
 
   /* 4 — the new choice: for the circle, not just for me. */
   cursor?.moveTo(tl, inCard(destBox), { at: '>+0.05', bend: -1, label: 'overTeam' });
@@ -166,8 +168,7 @@ export function createTeamWriteDemo(root) {
   cursor?.exit(tl, '>');
   tl.to(myPin, { opacity: 0, scale: 0.7, duration: 0.4 }, '<')
     .set(myPin, { scale: 0.5 })
-    .set(reveal, { scaleX: 1 })
-    .set(caret, { x: 0 })
+    .set(typing.state, { t: 0 })
     .set(card, { y: places.card.y })
     .set(hint, { y: places.hint.y })
     .call(() => {

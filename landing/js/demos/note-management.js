@@ -14,10 +14,11 @@ import { gsap } from '../lib/gsap.js';
 import { qs, qsa, rectIn } from '../lib/dom.js';
 import { createDemoCursor } from '../animations/cursor.js';
 import { prefersReducedMotion } from '../lib/motion.js';
+import { typeInto, fullText } from '../lib/typing.js';
 
 export function createNoteManagementDemo(root) {
   const search = qs('[data-el="search"]', root);
-  const searchReveal = qs('[data-el="search-reveal"]', root);
+  const searchText = qs('[data-el="search-text"]', root);
   const searchCaret = qs('[data-el="search-caret"]', root);
   const rows = qsa('[data-el="row"]', root);
   const sites = qsa('[data-el="site"]', root);
@@ -31,12 +32,12 @@ export function createNoteManagementDemo(root) {
   const rowHeight = rectIn(root, rows[0]).height + rowGap;
 
   gsap.set(rows, { opacity: 1, y: 0, scale: 1 });
-  gsap.set(searchReveal, { scaleX: 1 });
+  const query = fullText(searchText);
+  searchText.textContent = query;
   gsap.set(searchCaret, { opacity: 0 });
   gsap.set(pin, { opacity: 0, scale: 0.6 });
 
   if (prefersReducedMotion()) {
-    gsap.set(searchReveal, { scaleX: 0 });
     gsap.set(others, { opacity: 0.25 });
     gsap.set(pin, { opacity: 1, scale: 1 });
     match.classList.add('is-focus');
@@ -59,9 +60,9 @@ export function createNoteManagementDemo(root) {
   cursor?.press(tl, {});
 
   /* 2 — typing a word that only one note contains. */
-  tl.to(searchCaret, { opacity: 1, duration: 0.12 }, '>')
-    .to(searchReveal, { scaleX: 0, duration: 0.72, ease: 'steps(9)' }, '>')
-    .to(searchCaret, { opacity: 0, duration: 0.14 }, '>');
+  tl.to(searchCaret, { opacity: 1, duration: 0.12 }, '>');
+  const typing = typeInto(tl, searchText, query, { caret: searchCaret });
+  tl.to(searchCaret, { opacity: 0, duration: 0.14 }, '>+0.35');
 
   /* 3 — the list narrows. The two that no longer match fade back rather than
      vanish, and the survivor rises into their place. */
@@ -109,7 +110,7 @@ export function createNoteManagementDemo(root) {
       match.classList.remove('is-focus');
       sites.forEach((s, i) => s.classList.toggle('is-active', i === 0));
     })
-    .set(searchReveal, { scaleX: 1 })
+    .set(typing.state, { t: 0 })
     .set(pin, { scale: 0.6 })
     .call(() => cursor?.placeAt({ x: searchBox.centerX, y: searchBox.y + 150 }));
 
