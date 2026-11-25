@@ -21,6 +21,7 @@ import { createNoteManagementDemo } from '../demos/note-management.js';
 import { createFoldersDemo } from '../demos/folders.js';
 import { createTeamWriteDemo } from '../demos/team-write.js';
 import { createTeamTalkDemo } from '../demos/team-talk.js';
+import { createExportFlowDemo } from '../demos/export-flow.js';
 
 const BUILDERS = {
   contextual: createContextualNoteDemo,
@@ -30,10 +31,11 @@ const BUILDERS = {
   folders: createFoldersDemo,
   'team-write': createTeamWriteDemo,
   'team-talk': createTeamTalkDemo,
+  export: createExportFlowDemo,
 };
 
 export function createFeatureScenes(scope = document) {
-  const scenes = qsa('.feature .scene', scope);
+  const scenes = qsa('.scene[data-scene]', scope);
   if (!scenes.length) return null;
 
   const items = scenes.map((scene) => ({
@@ -95,7 +97,17 @@ export function createFeatureScenes(scope = document) {
     });
   }
 
-  window.addEventListener('resize', debounce(rebuild, 220));
+  /* A phone's address bar resizes the window as it scrolls; only a change of
+     width moves anything the demos measured. */
+  let width = window.innerWidth;
+  window.addEventListener(
+    'resize',
+    debounce(() => {
+      if (window.innerWidth === width) return;
+      width = window.innerWidth;
+      rebuild();
+    }, 220),
+  );
 
   return {
     rebuild,

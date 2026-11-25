@@ -112,7 +112,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test.describe('Landing page · plans', () => {
-  test('draws the plans the server sends, the free one first, and never where to pay', async ({
+  test('draws your own card and then the server’s plans, and never where to pay', async ({
     page,
   }) => {
     const asked = page.waitForRequest(PLANS_URL);
@@ -125,20 +125,25 @@ test.describe('Landing page · plans', () => {
     await expect(free).toBeVisible();
     await expect(section.locator('[data-plans]')).not.toHaveAttribute('aria-busy');
 
-    await expect(free).toHaveClass(/tier--default/);
-    await expect(free.locator('.tier__name')).toHaveText('المجانية');
-    await expect(free.locator('.tier__chip')).toHaveText('تبدأ بها تلقائيًا');
-    await expect(free.locator('.tier__price')).toContainText('مجانًا');
+    await expect(section.locator('.tier')).toHaveCount(3);
+    await expect(section.locator('.tier').first()).toHaveAttribute('data-tier-own', '');
+    await expect(free.locator('.tier__title')).toHaveText('الفرق · المجانية');
+    await expect(free.locator('.tier__price strong')).toHaveText(/(0|٠)/);
     await expect(free.locator('.tier__desc')).toHaveText('فريقك الأول، تقرأ فيه مع من تختار.');
+    await expect(free).not.toHaveClass(/tier--featured/);
 
-    await expect(paid).not.toHaveClass(/tier--default/);
-    await expect(paid.locator('.tier__chip')).toHaveCount(0);
+    await expect(paid).toHaveClass(/tier--featured/);
     await expect(paid.locator('.tier__desc')).toHaveCount(0);
     // The price and the one before it are the server's, formatted for Arabic (the digits are the browser's choice).
     await expect(paid.locator('.tier__price strong')).toHaveText(/149|١٤٩/);
     await expect(paid.locator('.tier__price s')).toHaveText(/249|٢٤٩/);
     await expect(paid.locator('.tier__deal')).toContainText('سعر الإطلاق');
-    await expect(paid.locator('.tier__limits dd')).toHaveText(['3', '10', '5,000']);
+    await expect(paid.locator('.tier__list li')).toHaveText([
+      'فرق تملكها: 3',
+      'الأعضاء في كل فريق: 10',
+      'الملاحظات في كل فريق: 5,000',
+      'تبدأ فور قبول الدفعة',
+    ]);
 
     const text = (await page.locator('body').innerText()).replace(/\s/g, '');
     expect(text).not.toContain('01000000000');
@@ -155,21 +160,33 @@ test.describe('Landing page · plans', () => {
     await expect(paid.locator('.tier__name')).toHaveText('Plus');
     await expect(paid.locator('.tier__price strong')).toHaveText(/EGP\s?149\.00/);
     await expect(paid.locator('.tier__deal')).toHaveText('Launch price · until Nov 10, 2026');
-    await expect(page.locator('#plans [data-plan="teams-free"] .tier__chip')).toHaveText(
-      'Where everyone starts',
+    await expect(page.locator('#plans [data-plan="teams-free"] .tier__title')).toHaveText(
+      'Teams · Free',
     );
+    await expect(page.locator('#plans [data-tier-own] h3')).toHaveText('For yourself');
   });
 
-  test('says where the plans are when the server cannot be reached, quoting no price', async ({
+  test('shows the same cards without prices when the server cannot be reached', async ({
     page,
   }) => {
     await page.route(PLANS_URL, (route) => route.fulfill({ status: 503, json: { error: 'x' } }));
     await page.goto(origin);
     const section = page.locator('#plans');
     await expect(section.locator('[data-plans-unavailable]')).toBeVisible();
-    await expect(section.locator('[data-plans]')).toBeHidden();
+    await expect(section.locator('[data-plans-unavailable] a')).toHaveAttribute(
+      'href',
+      /chromewebstore/,
+    );
+    await expect(section.locator('.tier')).toHaveCount(3);
+    await expect(section.locator('.tier__title')).toHaveText([
+      'لنفسك',
+      'الفرق · مجانية',
+      'الفرق · مدفوعة',
+    ]);
+    // The only price left is the one the page itself knows: yours is free.
+    await expect(section.locator('.tier__price')).toHaveText(['مجاني']);
+    await expect(section.locator('.tier--outline')).toHaveCount(0);
     await expect(section.locator('[data-plans-foot]')).toBeHidden();
-    await expect(section.locator('.tier[data-plan]')).toHaveCount(0);
   });
 
   test('refuses an answer that is not the shape it expects', async ({ page }) => {
@@ -218,6 +235,9 @@ test.describe('Landing page', () => {
     await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', /og\.png$/);
 
     for (const id of [
+      '#features',
+      '#export',
+      '#plans',
       '#feature-1',
       '#feature-2',
       '#feature-3',
@@ -261,6 +281,7 @@ test.describe('Landing page', () => {
       'folders',
       'team-write',
       'team-talk',
+      'export',
     ]) {
       const selector = `[data-scene="${scene}"]`;
       await page.locator(selector).scrollIntoViewIfNeeded();
@@ -410,7 +431,7 @@ test.describe('Landing page', () => {
         }, 100);
       });
 
-      for (const id of ['#feature-1', '#feature-3', '#feature-5']) {
+      for (const id of ['#feature-1', '#feature-3', '#feature-5', '#export']) {
         await page.evaluate((sel) => document.querySelector(sel)!.scrollIntoView(), id);
         await page.waitForTimeout(1800);
       }
@@ -524,64 +545,606 @@ test.describe('Landing page', () => {
     expect(await alive.jsonValue()).toBeTruthy();
   });
 
-  test('the hero demo starts once, rather than starting again after the loader', async ({
+  test('the hero story starts once, rather than starting again after the loader', async ({
     page,
   }) => {
     await page.goto(origin, { waitUntil: 'commit' });
 
-    // The demo's cursor fades in at the top of each cycle, so each rise is the
-    // story beginning. What the bug looked like is two of them within a second
-    // or two of each other: the visibility observer started the demo behind
-    // the loader, and the hand-over then started it again in front of the
-    // visitor. What healthy looks like is rises a whole cycle apart.
-    //
-    // So this measures the *gap* between rises rather than counting them
-    // inside a fixed window. Counting made the result depend on how quickly
-    // the machine got through the loader — the first rise lands anywhere from
-    // ~2s to ~6s in, and one cycle later is then either side of any window
-    // that is only a cycle wide. That is what flaked in CI, on a runner fast
-    // enough to fit the legitimate second rise inside it.
-    const CYCLE_SECONDS = 8.7; // measured: timeline duration + its repeatDelay
+    // The first tab's bar is the first scene's playhead. Starting behind the
+    // loader and again in front of the visitor would send it back to the start.
     const trace = await page.evaluate(async () => {
-      const rises: number[] = [];
       const samples: number[] = [];
-      let armed = false;
       const began = Date.now();
-      // Long enough that a restart — which follows within a second or two —
-      // always shows up, whenever the loader happens to hand over.
-      while (Date.now() - began < 13000) {
-        const cursor = document.querySelector('.hero .demo-cursor') as HTMLElement | null;
-        const now = cursor ? Number(getComputedStyle(cursor).opacity) : -1;
-        samples.push(Math.round(now * 10) / 10);
-        // A rise is the cursor going from hidden to shown, however many
-        // samples the fade happens to straddle: armed once it is hidden,
-        // counted once it is clearly visible. Comparing two neighbouring
-        // samples missed a fade that landed on 0 → 0.1 → 0.6.
-        if (now >= 0 && now < 0.05) armed = true;
-        if (armed && now > 0.2) {
-          rises.push(Math.round((Date.now() - began) / 100) / 10);
-          armed = false;
+      while (Date.now() - began < 7000) {
+        const tab = document.querySelector('#hero-tab-0');
+        const bar = tab?.querySelector('.hero-tab__bar') as HTMLElement | null;
+        if (tab?.getAttribute('aria-selected') === 'true' && bar) {
+          samples.push(new DOMMatrix(getComputedStyle(bar).transform).a);
         }
         await new Promise((r) => setTimeout(r, 80));
       }
-      return { rises, samples };
+      return samples;
     });
-    const starts = trace.rises;
-    const where = `(rises at ${starts.join(', ')}s; opacity trace ${trace.samples.join('')})`;
 
-    expect(starts.length, `the story never began ${where}`).toBeGreaterThan(0);
+    expect(trace[trace.length - 1], 'the story never began').toBeGreaterThan(0.1);
+    const rewinds = trace.filter((value, i) => i > 0 && value < trace[i - 1] - 0.001);
+    expect(rewinds, `the playhead went back: ${trace.join(' ')}`).toEqual([]);
+  });
+});
 
-    const gaps = starts.slice(1).map((rise, i) => rise - starts[i]);
-    // Half a cycle: comfortably below a real repeat and far above a restart's
-    // second or two, so neither a slow runner nor a fast one changes the
-    // verdict.
-    const tooSoon = gaps.filter((gap) => gap <= CYCLE_SECONDS / 2);
+test.describe('Landing page · features', () => {
+  test('gives every feature a section of its own, copy beside its demo', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto(origin);
+    const features = page.locator('section.feature');
+    expect(await features.evaluateAll((all) => all.map((el) => el.id))).toEqual([
+      'feature-1',
+      'feature-2',
+      'feature-3',
+      'feature-4',
+      'feature-5',
+      'export',
+      'feature-6',
+      'feature-7',
+    ]);
+    await expect(page.locator('.feature__index b')).toHaveText([
+      '01',
+      '02',
+      '03',
+      '04',
+      '05',
+      '06',
+      '07',
+      '08',
+    ]);
 
-    expect(
-      tooSoon,
-      `the story began again after ${tooSoon.join(', ')}s, sooner than its ` +
-        `${CYCLE_SECONDS}s cycle ${where}`,
-    ).toEqual([]);
+    const layout = await features.evaluateAll((all) =>
+      all.map((el) => {
+        const copy = el.querySelector('.feature__copy')!.getBoundingClientRect();
+        const stage = el.querySelector('.feature__stage .scene')!.getBoundingClientRect();
+        return {
+          sideBySide: copy.right <= stage.left + 1 || stage.right <= copy.left + 1,
+          copyOnTheRight: copy.left > stage.left,
+        };
+      }),
+    );
+    expect(layout.every((one) => one.sideBySide)).toBe(true);
+    // Arabic starts on the right, and the sides take turns.
+    expect(layout.map((one) => one.copyOnTheRight)).toEqual(layout.map((_, i) => i % 2 === 0));
+
+    await expect(page.locator('#teams blockquote cite')).toHaveText('ابن خلدون، المقدمة');
+  });
+
+  test('sets the Teams quotation on one line on a desktop', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(origin);
+    const lines = await page.locator('#teams .teams-intro__quote p').evaluate((p) => {
+      const range = document.createRange();
+      range.selectNodeContents(p);
+      return new Set(Array.from(range.getClientRects(), (r) => Math.round(r.top))).size;
+    });
+    expect(lines).toBe(1);
+  });
+
+  test('opens Teams with the quotation set in the open, centred, not boxed as a card', async ({
+    page,
+  }) => {
+    await page.goto(origin);
+    const quote = page.locator('#teams .teams-intro__quote');
+    const look = await quote.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return {
+        background: style.backgroundColor,
+        border: style.borderInlineStartWidth,
+        shadow: style.boxShadow,
+        align: style.textAlign,
+      };
+    });
+    expect(look).toEqual({
+      background: 'rgba(0, 0, 0, 0)',
+      border: '0px',
+      shadow: 'none',
+      align: 'center',
+    });
+  });
+
+  test('presents export as a feature, with no version number and no Markdown browser', async ({
+    page,
+  }) => {
+    await page.goto(origin);
+    const section = page.locator('#export');
+    await expect(section.locator('[data-scene="export"]')).toHaveCount(1);
+    await expect(section.locator('button')).toHaveCount(0);
+    await expect(section).not.toContainText('2.3');
+    await expect(page.locator('[data-export-switcher], .facts')).toHaveCount(0);
+  });
+});
+
+test.describe('Landing page · the page itself', () => {
+  test('draws paper edges and grain that never take the pointer or a reader’s attention', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(origin);
+    await expect(page.locator('.loader')).toHaveCount(0);
+
+    const layers = await page.evaluate(() =>
+      ['.page-edge', '.paper-grain'].map((sel) => {
+        const el = document.querySelector(sel)!;
+        const style = getComputedStyle(el);
+        return {
+          hidden: el.getAttribute('aria-hidden'),
+          pointer: style.pointerEvents,
+          position: style.position,
+        };
+      }),
+    );
+    expect(layers).toEqual([
+      { hidden: 'true', pointer: 'none', position: 'fixed' },
+      { hidden: 'true', pointer: 'none', position: 'fixed' },
+    ]);
+
+    // The grain is a tile of noise, faint enough to leave every word alone.
+    const grain = await page.locator('.paper-grain').evaluate((el) => ({
+      image: getComputedStyle(el).backgroundImage.includes('feTurbulence'),
+      opacity: Number(getComputedStyle(el).opacity),
+    }));
+    expect(grain.image).toBe(true);
+    expect(grain.opacity).toBeGreaterThan(0);
+    expect(grain.opacity).toBeLessThan(0.1);
+
+    // The words above it still answer the pointer.
+    await page.locator('.site-nav a[href="#plans"]').click();
+    await expect(page).toHaveURL(/#plans$/);
+  });
+});
+
+test.describe('Landing page · header toggles', () => {
+  for (const lang of ['ar', 'en'] as const) {
+    test(`keeps its toggles at the edge while the install link is hidden (${lang})`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 375, height: 812 });
+      await page.addInitScript((value) => localStorage.setItem('hamesh-lang', value), lang);
+      await page.goto(origin);
+      await expect(page.locator('.loader')).toHaveCount(0);
+      await expect(page.locator('.nav-cta')).not.toHaveClass(/is-shown/);
+
+      const gap = await page.evaluate(() => {
+        const inner = document.querySelector('.site-header__inner')!;
+        const padding = parseFloat(getComputedStyle(inner).paddingInlineEnd);
+        const box = inner.getBoundingClientRect();
+        const toggles = Array.from(
+          document.querySelectorAll('.site-header__tools .icon-btn'),
+          (el) => el.getBoundingClientRect(),
+        );
+        const rtl = document.documentElement.dir === 'rtl';
+        // The toggle nearest the end of the row, against the row's end.
+        return rtl
+          ? Math.min(...toggles.map((r) => r.left)) - (box.left + padding)
+          : box.right - padding - Math.max(...toggles.map((r) => r.right));
+      });
+      expect(Math.abs(gap)).toBeLessThan(2);
+
+      // And they stay put when the link arrives: it takes the room beside them.
+      const where = () =>
+        page.evaluate(() =>
+          Array.from(document.querySelectorAll('.site-header__tools .icon-btn'), (el) =>
+            Math.round(el.getBoundingClientRect().left),
+          ),
+        );
+      const before = await where();
+      await page.locator('.nav-cta').evaluate((el) => el.classList.add('is-shown'));
+      expect(await where()).toEqual(before);
+    });
+  }
+});
+
+test.describe('Landing page · hero demo behind the words', () => {
+  test('runs the demo faded behind the copy on a desktop, and under it on a phone', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(origin);
+    await expect(page.locator('.loader')).toHaveCount(0);
+
+    const desktop = await page.evaluate(() => {
+      const box = (sel: string) => document.querySelector(sel)!.getBoundingClientRect();
+      const stage = document.querySelector('.hero__stage')!;
+      const h1 = box('.hero h1');
+      const window_ = box('#hero-pane-0 .ui-window');
+      return {
+        sceneTakesPointer: getComputedStyle(document.querySelector('.hero__scene')!).pointerEvents,
+        stageOpacity: Number(getComputedStyle(stage).opacity),
+        windowBehindTitle: window_.top < h1.top && window_.bottom > h1.bottom,
+        titleOnTop:
+          document
+            .elementFromPoint(h1.left + h1.width / 2, h1.top + h1.height / 2)
+            ?.closest('h1') !== null,
+      };
+    });
+    expect(desktop).toEqual({
+      sceneTakesPointer: 'none',
+      stageOpacity: expect.any(Number),
+      windowBehindTitle: true,
+      titleOnTop: true,
+    });
+    expect(desktop.stageOpacity).toBeLessThan(1);
+
+    // The light sits behind the window, centred on it, not on the page above it.
+    const glow = await page.evaluate(() => {
+      const hero = getComputedStyle(document.querySelector('.hero')!).backgroundImage;
+      const halo = getComputedStyle(document.querySelector('.hero__scene')!, '::before');
+      const stage = document.querySelector('.hero__stage')!.getBoundingClientRect();
+      return {
+        pageGlow: hero,
+        halo: halo.backgroundImage.startsWith('radial-gradient'),
+        stageCentre: Math.round(stage.left + stage.width / 2),
+      };
+    });
+    expect(glow).toEqual({ pageGlow: 'none', halo: true, stageCentre: 720 });
+
+    // The tabs still answer the pointer.
+    await page.locator('#hero-tab-1').click();
+    await expect(page.locator('#hero-tab-1')).toHaveAttribute('aria-selected', 'true');
+
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.reload();
+    await expect(page.locator('.loader')).toHaveCount(0);
+    const phone = await page.evaluate(() => {
+      const note = document.querySelector('.hero__note')!.getBoundingClientRect();
+      const window_ = document.querySelector('#hero-pane-0 .ui-window')!.getBoundingClientRect();
+      return { windowBelowCopy: window_.top >= note.bottom };
+    });
+    expect(phone).toEqual({ windowBelowCopy: true });
+  });
+});
+
+test.describe('Landing page · scenes are drawn whole', () => {
+  test('sketches the rest of the hero page as lines of many lengths and a picture', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(origin);
+    const sketch = await page
+      .locator('#hero-pane-0 .ui-page')
+      .evaluate((el) => getComputedStyle(el, '::after').backgroundSize.split(', '));
+    const widths = new Set(sketch.map((size) => size.split(' ')[0]));
+    const heights = sketch.map((size) => parseFloat(size.split(' ')[1]));
+    expect(sketch.length).toBeGreaterThan(12);
+    expect(widths.size).toBeGreaterThan(8);
+    // One block far taller than a line: the picture.
+    expect(Math.max(...heights)).toBeGreaterThan(Math.min(...heights) * 10);
+  });
+
+  test('lets a window’s shadow blur out to the screen’s edge', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(origin);
+    // The nearest box that clips the window is the full-width section, so the
+    // shadow's 90px blur has room on both sides; a clip on the stage cut it off
+    // at the window's own edge.
+    const clipper = await page.locator('#feature-2 .ui-window').evaluate((win) => {
+      let el = win.parentElement;
+      while (el && getComputedStyle(el).overflowX === 'visible') el = el.parentElement;
+      return { tag: el!.tagName, id: el!.id, width: el!.getBoundingClientRect().width };
+    });
+    expect(clipper).toEqual({ tag: 'SECTION', id: 'feature-2', width: 1440 });
+  });
+
+  for (const [lang, width] of [
+    ['ar', 1440],
+    ['en', 1440],
+    ['ar', 900],
+    ['en', 375],
+    ['ar', 375],
+  ] as const) {
+    test(`ends feature 08's side panel in its reply field (${lang}, ${width}px)`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.addInitScript((value) => localStorage.setItem('hamesh-lang', value), lang);
+      await page.goto(origin);
+      await expect(page.locator('.loader')).toHaveCount(0);
+      const foot = await page.locator('#feature-7 .ui-side').evaluate((side) => {
+        const reply = side.querySelector('.ui-side__reply');
+        if (!reply) return null;
+        const panel = side.getBoundingClientRect();
+        const box = reply.getBoundingClientRect();
+        return { inside: box.bottom <= panel.bottom + 0.5, atFoot: panel.bottom - box.bottom < 1 };
+      });
+      expect(foot).toEqual({ inside: true, atFoot: true });
+    });
+  }
+});
+
+test.describe('Landing page · hero fits a desktop screen', () => {
+  for (const [width, height] of [
+    [1440, 900],
+    [1280, 720],
+  ] as const) {
+    for (const lang of ['ar', 'en'] as const) {
+      test(`shows all of it at ${width}×${height} (${lang})`, async ({ page }) => {
+        await page.setViewportSize({ width, height });
+        await page.addInitScript((value) => localStorage.setItem('hamesh-lang', value), lang);
+        await page.goto(origin);
+        await expect(page.locator('.loader')).toHaveCount(0);
+
+        // Everything, down to the last line under the tabs, with nothing scrolled.
+        await expect
+          .poll(() =>
+            page.evaluate(() =>
+              Math.max(
+                ...Array.from(document.querySelectorAll('.hero-tab'), (el) =>
+                  Math.round(el.getBoundingClientRect().bottom),
+                ),
+              ),
+            ),
+          )
+          .toBeLessThanOrEqual(height);
+        const windowHeight = await page
+          .locator('#hero-pane-0 .ui-window')
+          .evaluate((el) => el.getBoundingClientRect().height);
+        expect(windowHeight, 'the demo is too small to read').toBeGreaterThan(250);
+      });
+    }
+  }
+});
+
+test.describe('Landing page · typing', () => {
+  for (const lang of ['ar', 'en'] as const) {
+    test(`writes whole letters with the caret after the last one (${lang})`, async ({ page }) => {
+      await page.addInitScript((value) => localStorage.setItem('hamesh-lang', value), lang);
+      await page.goto(origin);
+      await expect(page.locator('.ui-reveal')).toHaveCount(0);
+
+      const seen = await page.evaluate(async () => {
+        const pane = document.querySelector('#hero-pane-0') as HTMLElement;
+        const text = pane.querySelector('[data-el="field-text"]') as HTMLElement;
+        const caret = pane.querySelector('[data-el="caret"]') as HTMLElement;
+        const rtl = document.documentElement.dir === 'rtl';
+        const full = text.getAttribute(`data-${document.documentElement.lang}`)!;
+        // The ES2022 segmenter, typed by hand: the project compiles against an older library.
+        const { Segmenter } = Intl as unknown as {
+          Segmenter: new (
+            locale: undefined,
+            options: { granularity: 'grapheme' },
+          ) => { segment: (text: string) => Iterable<{ segment: string }> };
+        };
+        const segments = Array.from(
+          new Segmenter(undefined, { granularity: 'grapheme' }).segment(full),
+          (part) => part.segment,
+        );
+        const prefixes = segments.map((_, i) => segments.slice(0, i + 1).join(''));
+        const partial: string[] = [];
+        const strays: number[] = [];
+        let steps = 0;
+        let last = '';
+        const began = Date.now();
+        while (Date.now() - began < 20000 && last !== full) {
+          const now = text.textContent ?? '';
+          if (now && !prefixes.includes(now)) partial.push(now);
+          if (now !== last && now && now !== full) {
+            steps += 1;
+            const range = document.createRange();
+            const node = text.firstChild!;
+            range.setStart(node, now.trimEnd().length - 1);
+            range.setEnd(node, now.trimEnd().length);
+            // The last character that is drawn, and the caret beside it.
+            const letter = range.getBoundingClientRect();
+            const bar = caret.getBoundingClientRect();
+            const sameLine = Math.abs(letter.top - bar.top) < letter.height;
+            if (sameLine && now === now.trimEnd()) {
+              strays.push(rtl ? letter.left - bar.right : bar.left - letter.right);
+            }
+          }
+          last = now;
+          await new Promise((r) => requestAnimationFrame(() => r(null)));
+        }
+        return {
+          partial,
+          strays,
+          steps,
+          finished: last === full,
+          adjacent: text.nextElementSibling === caret,
+          caretShown: Number(getComputedStyle(caret).opacity),
+        };
+      });
+
+      expect(seen.finished, 'the line was never finished').toBe(true);
+      expect(seen.steps).toBeGreaterThan(8);
+      expect(seen.partial).toEqual([]);
+      expect(seen.adjacent).toBe(true);
+      // Still there when the last letter lands.
+      expect(seen.caretShown).toBeGreaterThan(0.9);
+      expect(seen.strays.length).toBeGreaterThan(4);
+      // The letter's box and the caret meet, whichever way the line runs. A
+      // joined Arabic letter can reach a few pixels past its own box.
+      for (const gap of seen.strays) expect(Math.abs(gap)).toBeLessThan(6);
+    });
+  }
+
+  test('shows the finished lines at once to someone who asked for less motion', async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto(origin);
+    for (const field of await page.locator('[data-el="field-text"]').all()) {
+      await expect(field).toHaveText((await field.getAttribute('data-ar'))!);
+    }
+    await page.locator('#hero-tab-2').click();
+    await expect(page.locator('#hero-pane-2 [data-el="quick"]')).toBeVisible();
+    await expect(page.locator('#hero-pane-2 [data-el="quick"]')).toHaveCSS('opacity', '1');
+    await expect(page.locator('#hero-pane-0')).toBeHidden();
+  });
+});
+
+test.describe('Landing page · hero tabs', () => {
+  const selected = (page: import('@playwright/test').Page) =>
+    page.locator('[role="tab"][aria-selected="true"]');
+
+  test('are three tabs that switch scenes, by pointer and by keyboard', async ({ page }) => {
+    await page.goto(origin);
+    const tabs = page.getByRole('tab');
+    await expect(tabs).toHaveCount(3);
+    await expect(selected(page)).toHaveAttribute('id', 'hero-tab-0');
+
+    await tabs.nth(2).click();
+    await expect(selected(page)).toHaveAttribute('id', 'hero-tab-2');
+    await expect(page.locator('#hero-pane-2')).toBeVisible();
+    await expect(page.locator('#hero-pane-0')).toBeHidden();
+    await expect
+      .poll(() =>
+        page
+          .locator('#hero-tab-2 .hero-tab__bar')
+          .evaluate((bar) => new DOMMatrix(getComputedStyle(bar).transform).a),
+      )
+      .toBeGreaterThan(0.05);
+
+    // Arabic reads right to left, so the next tab is to the left.
+    await tabs.nth(2).press('ArrowRight');
+    await expect(selected(page)).toHaveAttribute('id', 'hero-tab-1');
+    await expect(tabs.nth(1)).toBeFocused();
+    await page.keyboard.press('ArrowLeft');
+    await expect(selected(page)).toHaveAttribute('id', 'hero-tab-2');
+
+    // Only the selected tab is a stop on the Tab key's way through.
+    await expect(tabs.nth(2)).toHaveAttribute('tabindex', '0');
+    await expect(tabs.nth(0)).toHaveAttribute('tabindex', '-1');
+  });
+
+  test('keeps the composer inside the window, on a desktop and on a phone', async ({ page }) => {
+    test.setTimeout(180000);
+    for (const [lang, width, height] of [
+      ['ar', 1280, 900],
+      ['en', 1280, 900],
+      // A short screen scales the window down.
+      ['ar', 1280, 720],
+      ['en', 1280, 720],
+      ['ar', 375, 900],
+      ['en', 375, 900],
+    ] as const) {
+      await page.setViewportSize({ width, height });
+      await page.addInitScript((value) => localStorage.setItem('hamesh-lang', value), lang);
+      await page.goto(origin);
+      await expect(page.locator('.loader')).toHaveCount(0);
+
+      for (const [index, card] of [
+        [0, 'card'],
+        [1, 'card'],
+        [2, 'quick'],
+      ] as const) {
+        await page.locator(`#hero-tab-${index}`).click();
+        const el = page.locator(`#hero-pane-${index} [data-el="${card}"]`);
+        await expect(el).toHaveCSS('opacity', '1', { timeout: 15000 });
+        const inside = await el.evaluate((node) => {
+          const box = node.getBoundingClientRect();
+          const win = node.closest('.demo')!.querySelector('.ui-window')!.getBoundingClientRect();
+          return Math.min(
+            box.left - win.left,
+            win.right - box.right,
+            box.top - win.top,
+            win.bottom - box.bottom,
+          );
+        });
+        expect(inside, `scene ${index} at ${width}×${height} in ${lang}`).toBeGreaterThan(6);
+      }
+    }
+  });
+});
+
+test.describe('Landing page · header', () => {
+  test('offers the install link only once the hero’s has left the screen', async ({ page }) => {
+    await page.goto(origin);
+    const cta = page.locator('.nav-cta');
+    await expect(page.locator('.loader')).toHaveCount(0);
+    await expect(cta).toBeHidden();
+
+    await page.locator('#privacy').scrollIntoViewIfNeeded();
+    await expect(cta).toBeVisible();
+
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await expect(cta).toBeHidden();
+  });
+
+  test('turns the theme over on every click, remembers it, and applies it before any module runs', async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme: 'light' });
+    await page.goto(origin);
+    const html = page.locator('html');
+    const toggle = page.locator('#themeToggle');
+    const paper = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+
+    await expect(html).not.toHaveAttribute('data-theme');
+    await toggle.click();
+    await expect(html).toHaveAttribute('data-theme', 'dark');
+    await expect.poll(paper).toBe('rgb(22, 20, 15)');
+    await toggle.click();
+    await expect(html).toHaveAttribute('data-theme', 'light');
+    await expect.poll(paper).toBe('rgb(247, 243, 236)');
+    await toggle.click();
+    await expect(html).toHaveAttribute('data-theme', 'dark');
+
+    // With every script file refused, only the blocking one in the head can
+    // have applied the choice.
+    await page.route('**/*.js', (route) => route.abort());
+    await page.reload();
+    await expect(html).toHaveAttribute('data-theme', 'dark');
+    expect(await paper()).toBe('rgb(22, 20, 15)');
+    await page.unroute('**/*.js');
+  });
+
+  test('changes what is on screen with every click, even on a dark system', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.goto(origin);
+    const toggle = page.locator('#themeToggle');
+    const paper = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+
+    // A dark system, then light, then dark again: no click goes unseen.
+    const seen = [await paper()];
+    for (let i = 0; i < 3; i += 1) {
+      await toggle.click();
+      await expect.poll(paper).not.toBe(seen[seen.length - 1]);
+      seen.push(await paper());
+    }
+    expect(seen).toEqual([
+      'rgb(22, 20, 15)',
+      'rgb(247, 243, 236)',
+      'rgb(22, 20, 15)',
+      'rgb(247, 243, 236)',
+    ]);
+    await expect(toggle).toHaveAttribute('aria-label', 'التبديل إلى الوضع الغامق');
+  });
+
+  test('never mirrors the mark in Arabic, not even beside the text', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('hamesh-lang', 'ar'));
+    await page.goto(origin);
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+    const mirrored = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('svg.mark'))
+        .filter((el) => new DOMMatrix(getComputedStyle(el).transform).a < 0)
+        .map((el) => el.parentElement!.className),
+    );
+    expect(mirrored).toEqual([]);
+  });
+
+  test('paints the demo video in the page’s own light', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'light' });
+    await page.goto(origin);
+    const picture = () =>
+      page.locator('#hero-pane-2 .ui-video').evaluate((el) => getComputedStyle(el).backgroundImage);
+    expect(await picture()).toContain('rgb(235, 224, 205)');
+    await page.locator('#themeToggle').click();
+    await expect.poll(picture).toContain('rgb(36, 31, 24)');
+  });
+
+  test('follows the system until told otherwise', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.goto(origin);
+    const paper = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+    expect(await paper()).toBe('rgb(22, 20, 15)');
+    await page.locator('#themeToggle').click();
+    await expect.poll(paper).toBe('rgb(247, 243, 236)');
   });
 });
 

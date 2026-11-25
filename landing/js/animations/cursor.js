@@ -11,9 +11,8 @@
  *   2. It settles before it clicks. The pause is short — around a tenth of a
  *      second — but without it the click lands while the cursor is still
  *      moving, which no hand does.
- *   3. It moves at a speed that depends on distance, easing out of rest and
- *      into the target, so a short hop and a long sweep do not take the same
- *      time.
+ *   3. It takes as long as a hand would (Fitts's law, `lib/fitts.js`), leaving
+ *      quickly and homing in slowly on what it is about to touch.
  *
  * Every helper writes into a timeline the caller owns, so a demo stays one
  * timeline that can be paused, resumed, scrubbed or thrown away.
@@ -21,11 +20,7 @@
 
 import { gsap } from '../lib/gsap.js';
 import { qs } from '../lib/dom.js';
-
-/** Pixels per second the cursor travels, before easing. */
-const SPEED = 620;
-const MIN_TRAVEL = 0.34;
-const MAX_TRAVEL = 0.95;
+import { travelTime } from '../lib/fitts.js';
 
 /**
  * Three points describing a gentle arc between two positions.
@@ -50,11 +45,6 @@ function arcThrough(from, to, bend) {
   ];
 }
 
-function travelTime(from, to) {
-  const distance = Math.hypot(to.x - from.x, to.y - from.y);
-  return gsap.utils.clamp(MIN_TRAVEL, MAX_TRAVEL, distance / SPEED);
-}
-
 export function createDemoCursor(root) {
   const el = qs('.demo-cursor', root);
   if (!el) return null;
@@ -74,7 +64,7 @@ export function createDemoCursor(root) {
      *  Kept inside the demo: a resting position a few pixels outside it is
      *  invisible either way, but in RTL it is scrollable overflow. */
     placeAt(target) {
-      const width = root.getBoundingClientRect().width;
+      const width = root.offsetWidth;
       point = {
         x: gsap.utils.clamp(2, Math.max(2, width - 22), target.x),
         y: target.y,
@@ -103,13 +93,14 @@ export function createDemoCursor(root) {
      * `bend` flips sign per call site so consecutive moves do not all bow the
      * same way, which would read as a pattern of its own.
      */
-    moveTo(tl, target, { at, bend = 1, duration, ease = 'power2.inOut', label } = {}) {
+    moveTo(tl, target, { at, bend = 1, duration, width, ease = 'power3.out', label } = {}) {
       const path = arcThrough(point, target, bend);
+      const distance = Math.hypot(target.x - point.x, target.y - point.y);
       tl.to(
         el,
         {
           motionPath: { path, curviness: 1.3, autoRotate: false },
-          duration: duration ?? travelTime(point, target),
+          duration: duration ?? travelTime(distance, width),
           ease,
         },
         at,
@@ -171,7 +162,10 @@ export function createDemoCursor(root) {
       api.moveTo(tl, from, { at: label, bend: 0.55 });
       tl.to(arrow, { scale: 0.86, duration: 0.1 }, '>');
 
-      const sweepAt = '>';
+      /* A fixed time, taken before the sweep is added: handing on `'>'` let it
+         resolve after the sweep, so the selection only began once the hand
+         had already arrived. */
+      const sweepAt = tl.recent().endTime();
       api.moveTo(tl, to, { at: sweepAt, bend: 0.08, duration, ease: 'power1.inOut' });
       if (onSweep) onSweep(sweepAt, duration);
 

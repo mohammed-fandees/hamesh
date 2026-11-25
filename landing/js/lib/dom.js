@@ -13,14 +13,14 @@ export const qsa = (selector, scope = document) => Array.from(scope.querySelecto
 export function rectIn(root, el) {
   const base = root.getBoundingClientRect();
   const box = el.getBoundingClientRect();
-  return {
-    x: box.left - base.left,
-    y: box.top - base.top,
-    width: box.width,
-    height: box.height,
-    centerX: box.left - base.left + box.width / 2,
-    centerY: box.top - base.top + box.height / 2,
-  };
+  /* The hero's window is scaled to fit the screen. Positions are written back
+     in the demo's own pixels, so what the screen measured is divided out. */
+  const scale = root.offsetWidth ? base.width / root.offsetWidth : 1;
+  const x = (box.left - base.left) / scale;
+  const y = (box.top - base.top) / scale;
+  const width = box.width / scale;
+  const height = box.height / scale;
+  return { x, y, width, height, centerX: x + width / 2, centerY: y + height / 2 };
 }
 
 /** The centre of `el`, in `root`'s coordinates. */

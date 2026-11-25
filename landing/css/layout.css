@@ -8,16 +8,16 @@
 }
 
 .section {
-  padding-block: clamp(72px, 11vh, 132px);
+  padding-block: 112px;
+  border-top: 1px solid var(--border-soft);
 }
 
-.section--tight {
-  padding-block: clamp(56px, 8vh, 96px);
+.section--steps {
+  padding-block: 72px;
 }
 
-.section__head {
-  max-width: 60ch;
-  margin-bottom: clamp(32px, 5vh, 56px);
+.section--tinted {
+  background: var(--paper-dim);
 }
 
 .section__head h2 {
@@ -25,64 +25,22 @@
 }
 
 .section__head .lede {
-  margin-top: 14px;
+  margin-top: 16px;
 }
 
-.rule {
-  border-top: 1px solid var(--border-soft);
+.section__head--center {
+  max-width: 720px;
+  margin-inline: auto;
+  text-align: center;
 }
 
-/* Two-column split used by the privacy and install sections. */
+.section__head--center .lede {
+  margin-inline: auto;
+}
+
 .split {
   display: grid;
-  grid-template-columns: 1.05fr 0.95fr;
-  gap: clamp(28px, 5vw, 64px);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 64px;
   align-items: start;
-}
-
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 24px;
-  box-shadow: var(--shadow-sm);
-}
-
-.card__label {
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ink-40);
-  margin-bottom: 10px;
-}
-
-.steps {
-  display: grid;
-  gap: 12px;
-  margin-top: 14px;
-  font-size: 0.9rem;
-  color: var(--ink-60);
-  counter-reset: step;
-}
-
-.steps li {
-  display: flex;
-  gap: 10px;
-}
-
-.steps li::before {
-  counter-increment: step;
-  content: counter(step);
-  flex: none;
-  width: 20px;
-  height: 20px;
-  border-radius: var(--radius-pill);
-  background: var(--paper-dim);
-  color: var(--ink-60);
-  font-size: 0.72rem;
-  font-weight: 600;
-  display: grid;
-  place-items: center;
-  margin-top: 2px;
 }

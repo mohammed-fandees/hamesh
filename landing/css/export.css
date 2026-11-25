@@ -1,0 +1,240 @@
+/* The export feature's demo. */
+
+.xdemo {
+  width: 100%;
+}
+
+.xstage {
+  position: relative;
+  height: 320px;
+  background: var(--surface-2);
+  font-size: 0.75rem;
+}
+
+.xframe {
+  position: absolute;
+  inset: 0;
+  padding: 18px;
+  opacity: 0;
+}
+
+.xnote {
+  position: relative;
+  padding: 12px 14px;
+  padding-inline-end: 40px;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+}
+
+.xnote__quote {
+  padding-inline-start: 8px;
+  border-inline-start: 2px solid var(--accent);
+  color: var(--ink-60);
+}
+
+.xnote__text {
+  margin-top: 6px;
+  font-family: var(--serif);
+  font-style: italic;
+}
+
+.xnote__meta {
+  margin-top: 6px;
+  font-size: 0.66rem;
+  color: var(--ink-40);
+}
+
+.xnote__more {
+  position: absolute;
+  top: 8px;
+  inset-inline-end: 8px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-pill);
+  color: var(--ink-60);
+}
+
+.xnote__more.is-hover {
+  background: var(--layer-hover);
+}
+
+.xmenu {
+  position: absolute;
+  top: 56px;
+  inset-inline-end: 28px;
+  display: grid;
+  width: 230px;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+}
+
+.xmenu__item {
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+}
+
+.xmenu__item.is-hover {
+  background: var(--surface-hover);
+  color: var(--accent-strong);
+  font-weight: 600;
+}
+
+.xmenu__item--danger {
+  color: var(--danger);
+}
+
+.xdialog__title {
+  display: block;
+  font-size: 0.85rem;
+}
+
+.xdialog__scope {
+  margin-top: 2px;
+  color: var(--ink-40);
+}
+
+.xdialog__label {
+  margin: 12px 0 6px;
+  font-weight: 600;
+}
+
+.xdialog__tools {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.xopt {
+  display: block;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  line-height: 1.5;
+}
+
+.xopt b {
+  display: block;
+}
+
+.xopt span {
+  color: var(--ink-60);
+  font-size: 0.68rem;
+}
+
+.xopt[data-tool='obsidian'] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-tint);
+}
+
+.xdialog__layouts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.xchip {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  font-size: 0.68rem;
+}
+
+.xchip.is-on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+.xpreview__label {
+  margin-bottom: 8px;
+  color: var(--ink-40);
+}
+
+.xsheet {
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  line-height: 1.8;
+}
+
+.xsheet b {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+}
+
+.xsheet__quote {
+  margin-top: 6px;
+  padding: 4px 10px;
+  background: var(--paper);
+  border-inline-start: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+}
+
+.xsheet__foot {
+  margin-top: 8px;
+  font-size: 0.66rem;
+  font-style: italic;
+  color: var(--ink-40);
+}
+
+.xfile__button {
+  position: absolute;
+  top: 34px;
+  inset-inline-start: 22px;
+}
+
+.xfile__chip {
+  position: absolute;
+  top: 120px;
+  inset-inline: 0;
+  width: fit-content;
+  max-width: calc(100% - 32px);
+  margin-inline: auto;
+  padding: 8px 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  font-family: var(--mono);
+  font-size: 0.68rem;
+}
+
+.xfile__folder {
+  position: absolute;
+  bottom: 30px;
+  inset-inline: 0;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  width: 210px;
+  margin-inline: auto;
+  padding: 14px;
+  border: 1px dashed var(--ink-40);
+  border-radius: var(--radius-lg);
+  color: var(--ink-60);
+  font-family: var(--mono);
+}
+
+@media (max-width: 480px) {
+  .xmenu {
+    width: 200px;
+    inset-inline-end: 16px;
+  }
+
+  .xstage {
+    height: 390px;
+  }
+}

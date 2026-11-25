@@ -22,40 +22,37 @@
   max-width: 60ch;
 }
 
-/* The quotation the section is built on, set like a line from a book. */
+/* The quotation the section is built on, set in the open like an epigraph
+   rather than boxed like a card: it introduces the section, it is not a
+   component of it. */
+/* Wide enough for the line to stand whole on a desktop. */
 .teams-intro__quote {
-  position: relative;
-  max-width: 46ch;
-  margin: 6px 0;
-  padding: 18px 26px;
-  border-inline-start: 2px solid var(--accent);
-  background: var(--surface);
-  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
-  box-shadow: var(--shadow-sm);
-  text-align: start;
-}
-
-:root[dir='rtl'] .teams-intro__quote {
-  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+  max-width: none;
+  margin: 10px 0 0;
+  padding: 0;
+  text-align: center;
 }
 
 .teams-intro__quote p {
   font-family: var(--serif);
-  font-size: clamp(1.02rem, 1.6vw, 1.2rem);
-  line-height: 1.8;
+  font-style: italic;
+  font-size: clamp(1.05rem, 1.7vw, 1.2rem);
+  line-height: 1.9;
   color: var(--ink);
 }
 
+/* Arabic has no italic; the book face carries the quotation instead. */
 :root[lang='ar'] .teams-intro__quote p {
   font-family: var(--page-ar);
+  font-style: normal;
 }
 
 .teams-intro__quote cite {
   display: block;
   margin-top: 8px;
   font-style: normal;
-  font-size: 0.8rem;
-  color: var(--ink-40);
+  font-size: 0.84rem;
+  color: var(--ink-60);
 }
 
 /* ---- People ------------------------------------------------------------ */
@@ -390,12 +387,11 @@
   position: relative;
   flex: 1;
   min-width: 0;
-  height: 26px;
-  display: flex;
-  align-items: center;
-  padding-inline: 10px;
+  min-height: 26px;
+  padding: 4px 10px;
+  line-height: 1.7;
   border: 1px solid var(--border);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-xl);
   background: var(--surface);
   font-size: 0.6rem;
   overflow: hidden;
@@ -412,28 +408,13 @@
 .ui-reply__placeholder {
   position: absolute;
   inset-inline-start: 10px;
+  top: 4px;
   color: var(--ink-40);
   white-space: nowrap;
 }
 
 .ui-reply__typed {
-  position: relative;
   color: var(--ink);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.ui-reply__field .ui-reveal {
-  inset: 2px;
-  border-radius: var(--radius-pill);
-  background: var(--surface);
-}
-
-.ui-reply__field .ui-caret {
-  top: 6px;
-  inset-inline-start: 10px;
-  height: 13px;
 }
 
 .ui-reply__send {
@@ -444,18 +425,12 @@
   height: 26px;
   border-radius: var(--radius-pill);
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   opacity: 0.5;
 }
 
 .ui-reply__send.is-ready {
   opacity: 1;
-}
-
-@media (prefers-color-scheme: dark) {
-  .ui-reply__send {
-    color: #16140f;
-  }
 }
 
 /* ---- Chrome's side panel ----------------------------------------------- */
@@ -503,11 +478,20 @@
 }
 
 .ui-side__body {
+  flex: 1;
+  min-height: 0;
   display: grid;
   align-content: start;
   gap: 9px;
   padding: 10px;
   overflow: hidden;
+}
+
+/* The panel ends where the extension's does: in a field to reply from,
+   pinned to its foot whatever the conversation above it holds. */
+.ui-side__reply {
+  flex: none;
+  background: var(--surface);
 }
 
 .ui-side__note {

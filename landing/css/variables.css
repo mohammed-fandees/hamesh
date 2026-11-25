@@ -28,6 +28,8 @@
 
   --border: rgba(30, 27, 24, 0.14);
   --border-soft: rgba(30, 27, 24, 0.08);
+  /* What is written on the accent. */
+  --on-accent: #ffffff;
   --success: #4b6b4e;
   --danger: #8c2f27;
   /* The browser's own selection, as it looks mid-drag. */
@@ -40,6 +42,7 @@
   --sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --arabic: 'IBM Plex Sans Arabic', 'IBM Plex Sans', 'Segoe UI', Tahoma, sans-serif;
   --serif: 'IBM Plex Serif', Georgia, 'Times New Roman', serif;
+  --mono: 'IBM Plex Mono', 'IBM Plex Sans Arabic', ui-monospace, monospace;
   /* The pages inside the demos are articles, set the way Arabic books are. */
   --page-ar: 'Noto Naskh Arabic', var(--arabic);
 
@@ -82,10 +85,28 @@
   /* Layout */
   --maxw: 1120px;
   --gutter: clamp(20px, 5vw, 56px);
+  /* The video player in the demos takes the page's light: a pale picture by
+     day, the dark one by night. */
+  --video-picture: linear-gradient(150deg, #ebe0cd 0%, #e2d3bb 58%, #f2eadc 100%);
+  --video-glow: rgba(181, 80, 47, 0.16);
+  --video-track: rgba(30, 27, 24, 0.16);
+  --video-played: rgba(30, 27, 24, 0.55);
+  --video-ring: rgba(255, 255, 255, 0.85);
+  --video-ink: rgba(30, 27, 24, 0.62);
+  --video-title: rgba(30, 27, 24, 0.82);
+
+  /* The page itself (css/ambient.css): the paper's edge and its grain. The
+     grain is the ink's brown on light paper. */
+  --page-edge: rgba(120, 84, 48, 0.07);
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.12 0 0 0 0 0.1 0 0 0 0 0.08 0 0 0 0.9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  --grain-strength: 0.07;
 }
 
+/* The dark set appears twice because CSS cannot share one block between a
+ * media query and a selector: first for a visitor who follows their system,
+ * then for one who chose dark. A test keeps the two the same. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     --ink: #f3ede3;
     --ink-60: rgba(243, 237, 227, 0.64);
     --ink-40: rgba(243, 237, 227, 0.46);
@@ -113,5 +134,62 @@
     --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.4);
     --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.5);
     --shadow-scene: 0 40px 90px -30px rgba(0, 0, 0, 0.75);
+    --on-accent: #16140f;
+    --video-picture: linear-gradient(150deg, #241f18 0%, #3a2f22 58%, #1b1712 100%);
+    --video-glow: rgba(224, 139, 92, 0.24);
+    --video-track: rgba(255, 255, 255, 0.22);
+    --video-played: rgba(255, 255, 255, 0.72);
+    --video-ring: rgba(0, 0, 0, 0.35);
+    --video-ink: rgba(255, 255, 255, 0.72);
+    --video-title: rgba(243, 237, 227, 0.85);
+    --page-edge: rgba(0, 0, 0, 0.28);
+    --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 0.95 0 0 0 0 0.88 0 0 0 0.9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+    --grain-strength: 0.05;
   }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --ink: #f3ede3;
+  --ink-60: rgba(243, 237, 227, 0.64);
+  --ink-40: rgba(243, 237, 227, 0.46);
+  --ink-20: rgba(243, 237, 227, 0.18);
+  --paper: #16140f;
+  --paper-dim: #211e18;
+  --surface: #262219;
+  --surface-2: #1d1a14;
+
+  --accent: #e08b5c;
+  --accent-rgb: 224 139 92;
+  --surface-hover: #352a1e;
+  --accent-strong: #f0a578;
+  --accent-tint: rgba(224, 139, 92, 0.16);
+  --accent-glow: rgba(224, 139, 92, 0.26);
+
+  --border: rgba(243, 237, 227, 0.16);
+  --border-soft: rgba(243, 237, 227, 0.08);
+  --success: #8fb894;
+  --danger: #e07a6e;
+  --selection: rgba(98, 150, 240, 0.34);
+  --avatar-l: 0.8;
+  --avatar-c: 0.085;
+
+  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.5);
+  --shadow-scene: 0 40px 90px -30px rgba(0, 0, 0, 0.75);
+  --on-accent: #16140f;
+  --video-picture: linear-gradient(150deg, #241f18 0%, #3a2f22 58%, #1b1712 100%);
+  --video-glow: rgba(224, 139, 92, 0.24);
+  --video-track: rgba(255, 255, 255, 0.22);
+  --video-played: rgba(255, 255, 255, 0.72);
+  --video-ring: rgba(0, 0, 0, 0.35);
+  --video-ink: rgba(255, 255, 255, 0.72);
+  --video-title: rgba(243, 237, 227, 0.85);
+  --page-edge: rgba(0, 0, 0, 0.28);
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 0.95 0 0 0 0 0.88 0 0 0 0.9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  --grain-strength: 0.05;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
 }
