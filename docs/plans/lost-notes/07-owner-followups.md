@@ -2,7 +2,7 @@
 
 **Phase:** F
 **Depends on:** 06
-**Status:** in progress
+**Status:** done
 
 ## Goal
 
@@ -60,8 +60,12 @@ What the owner decided on 2026-11-24, after reading the review (06):
 - [x] 9. Page channel `reanchor`: validated by hand (shape and a 16 kB bound), only a note cached
       for that very page, only from its author, then the server decides again
   - Test: `tests/teams/page-channel.test.ts` (allowed, not the author, another page, bad anchor)
-- [ ] 10. Server side in `hamesh-api`, its own PR pinned to the merged contract: `PATCH` accepts
-      `anchor` from the note's author only, and keeps it as it keeps a new note's
+- [x] 10. Server side in `hamesh-api` (mohammed-fandees/hamesh-api#43), pinned to the merged
+      contract (`183faa9`): `PATCH` accepts `anchor` from the note's author only (not the owner
+      or an admin), bounded at 16 kB, checked against the version. No migration. Left for the
+      owner to merge and deploy, since a merge there may deploy to production
+  - Test: `test/notes/notes.test.ts` in hamesh-api (author moves it; owner and admin refused;
+    stale version; anchor outside the contract)
 - [x] 11. Keeping a team note without a place, for every member: the owner chose option A. In
       2.3.1 a team note in the server's answer is read leniently (`TeamNote` is no longer strict),
       so a field the server adds later is dropped by copies that don't know it. The shared
