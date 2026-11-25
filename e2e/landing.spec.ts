@@ -660,6 +660,47 @@ test.describe('Landing page · features', () => {
   });
 });
 
+test.describe('Landing page · header toggles', () => {
+  for (const lang of ['ar', 'en'] as const) {
+    test(`keeps its toggles at the edge while the install link is hidden (${lang})`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 375, height: 812 });
+      await page.addInitScript((value) => localStorage.setItem('hamesh-lang', value), lang);
+      await page.goto(origin);
+      await expect(page.locator('.loader')).toHaveCount(0);
+      await expect(page.locator('.nav-cta')).not.toHaveClass(/is-shown/);
+
+      const gap = await page.evaluate(() => {
+        const inner = document.querySelector('.site-header__inner')!;
+        const padding = parseFloat(getComputedStyle(inner).paddingInlineEnd);
+        const box = inner.getBoundingClientRect();
+        const toggles = Array.from(
+          document.querySelectorAll('.site-header__tools .icon-btn'),
+          (el) => el.getBoundingClientRect(),
+        );
+        const rtl = document.documentElement.dir === 'rtl';
+        // The toggle nearest the end of the row, against the row's end.
+        return rtl
+          ? Math.min(...toggles.map((r) => r.left)) - (box.left + padding)
+          : box.right - padding - Math.max(...toggles.map((r) => r.right));
+      });
+      expect(Math.abs(gap)).toBeLessThan(2);
+
+      // And they stay put when the link arrives: it takes the room beside them.
+      const where = () =>
+        page.evaluate(() =>
+          Array.from(document.querySelectorAll('.site-header__tools .icon-btn'), (el) =>
+            Math.round(el.getBoundingClientRect().left),
+          ),
+        );
+      const before = await where();
+      await page.locator('.nav-cta').evaluate((el) => el.classList.add('is-shown'));
+      expect(await where()).toEqual(before);
+    });
+  }
+});
+
 test.describe('Landing page · hero demo behind the words', () => {
   test('runs the demo faded behind the copy on a desktop, and under it on a phone', async ({
     page,
