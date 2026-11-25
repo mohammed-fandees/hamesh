@@ -1,0 +1,133 @@
+/* The blocks between the demos: the three steps, privacy and install. */
+
+/* ---- Pick · Write · Come back ---------------------------------------- */
+
+.steps-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 40px;
+}
+
+.steps-strip li {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.steps-strip i {
+  font-style: normal;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--accent);
+}
+
+.steps-strip b {
+  font-size: 1.15rem;
+}
+
+.steps-strip p {
+  font-size: 0.93rem;
+  line-height: 1.75;
+  color: var(--ink-60);
+}
+
+/* ---- The card beside the privacy words -------------------------------- */
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 28px;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-xl);
+}
+
+.tile h4 {
+  font-size: 1.2rem;
+}
+
+.tile > p {
+  font-size: 0.95rem;
+  line-height: 1.8;
+  color: var(--ink-60);
+}
+
+/* ---- Privacy ---------------------------------------------------------- */
+
+.privacy__head h2 {
+  margin-top: 10px;
+}
+
+.privacy__head .lede {
+  margin-top: 16px;
+}
+
+.privacy__link {
+  display: inline-block;
+  margin-top: 14px;
+  color: var(--accent);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.split > .tile {
+  align-self: start;
+}
+
+/* ---- Install ---------------------------------------------------------- */
+
+.install {
+  text-align: center;
+}
+
+.install h2 {
+  margin-top: 10px;
+}
+
+.install .lede {
+  margin: 16px auto 0;
+}
+
+.install__cta {
+  margin-top: 28px;
+}
+
+.install__after {
+  max-width: 52ch;
+  margin: 16px auto 0;
+  font-size: 0.9rem;
+  line-height: 1.8;
+  color: var(--ink-60);
+}
+
+.manual {
+  max-width: 560px;
+  margin: 32px auto 0;
+  padding: 14px 18px;
+  text-align: start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.manual summary {
+  cursor: pointer;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.manual ol {
+  margin-top: 12px;
+  padding-inline-start: 20px;
+  list-style: decimal;
+  font-size: 0.88rem;
+  line-height: 1.9;
+  color: var(--ink-60);
+}
+
+.manual a {
+  color: var(--accent);
+  font-weight: 600;
+}

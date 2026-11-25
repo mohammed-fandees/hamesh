@@ -17,6 +17,7 @@ import { gsap } from '../lib/gsap.js';
 import { qs, rectIn } from '../lib/dom.js';
 import { createDemoCursor } from '../animations/cursor.js';
 import { prefersReducedMotion } from '../lib/motion.js';
+import { typeInto, fullText } from '../lib/typing.js';
 
 export function createElementNoteDemo(root) {
   const first = qs('[data-el="el-1"]', root);
@@ -28,20 +29,24 @@ export function createElementNoteDemo(root) {
   const card = qs('[data-el="card"]', root);
   const fieldText = qs('[data-el="field-text"]', root);
   const caret = qs('[data-el="caret"]', root);
-  const reveal = qs('[data-el="reveal"]', root);
   const save = qs('[data-el="save"]', root);
   const marginMark = qs('[data-el="margin-mark"]', root);
 
   if (!first || !second || !card) return null;
 
   const rtl = document.documentElement.dir === 'rtl';
+  const text = fullText(fieldText);
+  fieldText.textContent = text;
   const flip = rtl ? -1 : 1;
+
+  /* A rebuild measures at full size, not at the scale the last one left. */
+  gsap.set([card, marginMark, hint, tip], { clearProps: 'transform' });
 
   const firstBox = rectIn(root, first);
   const secondBox = rectIn(root, second);
   const cardBox = rectIn(root, card);
   const windowBox = rectIn(root, qs('.ui-window', root));
-  const rootWidth = root.getBoundingClientRect().width;
+  const rootWidth = root.offsetWidth;
   const tipBox = tip ? rectIn(root, tip) : { width: 120, height: 22 };
 
   /* The dark pill the extension shows while choosing rides just below and
@@ -60,7 +65,11 @@ export function createElementNoteDemo(root) {
      which is exactly how the extension's own composer behaves near the foot of
      a document. Flipping it above instead put it on top of the browser chrome,
      which reads as a bug rather than as a composer. */
-  const cardY = secondBox.y + secondBox.height + 12;
+  /* In the hero it stays inside the window. */
+  const lowest = root.hasAttribute('data-contain')
+    ? windowBox.y + windowBox.height - cardBox.height - 10
+    : Infinity;
+  const cardY = Math.min(secondBox.y + secondBox.height + 12, lowest);
 
   const places = {
     card: {
@@ -92,19 +101,19 @@ export function createElementNoteDemo(root) {
   gsap.set(marginMark, { x: places.marginMark.x, y: places.marginMark.y, scale: 0.7 });
   gsap.set(hint, { x: places.hint.x, y: places.hint.y, scale: 0.96 });
   gsap.set([hlFirst, hlSecond], { opacity: 0 });
-  gsap.set(reveal, { scaleX: 1 });
-  gsap.set(caret, { opacity: 0, x: 0 });
+  gsap.set(caret, { opacity: 0 });
 
   if (prefersReducedMotion()) {
     gsap.set(hlSecond, { opacity: 1 });
     gsap.set(marginMark, { opacity: 1, scale: 1 });
     gsap.set(card, { opacity: 1, scale: 1 });
-    gsap.set(reveal, { scaleX: 0 });
     return gsap.timeline({ paused: true });
   }
 
   const cursor = createDemoCursor(root);
-  const textWidth = fieldText ? rectIn(root, fieldText).width : 120;
+  /* Measured while the field still holds its full text, which is its size when
+     the hand gets there. */
+  const saveBox = rectIn(root, save);
 
   cursor?.placeAt({ x: firstBox.centerX - 40 * flip, y: windowBox.y + windowBox.height + 30 });
 
@@ -145,15 +154,10 @@ export function createElementNoteDemo(root) {
   );
 
   /* 4 — typing, then saving. */
-  tl.to(reveal, { scaleX: 0, duration: 1.25, ease: 'steps(20)' }, '>')
-    .to(caret, { x: textWidth * flip, duration: 1.25, ease: 'steps(20)' }, '<')
-    .to(caret, { opacity: 0, duration: 0.18 }, '>-0.08');
+  const typing = typeInto(tl, fieldText, text, { caret });
+  tl.to(caret, { opacity: 0, duration: 0.18 }, '>+0.45');
 
-  cursor?.moveTo(
-    tl,
-    { x: rectIn(root, save).centerX, y: rectIn(root, save).centerY + 2 },
-    { at: '>-0.15', bend: 1 },
-  );
+  cursor?.moveTo(tl, { x: saveBox.centerX, y: saveBox.centerY + 2 }, { at: '>-0.15', bend: 1 });
   cursor?.settle(tl, {});
   cursor?.hover(tl, save, true, {});
   cursor?.press(tl, { target: save });
@@ -169,8 +173,7 @@ export function createElementNoteDemo(root) {
   cursor?.exit(tl, '>');
   tl.to(marginMark, { opacity: 0, duration: 0.42 }, '<')
     .set(marginMark, { scale: 0.7 })
-    .set(reveal, { scaleX: 1 })
-    .set(caret, { x: 0 })
+    .set(typing.state, { t: 0 })
     .set(hint, { y: places.hint.y })
     .set(tip, { ...tipAt(overFirstPoint), scale: 0.96 })
     .call(() =>

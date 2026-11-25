@@ -17,13 +17,11 @@
   text-align: start;
   width: min(100%, 620px);
   transform-style: preserve-3d;
-  /* Reveals sweep with the reading direction; flipped for RTL below. */
-  --reveal-origin: right;
+  /* A selection sweeps with the reading direction; flipped for RTL below. */
   --sweep-origin: left;
 }
 
 :root[dir='rtl'] .demo {
-  --reveal-origin: left;
   --sweep-origin: right;
 }
 
@@ -303,34 +301,27 @@
   background: var(--surface-2);
 }
 
-/* Typing: a mask the colour of the field, scaled off the text. */
-.ui-reveal {
-  position: absolute;
-  inset: 0;
-  background: var(--paper);
-  transform-origin: var(--reveal-origin);
-  pointer-events: none;
-}
-
-.ui-field--plain .ui-reveal {
-  background: var(--surface-2);
-}
-
+/* The caret follows the text in the line, so it is always after the last
+   character: solid while typing, blinking while the hand is still. The blink
+   changes the colour, leaving opacity to the timeline that shows and hides it. */
 .ui-caret {
-  position: absolute;
-  top: 9px;
-  inset-inline-start: 9px;
-  z-index: 1;
+  display: inline-block;
   width: 1.5px;
-  height: 15px;
+  height: 1.05em;
+  margin-inline-start: 1px;
+  vertical-align: -2px;
   background: var(--accent);
   opacity: 0;
 }
 
-.ui-caret--search {
-  top: 7px;
-  inset-inline-start: 12px;
-  height: 13px;
+.ui-caret:not(.is-typing) {
+  animation: caret-blink 1060ms steps(1, end) infinite;
+}
+
+@keyframes caret-blink {
+  50% {
+    background: transparent;
+  }
 }
 
 /* Where the note will be filed — the composer's folder row. */
@@ -374,13 +365,7 @@
 .ui-btn--primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
-}
-
-@media (prefers-color-scheme: dark) {
-  .ui-btn--primary {
-    color: #16140f;
-  }
+  color: var(--on-accent);
 }
 
 .ui-btn.is-hover {
@@ -507,7 +492,7 @@
   inset: 0;
   border-radius: inherit;
   background: rgba(255, 255, 255, 0.72);
-  transform: scaleX(0.1);
+  transform: scaleX(var(--played, 0.1));
   transform-origin: var(--sweep-origin);
 }
 
@@ -660,10 +645,6 @@
 .ui-search__typed {
   position: relative;
   color: var(--ink);
-}
-
-.ui-search__typed .ui-reveal {
-  background: var(--surface);
 }
 
 .ui-search__key {

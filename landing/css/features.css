@@ -13,11 +13,23 @@
   position: relative;
 }
 
+.features {
+  display: flex;
+  flex-direction: column;
+  gap: 120px;
+}
+
+/* The Teams features follow their own introduction, so no rule divides them
+   from it. */
+.features--teams {
+  padding-block: 40px 112px;
+}
+
 .feature__inner {
   display: grid;
-  grid-template-columns: 0.92fr 1.08fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: center;
-  gap: clamp(28px, 5vw, 72px);
+  gap: 64px;
 }
 
 /* Alternating sides give the page a rhythm without a single feature having to
@@ -26,42 +38,35 @@
   order: 2;
 }
 
-.feature__copy {
-  max-width: 46ch;
-}
-
 .feature__index {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  color: var(--ink-40);
-  margin-bottom: 14px;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 0.82rem;
+  color: var(--ink-60);
 }
 
 .feature__index b {
   color: var(--accent);
-  font-weight: 600;
+  font-family: var(--mono);
 }
 
 .feature__copy h3 {
-  font-size: clamp(1.5rem, 2.8vw, 2.1rem);
-  margin-bottom: 12px;
+  margin-top: 10px;
 }
 
-.feature__copy p {
-  color: var(--ink-60);
+.feature__copy .lede {
+  font-size: 1rem;
 }
 
 .feature__keys {
   display: flex;
   align-items: center;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 6px;
   margin-top: 18px;
-  font-size: 0.85rem;
-  color: var(--ink-40);
+  font-size: 0.8rem;
+  color: var(--ink-60);
 }
 
 /* Alt+T is Alt+T in Arabic too — the shortcut keeps its own direction while

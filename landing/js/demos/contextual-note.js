@@ -17,6 +17,7 @@ import { gsap } from '../lib/gsap.js';
 import { qs, rectIn } from '../lib/dom.js';
 import { createDemoCursor } from '../animations/cursor.js';
 import { prefersReducedMotion } from '../lib/motion.js';
+import { typeInto, fullText } from '../lib/typing.js';
 
 export function createContextualNoteDemo(root) {
   const target = qs('[data-el="target"]', root);
@@ -27,19 +28,28 @@ export function createContextualNoteDemo(root) {
   const card = qs('[data-el="card"]', root);
   const fieldText = qs('[data-el="field-text"]', root);
   const caret = qs('[data-el="caret"]', root);
-  const reveal = qs('[data-el="reveal"]', root);
   const save = qs('[data-el="save"]', root);
   const pill = qs('[data-el="pill"]', root);
 
   if (!target || !card) return null;
 
   const rtl = document.documentElement.dir === 'rtl';
+  const text = fullText(fieldText);
+  fieldText.textContent = text;
   const flip = rtl ? -1 : 1;
+
+  /* A rebuild measures at full size, not at the scale the last one left. */
+  gsap.set([action, card, pill], { clearProps: 'transform' });
 
   const targetBox = rectIn(root, target);
   const cardBox = rectIn(root, card);
   const pillBox = rectIn(root, pill);
-  const rootWidth = root.getBoundingClientRect().width;
+  const rootWidth = root.offsetWidth;
+  /* In the hero the composer stays inside its window. */
+  const windowBox = rectIn(root, qs('.ui-window', root));
+  const lowest = root.hasAttribute('data-contain')
+    ? windowBox.y + windowBox.height - cardBox.height - 10
+    : Infinity;
 
   /* The composer opens below the words it belongs to, and may reach past the
      foot of the window: it floats over the page, as the extension's own does.
@@ -62,7 +72,7 @@ export function createContextualNoteDemo(root) {
         Math.max(12, rootWidth - cardBox.width - 12),
         targetBox.centerX - cardBox.width / 2,
       ),
-      y: targetBox.y + targetBox.height + 12,
+      y: Math.min(targetBox.y + targetBox.height + 12, lowest),
     },
     pill: {
       x: gsap.utils.clamp(
@@ -80,20 +90,20 @@ export function createContextualNoteDemo(root) {
   gsap.set(card, { x: places.card.x, y: places.card.y, scale: 0.96 });
   gsap.set(pill, { x: places.pill.x, y: places.pill.y, scale: 0.96 });
   gsap.set([selection, highlight, underline], { scaleX: 0, opacity: 1 });
-  gsap.set(reveal, { scaleX: 1 });
-  gsap.set(caret, { opacity: 0, x: 0 });
+  gsap.set(caret, { opacity: 0 });
 
   /* Reduced motion: the finished state, held still. Everything the story
      would have produced is simply already there. */
   if (prefersReducedMotion()) {
     gsap.set([highlight, underline], { scaleX: 1 });
-    gsap.set(reveal, { scaleX: 0 });
     gsap.set(pill, { opacity: 1, scale: 1 });
     return gsap.timeline({ paused: true });
   }
 
   const cursor = createDemoCursor(root);
-  const textWidth = fieldText ? rectIn(root, fieldText).width : 120;
+  /* Measured while the field still holds its full text, which is its size when
+     the hand gets there. */
+  const saveBox = rectIn(root, save);
   const rest = { x: targetBox.centerX - 90 * flip, y: targetBox.y + 96 };
 
   const dragFrom = {
@@ -132,18 +142,12 @@ export function createContextualNoteDemo(root) {
     .to(card, { opacity: 1, scale: 1, duration: 0.34, ease: 'power3.out' }, '<+0.05')
     .to(caret, { opacity: 1, duration: 0.12 }, '>');
 
-  /* 4 — typing. The mask retreats in steps so words appear as words, and the
-     caret rides its edge instead of sitting still at the end. */
-  tl.to(reveal, { scaleX: 0, duration: 1.45, ease: 'steps(23)' }, '>')
-    .to(caret, { x: textWidth * flip, duration: 1.45, ease: 'steps(23)' }, '<')
-    .to(caret, { opacity: 0, duration: 0.2 }, '>-0.1');
+  /* 4 — typing. */
+  const typing = typeInto(tl, fieldText, text, { caret });
+  tl.to(caret, { opacity: 0, duration: 0.2 }, '>+0.45');
 
   /* 5 — saved. */
-  cursor?.moveTo(
-    tl,
-    { x: rectIn(root, save).centerX, y: rectIn(root, save).centerY + 2 },
-    { at: '>-0.2', bend: 1 },
-  );
+  cursor?.moveTo(tl, { x: saveBox.centerX, y: saveBox.centerY + 2 }, { at: '>-0.2', bend: 1 });
   cursor?.settle(tl, {});
   cursor?.hover(tl, save, true, {});
   cursor?.press(tl, { target: save });
@@ -172,8 +176,7 @@ export function createContextualNoteDemo(root) {
   cursor?.exit(tl, '<');
 
   tl.set([selection, highlight, underline], { scaleX: 0, opacity: 1 })
-    .set(reveal, { scaleX: 1 })
-    .set(caret, { x: 0 })
+    .set(typing.state, { t: 0 })
     .set(card, { y: places.card.y })
     .call(() => cursor?.placeAt(rest));
 

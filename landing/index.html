@@ -36,8 +36,19 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,500;0,600;1,400&family=Noto+Naskh+Arabic:wght@400;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,500;0,600;1,400&family=Noto+Naskh+Arabic:wght@400;600&display=swap"
     />
+
+    <script>
+      /* Before the first paint, so a chosen theme never flashes the other one.
+         With no saved choice the stylesheet follows the system. */
+      try {
+        var theme = localStorage.getItem('hamesh-theme');
+        if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+      } catch (error) {
+        /* Storage blocked: the system theme stays. */
+      }
+    </script>
 
     <style>
       /* Inline on purpose: this has to be in force at the first paint, and a
@@ -59,9 +70,13 @@
       }
 
       @media (prefers-color-scheme: dark) {
-        .loader {
+        html:not([data-theme='light']) .loader {
           background: #16140f;
         }
+      }
+
+      html[data-theme='dark'] .loader {
+        background: #16140f;
       }
 
       html.is-ready .loader {
@@ -104,6 +119,8 @@
     <link rel="stylesheet" href="./css/layout.css" />
     <link rel="stylesheet" href="./css/hero.css" />
     <link rel="stylesheet" href="./css/features.css" />
+    <link rel="stylesheet" href="./css/sections.css" />
+    <link rel="stylesheet" href="./css/export.css" />
     <link rel="stylesheet" href="./css/feature-demos.css" />
     <link rel="stylesheet" href="./css/teams-demos.css" />
     <link rel="stylesheet" href="./css/plans.css" />
@@ -300,45 +317,89 @@
 
     <header class="site-header">
       <div class="wrap site-header__inner">
-        <span class="lockup" aria-label="Hamesh هامش">
+        <a class="lockup" href="#top" aria-label="Hamesh هامش">
           <svg class="mark" width="22" height="22" aria-hidden="true"><use href="#i-mark" /></svg>
           <span class="lockup__ar">هامش</span>
           <span class="lockup__sep"></span>
           <span class="lockup__en">Hamesh</span>
-        </span>
+        </a>
 
         <nav class="site-nav" aria-label="Sections">
-          <a href="#feature-1" data-ar="ماذا يفعل" data-en="What it does">ماذا يفعل</a>
+          <a href="#features" data-ar="ماذا يفعل" data-en="What it does">ماذا يفعل</a>
+          <a href="#export" data-ar="التصدير" data-en="Export">التصدير</a>
           <a href="#teams" data-ar="الفرق" data-en="Teams">الفرق</a>
           <a href="#plans" data-ar="الخطط" data-en="Plans">الخطط</a>
           <a href="#privacy" data-ar="الخصوصية" data-en="Privacy">الخصوصية</a>
-          <a href="#install" data-ar="التثبيت" data-en="Install">التثبيت</a>
         </nav>
 
-        <button
-          class="lang-toggle"
-          id="langToggle"
-          type="button"
-          aria-pressed="false"
-          aria-label="Switch to English"
-        >
-          EN
-        </button>
+        <div class="site-header__tools">
+          <button
+            class="icon-btn"
+            id="themeToggle"
+            type="button"
+            aria-label="بدّل الوضع الفاتح والغامق"
+          >
+            <svg
+              class="icon-btn__sun"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="4.2" />
+              <path
+                d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.5 1.5M17.2 17.2l1.5 1.5M5.3 18.7l1.5-1.5M17.2 6.8l1.5-1.5"
+              />
+            </svg>
+            <svg
+              class="icon-btn__moon"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" />
+            </svg>
+          </button>
+          <button
+            class="icon-btn"
+            id="langToggle"
+            type="button"
+            aria-pressed="false"
+            aria-label="Switch to English"
+          >
+            EN
+          </button>
+          <a
+            class="btn btn--primary nav-cta"
+            href="https://chromewebstore.google.com/detail/hamesh-%E2%80%94-%D9%87%D8%A7%D9%85%D8%B4/giajamkkehcoienhhlcfgcckahjjbgnc"
+            target="_blank"
+            rel="noopener"
+            data-ar="أضِفه إلى Chrome"
+            data-en="Add to Chrome"
+            >أضِفه إلى Chrome</a
+          >
+        </div>
       </div>
     </header>
 
     <main id="main">
-      <!-- ============================ Hero ============================ -->
-      <section class="hero">
-        <div class="hero__glow" aria-hidden="true"></div>
-
+      <section class="hero" id="top">
         <div class="wrap hero__inner">
           <p class="kicker reveal-line">
             <span data-hero-line data-ar="هامشٌ للويب" data-en="A margin for the web"
               >هامشٌ للويب</span
             >
           </p>
-
           <h1 class="reveal-line">
             <span
               data-hero-line
@@ -347,12 +408,11 @@
               >اترك أفكارك حيثُما أنارت.</span
             >
           </h1>
-
           <p class="lede reveal-line">
             <span
               data-hero-line
               data-ar="القراءة حوارٌ صامت بينك وبين ما تقرأ. هامش يمنح هذا الحوار مكانًا: اكتب بجوار الجملة التي استوقفتك، فتجد فكرتك في موضعها كلما عدت، كما يجد القارئ حاشيته على طرف الكتاب."
-              data-en="Reading is a quiet conversation with what you read. Hamesh gives that conversation a place: write beside the sentence that stopped you, and your thought is waiting there whenever you return, the way a reader finds their note in the margin of a book."
+              data-en="Reading is a quiet conversation with what you read. Hamesh gives that conversation a place: write beside the sentence that stopped you, and your thought is waiting there whenever you return."
               >القراءة حوارٌ صامت بينك وبين ما تقرأ. هامش يمنح هذا الحوار مكانًا: اكتب بجوار الجملة
               التي استوقفتك، فتجد فكرتك في موضعها كلما عدت، كما يجد القارئ حاشيته على طرف
               الكتاب.</span
@@ -369,821 +429,1362 @@
               data-en="Add to Chrome ↗"
               >أضِفه إلى Chrome ↗</a
             >
-            <a class="btn btn--ghost" href="#feature-1" data-ar="شاهده يعمل" data-en="See it work"
+            <a class="btn btn--ghost" href="#features" data-ar="شاهده يعمل" data-en="See it work"
               >شاهده يعمل</a
             >
           </div>
 
           <p class="hero__note" data-hero-fade>
             <span
-              data-ar="مجاني · ملاحظاتك الخاصة لا تغادر جهازك · والفرق لمن أراد أن يقرأ مع غيره"
-              data-en="Free · your own notes never leave your device · and Teams, to read with others"
-              >مجاني · ملاحظاتك الخاصة لا تغادر جهازك · والفرق لمن أراد أن يقرأ مع غيره</span
+              data-ar="مجاني · ملاحظاتك الخاصة لا تغادر جهازك · وتنقلها إلى Obsidian وNotion متى شئت"
+              data-en="Free · your own notes never leave your device · take them to Obsidian and Notion whenever you like"
+              >مجاني · ملاحظاتك الخاصة لا تغادر جهازك · وتنقلها إلى Obsidian وNotion متى شئت</span
             >
           </p>
 
-          <!-- The product, already working. Built from real elements and
-               animated by GSAP — not a video, not a screenshot. -->
+          <!-- The product, already working: three scenes built from real
+               elements and animated by GSAP, one after another. -->
           <div class="hero__scene">
-            <div class="demo" aria-hidden="true">
-              <div class="ui-window">
-                <div class="ui-window__chrome">
-                  <div class="ui-window__dots"><i></i><i></i><i></i></div>
-                  <div class="ui-window__url">maktaba.site/bennabi/shurut-al-nahda</div>
-                </div>
-                <div class="ui-page">
-                  <p
-                    class="ui-page__title"
-                    data-ar="مالك بن نبي، شروط النهضة"
-                    data-en="Malek Bennabi, The Conditions of Renaissance"
-                  >
-                    مالك بن نبي، شروط النهضة
-                  </p>
-                  <p data-el="paragraph">
-                    <span
-                      data-ar="إن الذي ينقص المسلم ليس منطق الفكرة، ولكن "
-                      data-en="What the Muslim lacks is not the logic of thought, but "
-                      >إن الذي ينقص المسلم ليس منطق الفكرة، ولكن </span
-                    ><span class="ui-target" data-el="target"
-                      ><span class="ui-sel" data-el="selection"></span
-                      ><span class="ui-highlight" data-el="highlight"></span
-                      ><span class="ui-underline" data-el="underline"></span
-                      ><span data-ar="منطق العمل والحركة" data-en="the logic of action and movement"
-                        >منطق العمل والحركة</span
-                      ></span
-                    ><span data-ar="؛" data-en=";">؛</span>
-                  </p>
-                  <p
-                    data-ar="فهو لا يفكر ليعمل، بل ليقول كلامًا مجردًا."
-                    data-en="he does not think in order to act, but in order to speak in the abstract."
-                  >
-                    فهو لا يفكر ليعمل، بل ليقول كلامًا مجردًا.
-                  </p>
-                </div>
-              </div>
-
-              <span class="ui-action" data-el="action">
-                <svg class="mark" width="12" height="12"><use href="#i-mark" /></svg>
-              </span>
-
-              <div class="ui-card" data-el="card">
-                <div class="ui-card__label">
-                  <svg class="mark" width="10" height="10"><use href="#i-mark" /></svg>
-                  <span data-ar="ملاحظة" data-en="Note">ملاحظة</span>
-                </div>
-                <p class="ui-card__overline" data-ar="النص المرتبط" data-en="Attached text">
-                  النص المرتبط
-                </p>
+            <div class="hero__stage">
+              <div class="hero__panes">
                 <div
-                  class="ui-card__attached"
-                  data-ar="منطق العمل والحركة"
-                  data-en="the logic of action and movement"
+                  class="hero__pane is-active"
+                  id="hero-pane-0"
+                  role="tabpanel"
+                  aria-labelledby="hero-tab-0"
+                  data-hero-scene="0"
                 >
-                  منطق العمل والحركة
+                  <div class="demo" aria-hidden="true" data-contain>
+                    <div class="ui-window">
+                      <div class="ui-window__chrome">
+                        <div class="ui-window__dots"><i></i><i></i><i></i></div>
+                        <div class="ui-window__url">maktaba.site/bennabi/shurut-al-nahda</div>
+                      </div>
+                      <div class="ui-page">
+                        <p
+                          class="ui-page__title"
+                          data-ar="مالك بن نبي، شروط النهضة"
+                          data-en="Malek Bennabi, The Conditions of Renaissance"
+                        >
+                          مالك بن نبي، شروط النهضة
+                        </p>
+                        <p data-el="paragraph">
+                          <span
+                            data-ar="إن الذي ينقص المسلم ليس منطق الفكرة، ولكن "
+                            data-en="What the Muslim lacks is not the logic of thought, but "
+                            >إن الذي ينقص المسلم ليس منطق الفكرة، ولكن </span
+                          ><span class="ui-target" data-el="target"
+                            ><span class="ui-sel" data-el="selection"></span
+                            ><span class="ui-highlight" data-el="highlight"></span
+                            ><span class="ui-underline" data-el="underline"></span
+                            ><span
+                              data-ar="منطق العمل والحركة"
+                              data-en="the logic of action and movement"
+                              >منطق العمل والحركة</span
+                            ></span
+                          ><span data-ar="؛" data-en=";">؛</span>
+                        </p>
+                        <p
+                          data-ar="فهو لا يفكر ليعمل، بل ليقول كلامًا مجردًا."
+                          data-en="he does not think in order to act, but in order to speak in the abstract."
+                        >
+                          فهو لا يفكر ليعمل، بل ليقول كلامًا مجردًا.
+                        </p>
+                      </div>
+                    </div>
+
+                    <span class="ui-action" data-el="action">
+                      <svg class="mark" width="12" height="12"><use href="#i-mark" /></svg>
+                    </span>
+
+                    <div class="ui-card" data-el="card">
+                      <div class="ui-card__label">
+                        <svg class="mark" width="10" height="10"><use href="#i-mark" /></svg>
+                        <span data-ar="ملاحظة" data-en="Note">ملاحظة</span>
+                      </div>
+                      <p class="ui-card__overline" data-ar="النص المرتبط" data-en="Attached text">
+                        النص المرتبط
+                      </p>
+                      <div
+                        class="ui-card__attached"
+                        data-ar="منطق العمل والحركة"
+                        data-en="the logic of action and movement"
+                      >
+                        منطق العمل والحركة
+                      </div>
+                      <div class="ui-field" data-el="field">
+                        <span
+                          data-el="field-text"
+                          data-ar="هنا بيت القصيد."
+                          data-en="Here lies the crux."
+                          >هنا بيت القصيد.</span
+                        ><span class="ui-caret" data-el="caret"></span>
+                      </div>
+                      <div class="ui-card__folder">
+                        <svg width="11" height="11"><use href="#i-folder" /></svg>
+                        <span data-ar="بلا فولدر" data-en="No folder">بلا فولدر</span>
+                        <svg class="ui-card__folder-chevron" width="10" height="10">
+                          <use href="#i-chevron" />
+                        </svg>
+                      </div>
+                      <div class="ui-actions">
+                        <span
+                          class="ui-btn ui-btn--primary"
+                          data-el="save"
+                          data-ar="حفظ"
+                          data-en="Save"
+                          >حفظ</span
+                        >
+                        <span class="ui-btn" data-ar="إلغاء" data-en="Cancel">إلغاء</span>
+                      </div>
+                    </div>
+
+                    <span class="ui-pill" data-el="pill">
+                      <span data-ar="هنا بيت القصيد." data-en="Here lies the crux."
+                        >هنا بيت القصيد.</span
+                      >
+                    </span>
+
+                    <div class="demo-cursor">
+                      <svg class="demo-cursor__arrow" viewBox="0 0 20 20" aria-hidden="true">
+                        <path
+                          d="M3.5 1.8 L15.2 11.4 L9.9 11.9 L12.6 17.4 L10.3 18.4 L7.7 12.8 L3.5 16.2 Z"
+                          fill="currentColor"
+                          stroke="var(--surface)"
+                          stroke-width="0.9"
+                        />
+                      </svg>
+                      <span class="demo-cursor__ring"></span>
+                    </div>
+                  </div>
                 </div>
-                <div class="ui-field" data-el="field">
-                  <span data-el="field-text" data-ar="هنا بيت القصيد." data-en="Here lies the crux."
-                    >هنا بيت القصيد.</span
-                  >
-                  <span class="ui-caret" data-el="caret"></span>
-                  <span class="ui-reveal" data-el="reveal"></span>
+                <div
+                  class="hero__pane"
+                  id="hero-pane-1"
+                  role="tabpanel"
+                  aria-labelledby="hero-tab-1"
+                  data-hero-scene="1"
+                >
+                  <div class="demo" aria-hidden="true" data-contain>
+                    <div class="ui-window">
+                      <div class="ui-window__chrome">
+                        <div class="ui-window__dots"><i></i><i></i><i></i></div>
+                        <div class="ui-window__url">maktaba.site/khwarizmi/al-jabr</div>
+                      </div>
+                      <div class="ui-page">
+                        <p
+                          class="ui-page__title"
+                          data-ar="الخوارزمي، الجبر والمقابلة"
+                          data-en="Al-Khwarizmi, al-Jabr wa'l-Muqabala"
+                        >
+                          الخوارزمي، الجبر والمقابلة
+                        </p>
+                        <div class="ui-code ui-target-el" data-el="el-2">
+                          <span class="ui-hl" data-el="hl-2"></span>
+                          <code dir="ltr">x² + 10x = 39</code>
+                        </div>
+                        <p class="ui-target-el" data-el="el-1">
+                          <span class="ui-hl" data-el="hl-1"></span>
+                          <span
+                            data-ar="مالٌ وعشرة أجذاره يعدل تسعة وثلاثين درهمًا."
+                            data-en="A square and ten of its roots equal thirty-nine dirhams."
+                            >مالٌ وعشرة أجذاره يعدل تسعة وثلاثين درهمًا.</span
+                          >
+                        </p>
+                        <p
+                          data-ar="كتبه في بغداد نحو سنة 820، في زمن بيت الحكمة."
+                          data-en="Written in Baghdad around the year 820, in the days of the House of Wisdom."
+                        >
+                          كتبه في بغداد نحو سنة 820، في زمن بيت الحكمة.
+                        </p>
+                        <p
+                          data-ar="ومن اسمه جاءت كلمة «الخوارزمية»، ومن عنوانه كلمة «الجبر»."
+                          data-en="His name gave us the word “algorithm”, and his title the word “algebra”."
+                        >
+                          ومن اسمه جاءت كلمة «الخوارزمية»، ومن عنوانه كلمة «الجبر».
+                        </p>
+                      </div>
+                    </div>
+
+                    <span class="ui-hint" data-el="hint">
+                      <span class="keys" dir="ltr"><kbd>Alt</kbd><span>+</span><kbd>H</kbd></span>
+                    </span>
+
+                    <!-- What the extension says while it is choosing: the dark
+                       pill that rides beside the pointer. -->
+                    <span class="ui-tip" data-el="tip">
+                      <svg class="mark" width="10" height="10"><use href="#i-mark" /></svg>
+                      <span data-ar="انقر لإضافة ملاحظة" data-en="Click to add a note"
+                        >انقر لإضافة ملاحظة</span
+                      >
+                    </span>
+
+                    <span class="ui-marker" data-el="margin-mark">
+                      <svg class="mark" width="12" height="12"><use href="#i-mark" /></svg>
+                    </span>
+
+                    <div class="ui-card" data-el="card">
+                      <div class="ui-card__label">
+                        <svg class="mark" width="10" height="10"><use href="#i-mark" /></svg>
+                        <span data-ar="ملاحظة" data-en="Note">ملاحظة</span>
+                      </div>
+                      <p class="ui-card__overline" data-ar="العنصر المرتبط" data-en="Attached to">
+                        العنصر المرتبط
+                      </p>
+                      <div class="ui-card__attached"><code dir="ltr">x² + 10x = 39</code></div>
+                      <div class="ui-field">
+                        <span
+                          data-el="field-text"
+                          data-ar="وُلد هنا، ثم تركناه لغيرنا."
+                          data-en="Born here, then we left it to others."
+                          >وُلد هنا، ثم تركناه لغيرنا.</span
+                        ><span class="ui-caret" data-el="caret"></span>
+                      </div>
+                      <div class="ui-actions">
+                        <span
+                          class="ui-btn ui-btn--primary"
+                          data-el="save"
+                          data-ar="حفظ"
+                          data-en="Save"
+                          >حفظ</span
+                        >
+                        <span class="ui-btn" data-ar="إلغاء" data-en="Cancel">إلغاء</span>
+                      </div>
+                    </div>
+
+                    <div class="demo-cursor">
+                      <svg class="demo-cursor__arrow" viewBox="0 0 20 20" aria-hidden="true">
+                        <path
+                          d="M3.5 1.8 L15.2 11.4 L9.9 11.9 L12.6 17.4 L10.3 18.4 L7.7 12.8 L3.5 16.2 Z"
+                          fill="currentColor"
+                          stroke="var(--surface)"
+                          stroke-width="0.9"
+                        />
+                      </svg>
+                      <span class="demo-cursor__ring"></span>
+                    </div>
+                  </div>
                 </div>
-                <div class="ui-card__folder">
-                  <svg width="11" height="11"><use href="#i-folder" /></svg>
-                  <span data-ar="بلا فولدر" data-en="No folder">بلا فولدر</span>
-                  <svg class="ui-card__folder-chevron" width="10" height="10">
-                    <use href="#i-chevron" />
-                  </svg>
-                </div>
-                <div class="ui-actions">
-                  <span class="ui-btn ui-btn--primary" data-el="save" data-ar="حفظ" data-en="Save"
-                    >حفظ</span
-                  >
-                  <span class="ui-btn" data-ar="إلغاء" data-en="Cancel">إلغاء</span>
+                <div
+                  class="hero__pane"
+                  id="hero-pane-2"
+                  role="tabpanel"
+                  aria-labelledby="hero-tab-2"
+                  data-hero-scene="2"
+                >
+                  <div class="demo" aria-hidden="true">
+                    <div class="ui-window">
+                      <div class="ui-window__chrome">
+                        <div class="ui-window__dots"><i></i><i></i><i></i></div>
+                        <div class="ui-window__url">lectures.edu/ibn-al-haytham/optics</div>
+                      </div>
+                      <div class="ui-page ui-page--video">
+                        <div class="ui-video">
+                          <p
+                            class="ui-video__title"
+                            data-ar="ابن الهيثم وكتاب المناظر"
+                            data-en="Ibn al-Haytham and the Book of Optics"
+                          >
+                            ابن الهيثم وكتاب المناظر
+                          </p>
+                          <span class="ui-video__glow"></span>
+                          <span class="ui-video__time"
+                            ><span data-el="time">0:08</span> / 2:36</span
+                          >
+                          <span class="ui-video__bar" data-el="bar">
+                            <span class="ui-video__played" data-el="played"></span>
+                            <span class="ui-video__rail"><span class="ui-video__knob"></span></span>
+                            <span class="ui-video__marker" data-el="marker"></span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <span class="ui-hint" data-el="hint">
+                      <span class="keys" dir="ltr"><kbd>Alt</kbd><span>+</span><kbd>V</kbd></span>
+                    </span>
+
+                    <div class="ui-quick" data-el="quick">
+                      <div class="ui-quick__meta">
+                        <span data-ar="ملاحظة سريعة" data-en="Quick note">ملاحظة سريعة</span>
+                        <span class="ui-quick__stamp" data-el="stamp">1:12</span>
+                      </div>
+                      <div class="ui-field ui-field--plain">
+                        <span
+                          data-el="field-text"
+                          data-ar="شكّ في بطليموس، ثم جرّب بنفسه."
+                          data-en="He doubted Ptolemy, then tested it himself."
+                          >شكّ في بطليموس، ثم جرّب بنفسه.</span
+                        ><span class="ui-caret" data-el="caret"></span>
+                      </div>
+                      <p class="ui-quick__hint" data-ar="Enter لتحفظ" data-en="Enter to save">
+                        Enter لتحفظ
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
-
-              <span class="ui-pill" data-el="pill">
-                <span data-ar="هنا بيت القصيد." data-en="Here lies the crux.">هنا بيت القصيد.</span>
-              </span>
-
-              <div class="demo-cursor">
-                <svg class="demo-cursor__arrow" viewBox="0 0 20 20" aria-hidden="true">
-                  <path
-                    d="M3.5 1.8 L15.2 11.4 L9.9 11.9 L12.6 17.4 L10.3 18.4 L7.7 12.8 L3.5 16.2 Z"
-                    fill="currentColor"
-                    stroke="var(--surface)"
-                    stroke-width="0.9"
-                  />
-                </svg>
-                <span class="demo-cursor__ring"></span>
-              </div>
+            </div>
+            <div
+              class="hero-tabs"
+              role="tablist"
+              aria-label="أين تكتب"
+              data-ar-label="أين تكتب"
+              data-en-label="Where you write"
+            >
+              <button
+                class="hero-tab"
+                type="button"
+                role="tab"
+                id="hero-tab-0"
+                aria-controls="hero-pane-0"
+                aria-selected="true"
+                tabindex="0"
+              >
+                <i class="hero-tab__bar" aria-hidden="true"></i>
+                <b data-ar="على الكلمات" data-en="On words">على الكلمات</b>
+                <span
+                  data-ar="حدِّد جملة واكتب بجوارها"
+                  data-en="Select a sentence, write beside it"
+                  >حدِّد جملة واكتب بجوارها</span
+                >
+              </button>
+              <button
+                class="hero-tab"
+                type="button"
+                role="tab"
+                id="hero-tab-1"
+                aria-controls="hero-pane-1"
+                aria-selected="false"
+                tabindex="-1"
+              >
+                <i class="hero-tab__bar" aria-hidden="true"></i>
+                <b data-ar="على شيء بعينه" data-en="On a thing">على شيء بعينه</b>
+                <span
+                  data-ar="صورة، معادلة، فقرة كاملة"
+                  data-en="An image, an equation, a paragraph"
+                  >صورة، معادلة، فقرة كاملة</span
+                >
+              </button>
+              <button
+                class="hero-tab"
+                type="button"
+                role="tab"
+                id="hero-tab-2"
+                aria-controls="hero-pane-2"
+                aria-selected="false"
+                tabindex="-1"
+              >
+                <i class="hero-tab__bar" aria-hidden="true"></i>
+                <b data-ar="على لحظة في فيديو" data-en="On a moment">على لحظة في فيديو</b>
+                <span data-ar="سطر واحد، والفيديو ينتظرك" data-en="One line, and the video waits"
+                  >سطر واحد، والفيديو ينتظرك</span
+                >
+              </button>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- ===================== Features, one per section ================
-           Each feature stands on its own and animates on its own clock.
-           Nothing here is driven by scroll position: a demo tied to the wheel
-           stalls mid-gesture the moment the visitor stops, and hands them the
-           pacing of a story they have not read yet. Scroll decides only *when*
-           a scene starts. -->
-      <section class="section feature" id="feature-1">
-        <div class="wrap feature__inner">
-          <article class="feature__copy" data-reveal>
-            <p class="feature__index">
-              <b>01</b>
-              <span data-ar="ملاحظة على الكلمات" data-en="A note on words">ملاحظة على الكلمات</span>
-            </p>
-            <h3 data-ar="علّق على الكلمات نفسها." data-en="Write on the words themselves.">
-              علّق على الكلمات نفسها.
-            </h3>
-            <p
-              data-ar="حدِّد الكلمات التي توقفت عندها، وانقر العلامة الصغيرة التي تظهر بجوارها، ثم اكتب. تبقى الكلمات مُظلَّلة بلون خفيف كأثر قلم رصاص، فإذا عدت إليها يومًا مرّرت عليها فوجدت فكرتك تنتظرك، ولو تبدّل مكانها في الصفحة."
-              data-en="Select the words that stopped you, tap the small mark that appears beside them, and write. The words keep a faint tint, like the trace of a pencil, and whenever you return you only have to pass over them to find your thought waiting, even if the page has moved them."
-            >
-              حدِّد الكلمات التي توقفت عندها، وانقر العلامة الصغيرة التي تظهر بجوارها، ثم اكتب. تبقى
-              الكلمات مُظلَّلة بلون خفيف كأثر قلم رصاص، فإذا عدت إليها يومًا مرّرت عليها فوجدت فكرتك
-              تنتظرك، ولو تبدّل مكانها في الصفحة.
-            </p>
-            <p class="feature__keys">
-              <span class="keys" dir="ltr"><kbd>Alt</kbd><span>+</span><kbd>T</kbd></span>
-              <span
-                data-ar="اختصار للكلمات المحدَّدة"
-                data-en="a shortcut for the words you selected"
-                >اختصار للكلمات المحدَّدة</span
+      <section class="section section--steps">
+        <div class="wrap">
+          <ol class="steps-strip" data-reveal>
+            <li>
+              <i aria-hidden="true">01</i>
+              <b data-ar="حدِّد" data-en="Pick">حدِّد</b>
+              <p
+                data-ar="جملة، أو عنصرًا في الصفحة، أو لحظة في فيديو."
+                data-en="A sentence, an element on the page, or a moment in a video."
               >
-            </p>
-          </article>
+                جملة، أو عنصرًا في الصفحة، أو لحظة في فيديو.
+              </p>
+            </li>
+            <li>
+              <i aria-hidden="true">02</i>
+              <b data-ar="اكتب" data-en="Write">اكتب</b>
+              <p
+                data-ar="سطرًا أو فقرة، في بطاقة صغيرة لا تحجب ما تقرأ."
+                data-en="A line or a paragraph, in a small card that never covers what you read."
+              >
+                سطرًا أو فقرة، في بطاقة صغيرة لا تحجب ما تقرأ.
+              </p>
+            </li>
+            <li>
+              <i aria-hidden="true">03</i>
+              <b data-ar="عُد إليها" data-en="Come back">عُد إليها</b>
+              <p
+                data-ar="تجد فكرتك في موضعها كلما رجعت، وفي مكتبتك كلها."
+                data-en="Your thought is where you left it, and in your library too."
+              >
+                تجد فكرتك في موضعها كلما رجعت، وفي مكتبتك كلها.
+              </p>
+            </li>
+          </ol>
+        </div>
+      </section>
 
-          <div class="feature__stage" data-reveal-scene>
-            <div class="stage__tilt">
-              <div class="scene" data-scene="contextual" aria-hidden="true">
-                <div class="scene__layer scene__layer--sheet"></div>
-                <div class="scene__layer scene__layer--sheet-2"></div>
-                <div class="demo">
-                  <div class="ui-window">
-                    <div class="ui-window__chrome">
-                      <div class="ui-window__dots"><i></i><i></i><i></i></div>
-                      <div class="ui-window__url">maktaba.site/bennabi/shurut-al-nahda</div>
-                    </div>
-                    <div class="ui-page">
-                      <p
-                        class="ui-page__title"
-                        data-ar="مالك بن نبي، شروط النهضة"
-                        data-en="Malek Bennabi, The Conditions of Renaissance"
-                      >
-                        مالك بن نبي، شروط النهضة
-                      </p>
-                      <p data-el="paragraph">
-                        <span
-                          data-ar="الحضارة لا يمكن استيرادها من بلد إلى آخر رغم استيراد كل منتجاتها ومصنوعاتها؛ "
-                          data-en="A civilization cannot be imported from one country to another, even when all its products and goods are; "
-                          >الحضارة لا يمكن استيرادها من بلد إلى آخر رغم استيراد كل منتجاتها
-                          ومصنوعاتها؛ </span
-                        ><span class="ui-target" data-el="target"
-                          ><span class="ui-sel" data-el="selection"></span
-                          ><span class="ui-highlight" data-el="highlight"></span
-                          ><span class="ui-underline" data-el="underline"></span
-                          ><span data-ar="لأن الحضارة إبداع" data-en="for civilization is creation"
-                            >لأن الحضارة إبداع</span
-                          ></span
-                        ><span
-                          data-ar="، وليست تقليدًا أو استسلامًا وتبعية."
-                          data-en=", not imitation, surrender, or dependence."
-                          >، وليست تقليدًا أو استسلامًا وتبعية.</span
+      <div class="section features" id="features">
+        <section class="feature" id="feature-1">
+          <div class="wrap feature__inner">
+            <article class="feature__copy" data-reveal>
+              <p class="feature__index">
+                <b>01</b>
+                <span data-ar="ملاحظة على الكلمات" data-en="A note on words"
+                  >ملاحظة على الكلمات</span
+                >
+              </p>
+              <h3 data-ar="علّق على الكلمات نفسها." data-en="Write on the words themselves.">
+                علّق على الكلمات نفسها.
+              </h3>
+              <p
+                class="lede"
+                data-ar="حدِّد الكلمات التي توقفت عندها، وانقر العلامة الصغيرة التي تظهر بجوارها، ثم اكتب. تبقى الكلمات مُظلَّلة بلون خفيف كأثر قلم رصاص، فإذا عدت إليها يومًا مرّرت عليها فوجدت فكرتك تنتظرك."
+                data-en="Select the words that stopped you, click the small mark beside them, and write. They keep a faint tint like a pencil line, and hovering brings your thought back."
+              >
+                حدِّد الكلمات التي توقفت عندها، وانقر العلامة الصغيرة التي تظهر بجوارها، ثم اكتب.
+                تبقى الكلمات مُظلَّلة بلون خفيف كأثر قلم رصاص، فإذا عدت إليها يومًا مرّرت عليها
+                فوجدت فكرتك تنتظرك.
+              </p>
+              <p class="feature__keys">
+                <span class="keys" dir="ltr"><kbd>Alt</kbd><span>+</span><kbd>T</kbd></span>
+                <span data-ar="اختصار للكلمات المحدَّدة" data-en="for selected words"
+                  >اختصار للكلمات المحدَّدة</span
+                >
+              </p>
+            </article>
+
+            <div class="feature__stage" data-reveal-scene>
+              <div class="stage__tilt">
+                <div class="scene" data-scene="contextual" aria-hidden="true">
+                  <div class="scene__layer scene__layer--sheet"></div>
+                  <div class="scene__layer scene__layer--sheet-2"></div>
+                  <div class="demo">
+                    <div class="ui-window">
+                      <div class="ui-window__chrome">
+                        <div class="ui-window__dots"><i></i><i></i><i></i></div>
+                        <div class="ui-window__url">maktaba.site/bennabi/shurut-al-nahda</div>
+                      </div>
+                      <div class="ui-page">
+                        <p
+                          class="ui-page__title"
+                          data-ar="مالك بن نبي، شروط النهضة"
+                          data-en="Malek Bennabi, The Conditions of Renaissance"
                         >
+                          مالك بن نبي، شروط النهضة
+                        </p>
+                        <p data-el="paragraph">
+                          <span
+                            data-ar="الحضارة لا يمكن استيرادها من بلد إلى آخر رغم استيراد كل منتجاتها ومصنوعاتها؛ "
+                            data-en="A civilization cannot be imported from one country to another, even when all its products and goods are; "
+                            >الحضارة لا يمكن استيرادها من بلد إلى آخر رغم استيراد كل منتجاتها
+                            ومصنوعاتها؛ </span
+                          ><span class="ui-target" data-el="target"
+                            ><span class="ui-sel" data-el="selection"></span
+                            ><span class="ui-highlight" data-el="highlight"></span
+                            ><span class="ui-underline" data-el="underline"></span
+                            ><span
+                              data-ar="لأن الحضارة إبداع"
+                              data-en="for civilization is creation"
+                              >لأن الحضارة إبداع</span
+                            ></span
+                          ><span
+                            data-ar="، وليست تقليدًا أو استسلامًا وتبعية."
+                            data-en=", not imitation, surrender, or dependence."
+                            >، وليست تقليدًا أو استسلامًا وتبعية.</span
+                          >
+                        </p>
+                        <p
+                          data-ar="هكذا بدأ بيت الحكمة في بغداد: ترجم ما عند الأمم، ثم أضاف إليه."
+                          data-en="So it went in Baghdad's House of Wisdom: it translated what other nations knew, then added to it."
+                        >
+                          هكذا بدأ بيت الحكمة في بغداد: ترجم ما عند الأمم، ثم أضاف إليه.
+                        </p>
+                      </div>
+                    </div>
+
+                    <span class="ui-action" data-el="action">
+                      <svg class="mark" width="12" height="12"><use href="#i-mark" /></svg>
+                    </span>
+
+                    <div class="ui-card" data-el="card">
+                      <div class="ui-card__label">
+                        <svg class="mark" width="10" height="10"><use href="#i-mark" /></svg>
+                        <span data-ar="ملاحظة" data-en="Note">ملاحظة</span>
+                      </div>
+                      <p class="ui-card__overline" data-ar="النص المرتبط" data-en="Attached text">
+                        النص المرتبط
                       </p>
-                      <p
-                        data-ar="هكذا بدأ بيت الحكمة في بغداد: ترجم ما عند الأمم، ثم أضاف إليه."
-                        data-en="So it went in Baghdad's House of Wisdom: it translated what other nations knew, then added to it."
+                      <div
+                        class="ui-card__attached"
+                        data-ar="لأن الحضارة إبداع"
+                        data-en="for civilization is creation"
                       >
-                        هكذا بدأ بيت الحكمة في بغداد: ترجم ما عند الأمم، ثم أضاف إليه.
-                      </p>
+                        لأن الحضارة إبداع
+                      </div>
+                      <div class="ui-field">
+                        <span
+                          data-el="field-text"
+                          data-ar="الخوارزمي ترجم ثم كتب الجبر."
+                          data-en="Al-Khwarizmi translated, then wrote algebra."
+                          >الخوارزمي ترجم ثم كتب الجبر.</span
+                        ><span class="ui-caret" data-el="caret"></span>
+                      </div>
+                      <div class="ui-card__folder">
+                        <svg width="11" height="11"><use href="#i-folder" /></svg>
+                        <span data-ar="النهضة" data-en="Renaissance">النهضة</span>
+                        <svg class="ui-card__folder-chevron" width="10" height="10">
+                          <use href="#i-chevron" />
+                        </svg>
+                      </div>
+                      <div class="ui-actions">
+                        <span
+                          class="ui-btn ui-btn--primary"
+                          data-el="save"
+                          data-ar="حفظ"
+                          data-en="Save"
+                          >حفظ</span
+                        >
+                        <span class="ui-btn" data-ar="إلغاء" data-en="Cancel">إلغاء</span>
+                      </div>
                     </div>
-                  </div>
 
-                  <span class="ui-action" data-el="action">
-                    <svg class="mark" width="12" height="12"><use href="#i-mark" /></svg>
-                  </span>
-
-                  <div class="ui-card" data-el="card">
-                    <div class="ui-card__label">
-                      <svg class="mark" width="10" height="10"><use href="#i-mark" /></svg>
-                      <span data-ar="ملاحظة" data-en="Note">ملاحظة</span>
-                    </div>
-                    <p class="ui-card__overline" data-ar="النص المرتبط" data-en="Attached text">
-                      النص المرتبط
-                    </p>
-                    <div
-                      class="ui-card__attached"
-                      data-ar="لأن الحضارة إبداع"
-                      data-en="for civilization is creation"
-                    >
-                      لأن الحضارة إبداع
-                    </div>
-                    <div class="ui-field">
+                    <span class="ui-pill" data-el="pill">
                       <span
-                        data-el="field-text"
                         data-ar="الخوارزمي ترجم ثم كتب الجبر."
                         data-en="Al-Khwarizmi translated, then wrote algebra."
                         >الخوارزمي ترجم ثم كتب الجبر.</span
                       >
-                      <span class="ui-caret" data-el="caret"></span>
-                      <span class="ui-reveal" data-el="reveal"></span>
-                    </div>
-                    <div class="ui-card__folder">
-                      <svg width="11" height="11"><use href="#i-folder" /></svg>
-                      <span data-ar="النهضة" data-en="Renaissance">النهضة</span>
-                      <svg class="ui-card__folder-chevron" width="10" height="10">
-                        <use href="#i-chevron" />
+                    </span>
+
+                    <div class="demo-cursor">
+                      <svg class="demo-cursor__arrow" viewBox="0 0 20 20" aria-hidden="true">
+                        <path
+                          d="M3.5 1.8 L15.2 11.4 L9.9 11.9 L12.6 17.4 L10.3 18.4 L7.7 12.8 L3.5 16.2 Z"
+                          fill="currentColor"
+                          stroke="var(--surface)"
+                          stroke-width="0.9"
+                        />
                       </svg>
+                      <span class="demo-cursor__ring"></span>
                     </div>
-                    <div class="ui-actions">
-                      <span
-                        class="ui-btn ui-btn--primary"
-                        data-el="save"
-                        data-ar="حفظ"
-                        data-en="Save"
-                        >حفظ</span
-                      >
-                      <span class="ui-btn" data-ar="إلغاء" data-en="Cancel">إلغاء</span>
-                    </div>
-                  </div>
-
-                  <span class="ui-pill" data-el="pill">
-                    <span
-                      data-ar="الخوارزمي ترجم ثم كتب الجبر."
-                      data-en="Al-Khwarizmi translated, then wrote algebra."
-                      >الخوارزمي ترجم ثم كتب الجبر.</span
-                    >
-                  </span>
-
-                  <div class="demo-cursor">
-                    <svg class="demo-cursor__arrow" viewBox="0 0 20 20" aria-hidden="true">
-                      <path
-                        d="M3.5 1.8 L15.2 11.4 L9.9 11.9 L12.6 17.4 L10.3 18.4 L7.7 12.8 L3.5 16.2 Z"
-                        fill="currentColor"
-                        stroke="var(--surface)"
-                        stroke-width="0.9"
-                      />
-                    </svg>
-                    <span class="demo-cursor__ring"></span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section class="section feature feature--flip" id="feature-2">
-        <div class="wrap feature__inner">
-          <article class="feature__copy" data-reveal>
-            <p class="feature__index">
-              <b>02</b>
-              <span data-ar="ملاحظة على شيء بعينه" data-en="A note on a thing itself"
-                >ملاحظة على شيء بعينه</span
+        <section class="feature feature--flip" id="feature-2">
+          <div class="wrap feature__inner">
+            <article class="feature__copy" data-reveal>
+              <p class="feature__index">
+                <b>02</b>
+                <span data-ar="ملاحظة على شيء بعينه" data-en="A note on a thing"
+                  >ملاحظة على شيء بعينه</span
+                >
+              </p>
+              <h3 data-ar="أشِر إلى الشيء نفسه." data-en="Point at the thing itself.">
+                أشِر إلى الشيء نفسه.
+              </h3>
+              <p
+                class="lede"
+                data-ar="ليست كل فكرة معلّقة بكلمات: قد تولد أمام صورة، أو معادلة، أو فقرة كاملة. مرِّر المؤشر على الصفحة، فيحيط هامش بما تحته بإطار رقيق؛ انقر ما تريده واكتب."
+                data-en="Not every thought hangs on words: some are born in front of an image, an equation or a whole paragraph. Move over the page, Hamesh outlines what is under you; click it and write."
               >
-            </p>
-            <h3 data-ar="أشِر إلى الشيء نفسه." data-en="Point at the thing itself.">
-              أشِر إلى الشيء نفسه.
-            </h3>
-            <p
-              data-ar="ليست كل فكرة معلّقة بكلمات: قد تولد أمام صورة، أو معادلة، أو فقرة كاملة. مرِّر المؤشر على الصفحة، فيحيط هامش بما تحته بإطار رقيق؛ انقر ما تريده واكتب. لا شيء ترسمه، ولا لقطة شاشة تحتفظ بها."
-              data-en="Not every thought belongs to words: some are born before a picture, an equation, a whole paragraph. Move across the page and Hamesh draws a fine frame around whatever lies beneath; click the one you mean, and write. Nothing to draw, no screenshot to keep."
-            >
-              ليست كل فكرة معلّقة بكلمات: قد تولد أمام صورة، أو معادلة، أو فقرة كاملة. مرِّر المؤشر
-              على الصفحة، فيحيط هامش بما تحته بإطار رقيق؛ انقر ما تريده واكتب. لا شيء ترسمه، ولا
-              لقطة شاشة تحتفظ بها.
-            </p>
-            <p class="feature__keys">
-              <span class="keys" dir="ltr"><kbd>Alt</kbd><span>+</span><kbd>H</kbd></span>
-              <span
-                data-ar="أو من أيقونة هامش أعلى المتصفح"
-                data-en="or from the Hamesh icon at the top of your browser"
-                >أو من أيقونة هامش أعلى المتصفح</span
-              >
-            </p>
-          </article>
+                ليست كل فكرة معلّقة بكلمات: قد تولد أمام صورة، أو معادلة، أو فقرة كاملة. مرِّر
+                المؤشر على الصفحة، فيحيط هامش بما تحته بإطار رقيق؛ انقر ما تريده واكتب.
+              </p>
+              <p class="feature__keys">
+                <span class="keys" dir="ltr"><kbd>Alt</kbd><span>+</span><kbd>H</kbd></span>
+                <span data-ar="أو من أيقونة هامش" data-en="or from the Hamesh icon"
+                  >أو من أيقونة هامش</span
+                >
+              </p>
+            </article>
 
-          <div class="feature__stage" data-reveal-scene>
-            <div class="stage__tilt">
-              <div class="scene" data-scene="element" aria-hidden="true">
-                <div class="scene__layer scene__layer--sheet"></div>
-                <div class="scene__layer scene__layer--sheet-2"></div>
-                <div class="demo">
-                  <div class="ui-window">
-                    <div class="ui-window__chrome">
-                      <div class="ui-window__dots"><i></i><i></i><i></i></div>
-                      <div class="ui-window__url">maktaba.site/khwarizmi/al-jabr</div>
-                    </div>
-                    <div class="ui-page">
-                      <p
-                        class="ui-page__title"
-                        data-ar="الخوارزمي، الجبر والمقابلة"
-                        data-en="Al-Khwarizmi, al-Jabr wa'l-Muqabala"
-                      >
-                        الخوارزمي، الجبر والمقابلة
-                      </p>
-                      <div class="ui-code ui-target-el" data-el="el-2">
-                        <span class="ui-hl" data-el="hl-2"></span>
-                        <code dir="ltr">x² + 10x = 39</code>
+            <div class="feature__stage" data-reveal-scene>
+              <div class="stage__tilt">
+                <div class="scene" data-scene="element" aria-hidden="true">
+                  <div class="scene__layer scene__layer--sheet"></div>
+                  <div class="scene__layer scene__layer--sheet-2"></div>
+                  <div class="demo">
+                    <div class="ui-window">
+                      <div class="ui-window__chrome">
+                        <div class="ui-window__dots"><i></i><i></i><i></i></div>
+                        <div class="ui-window__url">maktaba.site/khwarizmi/al-jabr</div>
                       </div>
-                      <p class="ui-target-el" data-el="el-1">
-                        <span class="ui-hl" data-el="hl-1"></span>
-                        <span
-                          data-ar="مالٌ وعشرة أجذاره يعدل تسعة وثلاثين درهمًا."
-                          data-en="A square and ten of its roots equal thirty-nine dirhams."
-                          >مالٌ وعشرة أجذاره يعدل تسعة وثلاثين درهمًا.</span
+                      <div class="ui-page">
+                        <p
+                          class="ui-page__title"
+                          data-ar="الخوارزمي، الجبر والمقابلة"
+                          data-en="Al-Khwarizmi, al-Jabr wa'l-Muqabala"
                         >
-                      </p>
-                      <p
-                        data-ar="كتبه في بغداد نحو سنة 820، في زمن بيت الحكمة."
-                        data-en="Written in Baghdad around the year 820, in the days of the House of Wisdom."
-                      >
-                        كتبه في بغداد نحو سنة 820، في زمن بيت الحكمة.
-                      </p>
-                      <p
-                        data-ar="ومن اسمه جاءت كلمة «الخوارزمية»، ومن عنوانه كلمة «الجبر»."
-                        data-en="His name gave us the word “algorithm”, and his title the word “algebra”."
-                      >
-                        ومن اسمه جاءت كلمة «الخوارزمية»، ومن عنوانه كلمة «الجبر».
-                      </p>
+                          الخوارزمي، الجبر والمقابلة
+                        </p>
+                        <div class="ui-code ui-target-el" data-el="el-2">
+                          <span class="ui-hl" data-el="hl-2"></span>
+                          <code dir="ltr">x² + 10x = 39</code>
+                        </div>
+                        <p class="ui-target-el" data-el="el-1">
+                          <span class="ui-hl" data-el="hl-1"></span>
+                          <span
+                            data-ar="مالٌ وعشرة أجذاره يعدل تسعة وثلاثين درهمًا."
+                            data-en="A square and ten of its roots equal thirty-nine dirhams."
+                            >مالٌ وعشرة أجذاره يعدل تسعة وثلاثين درهمًا.</span
+                          >
+                        </p>
+                        <p
+                          data-ar="كتبه في بغداد نحو سنة 820، في زمن بيت الحكمة."
+                          data-en="Written in Baghdad around the year 820, in the days of the House of Wisdom."
+                        >
+                          كتبه في بغداد نحو سنة 820، في زمن بيت الحكمة.
+                        </p>
+                        <p
+                          data-ar="ومن اسمه جاءت كلمة «الخوارزمية»، ومن عنوانه كلمة «الجبر»."
+                          data-en="His name gave us the word “algorithm”, and his title the word “algebra”."
+                        >
+                          ومن اسمه جاءت كلمة «الخوارزمية»، ومن عنوانه كلمة «الجبر».
+                        </p>
+                      </div>
                     </div>
-                  </div>
 
-                  <span class="ui-hint" data-el="hint">
-                    <span class="keys" dir="ltr"><kbd>Alt</kbd><span>+</span><kbd>H</kbd></span>
-                  </span>
+                    <span class="ui-hint" data-el="hint">
+                      <span class="keys" dir="ltr"><kbd>Alt</kbd><span>+</span><kbd>H</kbd></span>
+                    </span>
 
-                  <!-- What the extension says while it is choosing: the dark
+                    <!-- What the extension says while it is choosing: the dark
                        pill that rides beside the pointer. -->
-                  <span class="ui-tip" data-el="tip">
-                    <svg class="mark" width="10" height="10"><use href="#i-mark" /></svg>
-                    <span data-ar="انقر لإضافة ملاحظة" data-en="Click to add a note"
-                      >انقر لإضافة ملاحظة</span
-                    >
-                  </span>
-
-                  <span class="ui-marker" data-el="margin-mark">
-                    <svg class="mark" width="12" height="12"><use href="#i-mark" /></svg>
-                  </span>
-
-                  <div class="ui-card" data-el="card">
-                    <div class="ui-card__label">
+                    <span class="ui-tip" data-el="tip">
                       <svg class="mark" width="10" height="10"><use href="#i-mark" /></svg>
-                      <span data-ar="ملاحظة" data-en="Note">ملاحظة</span>
-                    </div>
-                    <p class="ui-card__overline" data-ar="العنصر المرتبط" data-en="Attached to">
-                      العنصر المرتبط
-                    </p>
-                    <div class="ui-card__attached"><code dir="ltr">x² + 10x = 39</code></div>
-                    <div class="ui-field">
-                      <span
-                        data-el="field-text"
-                        data-ar="وُلد هنا، ثم تركناه لغيرنا."
-                        data-en="Born here, then we left it to others."
-                        >وُلد هنا، ثم تركناه لغيرنا.</span
+                      <span data-ar="انقر لإضافة ملاحظة" data-en="Click to add a note"
+                        >انقر لإضافة ملاحظة</span
                       >
-                      <span class="ui-caret" data-el="caret"></span>
-                      <span class="ui-reveal" data-el="reveal"></span>
-                    </div>
-                    <div class="ui-actions">
-                      <span
-                        class="ui-btn ui-btn--primary"
-                        data-el="save"
-                        data-ar="حفظ"
-                        data-en="Save"
-                        >حفظ</span
-                      >
-                      <span class="ui-btn" data-ar="إلغاء" data-en="Cancel">إلغاء</span>
-                    </div>
-                  </div>
+                    </span>
 
-                  <div class="demo-cursor">
-                    <svg class="demo-cursor__arrow" viewBox="0 0 20 20" aria-hidden="true">
-                      <path
-                        d="M3.5 1.8 L15.2 11.4 L9.9 11.9 L12.6 17.4 L10.3 18.4 L7.7 12.8 L3.5 16.2 Z"
-                        fill="currentColor"
-                        stroke="var(--surface)"
-                        stroke-width="0.9"
-                      />
-                    </svg>
-                    <span class="demo-cursor__ring"></span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+                    <span class="ui-marker" data-el="margin-mark">
+                      <svg class="mark" width="12" height="12"><use href="#i-mark" /></svg>
+                    </span>
 
-      <section class="section feature" id="feature-3">
-        <div class="wrap feature__inner">
-          <article class="feature__copy" data-reveal>
-            <p class="feature__index">
-              <b>03</b>
-              <span data-ar="ملاحظة على لحظة" data-en="A note on a moment">ملاحظة على لحظة</span>
-            </p>
-            <h3
-              data-ar="دوّن اللحظة، والفيديو ينتظرك."
-              data-en="Write down the moment. The video waits."
-            >
-              دوّن اللحظة، والفيديو ينتظرك.
-            </h3>
-            <p
-              data-ar="بعض الأفكار لا تعيش أكثر من ثانية. وأنت تشاهد درسًا أو محاضرة، اكتب سطرك في الحال: يتوقف الفيديو احترامًا لفكرتك، ثم يُكمل حين تنتهي. وتبقى على شريطه علامة صغيرة تعيدك إلى تلك اللحظة بعينها، متى شئت."
-              data-en="Some thoughts live no longer than a second. While you watch a lesson or a lecture, write your line there and then: the video pauses out of respect for the thought, and carries on when you are done. A small mark stays on its timeline to take you back to that very moment, whenever you like."
-            >
-              بعض الأفكار لا تعيش أكثر من ثانية. وأنت تشاهد درسًا أو محاضرة، اكتب سطرك في الحال:
-              يتوقف الفيديو احترامًا لفكرتك، ثم يُكمل حين تنتهي. وتبقى على شريطه علامة صغيرة تعيدك
-              إلى تلك اللحظة بعينها، متى شئت.
-            </p>
-            <p class="feature__keys">
-              <span class="keys" dir="ltr"><kbd>Alt</kbd><span>+</span><kbd>V</kbd></span>
-              <span data-ar="ثم Enter لتحفظ" data-en="then Enter to keep it">ثم Enter لتحفظ</span>
-            </p>
-          </article>
-
-          <div class="feature__stage" data-reveal-scene>
-            <div class="stage__tilt">
-              <div class="scene" data-scene="quick" aria-hidden="true">
-                <div class="scene__layer scene__layer--sheet"></div>
-                <div class="scene__layer scene__layer--sheet-2"></div>
-                <div class="demo">
-                  <div class="ui-window">
-                    <div class="ui-window__chrome">
-                      <div class="ui-window__dots"><i></i><i></i><i></i></div>
-                      <div class="ui-window__url">lectures.edu/ibn-al-haytham-optics</div>
-                    </div>
-                    <div class="ui-page">
-                      <p
-                        class="ui-page__title"
-                        data-ar="ابن الهيثم وكتاب المناظر"
-                        data-en="Ibn al-Haytham and the Book of Optics"
-                      >
-                        ابن الهيثم وكتاب المناظر
+                    <div class="ui-card" data-el="card">
+                      <div class="ui-card__label">
+                        <svg class="mark" width="10" height="10"><use href="#i-mark" /></svg>
+                        <span data-ar="ملاحظة" data-en="Note">ملاحظة</span>
+                      </div>
+                      <p class="ui-card__overline" data-ar="العنصر المرتبط" data-en="Attached to">
+                        العنصر المرتبط
                       </p>
-                      <div class="ui-video">
-                        <span class="ui-video__glow"></span>
-                        <span class="ui-video__time" data-el="time">0:08</span>
-                        <span class="ui-video__bar" data-el="bar">
-                          <span class="ui-video__played" data-el="played"></span>
-                          <span class="ui-video__marker" data-el="marker"></span>
-                        </span>
+                      <div class="ui-card__attached"><code dir="ltr">x² + 10x = 39</code></div>
+                      <div class="ui-field">
+                        <span
+                          data-el="field-text"
+                          data-ar="وُلد هنا، ثم تركناه لغيرنا."
+                          data-en="Born here, then we left it to others."
+                          >وُلد هنا، ثم تركناه لغيرنا.</span
+                        ><span class="ui-caret" data-el="caret"></span>
+                      </div>
+                      <div class="ui-actions">
+                        <span
+                          class="ui-btn ui-btn--primary"
+                          data-el="save"
+                          data-ar="حفظ"
+                          data-en="Save"
+                          >حفظ</span
+                        >
+                        <span class="ui-btn" data-ar="إلغاء" data-en="Cancel">إلغاء</span>
                       </div>
                     </div>
-                  </div>
 
-                  <span class="ui-hint" data-el="hint">
-                    <span class="keys" dir="ltr"><kbd>Alt</kbd><span>+</span><kbd>V</kbd></span>
-                  </span>
-
-                  <div class="ui-quick" data-el="quick">
-                    <div class="ui-quick__meta">
-                      <span data-ar="ملاحظة سريعة" data-en="Quick note">ملاحظة سريعة</span>
-                      <span class="ui-quick__stamp" data-el="stamp">1:12</span>
-                    </div>
-                    <div class="ui-field ui-field--plain">
-                      <span
-                        data-el="field-text"
-                        data-ar="شكّ في بطليموس، ثم جرّب بنفسه."
-                        data-en="He doubted Ptolemy, then tested it himself."
-                        >شكّ في بطليموس، ثم جرّب بنفسه.</span
-                      >
-                      <span class="ui-caret" data-el="caret"></span>
-                      <span class="ui-reveal" data-el="reveal"></span>
+                    <div class="demo-cursor">
+                      <svg class="demo-cursor__arrow" viewBox="0 0 20 20" aria-hidden="true">
+                        <path
+                          d="M3.5 1.8 L15.2 11.4 L9.9 11.9 L12.6 17.4 L10.3 18.4 L7.7 12.8 L3.5 16.2 Z"
+                          fill="currentColor"
+                          stroke="var(--surface)"
+                          stroke-width="0.9"
+                        />
+                      </svg>
+                      <span class="demo-cursor__ring"></span>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section class="section feature feature--flip" id="feature-4">
-        <div class="wrap feature__inner">
-          <article class="feature__copy" data-reveal>
-            <p class="feature__index">
-              <b>04</b>
-              <span data-ar="مكتبة الملاحظات" data-en="The Notes Library">مكتبة الملاحظات</span>
-            </p>
-            <h3
-              data-ar="كل ما كتبتَه، في مكتبة واحدة."
-              data-en="All you have written, in one library."
-            >
-              كل ما كتبتَه، في مكتبة واحدة.
-            </h3>
-            <p
-              data-ar="ما تتركه في صفحات متفرقة يجتمع هنا، مرتّبًا حسب المواقع التي قرأت فيها. ابحث عن فكرة نسيت أين كتبتها، وثبّت ما تعود إليه كثيرًا، ثم عُد بنقرة واحدة إلى الموضع الذي وُلدت فيه."
-              data-en="What you leave across scattered pages gathers here, arranged by the sites where you read. Search for a thought you forgot where you wrote, pin the ones you keep returning to, and go back in one click to the place where each was born."
-            >
-              ما تتركه في صفحات متفرقة يجتمع هنا، مرتّبًا حسب المواقع التي قرأت فيها. ابحث عن فكرة
-              نسيت أين كتبتها، وثبّت ما تعود إليه كثيرًا، ثم عُد بنقرة واحدة إلى الموضع الذي وُلدت
-              فيه.
-            </p>
-          </article>
+        <section class="feature" id="feature-3">
+          <div class="wrap feature__inner">
+            <article class="feature__copy" data-reveal>
+              <p class="feature__index">
+                <b>03</b>
+                <span data-ar="ملاحظة على لحظة" data-en="A note on a moment">ملاحظة على لحظة</span>
+              </p>
+              <h3
+                data-ar="دوّن اللحظة، والفيديو ينتظرك."
+                data-en="Note the moment; the video waits."
+              >
+                دوّن اللحظة، والفيديو ينتظرك.
+              </h3>
+              <p
+                class="lede"
+                data-ar="وأنت تشاهد درسًا أو محاضرة، اكتب سطرك في الحال: يتوقف الفيديو احترامًا لفكرتك، ثم يُكمل حين تنتهي، وتبقى على شريطه علامة تعيدك إلى تلك اللحظة."
+                data-en="Watching a lecture, write your line right away: the video pauses for your thought and carries on when you are done, leaving a mark on its timeline that brings you back."
+              >
+                وأنت تشاهد درسًا أو محاضرة، اكتب سطرك في الحال: يتوقف الفيديو احترامًا لفكرتك، ثم
+                يُكمل حين تنتهي، وتبقى على شريطه علامة تعيدك إلى تلك اللحظة.
+              </p>
+              <p class="feature__keys">
+                <span class="keys" dir="ltr"><kbd>Alt</kbd><span>+</span><kbd>V</kbd></span>
+                <span data-ar="ثم Enter لتحفظ" data-en="then Enter to save">ثم Enter لتحفظ</span>
+              </p>
+            </article>
 
-          <div class="feature__stage" data-reveal-scene>
-            <div class="stage__tilt">
-              <div class="scene" data-scene="library" aria-hidden="true">
-                <div class="scene__layer scene__layer--sheet"></div>
-                <div class="scene__layer scene__layer--sheet-2"></div>
-                <div class="demo">
-                  <div class="ui-window">
-                    <div class="ui-window__chrome">
-                      <div class="ui-window__dots"><i></i><i></i><i></i></div>
-                      <div class="ui-window__url" data-ar="مكتبة الملاحظات" data-en="Notes Library">
-                        مكتبة الملاحظات
+            <div class="feature__stage" data-reveal-scene>
+              <div class="stage__tilt">
+                <div class="scene" data-scene="quick" aria-hidden="true">
+                  <div class="scene__layer scene__layer--sheet"></div>
+                  <div class="scene__layer scene__layer--sheet-2"></div>
+                  <div class="demo">
+                    <div class="ui-window">
+                      <div class="ui-window__chrome">
+                        <div class="ui-window__dots"><i></i><i></i><i></i></div>
+                        <div class="ui-window__url">lectures.edu/ibn-al-haytham-optics</div>
+                      </div>
+                      <div class="ui-page">
+                        <p
+                          class="ui-page__title"
+                          data-ar="ابن الهيثم وكتاب المناظر"
+                          data-en="Ibn al-Haytham and the Book of Optics"
+                        >
+                          ابن الهيثم وكتاب المناظر
+                        </p>
+                        <div class="ui-video">
+                          <span class="ui-video__glow"></span>
+                          <span class="ui-video__time" data-el="time">0:08</span>
+                          <span class="ui-video__bar" data-el="bar">
+                            <span class="ui-video__played" data-el="played"></span>
+                            <span class="ui-video__marker" data-el="marker"></span>
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    <div class="ui-app">
-                      <div class="ui-app__side">
-                        <div class="ui-app__brand">
-                          <svg class="mark" width="12" height="12"><use href="#i-mark" /></svg>
-                          <span data-ar="هامش" data-en="Hamesh">هامش</span>
-                        </div>
-                        <div class="ui-nav is-active">
-                          <svg width="12" height="12"><use href="#i-library" /></svg>
-                          <span data-ar="مكتبة الملاحظات" data-en="Notes Library"
-                            >مكتبة الملاحظات</span
-                          >
-                        </div>
-                        <div class="ui-nav">
-                          <svg width="12" height="12"><use href="#i-team" /></svg>
-                          <span data-ar="الفرق" data-en="Teams">الفرق</span>
-                        </div>
-                        <div class="ui-nav">
-                          <svg width="12" height="12"><use href="#i-at" /></svg>
-                          <span data-ar="الإشارات" data-en="Mentions">الإشارات</span>
-                        </div>
-                        <div class="ui-nav">
-                          <svg width="12" height="12"><use href="#i-settings" /></svg>
-                          <span data-ar="الإعدادات" data-en="Settings">الإعدادات</span>
+
+                    <span class="ui-hint" data-el="hint">
+                      <span class="keys" dir="ltr"><kbd>Alt</kbd><span>+</span><kbd>V</kbd></span>
+                    </span>
+
+                    <div class="ui-quick" data-el="quick">
+                      <div class="ui-quick__meta">
+                        <span data-ar="ملاحظة سريعة" data-en="Quick note">ملاحظة سريعة</span>
+                        <span class="ui-quick__stamp" data-el="stamp">1:12</span>
+                      </div>
+                      <div class="ui-field ui-field--plain">
+                        <span
+                          data-el="field-text"
+                          data-ar="شكّ في بطليموس، ثم جرّب بنفسه."
+                          data-en="He doubted Ptolemy, then tested it himself."
+                          >شكّ في بطليموس، ثم جرّب بنفسه.</span
+                        ><span class="ui-caret" data-el="caret"></span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="feature feature--flip" id="feature-4">
+          <div class="wrap feature__inner">
+            <article class="feature__copy" data-reveal>
+              <p class="feature__index">
+                <b>04</b>
+                <span data-ar="مكتبة الملاحظات" data-en="The Notes Library">مكتبة الملاحظات</span>
+              </p>
+              <h3
+                data-ar="كل ما كتبتَه، في مكتبة واحدة."
+                data-en="All you have written, in one library."
+              >
+                كل ما كتبتَه، في مكتبة واحدة.
+              </h3>
+              <p
+                class="lede"
+                data-ar="ما تتركه في صفحات متفرقة يجتمع هنا، مرتّبًا حسب المواقع التي قرأت فيها. ابحث عن فكرة نسيت أين كتبتها، وثبّت ما تعود إليه كثيرًا، ثم عُد بنقرة واحدة إلى الموضع الذي وُلدت فيه."
+                data-en="What you leave across scattered pages gathers here, arranged by the sites where you read. Search for a thought you forgot where you wrote, pin the ones you keep returning to, and go back in one click to the place where each was born."
+              >
+                ما تتركه في صفحات متفرقة يجتمع هنا، مرتّبًا حسب المواقع التي قرأت فيها. ابحث عن فكرة
+                نسيت أين كتبتها، وثبّت ما تعود إليه كثيرًا، ثم عُد بنقرة واحدة إلى الموضع الذي وُلدت
+                فيه.
+              </p>
+            </article>
+
+            <div class="feature__stage" data-reveal-scene>
+              <div class="stage__tilt">
+                <div class="scene" data-scene="library" aria-hidden="true">
+                  <div class="scene__layer scene__layer--sheet"></div>
+                  <div class="scene__layer scene__layer--sheet-2"></div>
+                  <div class="demo">
+                    <div class="ui-window">
+                      <div class="ui-window__chrome">
+                        <div class="ui-window__dots"><i></i><i></i><i></i></div>
+                        <div
+                          class="ui-window__url"
+                          data-ar="مكتبة الملاحظات"
+                          data-en="Notes Library"
+                        >
+                          مكتبة الملاحظات
                         </div>
                       </div>
+                      <div class="ui-app">
+                        <div class="ui-app__side">
+                          <div class="ui-app__brand">
+                            <svg class="mark" width="12" height="12"><use href="#i-mark" /></svg>
+                            <span data-ar="هامش" data-en="Hamesh">هامش</span>
+                          </div>
+                          <div class="ui-nav is-active">
+                            <svg width="12" height="12"><use href="#i-library" /></svg>
+                            <span data-ar="مكتبة الملاحظات" data-en="Notes Library"
+                              >مكتبة الملاحظات</span
+                            >
+                          </div>
+                          <div class="ui-nav">
+                            <svg width="12" height="12"><use href="#i-team" /></svg>
+                            <span data-ar="الفرق" data-en="Teams">الفرق</span>
+                          </div>
+                          <div class="ui-nav">
+                            <svg width="12" height="12"><use href="#i-at" /></svg>
+                            <span data-ar="الإشارات" data-en="Mentions">الإشارات</span>
+                          </div>
+                          <div class="ui-nav">
+                            <svg width="12" height="12"><use href="#i-settings" /></svg>
+                            <span data-ar="الإعدادات" data-en="Settings">الإعدادات</span>
+                          </div>
+                        </div>
 
-                      <div class="ui-app__main">
-                        <div class="ui-search" data-el="search">
-                          <span class="ui-search__typed">
+                        <div class="ui-app__main">
+                          <div class="ui-search" data-el="search">
+                            <span class="ui-search__typed"
+                              ><span
+                                data-el="search-text"
+                                data-ar="بيت الحكمة"
+                                data-en="House of Wisdom"
+                                >بيت الحكمة</span
+                              ><span class="ui-caret" data-el="search-caret"></span
+                            ></span>
+                            <kbd class="ui-search__key">/</kbd>
+                          </div>
+
+                          <div class="ui-seg">
+                            <span class="is-on" data-ar="الكل" data-en="All">الكل</span>
+                            <span data-ar="لي وحدي" data-en="Just mine">لي وحدي</span>
+                            <span data-ar="حلقة القراءة" data-en="Reading circle"
+                              >حلقة القراءة</span
+                            >
+                          </div>
+
+                          <div class="ui-note-row" data-el="row">
+                            <p
+                              class="ui-note-row__text"
+                              data-ar="شكّ في بطليموس، ثم جرّب بنفسه."
+                              data-en="He doubted Ptolemy, then tested it himself."
+                            >
+                              شكّ في بطليموس، ثم جرّب بنفسه.
+                            </p>
+                            <p class="ui-note-row__meta">
+                              <svg width="10" height="10"><use href="#i-globe" /></svg>
+                              <span
+                                data-ar="lectures.edu · منذ يومين"
+                                data-en="lectures.edu · 2d ago"
+                                >lectures.edu · منذ يومين</span
+                              >
+                            </p>
+                          </div>
+
+                          <div class="ui-note-row" data-el="row">
+                            <p
+                              class="ui-note-row__text"
+                              data-ar="بيت الحكمة: ترجمة ثم إبداع. متى توقفنا عن الإضافة؟"
+                              data-en="The House of Wisdom: translation, then creation. When did we stop adding?"
+                            >
+                              بيت الحكمة: ترجمة ثم إبداع. متى توقفنا عن الإضافة؟
+                            </p>
+                            <p class="ui-note-row__meta">
+                              <svg width="10" height="10"><use href="#i-globe" /></svg>
+                              <span
+                                data-ar="maktaba.site · منذ 4 ساعات"
+                                data-en="maktaba.site · 4h ago"
+                                >maktaba.site · منذ 4 ساعات</span
+                              >
+                            </p>
+                            <span class="ui-note-row__pin" data-el="pin">
+                              <svg width="11" height="11"><use href="#i-pin-filled" /></svg>
+                            </span>
+                          </div>
+
+                          <div class="ui-note-row" data-el="row">
+                            <p
+                              class="ui-note-row__text"
+                              data-ar="حواشي المخطوطات: هامشٌ قبل هامش."
+                              data-en="The margins of manuscripts: Hamesh before Hamesh."
+                            >
+                              حواشي المخطوطات: هامشٌ قبل هامش.
+                            </p>
+                            <p class="ui-note-row__meta">
+                              <svg width="10" height="10"><use href="#i-globe" /></svg>
+                              <span
+                                data-ar="manuscripts.archive · منذ أسبوع"
+                                data-en="manuscripts.archive · 1w ago"
+                                >manuscripts.archive · منذ أسبوع</span
+                              >
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="demo-cursor">
+                      <svg class="demo-cursor__arrow" viewBox="0 0 20 20" aria-hidden="true">
+                        <path
+                          d="M3.5 1.8 L15.2 11.4 L9.9 11.9 L12.6 17.4 L10.3 18.4 L7.7 12.8 L3.5 16.2 Z"
+                          fill="currentColor"
+                          stroke="var(--surface)"
+                          stroke-width="0.9"
+                        />
+                      </svg>
+                      <span class="demo-cursor__ring"></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="feature" id="feature-5">
+          <div class="wrap feature__inner">
+            <article class="feature__copy" data-reveal>
+              <p class="feature__index">
+                <b>05</b>
+                <span data-ar="الفولدرات" data-en="Folders">الفولدرات</span>
+              </p>
+              <h3 data-ar="رتّبها كما ترتّب أفكارك." data-en="Order them the way you think.">
+                رتّبها كما ترتّب أفكارك.
+              </h3>
+              <p
+                class="lede"
+                data-ar="الأفكار تتجمّع حول أسئلتها الكبرى. اجعل لكل سؤال فولدرًا، وفي داخله ما يتفرّع عنه، وانقل الملاحظة إليه من قائمتها الصغيرة، دون أن تفتح الصفحة التي كُتبت فيها."
+                data-en="Thoughts gather around their great questions. Give each question a folder, with what branches from it inside, and move a note there from its small menu, without opening the page where it was written."
+              >
+                الأفكار تتجمّع حول أسئلتها الكبرى. اجعل لكل سؤال فولدرًا، وفي داخله ما يتفرّع عنه،
+                وانقل الملاحظة إليه من قائمتها الصغيرة، دون أن تفتح الصفحة التي كُتبت فيها.
+              </p>
+            </article>
+
+            <div class="feature__stage" data-reveal-scene>
+              <div class="stage__tilt">
+                <div class="scene" data-scene="folders" aria-hidden="true">
+                  <div class="scene__layer scene__layer--sheet"></div>
+                  <div class="scene__layer scene__layer--sheet-2"></div>
+                  <div class="demo">
+                    <div class="ui-window">
+                      <div class="ui-window__chrome">
+                        <div class="ui-window__dots"><i></i><i></i><i></i></div>
+                        <div
+                          class="ui-window__url"
+                          data-ar="مكتبة الملاحظات"
+                          data-en="Notes Library"
+                        >
+                          مكتبة الملاحظات
+                        </div>
+                      </div>
+                      <div class="ui-spaces">
+                        <div class="ui-space">
+                          <div class="ui-space__head">
+                            <svg width="12" height="12"><use href="#i-device" /></svg>
+                            <span class="ui-space__title" data-ar="مساحتي" data-en="My space"
+                              >مساحتي</span
+                            >
+                            <span
+                              class="ui-space__meta"
+                              data-ar="على هذا الجهاز"
+                              data-en="On this device"
+                              >على هذا الجهاز</span
+                            >
+                          </div>
+                          <div class="ui-folder" data-el="folder-work">
+                            <span class="ui-folder__glow" data-el="folder-glow"></span>
+                            <svg class="ui-folder__chevron" width="9" height="9">
+                              <use href="#i-chevron" />
+                            </svg>
+                            <svg width="11" height="11"><use href="#i-folder" /></svg>
+                            <span data-ar="النهضة" data-en="Renaissance">النهضة</span>
+                            <span class="ui-folder__count" data-el="count">3</span>
+                          </div>
+                          <div class="ui-folder ui-folder--child">
+                            <svg width="10" height="10"><use href="#i-folder" /></svg>
                             <span data-ar="بيت الحكمة" data-en="House of Wisdom">بيت الحكمة</span>
-                            <span class="ui-reveal" data-el="search-reveal"></span>
-                          </span>
-                          <span class="ui-caret ui-caret--search" data-el="search-caret"></span>
-                          <kbd class="ui-search__key">/</kbd>
-                        </div>
-
-                        <div class="ui-seg">
-                          <span class="is-on" data-ar="الكل" data-en="All">الكل</span>
-                          <span data-ar="لي وحدي" data-en="Just mine">لي وحدي</span>
-                          <span data-ar="حلقة القراءة" data-en="Reading circle">حلقة القراءة</span>
-                        </div>
-
-                        <div class="ui-note-row" data-el="row">
-                          <p
-                            class="ui-note-row__text"
-                            data-ar="شكّ في بطليموس، ثم جرّب بنفسه."
-                            data-en="He doubted Ptolemy, then tested it himself."
-                          >
-                            شكّ في بطليموس، ثم جرّب بنفسه.
-                          </p>
-                          <p class="ui-note-row__meta">
-                            <svg width="10" height="10"><use href="#i-globe" /></svg>
-                            <span data-ar="lectures.edu · منذ يومين" data-en="lectures.edu · 2d ago"
-                              >lectures.edu · منذ يومين</span
+                          </div>
+                          <div class="ui-folder ui-folder--child">
+                            <svg width="10" height="10"><use href="#i-folder" /></svg>
+                            <span data-ar="تاريخ العلوم" data-en="History of science"
+                              >تاريخ العلوم</span
                             >
-                          </p>
-                        </div>
-
-                        <div class="ui-note-row" data-el="row">
-                          <p
-                            class="ui-note-row__text"
-                            data-ar="بيت الحكمة: ترجمة ثم إبداع. متى توقفنا عن الإضافة؟"
-                            data-en="The House of Wisdom: translation, then creation. When did we stop adding?"
-                          >
-                            بيت الحكمة: ترجمة ثم إبداع. متى توقفنا عن الإضافة؟
-                          </p>
-                          <p class="ui-note-row__meta">
-                            <svg width="10" height="10"><use href="#i-globe" /></svg>
-                            <span
-                              data-ar="maktaba.site · منذ 4 ساعات"
-                              data-en="maktaba.site · 4h ago"
-                              >maktaba.site · منذ 4 ساعات</span
+                          </div>
+                          <div class="ui-folder">
+                            <svg class="ui-folder__chevron" width="9" height="9">
+                              <use href="#i-chevron" />
+                            </svg>
+                            <svg width="11" height="11"><use href="#i-folder" /></svg>
+                            <span data-ar="للقراءة لاحقًا" data-en="To read later"
+                              >للقراءة لاحقًا</span
                             >
-                          </p>
-                          <span class="ui-note-row__pin" data-el="pin">
-                            <svg width="11" height="11"><use href="#i-pin-filled" /></svg>
-                          </span>
-                        </div>
+                            <span class="ui-folder__count">7</span>
+                          </div>
 
-                        <div class="ui-note-row" data-el="row">
-                          <p
-                            class="ui-note-row__text"
-                            data-ar="حواشي المخطوطات: هامشٌ قبل هامش."
-                            data-en="The margins of manuscripts: Hamesh before Hamesh."
-                          >
-                            حواشي المخطوطات: هامشٌ قبل هامش.
-                          </p>
-                          <p class="ui-note-row__meta">
-                            <svg width="10" height="10"><use href="#i-globe" /></svg>
-                            <span
-                              data-ar="manuscripts.archive · منذ أسبوع"
-                              data-en="manuscripts.archive · 1w ago"
-                              >manuscripts.archive · منذ أسبوع</span
+                          <div class="ui-note-row ui-note-row--in-space">
+                            <p
+                              class="ui-note-row__text"
+                              data-ar="بيت الحكمة: ترجمة ثم إبداع. متى توقفنا عن الإضافة؟"
+                              data-en="The House of Wisdom: translation, then creation. When did we stop adding?"
                             >
-                          </p>
+                              بيت الحكمة: ترجمة ثم إبداع. متى توقفنا عن الإضافة؟
+                            </p>
+                            <p class="ui-note-row__meta">
+                              <svg width="10" height="10"><use href="#i-globe" /></svg>
+                              <span
+                                data-ar="maktaba.site · منذ 4 ساعات"
+                                data-en="maktaba.site · 4h ago"
+                                >maktaba.site · منذ 4 ساعات</span
+                              >
+                            </p>
+                            <span class="ui-note-row__more" data-el="more">
+                              <svg width="12" height="12"><use href="#i-more" /></svg>
+                            </span>
+                            <span class="ui-note-row__chip" data-el="chip">
+                              <svg width="9" height="9"><use href="#i-folder" /></svg>
+                              <span data-ar="النهضة" data-en="Renaissance">النهضة</span>
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div class="demo-cursor">
-                    <svg class="demo-cursor__arrow" viewBox="0 0 20 20" aria-hidden="true">
-                      <path
-                        d="M3.5 1.8 L15.2 11.4 L9.9 11.9 L12.6 17.4 L10.3 18.4 L7.7 12.8 L3.5 16.2 Z"
-                        fill="currentColor"
-                        stroke="var(--surface)"
-                        stroke-width="0.9"
-                      />
-                    </svg>
-                    <span class="demo-cursor__ring"></span>
+                    <!-- The note's own menu, as the Library draws it: what can be
+                       done to it, and — one step in — where it can go. -->
+                    <div class="ui-menu" data-el="menu">
+                      <div class="ui-menu__item">
+                        <svg width="12" height="12"><use href="#i-pin" /></svg>
+                        <span data-ar="تثبيت" data-en="Pin">تثبيت</span>
+                      </div>
+                      <div class="ui-menu__item">
+                        <svg width="12" height="12"><use href="#i-edit" /></svg>
+                        <span data-ar="تعديل" data-en="Edit">تعديل</span>
+                      </div>
+                      <div class="ui-menu__item" data-el="move-item">
+                        <svg width="12" height="12"><use href="#i-folder" /></svg>
+                        <span data-ar="نقل إلى فولدر" data-en="Move to folder">نقل إلى فولدر</span>
+                      </div>
+                      <div class="ui-menu__item">
+                        <svg width="12" height="12"><use href="#i-share" /></svg>
+                        <span data-ar="مشاركة مع فريق" data-en="Share with a team"
+                          >مشاركة مع فريق</span
+                        >
+                      </div>
+                      <div class="ui-menu__item ui-menu__item--danger">
+                        <svg width="12" height="12"><use href="#i-trash" /></svg>
+                        <span data-ar="حذف" data-en="Delete">حذف</span>
+                      </div>
+                    </div>
+
+                    <div class="ui-menu" data-el="menu-folders">
+                      <p class="ui-menu__label" data-ar="نقل إلى فولدر" data-en="Move to folder">
+                        نقل إلى فولدر
+                      </p>
+                      <div class="ui-menu__item ui-menu__item--choice" data-el="menu-item">
+                        <span data-ar="بلا فولدر" data-en="No folder">بلا فولدر</span>
+                      </div>
+                      <div class="ui-menu__item ui-menu__item--choice" data-el="menu-item">
+                        <span data-ar="النهضة" data-en="Renaissance">النهضة</span>
+                      </div>
+                      <div class="ui-menu__item ui-menu__item--choice" data-el="menu-item">
+                        <span data-ar="للقراءة لاحقًا" data-en="To read later">للقراءة لاحقًا</span>
+                      </div>
+                    </div>
+
+                    <div class="demo-cursor">
+                      <svg class="demo-cursor__arrow" viewBox="0 0 20 20" aria-hidden="true">
+                        <path
+                          d="M3.5 1.8 L15.2 11.4 L9.9 11.9 L12.6 17.4 L10.3 18.4 L7.7 12.8 L3.5 16.2 Z"
+                          fill="currentColor"
+                          stroke="var(--surface)"
+                          stroke-width="0.9"
+                        />
+                      </svg>
+                      <span class="demo-cursor__ring"></span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section class="section feature" id="feature-5">
-        <div class="wrap feature__inner">
-          <article class="feature__copy" data-reveal>
-            <p class="feature__index">
-              <b>05</b>
-              <span data-ar="الفولدرات" data-en="Folders">الفولدرات</span>
-            </p>
-            <h3 data-ar="رتّبها كما ترتّب أفكارك." data-en="Order them the way you think.">
-              رتّبها كما ترتّب أفكارك.
-            </h3>
-            <p
-              data-ar="الأفكار تتجمّع حول أسئلتها الكبرى. اجعل لكل سؤال فولدرًا، وفي داخله ما يتفرّع عنه، وانقل الملاحظة إليه من قائمتها الصغيرة، دون أن تفتح الصفحة التي كُتبت فيها."
-              data-en="Thoughts gather around their great questions. Give each question a folder, with what branches from it inside, and move a note there from its small menu, without opening the page where it was written."
-            >
-              الأفكار تتجمّع حول أسئلتها الكبرى. اجعل لكل سؤال فولدرًا، وفي داخله ما يتفرّع عنه،
-              وانقل الملاحظة إليه من قائمتها الصغيرة، دون أن تفتح الصفحة التي كُتبت فيها.
-            </p>
-          </article>
+        <section class="feature feature--flip" id="export">
+          <div class="wrap feature__inner">
+            <article class="feature__copy" data-reveal>
+              <p class="feature__index">
+                <b>06</b>
+                <span data-ar="التصدير" data-en="Export">التصدير</span>
+              </p>
+              <h3
+                data-ar="خُذ هوامشك إلى Obsidian وNotion."
+                data-en="Take your margins to Obsidian and Notion."
+              >
+                خُذ هوامشك إلى Obsidian وNotion.
+              </h3>
+              <p
+                class="lede"
+                data-ar="صفحة واحدة، أو فولدر، أو مكتبتك كلها: تخرج ملفات Markdown مرتّبة كما قرأت، كل ملاحظة تحت العنوان أو الفصل الذي كُتبت عنده، بروابط يفهمها Obsidian وجداول يستوردها Notion. والتصدير كله على جهازك، مجانًا."
+                data-en="One page, a folder or your whole library becomes tidy Markdown, each note under the heading or chapter it was written at, with links Obsidian understands and tables Notion imports. It all happens on your device, for free."
+              >
+                صفحة واحدة، أو فولدر، أو مكتبتك كلها: تخرج ملفات Markdown مرتّبة كما قرأت، كل ملاحظة
+                تحت العنوان أو الفصل الذي كُتبت عنده، بروابط يفهمها Obsidian وجداول يستوردها Notion.
+                والتصدير كله على جهازك، مجانًا.
+              </p>
+            </article>
 
-          <div class="feature__stage" data-reveal-scene>
-            <div class="stage__tilt">
-              <div class="scene" data-scene="folders" aria-hidden="true">
-                <div class="scene__layer scene__layer--sheet"></div>
-                <div class="scene__layer scene__layer--sheet-2"></div>
-                <div class="demo">
-                  <div class="ui-window">
-                    <div class="ui-window__chrome">
-                      <div class="ui-window__dots"><i></i><i></i><i></i></div>
-                      <div class="ui-window__url" data-ar="مكتبة الملاحظات" data-en="Notes Library">
-                        مكتبة الملاحظات
+            <div class="feature__stage" data-reveal-scene>
+              <div class="stage__tilt">
+                <div class="scene" data-scene="export" aria-hidden="true">
+                  <div class="scene__layer scene__layer--sheet"></div>
+                  <div class="scene__layer scene__layer--sheet-2"></div>
+                  <div class="demo xdemo">
+                    <div class="ui-window">
+                      <div class="ui-window__chrome">
+                        <div class="ui-window__dots"><i></i><i></i><i></i></div>
+                        <div
+                          class="ui-window__url"
+                          data-ar="مكتبة الملاحظات"
+                          data-en="Notes Library"
+                        >
+                          مكتبة الملاحظات
+                        </div>
                       </div>
-                    </div>
-                    <div class="ui-spaces">
-                      <div class="ui-space">
-                        <div class="ui-space__head">
-                          <svg width="12" height="12"><use href="#i-device" /></svg>
-                          <span class="ui-space__title" data-ar="مساحتي" data-en="My space"
-                            >مساحتي</span
+                      <div class="xstage">
+                        <div class="xframe" data-el="library">
+                          <div class="xnote">
+                            <p
+                              class="xnote__quote"
+                              data-ar="منطق العمل والحركة"
+                              data-en="the logic of action and movement"
+                            >
+                              منطق العمل والحركة
+                            </p>
+                            <p
+                              class="xnote__text"
+                              data-ar="هنا بيت القصيد."
+                              data-en="Here lies the crux."
+                            >
+                              هنا بيت القصيد.
+                            </p>
+                            <p
+                              class="xnote__meta"
+                              data-ar="maktaba.site · منذ يومين"
+                              data-en="maktaba.site · 2d ago"
+                            >
+                              maktaba.site · منذ يومين
+                            </p>
+                            <span class="xnote__more" data-el="more"
+                              ><svg width="14" height="14"><use href="#i-more" /></svg
+                            ></span>
+                          </div>
+                          <div class="xmenu" data-el="menu">
+                            <span
+                              class="xmenu__item"
+                              data-ar="نقل إلى فولدر"
+                              data-en="Move to folder"
+                              >نقل إلى فولدر</span
+                            >
+                            <span
+                              class="xmenu__item"
+                              data-ar="نسخ ملاحظات الصفحة كـ Markdown"
+                              data-en="Copy the page’s notes as Markdown"
+                              >نسخ ملاحظات الصفحة كـ Markdown</span
+                            >
+                            <span
+                              class="xmenu__item"
+                              data-el="export-item"
+                              data-ar="تصدير ملاحظات الصفحة…"
+                              data-en="Export the page’s notes…"
+                              >تصدير ملاحظات الصفحة…</span
+                            >
+                            <span
+                              class="xmenu__item xmenu__item--danger"
+                              data-ar="حذف"
+                              data-en="Delete"
+                              >حذف</span
+                            >
+                          </div>
+                        </div>
+
+                        <div class="xframe xdialog" data-el="dialog">
+                          <b
+                            class="xdialog__title"
+                            data-ar="تصدير كـ Markdown"
+                            data-en="Export as Markdown"
+                            >تصدير كـ Markdown</b
+                          >
+                          <p
+                            class="xdialog__scope"
+                            data-ar="maktaba.site · ملاحظتان"
+                            data-en="maktaba.site · 2 notes"
+                          >
+                            maktaba.site · ملاحظتان
+                          </p>
+                          <p class="xdialog__label" data-ar="افتحه في" data-en="Open it in">
+                            افتحه في
+                          </p>
+                          <div class="xdialog__tools">
+                            <span class="xopt" data-tool="obsidian"
+                              ><b>Obsidian</b
+                              ><span
+                                data-ar="خصائص، اقتباسات، وخريطة"
+                                data-en="Properties, callouts and a map"
+                                >خصائص، اقتباسات، وخريطة</span
+                              ></span
+                            >
+                            <span class="xopt" data-tool="notion"
+                              ><b>Notion</b
+                              ><span
+                                data-ar="تُلصق في الصفحة كما هي"
+                                data-en="Pastes cleanly into a page"
+                                >تُلصق في الصفحة كما هي</span
+                              ></span
+                            >
+                          </div>
+                          <p class="xdialog__label" data-ar="طريقة العرض" data-en="Layout">
+                            طريقة العرض
+                          </p>
+                          <div class="xdialog__layouts">
+                            <span class="xchip is-on" data-el="suggested"
+                              ><span data-ar="ملاحظات" data-en="Notes">ملاحظات</span> ·
+                              <span data-ar="مقترح" data-en="Suggested">مقترح</span></span
+                            >
+                            <span class="xchip" data-ar="قاموس" data-en="Glossary">قاموس</span>
+                            <span class="xchip" data-ar="خط زمني" data-en="Timeline">خط زمني</span>
+                            <span class="xchip" data-ar="قائمة مهام" data-en="Checklist"
+                              >قائمة مهام</span
+                            >
+                          </div>
+                        </div>
+
+                        <div class="xframe xpreview" data-el="preview">
+                          <p class="xpreview__label">
+                            <span
+                              data-ar="هكذا ستبدو في Obsidian"
+                              data-en="How it will look in Obsidian"
+                              >هكذا ستبدو في Obsidian</span
+                            >
+                          </p>
+                          <div class="xsheet">
+                            <b
+                              data-el="line"
+                              data-ar="مالك بن نبي، شروط النهضة"
+                              data-en="Malek Bennabi, The Conditions of Renaissance"
+                              >مالك بن نبي، شروط النهضة</b
+                            >
+                            <p
+                              class="xsheet__quote"
+                              data-el="line"
+                              data-ar="منطق العمل والحركة"
+                              data-en="the logic of action and movement"
+                            >
+                              منطق العمل والحركة
+                            </p>
+                            <p
+                              data-el="line"
+                              data-ar="هنا بيت القصيد."
+                              data-en="Here lies the crux."
+                            >
+                              هنا بيت القصيد.
+                            </p>
+                            <p
+                              class="xsheet__quote"
+                              data-el="line"
+                              data-ar="لأن الحضارة إبداع"
+                              data-en="civilisation is creation"
+                            >
+                              لأن الحضارة إبداع
+                            </p>
+                            <p
+                              data-el="line"
+                              data-ar="الخوارزمي ترجم ثم كتب الجبر."
+                              data-en="Al-Khwarizmi translated, then wrote algebra."
+                            >
+                              الخوارزمي ترجم ثم كتب الجبر.
+                            </p>
+                            <p
+                              class="xsheet__foot"
+                              data-el="line"
+                              data-ar="صُدِّرت من هامش · 25 نوفمبر 2026"
+                              data-en="Exported from Hamesh · 25 November 2026"
+                            >
+                              صُدِّرت من هامش · 25 نوفمبر 2026
+                            </p>
+                          </div>
+                        </div>
+
+                        <div class="xframe xfile" data-el="file-frame">
+                          <span
+                            class="ui-btn ui-btn--primary xfile__button"
+                            data-el="download"
+                            data-ar="تنزيل &#8294;.md&#8297;"
+                            data-en="Download .md"
+                            >تنزيل &#8294;.md&#8297;</span
                           >
                           <span
-                            class="ui-space__meta"
-                            data-ar="على هذا الجهاز"
-                            data-en="On this device"
-                            >على هذا الجهاز</span
+                            class="xfile__chip"
+                            data-el="chip"
+                            dir="ltr"
+                            data-ar="مالك بن نبي، شروط النهضة.md"
+                            data-en="Malek Bennabi, The Conditions of Renaissance.md"
+                            >مالك بن نبي، شروط النهضة.md</span
                           >
-                        </div>
-                        <div class="ui-folder" data-el="folder-work">
-                          <span class="ui-folder__glow" data-el="folder-glow"></span>
-                          <svg class="ui-folder__chevron" width="9" height="9">
-                            <use href="#i-chevron" />
-                          </svg>
-                          <svg width="11" height="11"><use href="#i-folder" /></svg>
-                          <span data-ar="النهضة" data-en="Renaissance">النهضة</span>
-                          <span class="ui-folder__count" data-el="count">3</span>
-                        </div>
-                        <div class="ui-folder ui-folder--child">
-                          <svg width="10" height="10"><use href="#i-folder" /></svg>
-                          <span data-ar="بيت الحكمة" data-en="House of Wisdom">بيت الحكمة</span>
-                        </div>
-                        <div class="ui-folder ui-folder--child">
-                          <svg width="10" height="10"><use href="#i-folder" /></svg>
-                          <span data-ar="تاريخ العلوم" data-en="History of science"
-                            >تاريخ العلوم</span
-                          >
-                        </div>
-                        <div class="ui-folder">
-                          <svg class="ui-folder__chevron" width="9" height="9">
-                            <use href="#i-chevron" />
-                          </svg>
-                          <svg width="11" height="11"><use href="#i-folder" /></svg>
-                          <span data-ar="للقراءة لاحقًا" data-en="To read later"
-                            >للقراءة لاحقًا</span
-                          >
-                          <span class="ui-folder__count">7</span>
-                        </div>
-
-                        <div class="ui-note-row ui-note-row--in-space">
-                          <p
-                            class="ui-note-row__text"
-                            data-ar="بيت الحكمة: ترجمة ثم إبداع. متى توقفنا عن الإضافة؟"
-                            data-en="The House of Wisdom: translation, then creation. When did we stop adding?"
-                          >
-                            بيت الحكمة: ترجمة ثم إبداع. متى توقفنا عن الإضافة؟
-                          </p>
-                          <p class="ui-note-row__meta">
-                            <svg width="10" height="10"><use href="#i-globe" /></svg>
-                            <span
-                              data-ar="maktaba.site · منذ 4 ساعات"
-                              data-en="maktaba.site · 4h ago"
-                              >maktaba.site · منذ 4 ساعات</span
-                            >
-                          </p>
-                          <span class="ui-note-row__more" data-el="more">
-                            <svg width="12" height="12"><use href="#i-more" /></svg>
-                          </span>
-                          <span class="ui-note-row__chip" data-el="chip">
-                            <svg width="9" height="9"><use href="#i-folder" /></svg>
-                            <span data-ar="النهضة" data-en="Renaissance">النهضة</span>
+                          <span class="xfile__folder" data-el="folder">
+                            <svg width="26" height="22" viewBox="0 0 26 22" aria-hidden="true">
+                              <path
+                                d="M1 4a2 2 0 0 1 2-2h6l2 3h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2z"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.5"
+                              />
+                            </svg>
+                            <span dir="ltr">Vault / Hamesh /</span>
                           </span>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  <!-- The note's own menu, as the Library draws it: what can be
-                       done to it, and — one step in — where it can go. -->
-                  <div class="ui-menu" data-el="menu">
-                    <div class="ui-menu__item">
-                      <svg width="12" height="12"><use href="#i-pin" /></svg>
-                      <span data-ar="تثبيت" data-en="Pin">تثبيت</span>
+                    <div class="demo-cursor">
+                      <svg class="demo-cursor__arrow" viewBox="0 0 20 20" aria-hidden="true">
+                        <path
+                          d="M3.5 1.8 L15.2 11.4 L9.9 11.9 L12.6 17.4 L10.3 18.4 L7.7 12.8 L3.5 16.2 Z"
+                          fill="currentColor"
+                          stroke="var(--surface)"
+                          stroke-width="0.9"
+                        />
+                      </svg>
+                      <span class="demo-cursor__ring"></span>
                     </div>
-                    <div class="ui-menu__item">
-                      <svg width="12" height="12"><use href="#i-edit" /></svg>
-                      <span data-ar="تعديل" data-en="Edit">تعديل</span>
-                    </div>
-                    <div class="ui-menu__item" data-el="move-item">
-                      <svg width="12" height="12"><use href="#i-folder" /></svg>
-                      <span data-ar="نقل إلى فولدر" data-en="Move to folder">نقل إلى فولدر</span>
-                    </div>
-                    <div class="ui-menu__item">
-                      <svg width="12" height="12"><use href="#i-share" /></svg>
-                      <span data-ar="مشاركة مع فريق" data-en="Share with a team"
-                        >مشاركة مع فريق</span
-                      >
-                    </div>
-                    <div class="ui-menu__item ui-menu__item--danger">
-                      <svg width="12" height="12"><use href="#i-trash" /></svg>
-                      <span data-ar="حذف" data-en="Delete">حذف</span>
-                    </div>
-                  </div>
-
-                  <div class="ui-menu" data-el="menu-folders">
-                    <p class="ui-menu__label" data-ar="نقل إلى فولدر" data-en="Move to folder">
-                      نقل إلى فولدر
-                    </p>
-                    <div class="ui-menu__item ui-menu__item--choice" data-el="menu-item">
-                      <span data-ar="بلا فولدر" data-en="No folder">بلا فولدر</span>
-                    </div>
-                    <div class="ui-menu__item ui-menu__item--choice" data-el="menu-item">
-                      <span data-ar="النهضة" data-en="Renaissance">النهضة</span>
-                    </div>
-                    <div class="ui-menu__item ui-menu__item--choice" data-el="menu-item">
-                      <span data-ar="للقراءة لاحقًا" data-en="To read later">للقراءة لاحقًا</span>
-                    </div>
-                  </div>
-
-                  <div class="demo-cursor">
-                    <svg class="demo-cursor__arrow" viewBox="0 0 20 20" aria-hidden="true">
-                      <path
-                        d="M3.5 1.8 L15.2 11.4 L9.9 11.9 L12.6 17.4 L10.3 18.4 L7.7 12.8 L3.5 16.2 Z"
-                        fill="currentColor"
-                        stroke="var(--surface)"
-                        stroke-width="0.9"
-                      />
-                    </svg>
-                    <span class="demo-cursor__ring"></span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
 
-      <!-- ============================ Teams =========================== -->
-      <section class="section teams-intro rule" id="teams">
+      <section class="section teams-intro" id="teams">
         <div class="wrap teams-intro__inner" data-reveal>
           <p class="kicker" data-ar="فرق هامش" data-en="Hamesh Teams">فرق هامش</p>
           <h2 data-ar="القراءة لا تكتمل وحدها." data-en="Reading is not finished alone.">
@@ -1212,242 +1813,345 @@
         </div>
       </section>
 
-      <section class="section feature feature--flip" id="feature-6">
-        <div class="wrap feature__inner">
-          <article class="feature__copy" data-reveal>
-            <p class="feature__index">
-              <b>06</b>
-              <span data-ar="اكتب لفريقك" data-en="Write for your team">اكتب لفريقك</span>
-            </p>
-            <h3 data-ar="فكرتك، بوجهك." data-en="Your thought, with your face.">فكرتك، بوجهك.</h3>
-            <p
-              data-ar="حين تكتب ملاحظتك اختر لمن تكون: لك وحدك، أو لحلقتك. فإن كانت لهم ظهرت على الصفحة نفسها بصورتك، فيعرف كل من يمرّ بها من أين جاءت الفكرة، ويجدها عند الكلمات التي أثارتها."
-              data-en="As you write a note, choose who it is for: just you, or your circle. If it is for them, it appears on that very page with your face, so whoever passes by knows where the thought came from, and finds it beside the words that stirred it."
-            >
-              حين تكتب ملاحظتك اختر لمن تكون: لك وحدك، أو لحلقتك. فإن كانت لهم ظهرت على الصفحة نفسها
-              بصورتك، فيعرف كل من يمرّ بها من أين جاءت الفكرة، ويجدها عند الكلمات التي أثارتها.
-            </p>
-          </article>
+      <div class="features features--teams">
+        <section class="feature" id="feature-6">
+          <div class="wrap feature__inner">
+            <article class="feature__copy" data-reveal>
+              <p class="feature__index">
+                <b>07</b>
+                <span data-ar="اكتب لفريقك" data-en="Write for your team">اكتب لفريقك</span>
+              </p>
+              <h3 data-ar="فكرتك، بوجهك." data-en="Your thought, with your face.">فكرتك، بوجهك.</h3>
+              <p
+                class="lede"
+                data-ar="حين تكتب ملاحظتك اختر لمن تكون: لك وحدك، أو لحلقتك. فإن كانت لهم ظهرت على الصفحة نفسها بصورتك، فيعرف كل من يمرّ بها من أين جاءت الفكرة، ويجدها عند الكلمات التي أثارتها."
+                data-en="As you write a note, choose who it is for: just you, or your circle. If it is for them, it appears on that very page with your face, so whoever passes by knows where the thought came from, and finds it beside the words that stirred it."
+              >
+                حين تكتب ملاحظتك اختر لمن تكون: لك وحدك، أو لحلقتك. فإن كانت لهم ظهرت على الصفحة
+                نفسها بصورتك، فيعرف كل من يمرّ بها من أين جاءت الفكرة، ويجدها عند الكلمات التي
+                أثارتها.
+              </p>
+            </article>
 
-          <div class="feature__stage" data-reveal-scene>
-            <div class="stage__tilt">
-              <div class="scene" data-scene="team-write" aria-hidden="true">
-                <div class="scene__layer scene__layer--sheet"></div>
-                <div class="scene__layer scene__layer--sheet-2"></div>
-                <div class="demo">
-                  <div class="ui-window">
-                    <div class="ui-window__chrome">
-                      <div class="ui-window__dots"><i></i><i></i><i></i></div>
-                      <div class="ui-window__url">maktaba.site/ibn-khaldun/muqaddimah</div>
-                    </div>
-                    <div class="ui-page ui-page--margin">
-                      <p
-                        class="ui-page__title"
-                        data-ar="ابن خلدون، المقدمة"
-                        data-en="Ibn Khaldun, The Muqaddimah"
-                      >
-                        ابن خلدون، المقدمة
-                      </p>
-                      <p class="ui-target-el" data-el="target">
-                        <span class="ui-hl" data-el="frame"></span>
-                        <span
-                          data-ar="إنّ الاجتماع الإنساني ضروري، ويعبّر الحكماء عن هذا بقولهم: الإنسان مدنيٌّ بالطبع، أي لا بدّ له من الاجتماع، وهو معنى العمران."
-                          data-en="Human social organization is a necessity; the philosophers say: man is by nature social — he cannot do without company, and that is what civilization means."
-                          >إنّ الاجتماع الإنساني ضروري، ويعبّر الحكماء عن هذا بقولهم: الإنسان مدنيٌّ
-                          بالطبع، أي لا بدّ له من الاجتماع، وهو معنى العمران.</span
+            <div class="feature__stage" data-reveal-scene>
+              <div class="stage__tilt">
+                <div class="scene" data-scene="team-write" aria-hidden="true">
+                  <div class="scene__layer scene__layer--sheet"></div>
+                  <div class="scene__layer scene__layer--sheet-2"></div>
+                  <div class="demo">
+                    <div class="ui-window">
+                      <div class="ui-window__chrome">
+                        <div class="ui-window__dots"><i></i><i></i><i></i></div>
+                        <div class="ui-window__url">maktaba.site/ibn-khaldun/muqaddimah</div>
+                      </div>
+                      <div class="ui-page ui-page--margin">
+                        <p
+                          class="ui-page__title"
+                          data-ar="ابن خلدون، المقدمة"
+                          data-en="Ibn Khaldun, The Muqaddimah"
                         >
+                          ابن خلدون، المقدمة
+                        </p>
+                        <p class="ui-target-el" data-el="target">
+                          <span class="ui-hl" data-el="frame"></span>
+                          <span
+                            data-ar="إنّ الاجتماع الإنساني ضروري، ويعبّر الحكماء عن هذا بقولهم: الإنسان مدنيٌّ بالطبع، أي لا بدّ له من الاجتماع، وهو معنى العمران."
+                            data-en="Human social organization is a necessity; the philosophers say: man is by nature social — he cannot do without company, and that is what civilization means."
+                            >إنّ الاجتماع الإنساني ضروري، ويعبّر الحكماء عن هذا بقولهم: الإنسان
+                            مدنيٌّ بالطبع، أي لا بدّ له من الاجتماع، وهو معنى العمران.</span
+                          >
+                        </p>
+                        <p
+                          data-ar="ثم إنّ هذا الاجتماع إذا حصل للبشر، احتاجوا إلى وازعٍ يدفع بعضهم عن بعض."
+                          data-en="And once people have come together, they need a restraint to keep them from one another's harm."
+                        >
+                          ثم إنّ هذا الاجتماع إذا حصل للبشر، احتاجوا إلى وازعٍ يدفع بعضهم عن بعض.
+                        </p>
+                      </div>
+                    </div>
+
+                    <span class="ui-hint" data-el="hint">
+                      <span class="keys" dir="ltr"><kbd>Alt</kbd><span>+</span><kbd>H</kbd></span>
+                    </span>
+
+                    <div class="ui-card ui-card--wide" data-el="card">
+                      <div class="ui-card__label">
+                        <svg class="mark" width="10" height="10"><use href="#i-mark" /></svg>
+                        <span data-ar="ملاحظة" data-en="Note">ملاحظة</span>
+                      </div>
+                      <p class="ui-card__overline" data-ar="العنصر المرتبط" data-en="Attached to">
+                        العنصر المرتبط
                       </p>
+                      <div
+                        class="ui-card__attached"
+                        data-ar="إنّ الاجتماع الإنساني ضروري…"
+                        data-en="Human social organization is a necessity…"
+                      >
+                        إنّ الاجتماع الإنساني ضروري…
+                      </div>
+                      <div class="ui-field">
+                        <span
+                          data-el="field-text"
+                          data-ar="وهكذا القراءة: لا تكتمل إلا مع الآخرين."
+                          data-en="So with reading: it is only finished with others."
+                          >وهكذا القراءة: لا تكتمل إلا مع الآخرين.</span
+                        ><span class="ui-caret" data-el="caret"></span>
+                      </div>
                       <p
-                        data-ar="ثم إنّ هذا الاجتماع إذا حصل للبشر، احتاجوا إلى وازعٍ يدفع بعضهم عن بعض."
-                        data-en="And once people have come together, they need a restraint to keep them from one another's harm."
+                        class="ui-dest__legend"
+                        data-ar="لمن هذه الملاحظة؟"
+                        data-en="Who is it for?"
                       >
-                        ثم إنّ هذا الاجتماع إذا حصل للبشر، احتاجوا إلى وازعٍ يدفع بعضهم عن بعض.
+                        لمن هذه الملاحظة؟
                       </p>
-                    </div>
-                  </div>
-
-                  <span class="ui-hint" data-el="hint">
-                    <span class="keys" dir="ltr"><kbd>Alt</kbd><span>+</span><kbd>H</kbd></span>
-                  </span>
-
-                  <div class="ui-card ui-card--wide" data-el="card">
-                    <div class="ui-card__label">
-                      <svg class="mark" width="10" height="10"><use href="#i-mark" /></svg>
-                      <span data-ar="ملاحظة" data-en="Note">ملاحظة</span>
-                    </div>
-                    <p class="ui-card__overline" data-ar="العنصر المرتبط" data-en="Attached to">
-                      العنصر المرتبط
-                    </p>
-                    <div
-                      class="ui-card__attached"
-                      data-ar="إنّ الاجتماع الإنساني ضروري…"
-                      data-en="Human social organization is a necessity…"
-                    >
-                      إنّ الاجتماع الإنساني ضروري…
-                    </div>
-                    <div class="ui-field">
-                      <span
-                        data-el="field-text"
-                        data-ar="وهكذا القراءة: لا تكتمل إلا مع الآخرين."
-                        data-en="So with reading: it is only finished with others."
-                        >وهكذا القراءة: لا تكتمل إلا مع الآخرين.</span
-                      >
-                      <span class="ui-caret" data-el="caret"></span>
-                      <span class="ui-reveal" data-el="reveal"></span>
-                    </div>
-                    <p class="ui-dest__legend" data-ar="لمن هذه الملاحظة؟" data-en="Who is it for?">
-                      لمن هذه الملاحظة؟
-                    </p>
-                    <div class="ui-dest">
-                      <div class="ui-dest__choice is-on" data-el="dest-me">
-                        <span class="ui-dest__radio"></span>
-                        <span class="ui-dest__text">
-                          <b data-ar="لي وحدي" data-en="Just me">لي وحدي</b>
-                          <small data-ar="على هذا الجهاز" data-en="On this device"
-                            >على هذا الجهاز</small
+                      <div class="ui-dest">
+                        <div class="ui-dest__choice is-on" data-el="dest-me">
+                          <span class="ui-dest__radio"></span>
+                          <span class="ui-dest__text">
+                            <b data-ar="لي وحدي" data-en="Just me">لي وحدي</b>
+                            <small data-ar="على هذا الجهاز" data-en="On this device"
+                              >على هذا الجهاز</small
+                            >
+                          </span>
+                        </div>
+                        <div class="ui-dest__choice" data-el="dest-team">
+                          <span class="ui-dest__radio"></span>
+                          <span class="ui-dest__text">
+                            <b data-ar="حلقة القراءة" data-en="Reading circle">حلقة القراءة</b>
+                            <small data-ar="4 أعضاء" data-en="4 members">4 أعضاء</small>
+                          </span>
+                        </div>
+                      </div>
+                      <div class="ui-actions">
+                        <span class="ui-btn ui-btn--primary" data-el="save">
+                          <span data-el="save-me" data-ar="حفظ" data-en="Save">حفظ</span>
+                          <span data-el="save-team" data-ar="حفظ ومشاركة" data-en="Save and share"
+                            >حفظ ومشاركة</span
                           >
                         </span>
-                      </div>
-                      <div class="ui-dest__choice" data-el="dest-team">
-                        <span class="ui-dest__radio"></span>
-                        <span class="ui-dest__text">
-                          <b data-ar="حلقة القراءة" data-en="Reading circle">حلقة القراءة</b>
-                          <small data-ar="4 أعضاء" data-en="4 members">4 أعضاء</small>
-                        </span>
+                        <span class="ui-btn" data-ar="إلغاء" data-en="Cancel">إلغاء</span>
                       </div>
                     </div>
-                    <div class="ui-actions">
-                      <span class="ui-btn ui-btn--primary" data-el="save">
-                        <span data-el="save-me" data-ar="حفظ" data-en="Save">حفظ</span>
-                        <span data-el="save-team" data-ar="حفظ ومشاركة" data-en="Save and share"
-                          >حفظ ومشاركة</span
-                        >
-                      </span>
-                      <span class="ui-btn" data-ar="إلغاء" data-en="Cancel">إلغاء</span>
-                    </div>
-                  </div>
 
-                  <!-- What it leaves: the words tinted, and the writer's face
+                    <!-- What it leaves: the words tinted, and the writer's face
                        in the margin — the pin every member of the team sees. -->
-                  <span class="ui-pin" data-el="my-pin">
-                    <span class="ui-avatar" data-tone="5" data-ar="ي" data-en="Y">ي</span>
-                  </span>
-                  <span class="ui-pin is-resting" data-el="other-pin">
-                    <span class="ui-avatar" data-tone="2" data-ar="س" data-en="S">س</span>
-                  </span>
+                    <span class="ui-pin" data-el="my-pin">
+                      <span class="ui-avatar" data-tone="5" data-ar="ي" data-en="Y">ي</span>
+                    </span>
+                    <span class="ui-pin is-resting" data-el="other-pin">
+                      <span class="ui-avatar" data-tone="2" data-ar="س" data-en="S">س</span>
+                    </span>
 
-                  <div class="demo-cursor">
-                    <svg class="demo-cursor__arrow" viewBox="0 0 20 20" aria-hidden="true">
-                      <path
-                        d="M3.5 1.8 L15.2 11.4 L9.9 11.9 L12.6 17.4 L10.3 18.4 L7.7 12.8 L3.5 16.2 Z"
-                        fill="currentColor"
-                        stroke="var(--surface)"
-                        stroke-width="0.9"
-                      />
-                    </svg>
-                    <span class="demo-cursor__ring"></span>
+                    <div class="demo-cursor">
+                      <svg class="demo-cursor__arrow" viewBox="0 0 20 20" aria-hidden="true">
+                        <path
+                          d="M3.5 1.8 L15.2 11.4 L9.9 11.9 L12.6 17.4 L10.3 18.4 L7.7 12.8 L3.5 16.2 Z"
+                          fill="currentColor"
+                          stroke="var(--surface)"
+                          stroke-width="0.9"
+                        />
+                      </svg>
+                      <span class="demo-cursor__ring"></span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section class="section feature" id="feature-7">
-        <div class="wrap feature__inner">
-          <article class="feature__copy" data-reveal>
-            <p class="feature__index">
-              <b>07</b>
-              <span data-ar="حوار على الهامش" data-en="A conversation in the margin"
-                >حوار على الهامش</span
+        <section class="feature feature--flip" id="feature-7">
+          <div class="wrap feature__inner">
+            <article class="feature__copy" data-reveal>
+              <p class="feature__index">
+                <b>08</b>
+                <span data-ar="حوار على الهامش" data-en="A conversation in the margin"
+                  >حوار على الهامش</span
+                >
+              </p>
+              <h3
+                data-ar="وتحاوروا حيث وُلدت الفكرة."
+                data-en="And talk where the thought was born."
               >
-            </p>
-            <h3 data-ar="وتحاوروا حيث وُلدت الفكرة." data-en="And talk where the thought was born.">
-              وتحاوروا حيث وُلدت الفكرة.
-            </h3>
-            <p
-              data-ar="انقر وجه زميلك على الصفحة لتقرأ ما كتب وما قيل فيه، ثم أضِف رأيك في سطر. اذكر أحدهم بـ @ فيصله أنك تناديه، وإن طال الحوار فافتحه كاملًا في لوحة جانبية بجوار النص، دون أن تفارق ما تقرؤه."
-              data-en="Tap a colleague's face on the page to read what they wrote and what was said of it, then add your view in a line. Name someone with @ and they will know you are calling them; and if the conversation grows, open all of it in a side panel beside the text, without leaving what you read."
-            >
-              انقر وجه زميلك على الصفحة لتقرأ ما كتب وما قيل فيه، ثم أضِف رأيك في سطر. اذكر أحدهم بـ
-              @ فيصله أنك تناديه، وإن طال الحوار فافتحه كاملًا في لوحة جانبية بجوار النص، دون أن
-              تفارق ما تقرؤه.
-            </p>
-          </article>
+                وتحاوروا حيث وُلدت الفكرة.
+              </h3>
+              <p
+                class="lede"
+                data-ar="انقر وجه زميلك على الصفحة لتقرأ ما كتب وما قيل فيه، ثم أضِف رأيك في سطر. اذكر أحدهم بـ @ فيصله أنك تناديه، وإن طال الحوار فافتحه كاملًا في لوحة جانبية بجوار النص، دون أن تفارق ما تقرؤه."
+                data-en="Tap a colleague's face on the page to read what they wrote and what was said of it, then add your view in a line. Name someone with @ and they will know you are calling them; and if the conversation grows, open all of it in a side panel beside the text, without leaving what you read."
+              >
+                انقر وجه زميلك على الصفحة لتقرأ ما كتب وما قيل فيه، ثم أضِف رأيك في سطر. اذكر أحدهم
+                بـ @ فيصله أنك تناديه، وإن طال الحوار فافتحه كاملًا في لوحة جانبية بجوار النص، دون
+                أن تفارق ما تقرؤه.
+              </p>
+            </article>
 
-          <div class="feature__stage" data-reveal-scene>
-            <div class="stage__tilt">
-              <div class="scene" data-scene="team-talk" aria-hidden="true">
-                <div class="scene__layer scene__layer--sheet"></div>
-                <div class="scene__layer scene__layer--sheet-2"></div>
-                <div class="demo">
-                  <div class="ui-window">
-                    <div class="ui-window__chrome">
-                      <div class="ui-window__dots"><i></i><i></i><i></i></div>
-                      <div class="ui-window__url">maktaba.site/ibn-khaldun/muqaddimah</div>
-                    </div>
-                    <div class="ui-page ui-page--margin ui-page--talk">
-                      <p
-                        class="ui-page__title"
-                        data-ar="ابن خلدون، المقدمة"
-                        data-en="Ibn Khaldun, The Muqaddimah"
-                      >
-                        ابن خلدون، المقدمة
-                      </p>
-                      <p
-                        data-el="paragraph"
-                        data-ar="والعصبية إنما تكون من الالتحام بالنسب أو ما في معناه؛ فإنّ صلة الرحم طبيعيٌّ في البشر، ومن صلتها النّعرة على ذوي القربى."
-                        data-en="Group feeling comes from close ties of kinship or what is like them; for the bond of kin is natural in people, and from it comes standing up for one's own."
-                      >
-                        والعصبية إنما تكون من الالتحام بالنسب أو ما في معناه؛ فإنّ صلة الرحم طبيعيٌّ
-                        في البشر، ومن صلتها النّعرة على ذوي القربى.
-                      </p>
-                      <p
-                        data-ar="ثم تضعف العصبية بعد أجيال، فيبدأ العمران دورته من جديد."
-                        data-en="Then, after generations, the bond weakens, and civilization begins its cycle again."
-                      >
-                        ثم تضعف العصبية بعد أجيال، فيبدأ العمران دورته من جديد.
-                      </p>
-                    </div>
-
-                    <!-- Chrome's side panel, opened beside the page. -->
-                    <aside class="ui-side" data-el="side">
-                      <div class="ui-side__head">
-                        <svg class="mark" width="11" height="11"><use href="#i-mark" /></svg>
-                        <span data-ar="هامش" data-en="Hamesh">هامش</span>
-                        <span class="ui-seg ui-seg--small">
-                          <span class="is-on" data-ar="هذه الملحوظة" data-en="This note"
-                            >هذه الملحوظة</span
-                          >
-                          <span data-ar="كل الصفحة" data-en="Whole page">كل الصفحة</span>
-                        </span>
+            <div class="feature__stage" data-reveal-scene>
+              <div class="stage__tilt">
+                <div class="scene" data-scene="team-talk" aria-hidden="true">
+                  <div class="scene__layer scene__layer--sheet"></div>
+                  <div class="scene__layer scene__layer--sheet-2"></div>
+                  <div class="demo">
+                    <div class="ui-window">
+                      <div class="ui-window__chrome">
+                        <div class="ui-window__dots"><i></i><i></i><i></i></div>
+                        <div class="ui-window__url">maktaba.site/ibn-khaldun/muqaddimah</div>
                       </div>
-                      <div class="ui-side__body">
-                        <div class="ui-side__note">
-                          <div class="ui-who">
-                            <span class="ui-avatar" data-tone="2" data-ar="س" data-en="S">س</span>
-                            <span class="ui-who__text">
-                              <b data-ar="سارة" data-en="Sara">سارة</b>
-                              <small
-                                data-ar="حلقة القراءة · منذ ساعتين"
-                                data-en="Reading circle · 2h ago"
-                                >حلقة القراءة · منذ ساعتين</small
+                      <div class="ui-page ui-page--margin ui-page--talk">
+                        <p
+                          class="ui-page__title"
+                          data-ar="ابن خلدون، المقدمة"
+                          data-en="Ibn Khaldun, The Muqaddimah"
+                        >
+                          ابن خلدون، المقدمة
+                        </p>
+                        <p
+                          data-el="paragraph"
+                          data-ar="والعصبية إنما تكون من الالتحام بالنسب أو ما في معناه؛ فإنّ صلة الرحم طبيعيٌّ في البشر، ومن صلتها النّعرة على ذوي القربى."
+                          data-en="Group feeling comes from close ties of kinship or what is like them; for the bond of kin is natural in people, and from it comes standing up for one's own."
+                        >
+                          والعصبية إنما تكون من الالتحام بالنسب أو ما في معناه؛ فإنّ صلة الرحم
+                          طبيعيٌّ في البشر، ومن صلتها النّعرة على ذوي القربى.
+                        </p>
+                        <p
+                          data-ar="ثم تضعف العصبية بعد أجيال، فيبدأ العمران دورته من جديد."
+                          data-en="Then, after generations, the bond weakens, and civilization begins its cycle again."
+                        >
+                          ثم تضعف العصبية بعد أجيال، فيبدأ العمران دورته من جديد.
+                        </p>
+                      </div>
+
+                      <!-- Chrome's side panel, opened beside the page. -->
+                      <aside class="ui-side" data-el="side">
+                        <div class="ui-side__head">
+                          <svg class="mark" width="11" height="11"><use href="#i-mark" /></svg>
+                          <span data-ar="هامش" data-en="Hamesh">هامش</span>
+                          <span class="ui-seg ui-seg--small">
+                            <span class="is-on" data-ar="هذه الملحوظة" data-en="This note"
+                              >هذه الملحوظة</span
+                            >
+                            <span data-ar="كل الصفحة" data-en="Whole page">كل الصفحة</span>
+                          </span>
+                        </div>
+                        <div class="ui-side__body">
+                          <div class="ui-side__note">
+                            <div class="ui-who">
+                              <span class="ui-avatar" data-tone="2" data-ar="س" data-en="S">س</span>
+                              <span class="ui-who__text">
+                                <b data-ar="سارة" data-en="Sara">سارة</b>
+                                <small
+                                  data-ar="حلقة القراءة · منذ ساعتين"
+                                  data-en="Reading circle · 2h ago"
+                                  >حلقة القراءة · منذ ساعتين</small
+                                >
+                              </span>
+                            </div>
+                            <p
+                              class="ui-side__body-text"
+                              data-ar="هنا أصل العصبية كلها: صلةٌ قبل أن تكون عقيدة."
+                              data-en="The whole of group feeling starts here: a bond before it is a creed."
+                            >
+                              هنا أصل العصبية كلها: صلةٌ قبل أن تكون عقيدة.
+                            </p>
+                          </div>
+                          <p
+                            class="ui-side__heading"
+                            data-ar="المحادثة · 3"
+                            data-en="Discussion · 3"
+                          >
+                            المحادثة · 3
+                          </p>
+                          <div class="ui-line">
+                            <span class="ui-avatar" data-tone="1" data-ar="ع" data-en="O">ع</span>
+                            <span class="ui-line__text">
+                              <small data-ar="عمر · منذ ساعة" data-en="Omar · 1h ago"
+                                >عمر · منذ ساعة</small
+                              >
+                              <span
+                                ><b class="ui-mention" data-ar="@ليلى" data-en="@Layla">@ليلى</b>
+                                <span
+                                  data-ar="أليس هذا ما سبقه إليه أرسطو؟"
+                                  data-en="didn't Aristotle say this first?"
+                                  >أليس هذا ما سبقه إليه أرسطو؟</span
+                                ></span
                               >
                             </span>
                           </div>
-                          <p
-                            class="ui-side__body-text"
-                            data-ar="هنا أصل العصبية كلها: صلةٌ قبل أن تكون عقيدة."
-                            data-en="The whole of group feeling starts here: a bond before it is a creed."
-                          >
-                            هنا أصل العصبية كلها: صلةٌ قبل أن تكون عقيدة.
-                          </p>
+                          <div class="ui-line">
+                            <span class="ui-avatar" data-tone="3" data-ar="ل" data-en="L">ل</span>
+                            <span class="ui-line__text">
+                              <small data-ar="ليلى · منذ 40 دقيقة" data-en="Layla · 40m ago"
+                                >ليلى · منذ 40 دقيقة</small
+                              >
+                              <span
+                                data-ar="قاله، لكن ابن خلدون بنى عليه علمًا كاملًا."
+                                data-en="He did, but Ibn Khaldun built a whole science on it."
+                                >قاله، لكن ابن خلدون بنى عليه علمًا كاملًا.</span
+                              >
+                            </span>
+                          </div>
+                          <div class="ui-line">
+                            <span class="ui-avatar" data-tone="5" data-ar="ي" data-en="Y">ي</span>
+                            <span class="ui-line__text">
+                              <small data-ar="يوسف · الآن" data-en="Youssef · just now"
+                                >يوسف · الآن</small
+                              >
+                              <span
+                                data-ar="ولعلّ الهامش المشترك عصبيةٌ صغيرة للمعنى."
+                                data-en="Perhaps a shared margin is a small kinship of meaning."
+                                >ولعلّ الهامش المشترك عصبيةٌ صغيرة للمعنى.</span
+                              >
+                            </span>
+                          </div>
                         </div>
-                        <p class="ui-side__heading" data-ar="المحادثة · 3" data-en="Discussion · 3">
-                          المحادثة · 3
-                        </p>
-                        <div class="ui-line">
+                      </aside>
+                    </div>
+
+                    <span class="ui-pin" data-el="pin">
+                      <span class="ui-avatar" data-tone="2" data-ar="س" data-en="S">س</span>
+                    </span>
+
+                    <!-- A shared note's popup on the page, as the extension
+                       draws it: whose, where, what, the latest of what was
+                       said, and a line to reply with. -->
+                    <div class="ui-popup" data-el="popup">
+                      <div class="ui-popup__head">
+                        <span class="ui-avatar" data-tone="2" data-ar="س" data-en="S">س</span>
+                        <span class="ui-who__text">
+                          <b data-ar="سارة" data-en="Sara">سارة</b>
+                          <small
+                            ><span
+                              class="ui-popup__team"
+                              data-ar="حلقة القراءة"
+                              data-en="Reading circle"
+                              >حلقة القراءة</span
+                            >
+                            <span data-ar="· منذ ساعتين" data-en="· 2h ago"
+                              >· منذ ساعتين</span
+                            ></small
+                          >
+                        </span>
+                        <span class="ui-popup__tools">
+                          <span class="ui-icon-btn" data-el="open-side">
+                            <svg width="13" height="13"><use href="#i-side" /></svg>
+                          </span>
+                          <span class="ui-icon-btn">
+                            <svg width="12" height="12"><use href="#i-more" /></svg>
+                          </span>
+                          <span class="ui-icon-btn">
+                            <svg width="11" height="11"><use href="#i-close" /></svg>
+                          </span>
+                        </span>
+                      </div>
+                      <p
+                        class="ui-popup__body"
+                        data-ar="هنا أصل العصبية كلها: صلةٌ قبل أن تكون عقيدة."
+                        data-en="The whole of group feeling starts here: a bond before it is a creed."
+                      >
+                        هنا أصل العصبية كلها: صلةٌ قبل أن تكون عقيدة.
+                      </p>
+                      <div class="ui-popup__thread" data-el="thread">
+                        <div class="ui-line" data-el="line-1">
                           <span class="ui-avatar" data-tone="1" data-ar="ع" data-en="O">ع</span>
                           <span class="ui-line__text">
                             <small data-ar="عمر · منذ ساعة" data-en="Omar · 1h ago"
@@ -1463,7 +2167,7 @@
                             >
                           </span>
                         </div>
-                        <div class="ui-line">
+                        <div class="ui-line" data-el="line-2">
                           <span class="ui-avatar" data-tone="3" data-ar="ل" data-en="L">ل</span>
                           <span class="ui-line__text">
                             <small data-ar="ليلى · منذ 40 دقيقة" data-en="Layla · 40m ago"
@@ -1476,7 +2180,7 @@
                             >
                           </span>
                         </div>
-                        <div class="ui-line">
+                        <div class="ui-line" data-el="line-3">
                           <span class="ui-avatar" data-tone="5" data-ar="ي" data-en="Y">ي</span>
                           <span class="ui-line__text">
                             <small data-ar="يوسف · الآن" data-en="Youssef · just now"
@@ -1489,206 +2193,195 @@
                             >
                           </span>
                         </div>
-                      </div>
-                    </aside>
-                  </div>
-
-                  <span class="ui-pin" data-el="pin">
-                    <span class="ui-avatar" data-tone="2" data-ar="س" data-en="S">س</span>
-                  </span>
-
-                  <!-- A shared note's popup on the page, as the extension
-                       draws it: whose, where, what, the latest of what was
-                       said, and a line to reply with. -->
-                  <div class="ui-popup" data-el="popup">
-                    <div class="ui-popup__head">
-                      <span class="ui-avatar" data-tone="2" data-ar="س" data-en="S">س</span>
-                      <span class="ui-who__text">
-                        <b data-ar="سارة" data-en="Sara">سارة</b>
-                        <small
-                          ><span
-                            class="ui-popup__team"
-                            data-ar="حلقة القراءة"
-                            data-en="Reading circle"
-                            >حلقة القراءة</span
-                          >
-                          <span data-ar="· منذ ساعتين" data-en="· 2h ago">· منذ ساعتين</span></small
-                        >
-                      </span>
-                      <span class="ui-popup__tools">
-                        <span class="ui-icon-btn" data-el="open-side">
-                          <svg width="13" height="13"><use href="#i-side" /></svg>
-                        </span>
-                        <span class="ui-icon-btn">
-                          <svg width="12" height="12"><use href="#i-more" /></svg>
-                        </span>
-                        <span class="ui-icon-btn">
-                          <svg width="11" height="11"><use href="#i-close" /></svg>
-                        </span>
-                      </span>
-                    </div>
-                    <p
-                      class="ui-popup__body"
-                      data-ar="هنا أصل العصبية كلها: صلةٌ قبل أن تكون عقيدة."
-                      data-en="The whole of group feeling starts here: a bond before it is a creed."
-                    >
-                      هنا أصل العصبية كلها: صلةٌ قبل أن تكون عقيدة.
-                    </p>
-                    <div class="ui-popup__thread" data-el="thread">
-                      <div class="ui-line" data-el="line-1">
-                        <span class="ui-avatar" data-tone="1" data-ar="ع" data-en="O">ع</span>
-                        <span class="ui-line__text">
-                          <small data-ar="عمر · منذ ساعة" data-en="Omar · 1h ago"
-                            >عمر · منذ ساعة</small
+                        <span class="ui-popup__more">
+                          <span
+                            data-el="count-2"
+                            data-ar="عرض المحادثة كاملة (2)"
+                            data-en="View the whole discussion (2)"
+                            >عرض المحادثة كاملة (2)</span
                           >
                           <span
-                            ><b class="ui-mention" data-ar="@ليلى" data-en="@Layla">@ليلى</b>
-                            <span
-                              data-ar="أليس هذا ما سبقه إليه أرسطو؟"
-                              data-en="didn't Aristotle say this first?"
-                              >أليس هذا ما سبقه إليه أرسطو؟</span
-                            ></span
+                            data-el="count-3"
+                            data-ar="عرض المحادثة كاملة (3)"
+                            data-en="View the whole discussion (3)"
+                            >عرض المحادثة كاملة (3)</span
                           >
                         </span>
                       </div>
-                      <div class="ui-line" data-el="line-2">
-                        <span class="ui-avatar" data-tone="3" data-ar="ل" data-en="L">ل</span>
-                        <span class="ui-line__text">
-                          <small data-ar="ليلى · منذ 40 دقيقة" data-en="Layla · 40m ago"
-                            >ليلى · منذ 40 دقيقة</small
-                          >
-                          <span
-                            data-ar="قاله، لكن ابن خلدون بنى عليه علمًا كاملًا."
-                            data-en="He did, but Ibn Khaldun built a whole science on it."
-                            >قاله، لكن ابن خلدون بنى عليه علمًا كاملًا.</span
-                          >
-                        </span>
-                      </div>
-                      <div class="ui-line" data-el="line-3">
+                      <div class="ui-reply">
                         <span class="ui-avatar" data-tone="5" data-ar="ي" data-en="Y">ي</span>
-                        <span class="ui-line__text">
-                          <small data-ar="يوسف · الآن" data-en="Youssef · just now"
-                            >يوسف · الآن</small
+                        <span class="ui-reply__field" data-el="reply-field">
+                          <span
+                            class="ui-reply__placeholder"
+                            data-el="reply-placeholder"
+                            data-ar="اكتب ردًا…"
+                            data-en="Write a reply…"
+                            >اكتب ردًا…</span
                           >
                           <span
+                            class="ui-reply__typed"
+                            data-el="field-text"
                             data-ar="ولعلّ الهامش المشترك عصبيةٌ صغيرة للمعنى."
                             data-en="Perhaps a shared margin is a small kinship of meaning."
                             >ولعلّ الهامش المشترك عصبيةٌ صغيرة للمعنى.</span
-                          >
+                          ><span class="ui-caret" data-el="caret"></span>
+                        </span>
+                        <span class="ui-reply__send" data-el="send">
+                          <svg class="ui-mirror" width="13" height="13"><use href="#i-send" /></svg>
                         </span>
                       </div>
-                      <span class="ui-popup__more">
-                        <span
-                          data-el="count-2"
-                          data-ar="عرض المحادثة كاملة (2)"
-                          data-en="View the whole discussion (2)"
-                          >عرض المحادثة كاملة (2)</span
-                        >
-                        <span
-                          data-el="count-3"
-                          data-ar="عرض المحادثة كاملة (3)"
-                          data-en="View the whole discussion (3)"
-                          >عرض المحادثة كاملة (3)</span
-                        >
-                      </span>
                     </div>
-                    <div class="ui-reply">
-                      <span class="ui-avatar" data-tone="5" data-ar="ي" data-en="Y">ي</span>
-                      <span class="ui-reply__field" data-el="reply-field">
-                        <span
-                          class="ui-reply__placeholder"
-                          data-el="reply-placeholder"
-                          data-ar="اكتب ردًا…"
-                          data-en="Write a reply…"
-                          >اكتب ردًا…</span
-                        >
-                        <span
-                          class="ui-reply__typed"
-                          data-el="field-text"
-                          data-ar="ولعلّ الهامش المشترك عصبيةٌ صغيرة للمعنى."
-                          data-en="Perhaps a shared margin is a small kinship of meaning."
-                          >ولعلّ الهامش المشترك عصبيةٌ صغيرة للمعنى.</span
-                        >
-                        <span class="ui-caret" data-el="caret"></span>
-                        <span class="ui-reveal" data-el="reveal"></span>
-                      </span>
-                      <span class="ui-reply__send" data-el="send">
-                        <svg class="ui-mirror" width="13" height="13"><use href="#i-send" /></svg>
-                      </span>
-                    </div>
-                  </div>
 
-                  <div class="demo-cursor">
-                    <svg class="demo-cursor__arrow" viewBox="0 0 20 20" aria-hidden="true">
-                      <path
-                        d="M3.5 1.8 L15.2 11.4 L9.9 11.9 L12.6 17.4 L10.3 18.4 L7.7 12.8 L3.5 16.2 Z"
-                        fill="currentColor"
-                        stroke="var(--surface)"
-                        stroke-width="0.9"
-                      />
-                    </svg>
-                    <span class="demo-cursor__ring"></span>
+                    <div class="demo-cursor">
+                      <svg class="demo-cursor__arrow" viewBox="0 0 20 20" aria-hidden="true">
+                        <path
+                          d="M3.5 1.8 L15.2 11.4 L9.9 11.9 L12.6 17.4 L10.3 18.4 L7.7 12.8 L3.5 16.2 Z"
+                          fill="currentColor"
+                          stroke="var(--surface)"
+                          stroke-width="0.9"
+                        />
+                      </svg>
+                      <span class="demo-cursor__ring"></span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
 
-      <!-- ============================ Plans ============================ -->
-      <!-- The cards come from the server (js/plans.js): no price is written
-           here. Until they arrive, two outlines of their size hold the room. -->
-      <section class="section rule plans" id="plans" aria-labelledby="plans-title">
+      <!-- The Teams cards come from the server (js/plans.js): no price is
+           written here. Until they arrive, two outlines hold their room. -->
+      <section class="section" id="plans" aria-labelledby="plans-title">
         <div class="wrap">
           <div class="section__head" data-reveal>
             <p class="kicker" data-ar="الخطط" data-en="Plans">الخطط</p>
             <h2
               id="plans-title"
               data-ar="هامش لنفسك مجاني دائمًا. وللفرق خطتان."
-              data-en="Hamesh for yourself is always free. For teams, there are two plans."
+              data-en="Hamesh for yourself is always free. Teams has two plans."
             >
               هامش لنفسك مجاني دائمًا. وللفرق خطتان.
             </h2>
             <p
               class="lede"
-              data-ar="ملاحظاتك الشخصية لا تحتاج حسابًا ولا اشتراكًا. الخطط لميزة الفرق وحدها: تبدأ على المجانية لحظة تسجيل الدخول، وتنتقل إلى المدفوعة حين تحتاج أكثر."
-              data-en="Your own notes need no account and no subscription. Plans are for Teams alone: you start on the free one the moment you sign in, and move to the paid one when you need more."
+              data-ar="ملاحظاتك الشخصية لا تحتاج حسابًا ولا اشتراكًا. الخطط لميزة الفرق وحدها."
+              data-en="Your own notes need no account and no subscription. Plans are for Teams only."
             >
-              ملاحظاتك الشخصية لا تحتاج حسابًا ولا اشتراكًا. الخطط لميزة الفرق وحدها: تبدأ على
-              المجانية لحظة تسجيل الدخول، وتنتقل إلى المدفوعة حين تحتاج أكثر.
+              ملاحظاتك الشخصية لا تحتاج حسابًا ولا اشتراكًا. الخطط لميزة الفرق وحدها.
             </p>
           </div>
 
           <div class="tiers" data-plans aria-busy="true">
+            <article class="tier" data-tier-own>
+              <h3 class="tier__title" data-ar="لنفسك" data-en="For yourself">لنفسك</h3>
+              <p class="tier__price"><strong data-ar="مجاني" data-en="Free">مجاني</strong></p>
+              <ul class="tier__list">
+                <li data-ar="ملاحظات بلا حد، على جهازك" data-en="Unlimited notes, on your device">
+                  ملاحظات بلا حد، على جهازك
+                </li>
+                <li data-ar="المكتبة والفولدرات" data-en="Library and folders">
+                  المكتبة والفولدرات
+                </li>
+                <li data-ar="التصدير إلى Obsidian وNotion" data-en="Export to Obsidian and Notion">
+                  التصدير إلى Obsidian وNotion
+                </li>
+              </ul>
+            </article>
             <div class="tier tier--outline" aria-hidden="true">
               <span class="tier__sk" style="--w: 40%; --h: 16px"></span>
-              <span class="tier__sk"></span>
-              <span class="tier__sk" style="--w: 85%"></span>
               <span class="tier__sk" style="--w: 35%; --h: 28px"></span>
               <span class="tier__sk"></span>
-              <span class="tier__sk"></span>
-              <span class="tier__sk" style="--h: 44px"></span>
+              <span class="tier__sk" style="--w: 85%"></span>
+              <span class="tier__sk" style="--w: 70%"></span>
             </div>
             <div class="tier tier--outline" aria-hidden="true">
               <span class="tier__sk" style="--w: 40%; --h: 16px"></span>
-              <span class="tier__sk"></span>
-              <span class="tier__sk" style="--w: 85%"></span>
               <span class="tier__sk" style="--w: 35%; --h: 28px"></span>
               <span class="tier__sk"></span>
-              <span class="tier__sk"></span>
-              <span class="tier__sk" style="--h: 44px"></span>
+              <span class="tier__sk" style="--w: 85%"></span>
+              <span class="tier__sk" style="--w: 70%"></span>
             </div>
           </div>
 
-          <div class="plans-unavailable" data-plans-unavailable role="status" hidden>
-            <p
-              data-ar="تعذّر عرض الخطط الآن. تجدها كاملة بأسعارها داخل الإضافة، في الإعدادات ← الخطة، والبداية مجانية دائمًا."
-              data-en="The plans can't be shown right now. You'll find them, with their prices, inside the extension under Settings → Plan, and starting is always free."
+          <p class="plans-unavailable" data-plans-unavailable role="status" hidden>
+            <span
+              data-ar="تعذّر تحميل الأسعار الآن. تجدها في الإضافة: الإعدادات ← الخطة."
+              data-en="Prices couldn't load just now. You'll find them in the extension, under Settings → Plan."
+              >تعذّر تحميل الأسعار الآن. تجدها في الإضافة: الإعدادات ← الخطة.</span
             >
-              تعذّر عرض الخطط الآن. تجدها كاملة بأسعارها داخل الإضافة، في الإعدادات ← الخطة،
-              والبداية مجانية دائمًا.
+            <a
+              href="https://chromewebstore.google.com/detail/hamesh-%E2%80%94-%D9%87%D8%A7%D9%85%D8%B4/giajamkkehcoienhhlcfgcckahjjbgnc"
+              target="_blank"
+              rel="noopener"
+              data-ar="أضِفه إلى Chrome ↗"
+              data-en="Add to Chrome ↗"
+              >أضِفه إلى Chrome ↗</a
+            >
+          </p>
+
+          <p class="plans-foot" data-plans-foot>
+            <span
+              data-ar="الأسعار بالجنيه المصري، وتشمل أي خصم سارٍ الآن."
+              data-en="Prices are in Egyptian pounds, including any discount running now."
+              >الأسعار بالجنيه المصري، وتشمل أي خصم سارٍ الآن.</span
+            >
+          </p>
+        </div>
+      </section>
+
+      <section class="section" id="privacy">
+        <div class="wrap split">
+          <div class="privacy__head" data-reveal>
+            <p class="kicker" data-ar="الخصوصية" data-en="Privacy">الخصوصية</p>
+            <h2 data-ar="ملاحظاتك لك." data-en="Your notes are yours.">ملاحظاتك لك.</h2>
+            <p
+              class="lede"
+              data-ar="ما تكتبه لنفسك يبقى في متصفحك وحده: لا حساب، ولا أحد يطّلع عليه، ولا شيء يُرسل إلى أي مكان. وإن قرأت مع فريق، فلا يغادر جهازك إلا ما شاركتَه أنت."
+              data-en="What you write for yourself stays in your browser: no account, nobody reads it, nothing is sent anywhere. Read with a team, and only what you share leaves your device."
+            >
+              ما تكتبه لنفسك يبقى في متصفحك وحده: لا حساب، ولا أحد يطّلع عليه، ولا شيء يُرسل إلى أي
+              مكان. وإن قرأت مع فريق، فلا يغادر جهازك إلا ما شاركتَه أنت.
             </p>
+            <a
+              class="privacy__link"
+              href="./privacy.html"
+              data-ar="اقرأ سياسة الخصوصية ↗"
+              data-en="Read the privacy policy ↗"
+              >اقرأ سياسة الخصوصية ↗</a
+            >
+          </div>
+          <div class="tile" data-reveal>
+            <h4 data-ar="نسخة لنفسك" data-en="A copy for yourself">نسخة لنفسك</h4>
+            <p
+              data-ar="من الإعدادات، احفظ نسخة من ملاحظاتك وفولدراتك في ملف على جهازك، واستعدها متى شئت. والاستعادة لا تمحو شيئًا."
+              data-en="From Settings, save your notes and folders to a file on your device and restore them any time. Restoring never deletes anything."
+            >
+              من الإعدادات، احفظ نسخة من ملاحظاتك وفولدراتك في ملف على جهازك، واستعدها متى شئت.
+              والاستعادة لا تمحو شيئًا.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section install" id="install">
+        <div class="wrap" data-reveal>
+          <p class="kicker" data-ar="ابدأ" data-en="Start">ابدأ</p>
+          <h2
+            data-ar="ثبّته، واكتب هامشك الأول."
+            data-en="Install it, and write your first margin."
+          >
+            ثبّته، واكتب هامشك الأول.
+          </h2>
+          <p
+            class="lede"
+            data-ar="هامش متاح على متجر Chrome، ويُضاف إلى متصفحك بنقرة واحدة."
+            data-en="Hamesh is on the Chrome Web Store, one click away."
+          >
+            هامش متاح على متجر Chrome، ويُضاف إلى متصفحك بنقرة واحدة.
+          </p>
+          <p class="install__cta">
             <a
               class="btn btn--primary"
               href="https://chromewebstore.google.com/detail/hamesh-%E2%80%94-%D9%87%D8%A7%D9%85%D8%B4/giajamkkehcoienhhlcfgcckahjjbgnc"
@@ -1698,151 +2391,51 @@
               data-en="Add to Chrome ↗"
               >أضِفه إلى Chrome ↗</a
             >
-          </div>
-
-          <p class="plans-foot" data-plans-foot>
-            <span
-              data-ar="الأسعار بالجنيه المصري، وتشمل أي خصم سارٍ الآن."
-              data-en="Prices are in Egyptian pounds, and include any discount running now."
-              >الأسعار بالجنيه المصري، وتشمل أي خصم سارٍ الآن.</span
-            >
-            <span
-              data-ar="الخطة المدفوعة تبدأ فور قبول الدفعة."
-              data-en="A paid plan starts as soon as the payment is approved."
-              >الخطة المدفوعة تبدأ فور قبول الدفعة.</span
-            >
-            <span
-              data-ar="ملاحظاتك الشخصية لا تغادر جهازك، على أي خطة."
-              data-en="Your own notes never leave your device, on any plan."
-              >ملاحظاتك الشخصية لا تغادر جهازك، على أي خطة.</span
-            >
           </p>
-        </div>
-      </section>
-
-      <!-- ============================ Privacy ========================== -->
-      <section class="section rule" id="privacy">
-        <div class="wrap split">
-          <div data-reveal>
-            <p class="kicker" data-ar="الخصوصية" data-en="Privacy">الخصوصية</p>
-            <h2 data-ar="ملاحظاتك لك." data-en="Your notes are yours.">ملاحظاتك لك.</h2>
-            <p
-              class="lede"
-              data-ar="ما تكتبه لنفسك يبقى في متصفحك وحده: لا حساب، ولا أحد يطّلع عليه، ولا شيء يُرسل إلى أي مكان. وإن اخترت أن تقرأ مع فريق، فلا يغادر جهازك إلا ما شاركتَه أنت، ولا يراه إلا من اخترتهم أنت."
-              data-en="What you write for yourself stays in your browser alone: no account, no one looking over your shoulder, nothing sent anywhere. And if you choose to read with a team, nothing leaves your device but what you share, and no one sees it but the people you chose."
+          <p
+            class="install__after"
+            data-ar="ثم حدِّد أي جملة في أي صفحة، وانقر العلامة الصغيرة التي تظهر بجوارها. هذا كل شيء."
+            data-en="Then select any sentence on any page and click the small mark beside it. That is all."
+          >
+            ثم حدِّد أي جملة في أي صفحة، وانقر العلامة الصغيرة التي تظهر بجوارها. هذا كل شيء.
+          </p>
+          <details class="manual">
+            <summary
+              data-ar="لمن يفضّل يده: التثبيت من نسخة تنزّلها"
+              data-en="Prefer to do it by hand: install from a download"
             >
-              ما تكتبه لنفسك يبقى في متصفحك وحده: لا حساب، ولا أحد يطّلع عليه، ولا شيء يُرسل إلى أي
-              مكان. وإن اخترت أن تقرأ مع فريق، فلا يغادر جهازك إلا ما شاركتَه أنت، ولا يراه إلا من
-              اخترتهم أنت.
-            </p>
-            <p class="section__cta">
-              <a
-                class="btn btn--ghost"
-                href="./privacy.html"
-                data-ar="اقرأ سياسة الخصوصية ↗"
-                data-en="Read the privacy policy ↗"
-                >اقرأ سياسة الخصوصية ↗</a
-              >
-            </p>
-          </div>
-
-          <div class="card" data-reveal>
-            <p class="card__label" data-ar="نسخة لنفسك" data-en="A copy for yourself">نسخة لنفسك</p>
-            <p
-              data-ar="من الإعدادات، احفظ نسخة من ملاحظاتك وفولدراتك في ملف على جهازك، واستعدها متى شئت. والاستعادة لا تمحو شيئًا: تضيف ما نقص، وتُحدِّث ما تغيّر، وتترك الباقي كما هو."
-              data-en="From Settings, save a copy of your notes and folders to a file on your own device, and bring it back whenever you like. Restoring erases nothing: it adds what is missing, updates what has changed, and leaves the rest as it was."
-            >
-              من الإعدادات، احفظ نسخة من ملاحظاتك وفولدراتك في ملف على جهازك، واستعدها متى شئت.
-              والاستعادة لا تمحو شيئًا: تضيف ما نقص، وتُحدِّث ما تغيّر، وتترك الباقي كما هو.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <!-- ============================ Install ========================== -->
-      <section class="section rule" id="install">
-        <div class="wrap split">
-          <div data-reveal>
-            <p class="kicker" data-ar="ابدأ" data-en="Begin">ابدأ</p>
-            <h2
-              data-ar="ثبّته، واكتب هامشك الأول."
-              data-en="Install it, and write your first margin."
-            >
-              ثبّته، واكتب هامشك الأول.
-            </h2>
-            <p
-              class="lede"
-              data-ar="هامش متاح على متجر Chrome، ويُضاف إلى متصفحك بنقرة واحدة."
-              data-en="Hamesh is on the Chrome Web Store, and joins your browser in one click."
-            >
-              هامش متاح على متجر Chrome، ويُضاف إلى متصفحك بنقرة واحدة.
-            </p>
-            <p class="section__cta section__cta--wide">
-              <a
-                class="btn btn--primary"
-                href="https://chromewebstore.google.com/detail/hamesh-%E2%80%94-%D9%87%D8%A7%D9%85%D8%B4/giajamkkehcoienhhlcfgcckahjjbgnc"
-                target="_blank"
-                rel="noopener"
-                data-ar="أضِفه إلى Chrome ↗"
-                data-en="Add to Chrome ↗"
-                >أضِفه إلى Chrome ↗</a
-              >
-            </p>
-            <p
-              class="section__after"
-              data-ar="ثم حدِّد أي جملة في أي صفحة، وانقر العلامة الصغيرة التي تظهر بجوارها. هذا كل شيء."
-              data-en="Then select any sentence on any page, and tap the small mark that appears beside it. That is all."
-            >
-              ثم حدِّد أي جملة في أي صفحة، وانقر العلامة الصغيرة التي تظهر بجوارها. هذا كل شيء.
-            </p>
-          </div>
-
-          <div class="card" data-reveal>
-            <p
-              class="card__label"
-              data-ar="لمن يفضّل يده"
-              data-en="For those who prefer their own hands"
-            >
-              لمن يفضّل يده
-            </p>
-            <p
-              data-ar="يمكنك أيضًا تثبيته بنفسك من نسخة تنزّلها:"
-              data-en="You can also install it yourself from a copy you download:"
-            >
-              يمكنك أيضًا تثبيته بنفسك من نسخة تنزّلها:
-            </p>
-            <ol class="steps">
-              <li
-                data-ar="نزّل أحدث نسخة من صفحة الإصدارات، وفُكّ ضغطها في فولدر."
-                data-en="Download the latest copy from the releases page, and unzip it into a folder."
-              >
-                نزّل أحدث نسخة من صفحة الإصدارات، وفُكّ ضغطها في فولدر.
+              لمن يفضّل يده: التثبيت من نسخة تنزّلها
+            </summary>
+            <ol>
+              <li>
+                <span data-ar="نزّل أحدث نسخة من" data-en="Download the latest release from the"
+                  >نزّل أحدث نسخة من</span
+                >
+                <a
+                  href="https://github.com/mohammed-fandees/hamesh/releases"
+                  target="_blank"
+                  rel="noopener"
+                  data-ar="صفحة الإصدارات"
+                  data-en="releases page"
+                  >صفحة الإصدارات</a
+                ><span data-ar="، وفُكّ ضغطها في فولدر." data-en=" and unzip it into a folder."
+                  >، وفُكّ ضغطها في فولدر.</span
+                >
               </li>
               <li
-                data-ar="افتح صفحة الإضافات في Chrome، وفعّل «وضع المطوّر» من أعلاها."
-                data-en="Open Chrome's extensions page, and switch on “Developer mode” at the top."
+                data-ar="افتح صفحة الإضافات في Chrome، وفعّل «وضع المطوّر»."
+                data-en="Open Chrome’s extensions page and turn on Developer mode."
               >
-                افتح صفحة الإضافات في Chrome، وفعّل «وضع المطوّر» من أعلاها.
+                افتح صفحة الإضافات في Chrome، وفعّل «وضع المطوّر».
               </li>
               <li
                 data-ar="اختر «تحميل إضافة غير مضغوطة»، وحدّد ذلك الفولدر."
-                data-en="Choose “Load unpacked”, and pick that folder."
+                data-en="Choose “Load unpacked” and pick that folder."
               >
                 اختر «تحميل إضافة غير مضغوطة»، وحدّد ذلك الفولدر.
               </li>
             </ol>
-            <p class="section__cta">
-              <a
-                class="btn btn--ghost"
-                href="https://github.com/mohammed-fandees/hamesh/releases"
-                target="_blank"
-                rel="noopener"
-                data-ar="صفحة الإصدارات ↗"
-                data-en="The releases page ↗"
-                >صفحة الإصدارات ↗</a
-              >
-            </p>
-          </div>
+          </details>
         </div>
       </section>
     </main>
@@ -1854,11 +2447,13 @@
           data-en="Hamesh · a place for your thoughts on the web"
           >هامش · مكانٌ لأفكارك على الويب</span
         >
-        <a href="./privacy.html" data-ar="الخصوصية" data-en="Privacy">الخصوصية</a>
-        <a href="./terms.html" data-ar="شروط الاستخدام" data-en="Terms of Use">شروط الاستخدام</a>
-        <a href="https://github.com/mohammed-fandees/hamesh" target="_blank" rel="noopener"
-          >GitHub</a
-        >
+        <span class="site-footer__links">
+          <a href="./privacy.html" data-ar="الخصوصية" data-en="Privacy">الخصوصية</a>
+          <a href="./terms.html" data-ar="شروط الاستخدام" data-en="Terms of use">شروط الاستخدام</a>
+          <a href="https://github.com/mohammed-fandees/hamesh" target="_blank" rel="noopener"
+            >GitHub</a
+          >
+        </span>
       </div>
     </footer>
 

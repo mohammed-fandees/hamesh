@@ -1,0 +1,13 @@
+# 7 — Owner review (overrides the canvas where they disagree)
+
+- [x] One layout for every feature: a full section, copy beside its live demo, sides alternating
+- [x] Library and Folders: two feature sections again, as before; no "After the writing" grid
+- [x] Export: one more feature section; its demo is the scene
+- [x] No version badge or version number; no destination × layout switcher, Markdown preview or
+      facts block (and their tests)
+- [x] Teams as before: the intro, then its two features as full sections; no tiles
+- [x] On a desktop the hero fits the screen: copy, calls to action, demo window and tabs. The
+      window is scaled to the room that is left (1440×900, 1280×720). A phone scrolls
+- [x] Verification as in [06](06-verify.md)
+- [x] Teams intro keeps the canvas header, not the old one: the quotation is set in the open,
+      centred, with no card, border or shadow (e2e: "opens Teams with the quotation set in the open")

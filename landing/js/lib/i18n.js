@@ -17,6 +17,7 @@ export function createLanguageToggle({ onChange } = {}) {
   const html = document.documentElement;
   const button = document.getElementById('langToggle');
   const nodes = Array.from(document.querySelectorAll('[data-ar]'));
+  const labelled = Array.from(document.querySelectorAll('[data-ar-label]'));
 
   function apply(lang, { notify = true } = {}) {
     const arabic = lang === 'ar';
@@ -27,6 +28,10 @@ export function createLanguageToggle({ onChange } = {}) {
     for (const node of nodes) {
       const value = node.getAttribute(arabic ? 'data-ar' : 'data-en');
       if (value !== null) node.textContent = value;
+    }
+    for (const node of labelled) {
+      const value = node.getAttribute(arabic ? 'data-ar-label' : 'data-en-label');
+      node.setAttribute('aria-label', value);
     }
 
     if (button) {

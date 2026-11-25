@@ -42,7 +42,7 @@ export function createFoldersDemo(root) {
   const moveBox = rectIn(root, moveItem);
   const targetBox = rectIn(root, target);
   const folderMenuBox = rectIn(root, folderMenu);
-  const rootWidth = root.getBoundingClientRect().width;
+  const rootWidth = root.offsetWidth;
   const rtl = document.documentElement.dir === 'rtl';
 
   /* The menu hangs from the button that opened it, on the side with room —

@@ -31,23 +31,29 @@ import { runIntro } from './animations/intro.js';
 import { ScrollTrigger } from './lib/gsap.js';
 import { onTabVisibilityChange, onMotionPreferenceChange } from './lib/motion.js';
 import { createPlans } from './plans.js';
+import { createThemeToggle } from './theme.js';
+import { createNavCta } from './nav-cta.js';
 
 async function boot() {
   let heroIntro = null;
   let scenes = null;
   let plans = null;
+  let theme = null;
 
   /* Applies the visitor's saved language and sets `dir` before a single
      position is measured. The handler below only runs on a later toggle. */
   createLanguageToggle({
     onChange: () => {
       plans?.render();
+      theme?.describe();
       heroIntro?.rebuild();
       scenes?.rebuild();
       ScrollTrigger.refresh();
     },
   });
 
+  theme = createThemeToggle();
+  createNavCta(qs('.nav-cta'), qs('.hero__cta'));
   /* Asked for now, so the answer is often in before anyone scrolls to it. */
   const plansSection = qs('#plans');
   plans = plansSection ? createPlans(plansSection) : null;
