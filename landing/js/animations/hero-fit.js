@@ -15,6 +15,8 @@ export function fitHero(hero) {
   const stage = qs('.hero__stage', hero);
   hero.style.removeProperty('--hero-scale');
   if (!inner || !stage || !window.matchMedia(DESKTOP).matches) return 1;
+  /* Behind the words the window fills the hero instead of sharing it. */
+  if (hero.classList.contains('hero--behind')) return 1;
 
   const natural = stage.offsetHeight;
   const style = window.getComputedStyle(hero);

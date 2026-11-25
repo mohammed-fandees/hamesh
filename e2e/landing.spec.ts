@@ -649,6 +649,66 @@ test.describe('Landing page · features', () => {
   });
 });
 
+test.describe('Landing page · hero demo behind the words', () => {
+  test('runs the demo faded behind the copy on a desktop, and under it on a phone', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(origin);
+    await expect(page.locator('.loader')).toHaveCount(0);
+
+    const desktop = await page.evaluate(() => {
+      const box = (sel: string) => document.querySelector(sel)!.getBoundingClientRect();
+      const stage = document.querySelector('.hero__stage')!;
+      const h1 = box('.hero h1');
+      const window_ = box('#hero-pane-0 .ui-window');
+      return {
+        sceneTakesPointer: getComputedStyle(document.querySelector('.hero__scene')!).pointerEvents,
+        stageOpacity: Number(getComputedStyle(stage).opacity),
+        windowBehindTitle: window_.top < h1.top && window_.bottom > h1.bottom,
+        titleOnTop:
+          document
+            .elementFromPoint(h1.left + h1.width / 2, h1.top + h1.height / 2)
+            ?.closest('h1') !== null,
+      };
+    });
+    expect(desktop).toEqual({
+      sceneTakesPointer: 'none',
+      stageOpacity: expect.any(Number),
+      windowBehindTitle: true,
+      titleOnTop: true,
+    });
+    expect(desktop.stageOpacity).toBeLessThan(0.5);
+
+    // The light sits behind the window, centred on it, not on the page above it.
+    const glow = await page.evaluate(() => {
+      const hero = getComputedStyle(document.querySelector('.hero')!).backgroundImage;
+      const halo = getComputedStyle(document.querySelector('.hero__scene')!, '::before');
+      const stage = document.querySelector('.hero__stage')!.getBoundingClientRect();
+      return {
+        pageGlow: hero,
+        halo: halo.backgroundImage.startsWith('radial-gradient'),
+        stageCentre: Math.round(stage.left + stage.width / 2),
+      };
+    });
+    expect(glow).toEqual({ pageGlow: 'none', halo: true, stageCentre: 720 });
+
+    // The tabs still answer the pointer.
+    await page.locator('#hero-tab-1').click();
+    await expect(page.locator('#hero-tab-1')).toHaveAttribute('aria-selected', 'true');
+
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.reload();
+    await expect(page.locator('.loader')).toHaveCount(0);
+    const phone = await page.evaluate(() => {
+      const note = document.querySelector('.hero__note')!.getBoundingClientRect();
+      const window_ = document.querySelector('#hero-pane-0 .ui-window')!.getBoundingClientRect();
+      return { windowBelowCopy: window_.top >= note.bottom };
+    });
+    expect(phone).toEqual({ windowBelowCopy: true });
+  });
+});
+
 test.describe('Landing page · hero fits a desktop screen', () => {
   for (const [width, height] of [
     [1440, 900],
