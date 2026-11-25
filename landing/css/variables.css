@@ -85,6 +85,21 @@
   /* Layout */
   --maxw: 1120px;
   --gutter: clamp(20px, 5vw, 56px);
+  /* The video player in the demos takes the page's light: a pale picture by
+     day, the dark one by night. */
+  --video-picture: linear-gradient(150deg, #ebe0cd 0%, #e2d3bb 58%, #f2eadc 100%);
+  --video-glow: rgba(181, 80, 47, 0.16);
+  --video-track: rgba(30, 27, 24, 0.16);
+  --video-played: rgba(30, 27, 24, 0.55);
+  --video-ring: rgba(255, 255, 255, 0.85);
+  --video-ink: rgba(30, 27, 24, 0.62);
+  --video-title: rgba(30, 27, 24, 0.82);
+
+  /* The page itself (css/ambient.css): the paper's edge and its grain. The
+     grain is the ink's brown on light paper. */
+  --page-edge: rgba(120, 84, 48, 0.07);
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.12 0 0 0 0 0.1 0 0 0 0 0.08 0 0 0 0.9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  --grain-strength: 0.07;
 }
 
 /* The dark set appears twice because CSS cannot share one block between a
@@ -120,6 +135,16 @@
     --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.5);
     --shadow-scene: 0 40px 90px -30px rgba(0, 0, 0, 0.75);
     --on-accent: #16140f;
+    --video-picture: linear-gradient(150deg, #241f18 0%, #3a2f22 58%, #1b1712 100%);
+    --video-glow: rgba(224, 139, 92, 0.24);
+    --video-track: rgba(255, 255, 255, 0.22);
+    --video-played: rgba(255, 255, 255, 0.72);
+    --video-ring: rgba(0, 0, 0, 0.35);
+    --video-ink: rgba(255, 255, 255, 0.72);
+    --video-title: rgba(243, 237, 227, 0.85);
+    --page-edge: rgba(0, 0, 0, 0.28);
+    --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 0.95 0 0 0 0 0.88 0 0 0 0.9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+    --grain-strength: 0.05;
   }
 }
 
@@ -153,6 +178,16 @@
   --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.5);
   --shadow-scene: 0 40px 90px -30px rgba(0, 0, 0, 0.75);
   --on-accent: #16140f;
+  --video-picture: linear-gradient(150deg, #241f18 0%, #3a2f22 58%, #1b1712 100%);
+  --video-glow: rgba(224, 139, 92, 0.24);
+  --video-track: rgba(255, 255, 255, 0.22);
+  --video-played: rgba(255, 255, 255, 0.72);
+  --video-ring: rgba(0, 0, 0, 0.35);
+  --video-ink: rgba(255, 255, 255, 0.72);
+  --video-title: rgba(243, 237, 227, 0.85);
+  --page-edge: rgba(0, 0, 0, 0.28);
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 0.95 0 0 0 0 0.88 0 0 0 0.9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  --grain-strength: 0.05;
 }
 
 :root[data-theme='light'] {

@@ -50,16 +50,21 @@ describe('the demo cursor’s drag', () => {
     const tl = gsap.timeline({ paused: true });
 
     let sweepAt: unknown;
-    cursor.drag(tl, { x: 40, y: 40 }, { x: 240, y: 40 }, {
-      at: 0.35,
-      duration: 0.78,
-      onSweep: (at) => {
-        sweepAt = at;
+    cursor.drag(
+      tl,
+      { x: 40, y: 40 },
+      { x: 240, y: 40 },
+      {
+        at: 0.35,
+        duration: 0.78,
+        onSweep: (at) => {
+          sweepAt = at;
+        },
       },
-    });
+    );
 
     const moves = tl.getChildren(false, true, false).filter((child) => child.vars.motionPath);
-    const sweep = moves.at(-1)!;
+    const sweep = moves[moves.length - 1];
     expect(sweepAt).toBe(sweep.startTime());
   });
 });

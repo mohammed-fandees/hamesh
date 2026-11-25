@@ -12,6 +12,7 @@ Each part is test first: write the failing test, make it pass, tick the box.
 5. [Teams, plans, privacy, install, footer](05-lower-page.md)
 6. [Verification](06-verify.md)
 7. [Owner review](07-owner-review.md), which overrides the canvas where they disagree
+8. [The page itself: paper edges and grain](08-paper.md), the owner's background option D
 
 ## Where the canvas and the product disagree
 

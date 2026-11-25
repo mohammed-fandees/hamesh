@@ -660,6 +660,45 @@ test.describe('Landing page · features', () => {
   });
 });
 
+test.describe('Landing page · the page itself', () => {
+  test('draws paper edges and grain that never take the pointer or a reader’s attention', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(origin);
+    await expect(page.locator('.loader')).toHaveCount(0);
+
+    const layers = await page.evaluate(() =>
+      ['.page-edge', '.paper-grain'].map((sel) => {
+        const el = document.querySelector(sel)!;
+        const style = getComputedStyle(el);
+        return {
+          hidden: el.getAttribute('aria-hidden'),
+          pointer: style.pointerEvents,
+          position: style.position,
+        };
+      }),
+    );
+    expect(layers).toEqual([
+      { hidden: 'true', pointer: 'none', position: 'fixed' },
+      { hidden: 'true', pointer: 'none', position: 'fixed' },
+    ]);
+
+    // The grain is a tile of noise, faint enough to leave every word alone.
+    const grain = await page.locator('.paper-grain').evaluate((el) => ({
+      image: getComputedStyle(el).backgroundImage.includes('feTurbulence'),
+      opacity: Number(getComputedStyle(el).opacity),
+    }));
+    expect(grain.image).toBe(true);
+    expect(grain.opacity).toBeGreaterThan(0);
+    expect(grain.opacity).toBeLessThan(0.1);
+
+    // The words above it still answer the pointer.
+    await page.locator('.site-nav a[href="#plans"]').click();
+    await expect(page).toHaveURL(/#plans$/);
+  });
+});
+
 test.describe('Landing page · header toggles', () => {
   for (const lang of ['ar', 'en'] as const) {
     test(`keeps its toggles at the edge while the install link is hidden (${lang})`, async ({
@@ -1027,7 +1066,7 @@ test.describe('Landing page · header', () => {
     await expect(cta).toBeHidden();
   });
 
-  test('cycles the theme, remembers it, and applies it before any module runs', async ({
+  test('turns the theme over on every click, remembers it, and applies it before any module runs', async ({
     page,
   }) => {
     await page.emulateMedia({ colorScheme: 'light' });
@@ -1038,10 +1077,13 @@ test.describe('Landing page · header', () => {
 
     await expect(html).not.toHaveAttribute('data-theme');
     await toggle.click();
-    await expect(html).toHaveAttribute('data-theme', 'light');
-    await toggle.click();
     await expect(html).toHaveAttribute('data-theme', 'dark');
     await expect.poll(paper).toBe('rgb(22, 20, 15)');
+    await toggle.click();
+    await expect(html).toHaveAttribute('data-theme', 'light');
+    await expect.poll(paper).toBe('rgb(247, 243, 236)');
+    await toggle.click();
+    await expect(html).toHaveAttribute('data-theme', 'dark');
 
     // With every script file refused, only the blocking one in the head can
     // have applied the choice.
@@ -1050,11 +1092,50 @@ test.describe('Landing page · header', () => {
     await expect(html).toHaveAttribute('data-theme', 'dark');
     expect(await paper()).toBe('rgb(22, 20, 15)');
     await page.unroute('**/*.js');
+  });
 
-    await page.reload();
-    await toggle.click();
-    await expect(html).not.toHaveAttribute('data-theme');
-    expect(await page.evaluate(() => localStorage.getItem('hamesh-theme'))).toBeNull();
+  test('changes what is on screen with every click, even on a dark system', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.goto(origin);
+    const toggle = page.locator('#themeToggle');
+    const paper = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+
+    // A dark system, then light, then dark again: no click goes unseen.
+    const seen = [await paper()];
+    for (let i = 0; i < 3; i += 1) {
+      await toggle.click();
+      await expect.poll(paper).not.toBe(seen[seen.length - 1]);
+      seen.push(await paper());
+    }
+    expect(seen).toEqual([
+      'rgb(22, 20, 15)',
+      'rgb(247, 243, 236)',
+      'rgb(22, 20, 15)',
+      'rgb(247, 243, 236)',
+    ]);
+    await expect(toggle).toHaveAttribute('aria-label', 'التبديل إلى الوضع الغامق');
+  });
+
+  test('never mirrors the mark in Arabic, not even beside the text', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('hamesh-lang', 'ar'));
+    await page.goto(origin);
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+    const mirrored = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('svg.mark'))
+        .filter((el) => new DOMMatrix(getComputedStyle(el).transform).a < 0)
+        .map((el) => el.parentElement!.className),
+    );
+    expect(mirrored).toEqual([]);
+  });
+
+  test('paints the demo video in the page’s own light', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'light' });
+    await page.goto(origin);
+    const picture = () =>
+      page.locator('#hero-pane-2 .ui-video').evaluate((el) => getComputedStyle(el).backgroundImage);
+    expect(await picture()).toContain('rgb(235, 224, 205)');
+    await page.locator('#themeToggle').click();
+    await expect.poll(picture).toContain('rgb(36, 31, 24)');
   });
 
   test('follows the system until told otherwise', async ({ page }) => {

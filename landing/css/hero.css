@@ -162,8 +162,7 @@
   font-family: var(--arabic);
   font-size: 0.9rem;
   font-weight: 600;
-  /* On the player's own dark picture, in either theme. */
-  color: rgba(243, 237, 227, 0.85);
+  color: var(--video-title);
 }
 
 :root[lang='en'] .ui-video__title {

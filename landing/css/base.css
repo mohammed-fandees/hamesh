@@ -65,15 +65,12 @@ p {
 
 /* ---- The mark ------------------------------------------------------- */
 
-/* One glyph, never redrawn per size. It flips in RTL so it always points
-   into the text it belongs to — the same rule the extension follows. */
+/* One glyph, never redrawn per size, and never mirrored: the stem stands on
+   the left and the branch reaches right in Arabic and English alike, as in
+   the extension's icon, wherever the mark appears on this page. */
 .mark {
   flex: none;
   color: var(--accent);
-}
-
-:root[dir='rtl'] .mark {
-  transform: scaleX(-1);
 }
 
 /* ---- Buttons -------------------------------------------------------- */

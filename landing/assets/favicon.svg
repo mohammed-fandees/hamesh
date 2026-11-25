@@ -1,9 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <style>
-    .glyph { stroke: #B5502F; }
-    @media (prefers-color-scheme: dark) { .glyph { stroke: #E08B5C; } }
-  </style>
-  <g class="glyph" fill="none" stroke-width="3.4" stroke-linecap="round">
+  <defs>
+    <linearGradient id="clay" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#BF5833" />
+      <stop offset="1" stop-color="#A9492A" />
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="7.3" fill="url(#clay)" />
+  <g transform="translate(3 2.133) scale(0.8667)" fill="none" stroke="#F7F3EC" stroke-width="3.8" stroke-linecap="round">
     <path d="M10 5V27" />
     <path d="M10 14H20" />
     <path d="M20 10.5V17.5" />

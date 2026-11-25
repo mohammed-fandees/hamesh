@@ -30,11 +30,6 @@ const STROKES = [
   [10, 14, 20, 14], // tick
   [20, 10.5, 20, 17.5], // end vertical
 ];
-const STROKE_WIDTH = 3;
-
-// Muted clay — legible on both light and dark toolbars.
-const GLYPH = { r: 0xb5, g: 0x50, b: 0x2f };
-
 function distToSegment(px, py, ax, ay, bx, by) {
   const dx = bx - ax;
   const dy = by - ay;
@@ -44,61 +39,6 @@ function distToSegment(px, py, ax, ay, bx, by) {
   const cx = ax + t * dx;
   const cy = ay + t * dy;
   return Math.hypot(px - cx, py - cy);
-}
-
-/** Coverage in [0,1] of the glyph at a viewBox coordinate (supersampled). */
-function coverageAt(vx, vy) {
-  const half = STROKE_WIDTH / 2;
-  let inside = false;
-  for (const [ax, ay, bx, by] of STROKES) {
-    if (distToSegment(vx, vy, ax, ay, bx, by) <= half) {
-      inside = true;
-      break;
-    }
-  }
-  return inside ? 1 : 0;
-}
-
-/**
- * @param size    edge length in pixels
- * @param inset   fraction of the canvas to leave clear on each side
- * @param background  opaque backdrop, or null for transparency. Apple's home
- *                    screen composites onto white and squares the corners
- *                    itself, so that icon needs paper under the glyph rather
- *                    than an alpha channel.
- */
-function renderIcon(size, { inset = 0, background = null } = {}) {
-  const ss = 4; // supersample factor
-  const pad = size * inset;
-  const scale = (size - pad * 2) / 32;
-  const data = Buffer.alloc(size * size * 4); // RGBA
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      let acc = 0;
-      for (let sy = 0; sy < ss; sy++) {
-        for (let sx = 0; sx < ss; sx++) {
-          const vx = (x - pad + (sx + 0.5) / ss) / scale;
-          const vy = (y - pad + (sy + 0.5) / ss) / scale;
-          acc += coverageAt(vx, vy);
-        }
-      }
-      const coverage = acc / (ss * ss);
-      const i = (y * size + x) * 4;
-      if (background) {
-        // Composite the glyph over the backdrop rather than leaving alpha.
-        data[i] = Math.round(background.r + (GLYPH.r - background.r) * coverage);
-        data[i + 1] = Math.round(background.g + (GLYPH.g - background.g) * coverage);
-        data[i + 2] = Math.round(background.b + (GLYPH.b - background.b) * coverage);
-        data[i + 3] = 255;
-      } else {
-        data[i] = GLYPH.r;
-        data[i + 1] = GLYPH.g;
-        data[i + 2] = GLYPH.b;
-        data[i + 3] = Math.round(coverage * 255);
-      }
-    }
-  }
-  return encodePng(size, size, data);
 }
 
 /** How far (x, y) is inside a rounded square, in [0,1], from a signed distance. */
@@ -259,15 +199,19 @@ for (const { size, ...tile } of SIZES) {
  * by hand, so the tab, the toolbar and the store listing cannot drift apart.
  */
 
-// The scalable one, which is what every current browser actually uses. The
-// media query keeps the mark legible on a dark tab strip: clay on paper is
-// the brand, but clay alone disappears against near-black.
+// The scalable one, which is what every current browser actually uses: the
+// store icon's own clay tile with the mark in paper, so the tab shows what
+// the toolbar and the store show. The tile carries its own ground, so it
+// reads on a light tab strip and a dark one alike.
 const faviconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <style>
-    .glyph { stroke: #B5502F; }
-    @media (prefers-color-scheme: dark) { .glyph { stroke: #E08B5C; } }
-  </style>
-  <g class="glyph" fill="none" stroke-width="3.4" stroke-linecap="round">
+  <defs>
+    <linearGradient id="clay" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#BF5833" />
+      <stop offset="1" stop-color="#A9492A" />
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="7.3" fill="url(#clay)" />
+  <g transform="translate(3 2.133) scale(0.8667)" fill="none" stroke="#F7F3EC" stroke-width="3.8" stroke-linecap="round">
     <path d="M10 5V27" />
     <path d="M10 14H20" />
     <path d="M20 10.5V17.5" />
@@ -277,7 +221,14 @@ const faviconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
 writeFileSync(resolve(LANDING_DIR, 'favicon.svg'), faviconSvg);
 console.log(`landing/assets/favicon.svg (${faviconSvg.length} bytes)`);
 
-const ico = encodeIco([16, 32, 48].map((size) => ({ size, png: renderIcon(size) })));
+// The same tiles the toolbar uses at these sizes, so the tab and the toolbar
+// draw one icon.
+const ico = encodeIco(
+  SIZES.filter(({ size }) => size <= 48).map(({ size, ...tile }) => ({
+    size,
+    png: renderTile(size, tile),
+  })),
+);
 writeFileSync(resolve(LANDING_DIR, 'favicon.ico'), ico);
 console.log(`landing/assets/favicon.ico (${ico.length} bytes)`);
 
@@ -286,7 +237,7 @@ console.log(`landing/assets/favicon.ico (${ico.length} bytes)`);
 writeFileSync(resolve(__dirname, '..', 'landing', 'favicon.ico'), ico);
 console.log(`landing/favicon.ico (${ico.length} bytes)`);
 
-// Paper behind the glyph, and inset so iOS's rounded mask does not clip it.
-const apple = renderIcon(180, { inset: 0.2, background: { r: 0xf7, g: 0xf3, b: 0xec } });
+// The tile to the edge: iOS rounds the corners itself.
+const apple = renderTile(180, { padding: 0 });
 writeFileSync(resolve(LANDING_DIR, 'apple-touch-icon.png'), apple);
 console.log(`landing/assets/apple-touch-icon.png (${apple.length} bytes)`);
