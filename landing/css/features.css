@@ -9,8 +9,20 @@
  * Scroll decides only *when* a scene begins.
  */
 
+/* Containment at the source rather than at the page.
+ *
+ * Everything that moves in a scene is absolutely positioned and driven by
+ * transforms, and a transform is free to leave its parent's box. Each feature
+ * clips sideways, so no demo can widen the document, without the page-level
+ * `overflow-x: hidden` that only hides the evidence. The clip sits on the
+ * full-width section and not on the stage: Chrome honours
+ * `overflow-clip-margin` only when both axes clip, so a stage clip cut the
+ * window's shadow off at the window's own edge. `clip` rather than `hidden`
+ * keeps this from becoming a scroll container that would trap the composer
+ * hanging below a window. */
 .feature {
   position: relative;
+  overflow-x: clip;
 }
 
 .features {
@@ -95,21 +107,6 @@ kbd {
   position: relative;
   perspective: 1600px;
   perspective-origin: 50% 46%;
-  /* Containment at the source rather than at the page.
-   *
-   * Everything that moves in a scene is absolutely positioned and driven by
-   * transforms, and a transform is free to leave its parent's box. Clipping
-   * the stage horizontally means no demo — present or future — can widen the
-   * document, without the page-level `overflow-x: hidden` that only hides
-   * the evidence. `clip` rather than `hidden` because `hidden` would make
-   * this a scroll container and trap the composer that deliberately hangs
-   * below the window. */
-  overflow-x: clip;
-  overflow-y: visible;
-  /* Room for what is meant to sit just outside the window — a mark in the
-     margin, a card's shadow — while still containing anything that tries to
-     run away with the page width. */
-  overflow-clip-margin: 24px;
 }
 
 /* The element the pointer parallax writes to, kept separate from the scene so

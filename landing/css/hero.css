@@ -356,9 +356,20 @@
     left: 50%;
     width: min(1320px, 96vw);
     translate: -50% 0;
-    opacity: 0.34;
-    -webkit-mask-image: radial-gradient(ellipse 46% 50% at 50% 46%, rgb(0 0 0 / 0.18), #000 85%);
-    mask-image: radial-gradient(ellipse 46% 50% at 50% 46%, rgb(0 0 0 / 0.18), #000 85%);
+    /* Paper is light enough that the window needs more presence to read
+       as a page; the dark theme sets its own, lower. */
+    opacity: 0.8;
+    --behind-core: 0.32;
+    -webkit-mask-image: radial-gradient(
+      ellipse 46% 50% at 50% 46%,
+      rgb(0 0 0 / var(--behind-core)),
+      #000 85%
+    );
+    mask-image: radial-gradient(
+      ellipse 46% 50% at 50% 46%,
+      rgb(0 0 0 / var(--behind-core)),
+      #000 85%
+    );
   }
 
   .hero--behind .hero__panes,
@@ -397,13 +408,73 @@
     display: block;
     height: 100%;
     margin-top: 1.4em;
-    border-radius: 3px;
-    background: repeating-linear-gradient(
-      to bottom,
-      var(--ink-20) 0 0.45em,
-      transparent 0.45em 2em
-    );
+    --ghost-line: var(--ink-20);
+    --ghost-picture: var(--ink-20);
+    background:
+      linear-gradient(var(--ghost-line), var(--ghost-line)) right 0% top 0em / 100% 0.45em no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) right 0% top 2em / 93% 0.45em no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) right 0% top 4em / 61% 0.45em no-repeat,
+      linear-gradient(var(--ghost-picture), var(--ghost-picture)) right 0% top 6.8em / 34% 8.6em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) right 100% top 7.2em / 62% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) right 84.444% top 9.2em / 55% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) right 95% top 11.2em / 60% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) right 60.317% top 13.2em / 37% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) right 0% top 17em / 100% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) right 0% top 19em / 86% 0.45em no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) right 0% top 21em / 97% 0.45em no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) right 0% top 23em / 44% 0.45em no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) right 0% top 26.4em / 100% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) right 0% top 28.4em / 90% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) right 0% top 30.4em / 71% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) right 0% top 33.8em / 100% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) right 0% top 35.8em / 95% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) right 0% top 37.8em / 53% 0.45em
+        no-repeat;
     opacity: 0.35;
+  }
+
+  :root[dir='ltr'] .hero--behind .ui-page:not(.ui-page--video)::after {
+    background:
+      linear-gradient(var(--ghost-line), var(--ghost-line)) left 0% top 0em / 100% 0.45em no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) left 0% top 2em / 93% 0.45em no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) left 0% top 4em / 61% 0.45em no-repeat,
+      linear-gradient(var(--ghost-picture), var(--ghost-picture)) left 0% top 6.8em / 34% 8.6em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) left 100% top 7.2em / 62% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) left 84.444% top 9.2em / 55% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) left 95% top 11.2em / 60% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) left 60.317% top 13.2em / 37% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) left 0% top 17em / 100% 0.45em no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) left 0% top 19em / 86% 0.45em no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) left 0% top 21em / 97% 0.45em no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) left 0% top 23em / 44% 0.45em no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) left 0% top 26.4em / 100% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) left 0% top 28.4em / 90% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) left 0% top 30.4em / 71% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) left 0% top 33.8em / 100% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) left 0% top 35.8em / 95% 0.45em
+        no-repeat,
+      linear-gradient(var(--ghost-line), var(--ghost-line)) left 0% top 37.8em / 53% 0.45em
+        no-repeat;
   }
 
   .hero--behind .ui-page--video {
@@ -435,11 +506,13 @@
 @media (min-width: 861px) and (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .hero--behind .hero__stage {
     opacity: 0.3;
+    --behind-core: 0.18;
   }
 }
 
 @media (min-width: 861px) {
   :root[data-theme='dark'] .hero--behind .hero__stage {
     opacity: 0.3;
+    --behind-core: 0.18;
   }
 }

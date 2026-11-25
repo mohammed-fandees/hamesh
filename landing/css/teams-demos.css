@@ -25,8 +25,9 @@
 /* The quotation the section is built on, set in the open like an epigraph
    rather than boxed like a card: it introduces the section, it is not a
    component of it. */
+/* Wide enough for the line to stand whole on a desktop. */
 .teams-intro__quote {
-  max-width: 46ch;
+  max-width: none;
   margin: 10px 0 0;
   padding: 0;
   text-align: center;
@@ -477,11 +478,20 @@
 }
 
 .ui-side__body {
+  flex: 1;
+  min-height: 0;
   display: grid;
   align-content: start;
   gap: 9px;
   padding: 10px;
   overflow: hidden;
+}
+
+/* The panel ends where the extension's does: in a field to reply from,
+   pinned to its foot whatever the conversation above it holds. */
+.ui-side__reply {
+  flex: none;
+  background: var(--surface);
 }
 
 .ui-side__note {

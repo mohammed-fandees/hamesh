@@ -162,7 +162,10 @@ export function createDemoCursor(root) {
       api.moveTo(tl, from, { at: label, bend: 0.55 });
       tl.to(arrow, { scale: 0.86, duration: 0.1 }, '>');
 
-      const sweepAt = '>';
+      /* A fixed time, taken before the sweep is added: handing on `'>'` let it
+         resolve after the sweep, so the selection only began once the hand
+         had already arrived. */
+      const sweepAt = tl.recent().endTime();
       api.moveTo(tl, to, { at: sweepAt, bend: 0.08, duration, ease: 'power1.inOut' });
       if (onSweep) onSweep(sweepAt, duration);
 

@@ -615,6 +615,17 @@ test.describe('Landing page · features', () => {
     await expect(page.locator('#teams blockquote cite')).toHaveText('ابن خلدون، المقدمة');
   });
 
+  test('sets the Teams quotation on one line on a desktop', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(origin);
+    const lines = await page.locator('#teams .teams-intro__quote p').evaluate((p) => {
+      const range = document.createRange();
+      range.selectNodeContents(p);
+      return new Set(Array.from(range.getClientRects(), (r) => Math.round(r.top))).size;
+    });
+    expect(lines).toBe(1);
+  });
+
   test('opens Teams with the quotation set in the open, centred, not boxed as a card', async ({
     page,
   }) => {
@@ -678,7 +689,7 @@ test.describe('Landing page · hero demo behind the words', () => {
       windowBehindTitle: true,
       titleOnTop: true,
     });
-    expect(desktop.stageOpacity).toBeLessThan(0.5);
+    expect(desktop.stageOpacity).toBeLessThan(1);
 
     // The light sits behind the window, centred on it, not on the page above it.
     const glow = await page.evaluate(() => {
@@ -707,6 +718,63 @@ test.describe('Landing page · hero demo behind the words', () => {
     });
     expect(phone).toEqual({ windowBelowCopy: true });
   });
+});
+
+test.describe('Landing page · scenes are drawn whole', () => {
+  test('sketches the rest of the hero page as lines of many lengths and a picture', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(origin);
+    const sketch = await page
+      .locator('#hero-pane-0 .ui-page')
+      .evaluate((el) => getComputedStyle(el, '::after').backgroundSize.split(', '));
+    const widths = new Set(sketch.map((size) => size.split(' ')[0]));
+    const heights = sketch.map((size) => parseFloat(size.split(' ')[1]));
+    expect(sketch.length).toBeGreaterThan(12);
+    expect(widths.size).toBeGreaterThan(8);
+    // One block far taller than a line: the picture.
+    expect(Math.max(...heights)).toBeGreaterThan(Math.min(...heights) * 10);
+  });
+
+  test('lets a window’s shadow blur out to the screen’s edge', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(origin);
+    // The nearest box that clips the window is the full-width section, so the
+    // shadow's 90px blur has room on both sides; a clip on the stage cut it off
+    // at the window's own edge.
+    const clipper = await page.locator('#feature-2 .ui-window').evaluate((win) => {
+      let el = win.parentElement;
+      while (el && getComputedStyle(el).overflowX === 'visible') el = el.parentElement;
+      return { tag: el!.tagName, id: el!.id, width: el!.getBoundingClientRect().width };
+    });
+    expect(clipper).toEqual({ tag: 'SECTION', id: 'feature-2', width: 1440 });
+  });
+
+  for (const [lang, width] of [
+    ['ar', 1440],
+    ['en', 1440],
+    ['ar', 900],
+    ['en', 375],
+    ['ar', 375],
+  ] as const) {
+    test(`ends feature 08's side panel in its reply field (${lang}, ${width}px)`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.addInitScript((value) => localStorage.setItem('hamesh-lang', value), lang);
+      await page.goto(origin);
+      await expect(page.locator('.loader')).toHaveCount(0);
+      const foot = await page.locator('#feature-7 .ui-side').evaluate((side) => {
+        const reply = side.querySelector('.ui-side__reply');
+        if (!reply) return null;
+        const panel = side.getBoundingClientRect();
+        const box = reply.getBoundingClientRect();
+        return { inside: box.bottom <= panel.bottom + 0.5, atFoot: panel.bottom - box.bottom < 1 };
+      });
+      expect(foot).toEqual({ inside: true, atFoot: true });
+    });
+  }
 });
 
 test.describe('Landing page · hero fits a desktop screen', () => {
