@@ -59,6 +59,7 @@ describe('the worker’s notice to Hamesh’s own pages', () => {
   it('is not a request, and a request is not it', () => {
     expect(isTeamsEvent({ type: 'TEAMS_EVENT', event: 'notes', teamId: TEAM })).toBe(true);
     expect(isTeamsEvent({ type: 'TEAMS_EVENT', event: 'account' })).toBe(true);
+    expect(isTeamsEvent({ type: 'TEAMS_EVENT', event: 'mentions' })).toBe(true);
     const event = { type: 'TEAMS_EVENT', event: 'comments', teamId: TEAM, noteId: NOTE };
     expect(isTeamsRequest(event)).toBe(false);
     expect(isTeamsCacheRequest(event)).toBe(false);

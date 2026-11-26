@@ -6,6 +6,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **Teams asks for mentions only when it was named.** The Library's Mentions dot used to request
+  `GET /v1/me/mentions` on every comment anywhere in a team. It now waits for the server's
+  `mentioned` frame, and asks once more whenever a socket opens. Needs the matching `hamesh-api`
+  deployed first; until then the dot catches up only when a socket reopens or the page is opened.
+
 ## [2.3.1] — 2026-11-24
 
 ### Added

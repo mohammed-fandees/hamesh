@@ -99,6 +99,8 @@ export type TeamsEvent = { type: 'TEAMS_EVENT' } &
   /** A note's discussion moved on. */
   (
     | { event: 'comments'; teamId: string; noteId: string }
+    /** This account's mention inbox may have moved. */
+    | { event: 'mentions' }
     /** A pull brought in new notes or folders for this team. */
     | { event: 'notes'; teamId: string }
     /** The account's answer may be different: its teams, a member, a role. */
@@ -114,6 +116,7 @@ export function isTeamsEvent(message: unknown): message is TeamsEvent {
       return typeof m.teamId === 'string' && typeof m.noteId === 'string';
     case 'notes':
       return typeof m.teamId === 'string';
+    case 'mentions':
     case 'account':
       return true;
     default:
