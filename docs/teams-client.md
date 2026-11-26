@@ -307,6 +307,11 @@ extension asks about the account rather than about a team, because only the
 server sees every team at once. The ids in those entries are read by asking each
 team it lists for its members — the same request that team's own page makes.
 
+The Library's Mentions dot asks it when the page opens, when the account changes,
+and on a `mentions` event — never because a discussion moved. Comments are the
+most frequent write a team makes, and asking on each one cost a request per open
+page per comment.
+
 ## Realtime: a poke, never the content
 
 `POST /v1/realtime/tickets` returns a single-use, short-lived ticket and the
@@ -326,6 +331,11 @@ nothing else. A pull that brought anything in sends `notes` with the team's id,
 after the worker's bookkeeping is saved, and a change of members or access sends
 `account`. A page showing that thing reads it again through the ordinary path;
 a page showing anything else ignores it.
+
+`mentioned` carries nothing: the server sends it only to the members a comment
+names, or named until it was edited or deleted, and the worker passes it on as a
+`mentions` event. The worker sends the same event whenever a socket opens, since
+a socket that was down cannot say what it missed.
 `runtime.sendMessage` reaches the extension's own pages and never a content
 script, and it rejects when no page is open, which is the ordinary case.
 

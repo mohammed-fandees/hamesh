@@ -334,10 +334,10 @@ export function App() {
       if (!cancelled) setNewestMention(newest);
     })();
     const unwatch = watchTeamIndex(() => void loadShared());
-    // What the worker says moved on: a pull that brought something in, or someone
-    // named in a discussion. Local reads, except the one small mentions request.
+    // What the worker says moved on: a pull that brought something in, or this
+    // reader named in a discussion. Local reads, except the one mentions request.
     const unfollow = teamsClient.onEvent((event) => {
-      if (event.event === 'comments' || event.event === 'account') {
+      if (event.event === 'mentions' || event.event === 'account') {
         void newestMentionId(teamsClient).then(
           (newest) => {
             if (!cancelled) setNewestMention(newest);
