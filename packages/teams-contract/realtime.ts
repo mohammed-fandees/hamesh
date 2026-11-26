@@ -51,6 +51,13 @@ export const ServerMessage = z.discriminatedUnion('t', [
   z.strictObject({ t: z.literal('members') }),
   /** Comment activity on one note; refetch that note's comments if it is open. */
   z.strictObject({ t: z.literal('comments'), noteId: Ulid }),
+  /**
+   * A comment that names this account changed, or stopped naming it: its mention
+   * inbox moved. Sent only to the people concerned, beside `comments`, so nobody
+   * else asks for theirs. A frame of its own because a client that predates it
+   * ignores an unknown frame, but would refuse a `comments` with a new field.
+   */
+  z.strictObject({ t: z.literal('mentioned') }),
   /** Access ended; the socket closes with 4003 right after. */
   z.strictObject({ t: z.literal('revoked'), reason: z.enum(REVOKE_REASONS) }),
 ]);

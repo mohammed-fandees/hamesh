@@ -42,6 +42,7 @@ function setup(opts: { url?: string; failTicket?: boolean } = {}) {
   const onChanged = vi.fn();
   const onMembers = vi.fn();
   const onComments = vi.fn();
+  const onMentioned = vi.fn();
   const onRevoked = vi.fn();
   const run = vi.fn(async (name: string) => {
     expect(name).toBe('realtime.ticket');
@@ -63,6 +64,7 @@ function setup(opts: { url?: string; failTicket?: boolean } = {}) {
     onChanged,
     onMembers,
     onComments,
+    onMentioned,
     onRevoked,
     setTimeout: (fn, ms) => {
       const handle = nextHandle++;
@@ -82,7 +84,18 @@ function setup(opts: { url?: string; failTicket?: boolean } = {}) {
     await Promise.resolve();
   };
   const timers = () => [...scheduled.values()];
-  return { realtime, sockets, timers, tick, onChanged, onMembers, onComments, onRevoked, run };
+  return {
+    realtime,
+    sockets,
+    timers,
+    tick,
+    onChanged,
+    onMembers,
+    onComments,
+    onMentioned,
+    onRevoked,
+    run,
+  };
 }
 
 beforeEach(() => vi.clearAllMocks());
@@ -150,6 +163,28 @@ describe('the realtime link', () => {
 
     sockets[0].frame({ t: 'comments', noteId: NOTE });
     expect(onComments).toHaveBeenCalledWith(TEAM, NOTE);
+  });
+
+  it('moves the mention inbox only for a frame that says this account was named', async () => {
+    const { realtime, sockets, onMentioned } = setup();
+    await realtime.follow([TEAM]);
+    sockets[0].emit('open');
+    onMentioned.mockClear();
+
+    sockets[0].frame({ t: 'comments', noteId: NOTE });
+    expect(onMentioned).not.toHaveBeenCalled();
+
+    sockets[0].frame({ t: 'mentioned' });
+    expect(onMentioned).toHaveBeenCalledTimes(1);
+  });
+
+  it('asks about mentions again once a socket opens, for what it missed', async () => {
+    const { realtime, sockets, onMentioned } = setup();
+    await realtime.follow([TEAM]);
+    expect(onMentioned).not.toHaveBeenCalled();
+
+    sockets[0].emit('open');
+    expect(onMentioned).toHaveBeenCalledTimes(1);
   });
 
   it('ignores a frame it cannot recognise instead of guessing at it', async () => {
@@ -273,6 +308,7 @@ describe('the realtime link', () => {
       onChanged: vi.fn(),
       onMembers: vi.fn(),
       onComments: vi.fn(),
+      onMentioned: vi.fn(),
       onRevoked: vi.fn(),
       setTimeout: (_fn, ms) => {
         delays.push(ms);

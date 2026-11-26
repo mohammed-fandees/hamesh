@@ -43,6 +43,11 @@ export interface RealtimeDeps {
   /** Comment activity on one note: tell whichever page is showing it. */
   onComments: (teamId: string, noteId: string) => void;
   /**
+   * This account's mention inbox may have moved: the server said so, or a socket
+   * has just opened and cannot say what was missed while it was down.
+   */
+  onMentioned: () => void;
+  /**
    * Access to this team ended. `expired` is an ordinary lease rotation and is
    * handled here (a fresh ticket, a new socket); every other reason is the
    * caller's to act on, and nothing reconnects until it says so.
@@ -189,6 +194,9 @@ export function createRealtime(deps: RealtimeDeps) {
       case 'comments':
         deps.onComments(teamId, message.data.noteId);
         return;
+      case 'mentioned':
+        deps.onMentioned();
+        return;
       case 'revoked':
         if (message.data.reason === 'expired') {
           // The authorization lease ran out, which happens on a timer. The
@@ -237,6 +245,7 @@ export function createRealtime(deps: RealtimeDeps) {
       // The socket says nothing about what was missed while it was down, so a
       // fresh connection always pulls once.
       deps.onChanged(teamId);
+      deps.onMentioned();
     });
     socket.addEventListener('message', (event) => handle(teamId, link, event.data));
     socket.addEventListener('error', () => {
