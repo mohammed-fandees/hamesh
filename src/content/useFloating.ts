@@ -67,7 +67,9 @@ export interface UseFloatingOptions {
  * Positions a floating card over a web page — composer, viewer, quick note,
  * cluster list, text popup — against an anchor, in fixed coordinates, clamped
  * into the viewport, and placed again on every scroll (in any container:
- * capture) and resize so it follows its anchor.
+ * capture) and resize so it follows its anchor. Placed again, too, when the card
+ * itself changes size — a section that arrives late or a choice that adds rows
+ * must not push its buttons out of the window.
  *
  * The card mounts hidden so its real size can be measured before it is placed.
  * That is also why a plain `autoFocus` inside one silently does nothing — React
@@ -96,7 +98,11 @@ export function useFloating(getAnchorRect: () => AnchorRect | null, options?: Us
     reposition();
     window.addEventListener('scroll', reposition, { passive: true, capture: true });
     window.addEventListener('resize', reposition, { passive: true });
+    const card = cardRef.current;
+    const sizes = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(reposition);
+    if (card) sizes?.observe(card, { box: 'border-box' });
     return () => {
+      sizes?.disconnect();
       window.removeEventListener('scroll', reposition, { capture: true } as EventListenerOptions);
       window.removeEventListener('resize', reposition);
     };

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach, beforeAll } from 'vitest';
-import { render, screen, cleanup, waitFor, fireEvent, within } from '@testing-library/react';
+import { render, screen, cleanup, waitFor, fireEvent, within, act } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { HameshApp } from '@/content/HameshApp';
 import type { NotesRepository } from '@/storage/notes-repository';
@@ -145,6 +145,53 @@ async function writeToTeam(activateText: () => void) {
   fireEvent.click(screen.getByRole('button', { name: teamStrings.saveAndShare }));
 }
 
+/**
+ * Heights for the composer's wrapper, which jsdom never lays out, and a
+ * `ResizeObserver` that reports as the real one does: once on `observe`, then
+ * only when the size has changed — here, when the test calls the returned
+ * function.
+ */
+function layOutComposer(height: () => number): () => void {
+  vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(function (
+    this: HTMLElement,
+  ) {
+    return this.classList.contains('hm-floating') ? height() : 0;
+  });
+  const checks = new Set<() => void>();
+  vi.stubGlobal(
+    'ResizeObserver',
+    class {
+      private readonly seen = new Map<Element, number>();
+      private readonly check = () => {
+        for (const [element, last] of this.seen) {
+          const now = (element as HTMLElement).offsetHeight;
+          if (now === last) continue;
+          this.seen.set(element, now);
+          this.report();
+        }
+      };
+      constructor(private readonly callback: ResizeObserverCallback) {
+        checks.add(this.check);
+      }
+      private report() {
+        this.callback([], this as unknown as ResizeObserver);
+      }
+      observe(element: Element) {
+        this.seen.set(element, (element as HTMLElement).offsetHeight);
+        this.report();
+      }
+      unobserve(element: Element) {
+        this.seen.delete(element);
+      }
+      disconnect() {
+        this.seen.clear();
+        checks.delete(this.check);
+      }
+    },
+  );
+  return () => act(() => checks.forEach((check) => check()));
+}
+
 beforeAll(() => {
   HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) {
     this.setAttribute('open', '');
@@ -253,5 +300,25 @@ describe('HameshApp — a note written on the page, for a team', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       teamStrings.shareFailedKept(teamStrings.error('limit_reached')),
     );
+  });
+
+  it('stays inside the window when choosing a team makes it taller', async () => {
+    const lowLine = { left: 40, top: 700, width: 200, height: 20 } as DOMRect;
+    Range.prototype.getBoundingClientRect = vi.fn(() => lowLine);
+    const resize = layOutComposer(() =>
+      screen.queryByRole('combobox', { name: teamStrings.destTeamLabel }) ? 400 : 300,
+    );
+    const { activateText } = renderApp(teamSource(vi.fn()));
+    const textarea = await openComposer(activateText);
+    const card = textarea.closest<HTMLElement>('.hm-floating')!;
+    const bottom = () => parseFloat(card.style.top) + card.offsetHeight;
+    const inTeam = await screen.findByRole('radio', { name: new RegExp(teamStrings.destTeam) });
+    resize();
+    expect(bottom()).toBeLessThanOrEqual(window.innerHeight);
+
+    fireEvent.click(inTeam);
+    resize();
+    expect(card.offsetHeight).toBe(400);
+    expect(bottom()).toBeLessThanOrEqual(window.innerHeight);
   });
 });
