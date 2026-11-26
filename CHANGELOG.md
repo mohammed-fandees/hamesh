@@ -6,6 +6,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Teams: the Mentions dot no longer comes back for a mention already seen.** Deleting the newest
+  mention left an older one at the top of the list, which differed from the last one looked at and
+  lit the dot again. The dot now lights only for a newer one.
+
 ## [2.3.1] — 2026-11-24
 
 ### Added

@@ -614,8 +614,10 @@ export function App() {
   }, [teamsClient, lang, navigate]);
 
   const lastSeenMention = prefs?.teams.lastSeenMentionId ?? null;
-  /** Somebody named this reader since they last looked at Mentions. */
-  const mentionsUnseen = newestMention !== null && newestMention !== lastSeenMention;
+  /** Somebody named this reader since they last looked at Mentions. Later ids
+   *  sort higher, so an older one that tops the list after a delete is not new. */
+  const mentionsUnseen =
+    newestMention !== null && (lastSeenMention === null || newestMention > lastSeenMention);
 
   const pinned = useToolbarPin();
   const addShortcut = addNoteShortcut(useShortcuts());
