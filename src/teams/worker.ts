@@ -60,6 +60,7 @@ export function createService(config: TeamsConfig): TeamsService {
     onMembers: () => void service?.accountChanged(),
     onComments: (teamId, noteId) =>
       notifyPages({ type: 'TEAMS_EVENT', event: 'comments', teamId, noteId }),
+    onMentioned: () => notifyPages({ type: 'TEAMS_EVENT', event: 'mentions' }),
     onRevoked: (_teamId, reason) => {
       if (reason === 'signed_out') void service?.revoked();
       else void service?.accountChanged();

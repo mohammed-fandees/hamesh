@@ -12,6 +12,18 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   never when it grew. For an element low in the window, the composer's "Where it goes" section
   (and choosing "In a team") pushed "Save and share" below the viewport, out of the mouse's
   reach. `useFloating` now places a card again whenever its own size changes.
+### Changed
+
+- **Teams asks for mentions only when it was named.** The Library's Mentions dot used to request
+  `GET /v1/me/mentions` on every comment anywhere in a team. It now waits for the server's
+  `mentioned` frame, and asks once more whenever a socket opens. Needs the matching `hamesh-api`
+  deployed first; until then the dot catches up only when a socket reopens or the page is opened.
+
+### Fixed
+
+- **Teams: the Mentions dot no longer comes back for a mention already seen.** Deleting the newest
+  mention left an older one at the top of the list, which differed from the last one looked at and
+  lit the dot again. The dot now lights only for a newer one.
 
 ## [2.3.1] — 2026-11-24
 

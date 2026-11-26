@@ -334,10 +334,10 @@ export function App() {
       if (!cancelled) setNewestMention(newest);
     })();
     const unwatch = watchTeamIndex(() => void loadShared());
-    // What the worker says moved on: a pull that brought something in, or someone
-    // named in a discussion. Local reads, except the one small mentions request.
+    // What the worker says moved on: a pull that brought something in, or this
+    // reader named in a discussion. Local reads, except the one mentions request.
     const unfollow = teamsClient.onEvent((event) => {
-      if (event.event === 'comments' || event.event === 'account') {
+      if (event.event === 'mentions' || event.event === 'account') {
         void newestMentionId(teamsClient).then(
           (newest) => {
             if (!cancelled) setNewestMention(newest);
@@ -614,8 +614,10 @@ export function App() {
   }, [teamsClient, lang, navigate]);
 
   const lastSeenMention = prefs?.teams.lastSeenMentionId ?? null;
-  /** Somebody named this reader since they last looked at Mentions. */
-  const mentionsUnseen = newestMention !== null && newestMention !== lastSeenMention;
+  /** Somebody named this reader since they last looked at Mentions. Later ids
+   *  sort higher, so an older one that tops the list after a delete is not new. */
+  const mentionsUnseen =
+    newestMention !== null && (lastSeenMention === null || newestMention > lastSeenMention);
 
   const pinned = useToolbarPin();
   const addShortcut = addNoteShortcut(useShortcuts());
