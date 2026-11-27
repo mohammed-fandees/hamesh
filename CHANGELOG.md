@@ -18,6 +18,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Teams: the Mentions dot no longer comes back for a mention already seen.** Deleting the newest
   mention left an older one at the top of the list, which differed from the last one looked at and
   lit the dot again. The dot now lights only for a newer one.
+- **Save stays in the window.** A card over a page was placed when it opened, scrolled or resized,
+  never when it grew. For an element low in the window, the composer's "Where it goes" section
+  (and choosing "In a team") pushed "Save and share" below the viewport, out of the mouse's
+  reach. `useFloating` now places a card again whenever its own size changes.
 
 ## [2.3.1] — 2026-11-24
 
