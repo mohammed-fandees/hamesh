@@ -37,6 +37,25 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    version: '2.3.2',
+    date: '2026-11-27',
+    title: { en: 'Improvements and fixes', ar: 'تحسينات وإصلاحات' },
+    items: [
+      {
+        en: 'We fixed some issues that could appear while writing and saving notes.',
+        ar: 'أصلحنا بعض المشكلات التي كانت تظهر أحيانًا أثناء كتابة الملاحظات وحفظها.',
+      },
+      {
+        en: 'We improved performance, so Hamesh feels lighter and more responsive, especially in teams.',
+        ar: 'حسّنّا الأداء، فأصبح هامش أخف وأسرع استجابة، خاصةً في الفرق.',
+      },
+      {
+        en: 'Team notifications are more accurate, so they reach you only when there is something new for you.',
+        ar: 'أصبحت تنبيهات الفرق أكثر دقة، فلا تصلك إلا عند وجود جديد يخصك.',
+      },
+    ],
+  },
+  {
     version: '2.3.1',
     date: '2026-11-24',
     title: { en: 'Notes that lost their place', ar: 'ملاحظات فقدت مكانها' },

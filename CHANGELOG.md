@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.3.2] — 2026-11-27
+
 ### Changed
 
 - **Teams asks for mentions only when it was named.** The Library's Mentions dot used to request
