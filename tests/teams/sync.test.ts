@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { ChangesResponse, TeamNote } from '@hamesh/teams-contract';
+import type { ChangesResponseV2, TeamNote } from '@hamesh/teams-contract';
 import { createTeamSync } from '@/teams/sync';
 import {
   createSyncStore,
@@ -35,11 +35,15 @@ function note(id: string, url: string, overrides: Partial<TeamNote> = {}): TeamN
   };
 }
 
-const changes = (over: Partial<ChangesResponse> = {}): ChangesResponse => ({
+const changes = (over: Partial<ChangesResponseV2> = {}): ChangesResponseV2 => ({
   notes: [],
   folders: [],
   cursor: 'c1',
   hasMore: false,
+  // The server counts from one, and answers a client that asked for v2 with
+  // the counter this page reached — so a fake that leaves it out would be
+  // answering something the real one never does.
+  seq: 1,
   ...over,
 });
 
@@ -62,7 +66,7 @@ function memoryStore(): SyncStore & { states: Map<string, TeamSyncState> } {
 }
 
 /** The page buckets, in memory, keyed exactly as `page-cache` keys them. */
-function setup(answers: (ChangesResponse | Error)[]) {
+function setup(answers: (ChangesResponseV2 | Error)[]) {
   const buckets = new Map<string, CachedTeamNote[]>();
   const queue = [...answers];
   const run = vi.fn(async (name: string, params: unknown) => {
@@ -334,6 +338,39 @@ describe('the sequence number a poke carries', () => {
     // A resync read the team from nothing, so what it holds is the poke it ran for.
     expect(store.states.get(TEAM)?.seq).toBe(10);
     expect(run).toHaveBeenCalledTimes(3);
+  });
+
+  it('is taken from the answer itself, so this device’s own write is pulled for once', async () => {
+    // Nobody poked: the pull follows a write made here. The counter still
+    // comes back, so the poke that write causes is recognised and costs
+    // nothing.
+    const { sync, store, run } = setup([changes({ cursor: 'c1', seq: 12 })]);
+    await sync.syncTeam(TEAM);
+    expect(store.states.get(TEAM)?.seq).toBe(12);
+
+    const outcome = await sync.syncTeam(TEAM, 12);
+    expect(run).toHaveBeenCalledTimes(1);
+    expect(outcome.changed).toBe(false);
+  });
+
+  it('never records a poke’s sequence while the server still has more to give', async () => {
+    const { sync, store } = setup([
+      changes({ cursor: 'c1', hasMore: true, seq: 4 }),
+      changes({ cursor: 'c2', seq: 9 }),
+    ]);
+    // A page that said `hasMore` carried less than the poke promised, so only
+    // what it reached is kept — a device that recorded 9 there and then died
+    // would treat the poke for the rest as one it had already read.
+    const states: number[] = [];
+    const original = store.set;
+    store.set = async (teamId, state) => {
+      states.push(state.seq);
+      await original(teamId, state);
+    };
+
+    await sync.syncTeam(TEAM, 9);
+    expect(states).toEqual([4, 9]);
+    expect(store.states.get(TEAM)?.seq).toBe(9);
   });
 
   it('keeps a saved state written before this device knew about sequences', async () => {
