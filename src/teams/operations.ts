@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type { TeamsOpName } from './operation-names';
 import {
   ChangeRoleRequest,
-  ChangesResponse,
+  ChangesResponseV2,
   CommentResponse,
   CommentsResponse,
   CreateCommentFields,
@@ -179,12 +179,15 @@ function buildOperations() {
      */
     'notes.changes': op({
       params: TeamId.extend({ since: SyncCursor.optional() }),
-      result: ChangesResponse,
+      result: ChangesResponseV2,
       request: (p) => ({
         method: 'GET',
+        // `v=2` adds the counter this page reaches, which is how a later poke
+        // is recognised as one already read. Without it the answer is the same
+        // shape it has always been.
         path:
-          `/v1/teams/${p.teamId}/changes` +
-          (p.since ? `?since=${encodeURIComponent(p.since)}` : ''),
+          `/v1/teams/${p.teamId}/changes?v=2` +
+          (p.since ? `&since=${encodeURIComponent(p.since)}` : ''),
       }),
     }),
     /**

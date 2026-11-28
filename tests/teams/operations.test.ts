@@ -126,9 +126,9 @@ describe('the operation table', () => {
 
   it('never names the page anyone is on: a sync asks only for the cursor it holds', () => {
     const changes = operations()['notes.changes'];
-    expect(changes.request({ teamId: TEAM }).path).toBe(`/v1/teams/${TEAM}/changes`);
+    expect(changes.request({ teamId: TEAM }).path).toBe(`/v1/teams/${TEAM}/changes?v=2`);
     expect(changes.request({ teamId: TEAM, since: 'abc-123_XYZ' }).path).toBe(
-      `/v1/teams/${TEAM}/changes?since=abc-123_XYZ`,
+      `/v1/teams/${TEAM}/changes?v=2&since=abc-123_XYZ`,
     );
     // The cursor is opaque, but it still has to be a cursor before it reaches a
     // URL — nothing else may be smuggled into the query string.
@@ -168,6 +168,7 @@ describe('the operation table', () => {
       folders: [],
       cursor: 'c1',
       hasMore: false,
+      seq: 4,
     });
     expect(parsed.success).toBe(true);
     expect(parsed.data?.notes[0]).toEqual(note);

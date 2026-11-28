@@ -9,7 +9,7 @@ describe('Teams API client', () => {
     const api = createTeamsApi({ config: CONFIG, sessions: memorySessions(LIVE), fetch });
     await api.me();
     const [url, init] = fetch.mock.calls[0]!;
-    expect(url).toBe('https://api.example.com/v1/me');
+    expect(url).toBe('https://api.example.com/v1/me?v=2');
     expect((init!.headers as Record<string, string>).authorization).toBe('Bearer tok');
     expect(init!.credentials).toBe('omit');
     expect(init!.redirect).toBe('error');

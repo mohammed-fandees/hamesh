@@ -1,5 +1,5 @@
 import type { z } from 'zod';
-import { MeResponse, SessionResponse, type GoogleSignInRequest } from '@hamesh/teams-contract';
+import { MeResponseV2, SessionResponse, type GoogleSignInRequest } from '@hamesh/teams-contract';
 import type { TeamsConfig } from './config';
 import type { TeamsOpName } from './operation-names';
 import { operations, type ParamsOf, type ResultOf } from './operations';
@@ -112,8 +112,13 @@ export function createTeamsApi(deps: TeamsApiDeps) {
         await deps.sessions.clear();
       }
     },
-    me(): Promise<MeResponse> {
-      return call('GET', '/v1/me', { schema: MeResponse });
+    /**
+     * Who this account is, and where each of its teams' changes stand. `v=2`
+     * is what asks for those counters; without it the server answers the shape
+     * it always did, which has no way of saying a team has not moved.
+     */
+    me(): Promise<MeResponseV2> {
+      return call('GET', '/v1/me?v=2', { schema: MeResponseV2 });
     },
     /**
      * Performs one listed operation.

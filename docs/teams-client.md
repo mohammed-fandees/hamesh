@@ -349,6 +349,21 @@ canned reply without waking its Durable Object. A worker that is shut down anywa
 opens its sockets again as soon as it wakes, if Teams is on, and pulls on a
 five-minute alarm as well: a missed poke is a delay, not a note nobody ever sees.
 
+The alarm exists for the device with no socket, so it asks for only what a
+socket cannot tell it. While every team the last `GET /v1/me?v=2` listed holds a
+live socket, the alarm asks nothing — except a pull that failed, which it
+retries — and it asks "who am I" again a couple of hours later, since a team
+joined on another device, an entitlement that ran out or a seat taken away
+arrive on no socket at all. Both the teams and that timestamp live only as long
+as the worker does, which is the same life as the sockets they are weighed
+against, so a worker that was shut down and woken asks afresh.
+
+That answer carries each team's `changeSeq`, and a page of `/changes?v=2`
+carries the counter it reached. Either is compared against what this device has
+already pulled for, so a team that has not moved costs no request, and the poke
+a device's own write causes is recognised instead of pulled for twice. A page
+that still says `hasMore` only ever records the counter it actually carried.
+
 ## Announcements
 
 `GET /v1/announcements` is public: no session, no cookie, no referrer. It works

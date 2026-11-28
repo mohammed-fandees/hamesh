@@ -190,9 +190,12 @@ export function createTeamSync(deps: TeamSyncDeps) {
       await buckets.flush();
       state.cursor = changes.cursor;
       state.syncedAt = deps.now();
-      // Safe because the poke arrived before this request was sent: everything
-      // up to its sequence was already committed when the server read.
-      state.seq = Math.max(state.seq, seenSeq ?? 0);
+      // The server's own count of where this page left off is always safe to
+      // keep. The poke's sequence only once there is nothing left to fetch:
+      // until then this device holds less than that sequence promised, and a
+      // later poke for the rest would look like one already read.
+      const reached = changes.hasMore ? changes.seq : Math.max(changes.seq, seenSeq ?? 0);
+      state.seq = Math.max(state.seq, reached);
       await deps.store.set(teamId, state);
       if (!changes.hasMore || rounds >= MAX_ROUNDS) {
         return { rounds, resynced: false, folders: state.folders, changed };
