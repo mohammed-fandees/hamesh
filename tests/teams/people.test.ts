@@ -31,7 +31,7 @@ describe('the people directory a page reads', () => {
     const seen: PeopleDirectory[] = [];
     const unwatch = watchPeople((d) => seen.push(d));
     const directory = {
-      people: { [SARA]: { name: 'Sara', photo: PNG_URL, source: PICTURE } },
+      people: { [SARA]: { name: 'Sara', teams: [ALPHA], photo: PNG_URL, source: PICTURE } },
       me: ME,
       teamIds: [ALPHA],
       syncedAt: 5,
@@ -137,8 +137,8 @@ describe('gathering who is in the teams', () => {
 
     const directory = await readPeople();
     expect(directory.people).toEqual({
-      [SARA]: { name: 'Sara', photo: PNG_URL, source: PICTURE },
-      [OMAR]: { name: 'Omar', photo: null, source: null },
+      [SARA]: { name: 'Sara', teams: [ALPHA, BETA], photo: PNG_URL, source: PICTURE },
+      [OMAR]: { name: 'Omar', teams: [ALPHA], photo: null, source: null },
     });
     expect(directory.teamIds).toEqual([ALPHA, BETA]);
     expect(fetcher).toHaveBeenCalledTimes(1);
@@ -194,5 +194,121 @@ describe('gathering who is in the teams', () => {
     const { people, api } = setup({ [ALPHA]: [sara] });
     await Promise.all([people.refresh([ALPHA], ME), people.refresh([ALPHA], ME)]);
     expect(api.run).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('one team’s people, gathered on its own', () => {
+  function setup(members: Record<string, unknown[]>) {
+    const api = {
+      run: vi.fn(async (_op: string, params: { teamId: string }) => {
+        const list = members[params.teamId];
+        if (!list) throw new Error('offline');
+        return { members: list };
+      }),
+    };
+    const people = createPeople({
+      api: api as never,
+      read: readPeople,
+      write: writePeople,
+      fetch: vi.fn(async () => image()) as never,
+      now: () => 1_000,
+    });
+    return { people, api };
+  }
+
+  const member = (userId: string, displayName: string) => ({
+    userId,
+    displayName,
+    role: 'member',
+    joinedAt: 1,
+    avatarUrl: null,
+  });
+
+  it('asks about that team alone and leaves the other teams’ people alone', async () => {
+    const { people, api } = setup({
+      [ALPHA]: [member(SARA, 'Sara')],
+      [BETA]: [member(OMAR, 'Omar')],
+    });
+    await people.refresh([ALPHA, BETA], ME);
+    api.run.mockClear();
+
+    await people.refreshTeam(ALPHA, ME);
+
+    expect(api.run).toHaveBeenCalledTimes(1);
+    expect(api.run).toHaveBeenCalledWith('members.list', { teamId: ALPHA });
+    const directory = await readPeople();
+    expect(Object.keys(directory.people).sort()).toEqual([SARA, OMAR].sort());
+  });
+
+  it('drops someone who is no longer in it, the way a full gather would', async () => {
+    const members: Record<string, unknown[]> = {
+      [ALPHA]: [member(SARA, 'Sara'), member(OMAR, 'Omar')],
+    };
+    const { people } = setup(members);
+    await people.refresh([ALPHA], ME);
+    expect(Object.keys(await readPeople().then((d) => d.people))).toHaveLength(2);
+
+    members[ALPHA] = [member(SARA, 'Sara')];
+    await people.refreshTeam(ALPHA, ME);
+
+    expect(Object.keys((await readPeople()).people)).toEqual([SARA]);
+  });
+
+  it('keeps someone who is still in another team', async () => {
+    const members: Record<string, unknown[]> = {
+      [ALPHA]: [member(SARA, 'Sara')],
+      [BETA]: [member(SARA, 'Sara')],
+    };
+    const { people } = setup(members);
+    await people.refresh([ALPHA, BETA], ME);
+
+    members[ALPHA] = [];
+    await people.refreshTeam(ALPHA, ME);
+
+    expect(Object.keys((await readPeople()).people)).toEqual([SARA]);
+  });
+
+  it('gathers the teams it knows when the poke names one it has not heard of', async () => {
+    const { people, api } = setup({ [ALPHA]: [member(SARA, 'Sara')] });
+    await people.refresh([ALPHA], ME);
+    api.run.mockClear();
+
+    // The teams come from `/v1/me`; a poke never adds one.
+    await people.refreshTeam(BETA, ME);
+
+    expect(api.run).toHaveBeenCalledWith('members.list', { teamId: ALPHA });
+    expect(api.run).not.toHaveBeenCalledWith('members.list', { teamId: BETA });
+    expect(Object.keys((await readPeople()).people)).toEqual([SARA]);
+  });
+
+  it('leaves the directory as it was when the team cannot be asked', async () => {
+    const members: Record<string, unknown[]> = { [ALPHA]: [member(SARA, 'Sara')] };
+    const { people } = setup(members);
+    await people.refresh([ALPHA], ME);
+    const before = await readPeople();
+
+    delete members[ALPHA];
+    await expect(people.refreshTeam(ALPHA, ME)).rejects.toThrow('offline');
+
+    expect(await readPeople()).toEqual(before);
+  });
+
+  it('gathers every team once when what is stored predates knowing who is where', async () => {
+    const { people, api } = setup({
+      [ALPHA]: [member(SARA, 'Sara')],
+      [BETA]: [member(OMAR, 'Omar')],
+    });
+    // A directory written before people carried their teams.
+    await writePeople({
+      people: { [SARA]: { name: 'Sara', photo: null, source: null } },
+      me: ME,
+      teamIds: [ALPHA, BETA],
+      syncedAt: 900,
+    } as never);
+
+    await people.refreshTeam(ALPHA, ME);
+
+    expect(api.run).toHaveBeenCalledTimes(2);
+    expect(Object.keys((await readPeople()).people).sort()).toEqual([SARA, OMAR].sort());
   });
 });

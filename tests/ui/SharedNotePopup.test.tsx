@@ -36,8 +36,8 @@ const note = {
 
 const people: PeopleDirectory = {
   people: {
-    [SARA]: { name: 'Sara', photo: SARA_PHOTO, source: null },
-    [ME]: { name: 'Mohammed', photo: MY_PHOTO, source: null },
+    [SARA]: { name: 'Sara', teams: [], photo: SARA_PHOTO, source: null },
+    [ME]: { name: 'Mohammed', teams: [], photo: MY_PHOTO, source: null },
   },
   me: ME,
   teamIds: [TEAM],

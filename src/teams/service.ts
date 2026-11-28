@@ -50,7 +50,7 @@ export interface SharedNotesDeps {
   /** Forgets every cached team note on this device. */
   clearCache: () => Promise<void>;
   /** Who is in the teams, for the pins on a page. Absent draws no faces. */
-  people?: Pick<People, 'refresh'>;
+  people?: Pick<People, 'refresh' | 'refreshTeam'>;
   /** Tells Hamesh's own pages something moved on, so they re-read it. Ids only. */
   notify?: (event: TeamsEvent) => void;
   now: () => number;
@@ -97,6 +97,8 @@ export function createTeamsService(deps: TeamsServiceDeps) {
   /** Set when the server says a team's members changed: the next answer to
    *  "who am I" gathers the people again rather than trusting what is kept. */
   let peopleChanged = false;
+  /** This account's own id, as the last answer to "who am I" gave it. */
+  let myUserId: string | null = null;
   /**
    * One pull per team at a time.
    *
@@ -177,6 +179,7 @@ export function createTeamsService(deps: TeamsServiceDeps) {
   async function reconcile(me: MeResponse): Promise<void> {
     const shared = deps.shared;
     if (!shared) return;
+    myUserId = me.user.id;
     const teams = me.teams.map((team) => ({ id: team.id, name: team.name }));
     await shared.writeIndex(teams, shared.now());
     const ids = teams.map((team) => team.id);
@@ -322,10 +325,22 @@ export function createTeamsService(deps: TeamsServiceDeps) {
      * Either way the server is asked who this account is now, and the cache
      * follows that answer.
      */
-    async accountChanged(): Promise<void> {
+    async accountChanged(teamId?: string): Promise<void> {
+      const shared = deps.shared;
+      // A membership poke names its team, and the account's own teams cannot
+      // have changed that way: losing one arrives as `revoked`, joining one
+      // cannot be heard on a socket this device does not hold yet. So the
+      // answer is one request for that team's people — not "who am I", and
+      // not a round of every team this account is in. Whoever has a page open
+      // reloads it from the notice below, which is where `/me` belongs.
+      if (teamId && shared?.people && myUserId) {
+        await shared.people.refreshTeam(teamId, myUserId).catch(() => {});
+        shared.notify?.({ type: 'TEAMS_EVENT', event: 'account' });
+        return;
+      }
       peopleChanged = true;
       await status().catch(() => undefined);
-      deps.shared?.notify?.({ type: 'TEAMS_EVENT', event: 'account' });
+      shared?.notify?.({ type: 'TEAMS_EVENT', event: 'account' });
     },
     /**
      * The server says this device is signed out. Nothing local is kept: the

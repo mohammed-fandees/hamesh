@@ -85,7 +85,12 @@ export function createPeople(deps: PeopleDeps) {
       // was: half of one would turn people back into monograms for nothing.
       const { members } = await deps.api.run('members.list', { teamId });
       for (const member of members) {
-        if (people[member.userId] || count >= MAX_PEOPLE) continue;
+        const already = people[member.userId];
+        if (already) {
+          if (!already.teams.includes(teamId)) already.teams.push(teamId);
+          continue;
+        }
+        if (count >= MAX_PEOPLE) continue;
         const source = photoSource(member.avatarUrl);
         const known = current.people[member.userId];
         const photo =
@@ -97,6 +102,7 @@ export function createPeople(deps: PeopleDeps) {
         // A picture that would not come is asked for again next time.
         people[member.userId] = {
           name: member.displayName,
+          teams: [teamId],
           photo,
           source: photo ? source : null,
         };
@@ -104,6 +110,60 @@ export function createPeople(deps: PeopleDeps) {
       }
     }
     await deps.write({ people, me, teamIds: [...teamIds], syncedAt: deps.now() });
+  }
+
+  /**
+   * Gathers one team, keeping every other team's people as they are.
+   *
+   * What a `members` poke costs: one request, for the team the poke named —
+   * instead of the whole directory, which asked about every team this account
+   * is in. Whoever this team's fresh list no longer holds, and no other team
+   * claims, is forgotten, exactly as a whole gather would forget them.
+   *
+   * A directory saved before people carried their teams cannot say who belongs
+   * where, so it is gathered in full once and is cheap from then on. Same for a
+   * poke naming a team this device has not heard of: the teams come from
+   * `/v1/me`, so the answer is to gather the ones it knows, never to invent one.
+   */
+  async function gatherTeam(teamId: string, me: string): Promise<void> {
+    const current = await deps.read();
+    const complete =
+      current.me === me &&
+      current.teamIds.includes(teamId) &&
+      Object.values(current.people).every((person) => person.teams.length > 0);
+    if (!complete) return gather(current.teamIds, me, true);
+
+    const { members } = await deps.api.run('members.list', { teamId });
+    const people: Record<string, CachedPerson> = {};
+    for (const [id, person] of Object.entries(current.people)) {
+      const teams = person.teams.filter((team) => team !== teamId);
+      if (teams.length > 0) people[id] = { ...person, teams };
+    }
+    let count = Object.keys(people).length;
+    for (const member of members) {
+      const known = people[member.userId] ?? current.people[member.userId];
+      const source = photoSource(member.avatarUrl);
+      if (people[member.userId]) {
+        people[member.userId]!.teams.push(teamId);
+        people[member.userId]!.name = member.displayName;
+        continue;
+      }
+      if (count >= MAX_PEOPLE) continue;
+      const photo =
+        source && known?.source === source && known.photo
+          ? known.photo
+          : source
+            ? await fetchPhoto(deps.fetch, source)
+            : null;
+      people[member.userId] = {
+        name: member.displayName,
+        teams: [teamId],
+        photo,
+        source: photo ? source : null,
+      };
+      count += 1;
+    }
+    await deps.write({ ...current, people, syncedAt: deps.now() });
   }
 
   return {
@@ -115,6 +175,15 @@ export function createPeople(deps: PeopleDeps) {
     async refresh(teamIds: string[], me: string, force = false): Promise<void> {
       while (running) await running.catch(() => {});
       running = gather(teamIds, me, force).finally(() => {
+        running = null;
+      });
+      return running;
+    },
+
+    /** One team's people, for the poke that named it. One at a time, as above. */
+    async refreshTeam(teamId: string, me: string): Promise<void> {
+      while (running) await running.catch(() => {});
+      running = gatherTeam(teamId, me).finally(() => {
         running = null;
       });
       return running;

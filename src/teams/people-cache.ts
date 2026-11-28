@@ -20,6 +20,14 @@ export const MAX_PEOPLE = 300;
 /** One person, as a pin shows them. */
 export interface CachedPerson {
   name: string;
+  /**
+   * Which of this account's teams they are in. It is what lets one team be
+   * gathered on its own: whoever is left claimed by no team is forgotten,
+   * exactly as rebuilding the whole directory would forget them. Nothing here
+   * the content script could not already infer from the notes it draws — a
+   * shared note says its team and its author — and no email, ever.
+   */
+  teams: string[];
   /** Their picture as a `data:` URL, or null for a monogram. */
   photo: string | null;
   /** The address the picture was fetched from — what tells the worker it is
@@ -50,10 +58,13 @@ export function parsePeople(data: unknown): PeopleDirectory {
   if (raw.people && typeof raw.people === 'object') {
     for (const [id, value] of Object.entries(raw.people).slice(0, MAX_PEOPLE)) {
       if (!value || typeof value !== 'object') continue;
-      const p = value as { name?: unknown; photo?: unknown; source?: unknown };
+      const p = value as { name?: unknown; photo?: unknown; source?: unknown; teams?: unknown };
       if (typeof p.name !== 'string') continue;
       people[id] = {
         name: p.name,
+        teams: Array.isArray(p.teams)
+          ? p.teams.filter((team): team is string => typeof team === 'string')
+          : [],
         photo: typeof p.photo === 'string' && PHOTO.test(p.photo) ? p.photo : null,
         source: typeof p.source === 'string' ? p.source : null,
       };

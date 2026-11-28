@@ -39,7 +39,7 @@ function source(me: string): TeamNotesSource {
     read: vi.fn(async () => [teamNote]),
     watch: () => () => {},
     people: vi.fn(async () => ({
-      people: { [SARA]: { name: 'Sara', photo: null, source: null } },
+      people: { [SARA]: { name: 'Sara', teams: [], photo: null, source: null } },
       me,
       teamIds: [TEAM],
       syncedAt: 1,
