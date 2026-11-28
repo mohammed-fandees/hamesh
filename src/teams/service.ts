@@ -92,15 +92,6 @@ const CHANGES_TEAM_NOTES = new Set<TeamsOpName>([
   'folders.delete',
 ]);
 
-/**
- * How long the worker goes without asking "who am I" while every team it knows
- * holds a live socket. A change to a team's notes arrives as a poke, but a team
- * joined on another device, an entitlement that ran out or a seat that was taken
- * away arrive on no socket at all, so the question is still asked — just hours
- * apart instead of every five minutes.
- */
-export const ME_EVERY_MS = 2 * 60 * 60 * 1000;
-
 export function createTeamsService(deps: TeamsServiceDeps) {
   let signingIn: Promise<TeamsReply> | null = null;
   /** Set when the server says a team's members changed: the next answer to
@@ -108,16 +99,6 @@ export function createTeamsService(deps: TeamsServiceDeps) {
   let peopleChanged = false;
   /** This account's own id, as the last answer to "who am I" gave it. */
   let myUserId: string | null = null;
-  /**
-   * When "who am I" was last answered, and the teams it listed. Both live only
-   * as long as this worker does — which is the same life as the sockets they
-   * are weighed against, so a worker that was torn down and started again asks
-   * the question afresh, as it should.
-   */
-  let meAt = 0;
-  let followed: string[] = [];
-  /** Teams whose last pull did not land. The timer retries exactly these. */
-  const failed = new Set<string>();
   /**
    * One pull per team at a time.
    *
@@ -171,14 +152,12 @@ export function createTeamsService(deps: TeamsServiceDeps) {
       entry.phase = 'running';
       try {
         const outcome = await shared.sync.syncTeam(teamId, entry.seq);
-        failed.delete(teamId);
         // After the worker's bookkeeping is saved, not when the first bucket
         // lands: a page reading the team before then would miss the new note.
         if (outcome.changed) shared.notify?.({ type: 'TEAMS_EVENT', event: 'notes', teamId });
       } catch {
-        // Retried by the next poke, or by the worker's timer — which looks at
-        // exactly this set when it has nothing else to ask about.
-        failed.add(teamId);
+        // A failed pull is retried by the next poke or the worker's timer: its
+        // sequence was never recorded, so the next ask is not skipped.
       }
     })().finally(() => {
       pulling.delete(teamId);
@@ -205,8 +184,6 @@ export function createTeamsService(deps: TeamsServiceDeps) {
     const teams = me.teams.map((team) => ({ id: team.id, name: team.name }));
     await shared.writeIndex(teams, shared.now());
     const ids = teams.map((team) => team.id);
-    meAt = shared.now();
-    followed = ids;
     void shared.sync.reconcile(ids).catch(() => {});
     void shared.realtime.follow(ids).catch(() => {});
     // Each team is pulled for the counter this answer gave, so a team that has
@@ -225,19 +202,6 @@ export function createTeamsService(deps: TeamsServiceDeps) {
     if (!shared) return;
     shared.realtime.stopAll();
     await shared.clearCache().catch(() => {});
-  }
-
-  /**
-   * Whether this device can be sure it has heard everything: a socket open for
-   * every team the last answer listed, and that answer still recent. Never on
-   * the first wake of a worker, which has listed no teams yet.
-   */
-  function quiet(): boolean {
-    const shared = deps.shared;
-    if (!shared || followed.length === 0) return false;
-    if (shared.now() - meAt >= ME_EVERY_MS) return false;
-    const live = new Set(shared.realtime.connected());
-    return followed.every((teamId) => live.has(teamId));
   }
 
   async function status(): Promise<TeamsReply> {
@@ -389,17 +353,20 @@ export function createTeamsService(deps: TeamsServiceDeps) {
       await deps.sessions.clear();
       await forgetEverything();
     },
-    /** The worker woke up on its timer: catch up on whatever was missed. */
-    async tick(): Promise<void> {
-      // Nothing can have been missed while every team this account is in holds
-      // a live socket and the account itself was read recently: a change to a
-      // team's notes would have arrived as a poke. The only thing still owed
-      // is a pull that failed.
-      if (quiet()) {
-        for (const teamId of [...failed]) void pull(teamId);
-        return;
-      }
-      await status().catch(() => undefined);
+    /**
+     * The worker woke up on its timer: catch up on whatever was missed.
+     *
+     * "Who am I" is asked every time, and it is cheap on purpose — it is the
+     * only way a team joined on another device, an entitlement that ran out or
+     * a seat taken away reaches this device, none of which arrive on a socket.
+     * What it saves is everything after it: each team is pulled for the
+     * counter that answer gave, so a team that has not moved costs nothing.
+     */
+    tick(): Promise<void> {
+      return status().then(
+        () => {},
+        () => {},
+      );
     },
     /**
      * Some permission was removed. If Teams can no longer run, the user turned
