@@ -196,6 +196,9 @@ export type FolderResponse = z.infer<typeof FolderResponse>;
 
 export const Tombstone = z.strictObject({ id: z.string(), deleted: z.literal(true) });
 
+/** A team's change counter, as the realtime pokes count it. */
+const Seq = z.number().int().min(0);
+
 /**
  * A sync cursor as it travels back to the server. Opaque, but bounded and
  * base64url, so a client can check the shape of what it stored before putting
@@ -218,3 +221,18 @@ export const ChangesResponse = z.strictObject({
   hasMore: z.boolean(),
 });
 export type ChangesResponse = z.infer<typeof ChangesResponse>;
+
+/**
+ * `GET /v1/teams/:teamId/changes?v=2`. The same answer, plus the change counter
+ * this page of it reaches.
+ *
+ * The cursor is the server's own token and says nothing a client can compare,
+ * so without this a device cannot tell that the poke it is about to be sent is
+ * one it has already read — and a write ends up pulled for twice: once by the
+ * writer, once by the poke its own write caused.
+ *
+ * Only a client that asks this way is told, for the reason given on
+ * `MeResponseV2`.
+ */
+export const ChangesResponseV2 = ChangesResponse.extend({ seq: Seq });
+export type ChangesResponseV2 = z.infer<typeof ChangesResponseV2>;

@@ -107,6 +107,13 @@ Everything Hamesh draws on a page lives in a shadow root.
 
 - **New metadata goes in a nested object**, never as new flat fields on `Note` or
   `Preferences`.
+- **Extending a server answer is a new version, never just a new field.** Every
+  client parses answers with `z.strictObject`, so a build already on someone's
+  machine _rejects_ an answer carrying a field it does not know — it does not
+  ignore it. Add the field as a `…V2` schema derived from the one before it
+  (`MeResponseV2`, `ChangesResponseV2`, `PlansResponseV3`), have the server send
+  it only to a request that asked with `?v=2`, and leave the old shape answering
+  exactly as it did. The test for the new schema says what the old one refuses.
 - **A server migration ships with its rollback** (`migrations/rollback/`). After
   switching to a branch with a new migration, run `pnpm db:migrate:local`.
   A `500` on an endpoint that reads a new column almost always means this
