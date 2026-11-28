@@ -252,8 +252,9 @@ describe('a team’s notes on the page they belong to', () => {
     });
     renderApp(
       repoWith([]),
-      source([teamNote(), second], { [SARA]: { name: 'Sara', photo: PHOTO, source: null } })
-        .teamNotes,
+      source([teamNote(), second], {
+        [SARA]: { name: 'Sara', teams: [], photo: PHOTO, source: null },
+      }).teamNotes,
     );
 
     const cluster = await screen.findByRole('button', { name: '2 shared notes' });
@@ -268,7 +269,8 @@ describe('a team’s notes on the page they belong to', () => {
     const repo = repoWith([note()]);
     renderApp(
       repo,
-      source([teamNote()], { [AUTHOR]: { name: 'Sara', photo: PHOTO, source: null } }).teamNotes,
+      source([teamNote()], { [AUTHOR]: { name: 'Sara', teams: [], photo: PHOTO, source: null } })
+        .teamNotes,
     );
 
     const pin = await screen.findByRole('button', { name: 'Sara’s shared note' });

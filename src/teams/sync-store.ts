@@ -25,6 +25,14 @@ export interface CachedFolder {
 export interface TeamSyncState {
   /** Where to resume; null means "pull a full snapshot". */
   cursor: string | null;
+  /**
+   * The highest `seq` this device has pulled for, as the pokes report it. The
+   * cursor is the server's own opaque token and says nothing comparable, so a
+   * poke can only be recognised as one we have already read by this number.
+   * 0 means "nothing known", which is also what a state saved before this
+   * field existed reads as.
+   */
+  seq: number;
   /** noteId → the page bucket that note was filed under. */
   pages: Record<string, string>;
   folders: CachedFolder[];
@@ -34,6 +42,7 @@ export interface TeamSyncState {
 
 export const freshState = (): TeamSyncState => ({
   cursor: null,
+  seq: 0,
   pages: {},
   folders: [],
   syncedAt: 0,
@@ -73,6 +82,7 @@ export function parseSyncState(value: unknown): TeamSyncState {
   }
   return {
     cursor: typeof raw.cursor === 'string' ? raw.cursor : null,
+    seq: typeof raw.seq === 'number' && Number.isFinite(raw.seq) && raw.seq > 0 ? raw.seq : 0,
     pages,
     folders,
     syncedAt: typeof raw.syncedAt === 'number' ? raw.syncedAt : 0,

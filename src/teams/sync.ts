@@ -35,7 +35,7 @@ export interface TeamSyncDeps {
 }
 
 export interface SyncOutcome {
-  /** How many rounds of `/changes` it took. */
+  /** How many rounds of `/changes` it took; 0 when the poke was already read. */
   rounds: number;
   /** True when an expired cursor forced a pull from nothing. */
   resynced: boolean;
@@ -167,7 +167,11 @@ export function createTeamSync(deps: TeamSyncDeps) {
     await deps.store.remove(teamId);
   }
 
-  async function pull(teamId: string, from: TeamSyncState): Promise<SyncOutcome> {
+  async function pull(
+    teamId: string,
+    from: TeamSyncState,
+    seenSeq: number | undefined,
+  ): Promise<SyncOutcome> {
     const state: TeamSyncState = { ...from, pages: { ...from.pages }, folders: [...from.folders] };
     let rounds = 0;
     let changed = false;
@@ -186,6 +190,9 @@ export function createTeamSync(deps: TeamSyncDeps) {
       await buckets.flush();
       state.cursor = changes.cursor;
       state.syncedAt = deps.now();
+      // Safe because the poke arrived before this request was sent: everything
+      // up to its sequence was already committed when the server read.
+      state.seq = Math.max(state.seq, seenSeq ?? 0);
       await deps.store.set(teamId, state);
       if (!changes.hasMore || rounds >= MAX_ROUNDS) {
         return { rounds, resynced: false, folders: state.folders, changed };
@@ -201,16 +208,21 @@ export function createTeamSync(deps: TeamSyncDeps) {
      * what the caller can act on (a `TeamsError` — offline, signed out, no
      * longer a member).
      */
-    async syncTeam(teamId: string): Promise<SyncOutcome> {
+    async syncTeam(teamId: string, seenSeq?: number): Promise<SyncOutcome> {
       const state = await deps.store.get(teamId);
+      // A poke this device has already pulled for costs nothing: the earlier
+      // pull read the team as the server had it at or after that sequence.
+      if (seenSeq !== undefined && seenSeq <= state.seq) {
+        return { rounds: 0, resynced: false, folders: state.folders, changed: false };
+      }
       try {
-        return await pull(teamId, state);
+        return await pull(teamId, state, seenSeq);
       } catch (err) {
         if (!(err instanceof TeamsError) || err.code !== 'cursor_expired') throw err;
         // Too old to resume from. Nothing can be salvaged, so the team's cache
         // goes and the whole thing is pulled again.
         await forgetTeam(teamId);
-        const outcome = await pull(teamId, freshState());
+        const outcome = await pull(teamId, freshState(), seenSeq);
         return { ...outcome, resynced: true };
       }
     },

@@ -56,8 +56,8 @@ export function createService(config: TeamsConfig): TeamsService {
     config,
     api,
     open: (url) => new WebSocket(url),
-    onChanged: (teamId) => void service?.changed(teamId),
-    onMembers: () => void service?.accountChanged(),
+    onChanged: (teamId, seq) => void service?.changed(teamId, seq),
+    onMembers: (teamId) => void service?.accountChanged(teamId),
     onComments: (teamId, noteId) =>
       notifyPages({ type: 'TEAMS_EVENT', event: 'comments', teamId, noteId }),
     onMentioned: () => notifyPages({ type: 'TEAMS_EVENT', event: 'mentions' }),

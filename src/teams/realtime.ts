@@ -37,7 +37,7 @@ export interface RealtimeDeps {
   api: TeamsApi;
   open: (url: string) => SocketLike;
   /** Notes or folders changed in this team: pull the delta. */
-  onChanged: (teamId: string) => void;
+  onChanged: (teamId: string, seq?: number) => void;
   /** Membership or roles changed: ask the server who this account is now. */
   onMembers: (teamId: string) => void;
   /** Comment activity on one note: tell whichever page is showing it. */
@@ -186,7 +186,8 @@ export function createRealtime(deps: RealtimeDeps) {
     switch (message.data.t) {
       case 'hello':
       case 'changed':
-        deps.onChanged(teamId);
+        // The sequence is what lets the worker skip a pull it has already made.
+        deps.onChanged(teamId, message.data.seq);
         return;
       case 'members':
         deps.onMembers(teamId);
@@ -242,9 +243,10 @@ export function createRealtime(deps: RealtimeDeps) {
     socket.addEventListener('open', () => {
       link.attempt = 0;
       keepPinging(teamId, link);
-      // The socket says nothing about what was missed while it was down, so a
-      // fresh connection always pulls once.
-      deps.onChanged(teamId);
+      // What was missed while the socket was down is in the `hello` the server
+      // sends the moment it accepts this socket: it carries the team's current
+      // sequence, which is the one thing that says whether a pull is needed.
+      // Pulling here as well would ask for the same changes a second time.
       deps.onMentioned();
     });
     socket.addEventListener('message', (event) => handle(teamId, link, event.data));

@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { ChangesResponse, TeamNote } from '@hamesh/teams-contract';
 import { createTeamSync } from '@/teams/sync';
-import { createSyncStore, type SyncStore, type TeamSyncState } from '@/teams/sync-store';
+import {
+  createSyncStore,
+  parseSyncState,
+  type SyncStore,
+  type TeamSyncState,
+} from '@/teams/sync-store';
 import type { CachedTeamNote } from '@/teams/page-cache';
 import { TeamsError } from '@/teams/errors';
 
@@ -43,8 +48,9 @@ function memoryStore(): SyncStore & { states: Map<string, TeamSyncState> } {
   const states = new Map<string, TeamSyncState>();
   return {
     states,
-    get: async (teamId) =>
-      structuredClone(states.get(teamId) ?? { cursor: null, pages: {}, folders: [], syncedAt: 0 }),
+    // Parsed on the way out, exactly as the real store does, so a state saved
+    // by an older version reads here the way it would on a real device.
+    get: async (teamId) => parseSyncState(structuredClone(states.get(teamId))),
     set: async (teamId, state) => {
       states.set(teamId, structuredClone(state));
     },
@@ -267,11 +273,79 @@ describe('the sync bookkeeping', () => {
       },
     });
     kv.set(`sync:${TEAM}`, { cursor: 42, pages: { n1: 7 }, folders: [{ id: 'f' }] });
-    expect(await store.get(TEAM)).toEqual({ cursor: null, pages: {}, folders: [], syncedAt: 0 });
+    expect(await store.get(TEAM)).toEqual({
+      cursor: null,
+      pages: {},
+      folders: [],
+      syncedAt: 0,
+      seq: 0,
+    });
 
-    await store.set(TEAM, { cursor: 'c', pages: { n1: 'p' }, folders: [], syncedAt: 3 });
+    await store.set(TEAM, { cursor: 'c', pages: { n1: 'p' }, folders: [], syncedAt: 3, seq: 0 });
     expect(await store.teamIds()).toEqual([TEAM]);
     await store.remove(TEAM);
     expect(await store.teamIds()).toEqual([]);
+  });
+});
+
+describe('the sequence number a poke carries', () => {
+  it('is remembered after a pull, so the same poke is never pulled for twice', async () => {
+    const { sync, store, run } = setup([changes({ cursor: 'c1' }), changes({ cursor: 'c2' })]);
+
+    await sync.syncTeam(TEAM, 7);
+    expect(store.states.get(TEAM)?.seq).toBe(7);
+
+    // The same sequence again: the first pull already read everything up to it.
+    const outcome = await sync.syncTeam(TEAM, 7);
+
+    expect(run).toHaveBeenCalledTimes(1);
+    expect(outcome.changed).toBe(false);
+  });
+
+  it('pulls when the poke is ahead of what this device has', async () => {
+    const { sync, run } = setup([changes({ cursor: 'c1' }), changes({ cursor: 'c2' })]);
+    await sync.syncTeam(TEAM, 7);
+    await sync.syncTeam(TEAM, 8);
+    expect(run).toHaveBeenCalledTimes(2);
+  });
+
+  it('pulls when nobody said which sequence this is', async () => {
+    const { sync, run } = setup([changes({ cursor: 'c1' }), changes({ cursor: 'c2' })]);
+    await sync.syncTeam(TEAM, 7);
+    await sync.syncTeam(TEAM);
+    expect(run).toHaveBeenCalledTimes(2);
+  });
+
+  it('never records a sequence a failed pull did not read', async () => {
+    const { sync, store } = setup([new TeamsError('network')]);
+    await expect(sync.syncTeam(TEAM, 7)).rejects.toThrow();
+    expect(store.states.get(TEAM)?.seq ?? 0).toBe(0);
+  });
+
+  it('forgets the sequence when a cursor too old forces a pull from nothing', async () => {
+    const { sync, store, run } = setup([
+      changes({ cursor: 'c1' }),
+      new TeamsError('cursor_expired'),
+      changes({ cursor: 'c2' }),
+    ]);
+    await sync.syncTeam(TEAM, 9);
+    const outcome = await sync.syncTeam(TEAM, 10);
+    expect(outcome.resynced).toBe(true);
+    // A resync read the team from nothing, so what it holds is the poke it ran for.
+    expect(store.states.get(TEAM)?.seq).toBe(10);
+    expect(run).toHaveBeenCalledTimes(3);
+  });
+
+  it('keeps a saved state written before this device knew about sequences', async () => {
+    const { sync, store } = setup([changes({ cursor: 'c2' })]);
+    store.states.set(TEAM, {
+      cursor: 'c1',
+      pages: {},
+      folders: [],
+      syncedAt: 5,
+    } as never);
+    await sync.syncTeam(TEAM, 3);
+    expect(store.states.get(TEAM)?.cursor).toBe('c2');
+    expect(store.states.get(TEAM)?.seq).toBe(3);
   });
 });

@@ -32,8 +32,13 @@ function setup(opts: { fetch?: ReturnType<typeof respond>; permitted?: boolean }
     realtime: realtime as never,
     writeIndex: vi.fn(async () => {}),
     clearCache: vi.fn(async () => {}),
-    people: { refresh: vi.fn(async () => {}) },
+    // The worker always passes one; a page is told by it, so a test sees it too.
+    notify: vi.fn(),
+    people: { refresh: vi.fn(async () => {}), refreshTeam: vi.fn(async () => {}) },
     now: () => 99,
+    // The spread before a poke's pull, without real time passing.
+    random: () => 0,
+    wait: async () => {},
   };
   const sessions = memorySessions(LIVE);
   const fetch = opts.fetch ?? respond(200, me);
@@ -75,7 +80,7 @@ describe('keeping the team-note cache in step with the account', () => {
     expect(shared.writeIndex).toHaveBeenCalledWith([{ id: TEAM, name: 'Alpha' }], 99);
     expect(sync.reconcile).toHaveBeenCalledWith([TEAM]);
     expect(realtime.follow).toHaveBeenCalledWith([TEAM]);
-    expect(sync.syncTeam).toHaveBeenCalledWith(TEAM);
+    expect(sync.syncTeam).toHaveBeenCalledWith(TEAM, undefined);
   });
 
   it('gathers who is in the teams, and gathers again regardless once members change', async () => {
@@ -125,7 +130,7 @@ describe('keeping the team-note cache in step with the account', () => {
     const { service, sync } = setup();
     expect((await service.perform('notes.unshare', { teamId: TEAM, noteId: NOTE })).ok).toBe(true);
     await settle();
-    expect(sync.syncTeam).toHaveBeenCalledWith(TEAM);
+    expect(sync.syncTeam).toHaveBeenCalledWith(TEAM, undefined);
 
     sync.syncTeam.mockClear();
     await service.perform('notes.changes', { teamId: TEAM });
@@ -142,7 +147,7 @@ describe('keeping the team-note cache in step with the account', () => {
     expect(sync.syncTeam).not.toHaveBeenCalled();
 
     await service.readCache('sync', TEAM);
-    expect(sync.syncTeam).toHaveBeenCalledWith(TEAM);
+    expect(sync.syncTeam).toHaveBeenCalledWith(TEAM, undefined);
   });
 
   it('reads nothing from the cache without the Teams permissions', async () => {
@@ -194,5 +199,51 @@ describe('keeping the team-note cache in step with the account', () => {
     const reply = await service.status();
     expect(reply.status).toEqual({ state: 'signed_out' });
     expect(shared.clearCache).toHaveBeenCalled();
+  });
+});
+
+describe('what a membership poke costs', () => {
+  it('gathers that team’s people and nothing else', async () => {
+    const { service, shared, sync, api } = setup();
+    // The worker has to know whose account this is; that comes from `/me`.
+    await service.status();
+    await settle();
+    api.me.mockClear();
+    sync.syncTeam.mockClear();
+    vi.mocked(shared.people!.refresh).mockClear();
+
+    await service.accountChanged(TEAM);
+    await settle();
+
+    expect(shared.people!.refreshTeam).toHaveBeenCalledWith(TEAM, me.user.id);
+    expect(shared.people!.refresh).not.toHaveBeenCalled();
+    // The account's own teams cannot change this way: losing one arrives as
+    // `revoked`. So no `/me`, and no pull of every team.
+    expect(api.me).not.toHaveBeenCalled();
+    expect(sync.syncTeam).not.toHaveBeenCalled();
+    expect(shared.notify).toHaveBeenCalledWith({ type: 'TEAMS_EVENT', event: 'account' });
+  });
+
+  it('still asks who the account is when no team is named', async () => {
+    const { service, api } = setup();
+    await service.status();
+    await settle();
+    api.me.mockClear();
+
+    await service.accountChanged();
+    await settle();
+
+    expect(api.me).toHaveBeenCalledTimes(1);
+  });
+
+  it('asks who the account is when it does not know yet', async () => {
+    const { service, shared, api } = setup();
+
+    // A worker the browser restarted has not read `/me` since.
+    await service.accountChanged(TEAM);
+    await settle();
+
+    expect(api.me).toHaveBeenCalledTimes(1);
+    expect(shared.people!.refreshTeam).not.toHaveBeenCalled();
   });
 });
