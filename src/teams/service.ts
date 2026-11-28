@@ -54,6 +54,31 @@ export interface SharedNotesDeps {
   /** Tells Hamesh's own pages something moved on, so they re-read it. Ids only. */
   notify?: (event: TeamsEvent) => void;
   now: () => number;
+  /** The spread before a pull, injectable so a test gets exact delays. */
+  random?: () => number;
+  wait?: (ms: number) => Promise<void>;
+}
+
+/**
+ * How long a poke waits before its pull. Every member of a team is poked in the
+ * same millisecond, so without a spread they all ask at once — and the writer's
+ * own pull lands on top of its own poke. Waiting a little lets the two become
+ * one request and takes the edge off the herd.
+ */
+export function pullDelayMs(random: () => number = Math.random): number {
+  return Math.round(random() * PULL_SPREAD_MS);
+}
+
+const PULL_SPREAD_MS = 400;
+
+/**
+ * The sequence to ask for when two pokes are merged. A poke that named no
+ * sequence means "pull whatever you can"; it can never be narrowed by one that
+ * did, so it wins.
+ */
+function mergeSeq(a: number | undefined, b: number | undefined): number | undefined {
+  if (a === undefined || b === undefined) return undefined;
+  return Math.max(a, b);
 }
 
 /** The operations that leave a team's notes or folders different from before. */
@@ -72,31 +97,75 @@ export function createTeamsService(deps: TeamsServiceDeps) {
   /** Set when the server says a team's members changed: the next answer to
    *  "who am I" gathers the people again rather than trusting what is kept. */
   let peopleChanged = false;
-  /** One pull per team at a time; a second ask joins the one already running. */
-  const pulling = new Map<string, Promise<void>>();
+  /**
+   * One pull per team at a time.
+   *
+   * A pull has two phases. While it is **waiting** out its spread it has not
+   * asked the server anything yet, so another poke only raises the sequence it
+   * will ask for — that is what merges a write with the poke it causes. Once it
+   * is **running** the answer on its way back cannot contain a change made
+   * after the server read, so a poke arriving then is remembered and pulled for
+   * exactly once afterwards, however many of them arrive.
+   */
+  interface Running {
+    phase: 'waiting' | 'running';
+    /** The sequence this pull will ask for; raised while it waits. */
+    seq: number | undefined;
+    promise: Promise<void>;
+  }
+  const pulling = new Map<string, Running>();
+  /** Teams poked while their pull was already reading, and the sequence to use. */
+  const askAgain = new Map<string, { seq: number | undefined }>();
 
-  /** Pulls one team's changes, reporting nothing: a failed pull is retried later. */
-  function pull(teamId: string): Promise<void> {
+  /**
+   * Pulls one team's changes, reporting nothing: a failed pull is retried later.
+   * `seq` is what the poke said, so a pull already covered costs no request.
+   *
+   * `spread` is for pokes only. Every member of a team is poked in the same
+   * millisecond, so those wait a moment and arrive apart. A pull that follows
+   * this device's own write, or that a page is waiting to read, never waits:
+   * the reader is looking at the screen.
+   */
+  function pull(teamId: string, seq?: number, spread = false): Promise<void> {
     const shared = deps.shared;
     if (!shared) return Promise.resolve();
-    let running = pulling.get(teamId);
-    if (!running) {
-      running = shared.sync
-        .syncTeam(teamId)
-        .then(
-          // After the worker's bookkeeping is saved, not when the first bucket
-          // lands: a page reading the team before then would miss the new note.
-          (outcome) => {
-            if (outcome.changed) {
-              shared.notify?.({ type: 'TEAMS_EVENT', event: 'notes', teamId });
-            }
-          },
-          () => {},
-        )
-        .finally(() => pulling.delete(teamId));
-      pulling.set(teamId, running);
+
+    const current = pulling.get(teamId);
+    if (current) {
+      if (current.phase === 'waiting') {
+        current.seq = mergeSeq(current.seq, seq);
+      } else {
+        const pending = askAgain.get(teamId);
+        askAgain.set(teamId, { seq: pending ? mergeSeq(pending.seq, seq) : seq });
+      }
+      return current.promise;
     }
-    return running;
+
+    const entry: Running = { phase: 'waiting', seq, promise: Promise.resolve() };
+    entry.promise = (async () => {
+      if (spread) {
+        const wait = shared.wait ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)));
+        await wait(pullDelayMs(shared.random));
+      }
+      entry.phase = 'running';
+      try {
+        const outcome = await shared.sync.syncTeam(teamId, entry.seq);
+        // After the worker's bookkeeping is saved, not when the first bucket
+        // lands: a page reading the team before then would miss the new note.
+        if (outcome.changed) shared.notify?.({ type: 'TEAMS_EVENT', event: 'notes', teamId });
+      } catch {
+        // A failed pull is retried by the next poke or the worker's timer.
+      }
+    })().finally(() => {
+      pulling.delete(teamId);
+      const next = askAgain.get(teamId);
+      if (next) {
+        askAgain.delete(teamId);
+        void pull(teamId, next.seq, spread);
+      }
+    });
+    pulling.set(teamId, entry);
+    return entry.promise;
   }
 
   /**
@@ -245,8 +314,8 @@ export function createTeamsService(deps: TeamsServiceDeps) {
      * Something changed in a team, as its socket just said. The socket carries
      * no content, so this is where the change is actually read.
      */
-    changed(teamId: string): Promise<void> {
-      return pull(teamId);
+    changed(teamId: string, seq?: number): Promise<void> {
+      return pull(teamId, seq, true);
     },
     /**
      * A team's membership changed, or its access ended for a reason of its own.

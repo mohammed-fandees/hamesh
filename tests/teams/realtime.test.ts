@@ -142,15 +142,28 @@ describe('reconnection delay', () => {
 });
 
 describe('the realtime link', () => {
-  it('pulls on connect, and again whenever the server says something changed', async () => {
+  it('leaves the pull on connect to the hello frame, which says what was missed', async () => {
+    const { realtime, sockets, onChanged } = setup();
+    await realtime.follow([TEAM]);
+    sockets[0].emit('open');
+    // Opening says nothing about what changed; the server's hello does.
+    expect(onChanged).not.toHaveBeenCalled();
+
+    sockets[0].frame({ t: 'hello', teamId: TEAM, seq: 7 });
+    expect(onChanged).toHaveBeenCalledWith(TEAM, 7);
+  });
+
+  it('passes on the sequence of every poke, so a pull already made is skipped', async () => {
     const { realtime, sockets, onChanged, onMembers } = setup();
     await realtime.follow([TEAM]);
     sockets[0].emit('open');
-    expect(onChanged).toHaveBeenCalledWith(TEAM);
 
     sockets[0].frame({ t: 'changed', seq: 7 });
-    sockets[0].frame({ t: 'hello', teamId: TEAM, seq: 7 });
-    expect(onChanged).toHaveBeenCalledTimes(3);
+    sockets[0].frame({ t: 'changed', seq: 8 });
+    expect(onChanged.mock.calls).toEqual([
+      [TEAM, 7],
+      [TEAM, 8],
+    ]);
 
     sockets[0].frame({ t: 'members' });
     expect(onMembers).toHaveBeenCalledWith(TEAM);

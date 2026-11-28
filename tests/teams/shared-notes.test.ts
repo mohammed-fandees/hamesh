@@ -34,6 +34,9 @@ function setup(opts: { fetch?: ReturnType<typeof respond>; permitted?: boolean }
     clearCache: vi.fn(async () => {}),
     people: { refresh: vi.fn(async () => {}) },
     now: () => 99,
+    // The spread before a poke's pull, without real time passing.
+    random: () => 0,
+    wait: async () => {},
   };
   const sessions = memorySessions(LIVE);
   const fetch = opts.fetch ?? respond(200, me);
@@ -75,7 +78,7 @@ describe('keeping the team-note cache in step with the account', () => {
     expect(shared.writeIndex).toHaveBeenCalledWith([{ id: TEAM, name: 'Alpha' }], 99);
     expect(sync.reconcile).toHaveBeenCalledWith([TEAM]);
     expect(realtime.follow).toHaveBeenCalledWith([TEAM]);
-    expect(sync.syncTeam).toHaveBeenCalledWith(TEAM);
+    expect(sync.syncTeam).toHaveBeenCalledWith(TEAM, undefined);
   });
 
   it('gathers who is in the teams, and gathers again regardless once members change', async () => {
@@ -125,7 +128,7 @@ describe('keeping the team-note cache in step with the account', () => {
     const { service, sync } = setup();
     expect((await service.perform('notes.unshare', { teamId: TEAM, noteId: NOTE })).ok).toBe(true);
     await settle();
-    expect(sync.syncTeam).toHaveBeenCalledWith(TEAM);
+    expect(sync.syncTeam).toHaveBeenCalledWith(TEAM, undefined);
 
     sync.syncTeam.mockClear();
     await service.perform('notes.changes', { teamId: TEAM });
@@ -142,7 +145,7 @@ describe('keeping the team-note cache in step with the account', () => {
     expect(sync.syncTeam).not.toHaveBeenCalled();
 
     await service.readCache('sync', TEAM);
-    expect(sync.syncTeam).toHaveBeenCalledWith(TEAM);
+    expect(sync.syncTeam).toHaveBeenCalledWith(TEAM, undefined);
   });
 
   it('reads nothing from the cache without the Teams permissions', async () => {
